@@ -1356,6 +1356,145 @@ try {
   console.log('R43 NPC 緣分: ❌ ' + e.message);
 }
 
+/* ---- R44 屬性驅動強化探針（強制路徑，不靠隨機抽中）----
+   ① 結構：r44 br 分流選項 ≥8（need 40~75、hi/lo 齊備、標籤明示門檻數字＋「分流」）、
+      r44 sr 檢定選項 ≥3（need 55~85、spread=40、win.eff 必含負值、標籤明示門檻＋「檢定」＋「骰」）、
+      權衡事件 ×4 每個選項「至少一升一降」且幅度 ≤8、門檻事件 ×3（once＋屬性 cond）、3 成就有 hint
+   ② br 分流判定：每個 r44 br 高屬性(95)走 hi 文案＋brHi 計數、低屬性(5)走 lo 文案＋brLo 計數
+   ③ sr 檢定：高屬性(95)必勝（gateWin、win 文案）、低屬性(5)必翻車（srLose、lose 文案）；
+      檢定復現性：同種子同選擇 → 同結果（沿用 R41~R43 種子慣例、零裸 rng）
+   ④ 門檻事件 gating：屬性差 1 點不進池、達標進池
+   ⑤ 零殘留：未觸發 R44 內容的局——門檻事件不進池、S.flags/S.seen 無 r44 殘留；
+      結算時間軸有「屬性軌跡」一行（純讀 peak/low 確定性註記）
+   ⑥ 成就：r44_fullgauge（滿值謝幕，99 不亮）/ r44_evenkeel（差≤6 全≥55，反例不亮）/
+      r44_seesaw（單局 3 場權衡事件，2 場不亮）皆可達 */
+let r44OK = false;
+try {
+  const r44Raw = vm.runInContext(`(function(){
+    const out={};
+    /* ① 結構 */
+    const brs=[], srs=[];
+    EVENTS.forEach(e=>(e.choices||[]).forEach(c=>{ if(c.r44&&c.br) brs.push({e,c}); if(c.r44&&c.sr) srs.push({e,c}); }));
+    out.brCount = brs.length>=8;
+    out.srCount = srs.length>=3;
+    out.brStruct = brs.every(o=>ATTR[o.c.br.k] && o.c.br.need>=40 && o.c.br.need<=75
+      && o.c.br.hi && o.c.br.hi.eff && o.c.br.hi.res && o.c.br.lo && o.c.br.lo.eff && o.c.br.lo.res
+      && /class="gtag"/.test(o.c.label) && o.c.label.indexOf('分流')>=0 && o.c.label.indexOf(String(o.c.br.need))>=0);
+    out.srStruct = srs.every(o=>ATTR[o.c.sr.k] && o.c.sr.need>=55 && o.c.sr.need<=85 && o.c.sr.spread===40
+      && o.c.sr.win && o.c.sr.win.eff && o.c.sr.win.res && o.c.sr.lose && o.c.sr.lose.eff && o.c.sr.lose.res
+      && Object.values(o.c.sr.win.eff).some(v=>v<0)
+      && o.c.label.indexOf('檢定')>=0 && o.c.label.indexOf('骰')>=0 && o.c.label.indexOf(String(o.c.sr.need))>=0);
+    const TRS=['r44_tr_sidejob','r44_tr_gym','r44_tr_face','r44_tr_course'].map(id=>EVENTS.find(e=>e.id===id));
+    out.trDef = TRS.every(e=>!!e);
+    out.trTrade = TRS.every(e=>e.choices.every(c=>{
+      const vs=Object.values(c.eff||{});
+      return vs.some(v=>v>0) && vs.some(v=>v<0) && vs.every(v=>Math.abs(v)<=8);
+    }));
+    const GATES=[['r44_quizshow','int',80],['r44_ironboard','hp',82],['r44_richmist','mny',88]];
+    out.gateDef = GATES.every(g=>{ const e=EVENTS.find(x=>x.id===g[0]); return e && e.once===true && typeof e.cond==='function'; });
+    out.achDef = ['r44_fullgauge','r44_evenkeel','r44_seesaw'].every(id=>ACH_MAP[id] && ACH_MAP[id].hint && String(ACH_MAP[id].hint).length>4);
+    /* ② br 高低分流（need ≤75 → 95 必走 hi；need ≥40 → 5 必走 lo） */
+    let brHiOK=true, brLoOK=true;
+    brs.forEach(o=>{
+      const i=o.e.choices.indexOf(o.c), k=o.c.br.k;
+      startGame(); S.age=o.e.stage[0]; S.flags={employed:true}; ensureState(S);
+      S.attr[k]=95; const h0=S.flags.brHi||0;
+      showEvent(o.e); choose(i);
+      if((S.flags.brHi||0)!==h0+1 || S.resume[S.resume.length-1].res!==o.c.br.hi.res) brHiOK=false;
+      startGame(); S.age=o.e.stage[0]; S.flags={employed:true}; ensureState(S);
+      S.attr[k]=5;
+      showEvent(o.e); choose(i);
+      if((S.flags.brLo||0)!==1 || S.resume[S.resume.length-1].res!==o.c.br.lo.res) brLoOK=false;
+    });
+    out.brHi = brHiOK; out.brLo = brLoOK;
+    /* ③ sr 檢定：95 必勝 / 5 必輸 */
+    let srWinOK=true, srLoseOK=true;
+    srs.forEach(o=>{
+      const i=o.e.choices.indexOf(o.c), k=o.c.sr.k;
+      startGame(); S.age=o.e.stage[0]; S.flags={employed:true}; ensureState(S);
+      S.attr[k]=95; const g0=S.flags.gateWin||0;
+      showEvent(o.e); choose(i);
+      if((S.flags.gateWin||0)!==g0+1 || S.resume[S.resume.length-1].res!==o.c.sr.win.res) srWinOK=false;
+      startGame(); S.age=o.e.stage[0]; S.flags={employed:true}; ensureState(S);
+      S.attr[k]=5;
+      showEvent(o.e); choose(i);
+      if((S.flags.srLose||0)!==1 || S.resume[S.resume.length-1].res!==o.c.sr.lose.res) srLoseOK=false;
+    });
+    out.srWin = srWinOK; out.srLose = srLoseOK;
+    /* ③b 檢定復現性：同種子同選擇 → 同結果（中間值屬性讓骰子真的有作用） */
+    const sev=srs[0].e, sidx=sev.choices.indexOf(srs[0].c), sk=srs[0].c.sr.k;
+    const runSeed=()=>{
+      startSeedBattle('R44WXY');
+      S.age=sev.stage[0]; S.flags={employed:true}; ensureState(S); S.attr[sk]=srs[0].c.sr.need-20;
+      showEvent(sev); choose(sidx);
+      return S.resume[S.resume.length-1].res;
+    };
+    const res1=runSeed(), res2=runSeed();
+    out.srReplay = typeof res1==='string' && res1.length>10 && res1===res2;
+    /* ④ 門檻事件 gating：差 1 點不進池、達標進池 */
+    let gateOK=true;
+    GATES.forEach(g=>{
+      const e=EVENTS.find(x=>x.id===g[0]);
+      startGame(); S.age=e.stage[0]+1; S.flags={}; ensureState(S); S.seen={};
+      S.attr[g[1]]=g[2]-1;
+      if(eligible().some(x=>x.id===g[0])) gateOK=false;
+      S.attr[g[1]]=g[2];
+      if(!eligible().some(x=>x.id===g[0])) gateOK=false;
+    });
+    out.gateLine = gateOK;
+    /* ⑤ 零殘留：全 50 屬性的乾淨局——門檻事件不進池、無 r44 旗標/seen 殘留；
+       結算時間軸有「屬性軌跡」確定性一行 */
+    startGame(); S.age=30; S.flags={}; ensureState(S); S.seen={};
+    for(const k in S.attr) S.attr[k]=50;
+    out.cleanPool = !eligible().some(e=>/^r44_/.test(e.id) && e.cond);
+    out.cleanFlags = Object.keys(S.flags||{}).every(k=>k.indexOf('r44')!==0);
+    out.cleanSeen = Object.keys(S.seen||{}).every(k=>k.indexOf('r44')!==0);
+    const oRn=rng; rng=()=>0.5; die(); rng=oRn;
+    const arc=(S.tl||[]).filter(t=>String(t.txt).indexOf('屬性軌跡：')===0);
+    out.arcNote = arc.length===1 && /巔峰 \\d+/.test(arc[0].txt) && /谷底 \\d+/.test(arc[0].txt);
+    /* ⑥ 成就 */
+    delete SAVE.ach.r44_fullgauge;
+    startGame(); S.age=40; S.flags={}; ensureState(S); S.attr.int=99;
+    const oR1=rng; rng=()=>0.5; die(); rng=oR1;
+    out.fullNeg = !SAVE.ach.r44_fullgauge;
+    startGame(); S.age=40; S.flags={}; ensureState(S); S.attr.int=100;
+    const oR2=rng; rng=()=>0.5; die(); rng=oR2;
+    out.fullAch = SAVE.ach.r44_fullgauge===true;
+    delete SAVE.ach.r44_evenkeel;
+    startGame(); S.age=40; S.flags={}; ensureState(S);
+    ['hp','int','apr','mny','hap'].forEach((k,i)=>{ S.attr[k]=53+i; });   // 全 <55 一條 → 不亮
+    const oR3=rng; rng=()=>0.5; die(); rng=oR3;
+    const evenNeg1=!SAVE.ach.r44_evenkeel;
+    startGame(); S.age=40; S.flags={}; ensureState(S);
+    ['hp','int','apr','mny','hap'].forEach((k,i)=>{ S.attr[k]=60+i*2; });   // 差 8 → 不亮
+    const oR4=rng; rng=()=>0.5; die(); rng=oR4;
+    const evenNeg2=!SAVE.ach.r44_evenkeel;
+    out.evenNeg = evenNeg1 && evenNeg2;
+    startGame(); S.age=40; S.flags={}; ensureState(S);
+    ['hp','int','apr','mny','hap'].forEach((k,i)=>{ S.attr[k]=58+i; });   // 差 4 全 ≥55 → 亮
+    const oR5=rng; rng=()=>0.5; die(); rng=oR5;
+    out.evenAch = SAVE.ach.r44_evenkeel===true;
+    delete SAVE.ach.r44_seesaw;
+    startGame(); S.age=30; S.flags={employed:true}; ensureState(S); S.seen={};
+    showEvent(EVENTS.find(e=>e.id==='r44_tr_sidejob')); choose(0);
+    showEvent(EVENTS.find(e=>e.id==='r44_tr_gym')); choose(1);
+    const oR6=rng; rng=()=>0.5; die(); rng=oR6;
+    out.seesawNeg = !SAVE.ach.r44_seesaw;
+    startGame(); S.age=30; S.flags={employed:true}; ensureState(S); S.seen={};
+    showEvent(EVENTS.find(e=>e.id==='r44_tr_sidejob')); choose(0);
+    showEvent(EVENTS.find(e=>e.id==='r44_tr_gym')); choose(1);
+    showEvent(EVENTS.find(e=>e.id==='r44_tr_face')); choose(2);
+    const oR7=rng; rng=()=>0.5; die(); rng=oR7;
+    out.seesawAch = SAVE.ach.r44_seesaw===true;
+    return JSON.stringify(out);
+  })()`, sandbox);
+  const r44 = JSON.parse(r44Raw);
+  r44OK = Object.values(r44).every(v => v === true);
+  console.log(`R44 屬性驅動強化: ${r44OK ? '✅ 全數通過' : '❌ ' + JSON.stringify(r44)}`);
+} catch (e) {
+  console.log('R44 屬性驅動強化: ❌ ' + e.message);
+}
+
 if (__errors.length) {
   console.log('\n--- 錯誤樣本(前5) ---');
   __errors.slice(0, 5).forEach(e => console.log('  ' + e));
@@ -1363,6 +1502,6 @@ if (__errors.length) {
 
 /* 退出碼 */
 const pass = __errors.length === 0 && chk.missingScenes.length === 0 && chk.eventVisible >= 126 && chk.eventTotal >= 126 && lsOK && achUnlocked > 0
-  && chk.deathbookMissing.length === 0 && chk.deathTotal >= 17 && deathsOK && rebirthOK && legacyOK && petOK && r13OK && r17OK && r20OK && r21OK && r22OK && r24OK && r25OK && r34OK && r38OK && r41OK && r42OK && r43OK;
+  && chk.deathbookMissing.length === 0 && chk.deathTotal >= 17 && deathsOK && rebirthOK && legacyOK && petOK && r13OK && r17OK && r20OK && r21OK && r22OK && r24OK && r25OK && r34OK && r38OK && r41OK && r42OK && r43OK && r44OK;
 console.log('\n結果: ' + (pass ? '✅ 全數通過' : '❌ 有項目未通過'));
 process.exit(pass ? 0 : 1);
