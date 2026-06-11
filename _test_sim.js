@@ -1632,11 +1632,11 @@ try {
     out.body  = plain.indexOf('享年 72 歲')>=0 && plain.indexOf('評級')>=0 && /成就 \\d+ 枚/.test(plain);
     out.styles = plain!==salty;
     out.deter = plain===buildBragText('plain') && salty===buildBragText('salty');
-    const pii=/tingyi|gmail|8252683|C:\\\\|Users\\\\/i;
+    const pii=/gmail|@\\w+\\.\\w+|[A-Z]:\\\\|Users\\\\/i;
     out.noPII = !pii.test(plain) && !pii.test(salty);
     const cta=githubCtaHTML();
     out.cta = cta.indexOf('https://github.com/tingyi365/earthlife')>=0 && cta.indexOf('target="_blank"')>=0
-           && !/gmail|8252683|C:\\\\|Users\\\\/i.test(cta);
+           && !/gmail|@\\w+\\.\\w+|[A-Z]:\\\\|Users\\\\/i.test(cta);
     return JSON.stringify(out);
   })()`, sandbox);
   const r47 = JSON.parse(r47Raw);
@@ -1646,6 +1646,50 @@ try {
   console.log('R47 精華戰績與開源導流: ❌ ' + e.message);
 }
 
+/* ---- R48 隱藏結局＋去敏探針 ----
+   ① 去敏：index.html 與本測試檔原始碼皆不含字面信箱前綴數字（用 charCode 組裝避免自打臉）
+   ② 定義：HIDDEN_ENDINGS 存在、至少 6 個、欄位齊全（id/ic/nm/cond/hint/text/chk）且 id 不重複
+   ③ 條件函式可呼叫：每個 chk 對活體 S/SAVE 呼叫不丟例外、回傳布林
+   ④ 觸發＋演出：五維 95 謝幕必中 he_pentagod、結算畫面含專屬演出、SAVE.hiddenEnds 入冊
+   ⑤ 圖鑑掛接：collStats 計入隱藏結局館、renderCollection 的 hidden 分頁渲染未解鎖 ??? 與已解鎖條目
+   ⑥ 戰績卡標記：命中時 buildBragText 兩風格都帶「隱藏結局」行 */
+let r48OK = false;
+try {
+  const banned = String.fromCharCode(56,50,53,50,54,56,51);   // 信箱前綴數字，組裝出來比對
+  const selfSrc = fs.readFileSync(__filename, 'utf8');
+  const desensOK = html.indexOf(banned) < 0 && selfSrc.indexOf(banned) < 0;
+  const r48Raw = vm.runInContext(`(function(){
+    const out={};
+    out.def = typeof HIDDEN_ENDINGS!=='undefined' && Array.isArray(HIDDEN_ENDINGS) && HIDDEN_ENDINGS.length>=6
+      && HIDDEN_ENDINGS.every(h=>h.id&&h.ic&&h.nm&&h.cond&&h.hint&&h.text&&typeof h.chk==='function')
+      && new Set(HIDDEN_ENDINGS.map(h=>h.id)).size===HIDDEN_ENDINGS.length;
+    startGame(); ensureState(S);
+    out.callable = HIDDEN_ENDINGS.every(h=>{ try{ return typeof h.chk(S,SAVE)==='boolean'; }catch(e){ return false; } });
+    // 五維 95 + 高齡謝幕 → 必中 he_pentagod（條件確定性，與 rng 無關）
+    S.age=88; S.attr.hp=95; S.attr.int=95; S.attr.apr=95; S.attr.mny=95; S.attr.hap=95;
+    let oR=rng; rng=()=>0.5; if(S.alive) die(); rng=oR;
+    out.hit = S.hiddenEnd==='he_pentagod' && (S.hiddenHits||[]).indexOf('he_pentagod')>=0;
+    out.saved = !!(SAVE.hiddenEnds && SAVE.hiddenEnds.he_pentagod);
+    const sumHTML = document.querySelector('#app').innerHTML;
+    out.show = sumHTML.indexOf('隱 藏 結 局 達 成')>=0 && sumHTML.indexOf('五維封頂')>=0;
+    out.brag = buildBragText('plain').indexOf('隱藏結局【')>=0 && buildBragText('salty').indexOf('隱藏結局【')>=0;
+    // 圖鑑掛接：統計含隱藏館、hidden 分頁渲染（已解鎖顯示名稱、未解鎖給 ??? 線索）
+    const st=collStats();
+    out.stats = st.h>=1 && st.total===ACHIEVEMENTS.length+DEATHBOOK.length+ORIGINS.length+REBIRTH_TALENTS.length+LIFE_BADGES.length+HIDDEN_ENDINGS.length;
+    COLL_FILTER='all'; COLL_TAB='hidden'; renderCollection();
+    const collHTML = document.querySelector('#app').innerHTML;
+    out.coll = collHTML.indexOf('隱藏結局圖鑑')>=0 && collHTML.indexOf('五維封頂')>=0
+      && collHTML.indexOf('？？？')>=0 && collHTML.indexOf('線索：')>=0;
+    return JSON.stringify(out);
+  })()`, sandbox);
+  const r48 = JSON.parse(r48Raw);
+  r48.desens = desensOK;
+  r48OK = Object.values(r48).every(v => v === true);
+  console.log(`R48 隱藏結局與去敏: ${r48OK ? '✅ 全數通過' : '❌ ' + JSON.stringify(r48)}`);
+} catch (e) {
+  console.log('R48 隱藏結局與去敏: ❌ ' + e.message);
+}
+
 if (__errors.length) {
   console.log('\n--- 錯誤樣本(前5) ---');
   __errors.slice(0, 5).forEach(e => console.log('  ' + e));
@@ -1653,6 +1697,6 @@ if (__errors.length) {
 
 /* 退出碼 */
 const pass = __errors.length === 0 && chk.missingScenes.length === 0 && chk.eventVisible >= 126 && chk.eventTotal >= 126 && lsOK && achUnlocked > 0
-  && chk.deathbookMissing.length === 0 && chk.deathTotal >= 17 && deathsOK && rebirthOK && legacyOK && petOK && r13OK && r17OK && r20OK && r21OK && r22OK && r24OK && r25OK && r34OK && r38OK && r41OK && r42OK && r43OK && r44OK && r45OK && r46OK && r47OK;
+  && chk.deathbookMissing.length === 0 && chk.deathTotal >= 17 && deathsOK && rebirthOK && legacyOK && petOK && r13OK && r17OK && r20OK && r21OK && r22OK && r24OK && r25OK && r34OK && r38OK && r41OK && r42OK && r43OK && r44OK && r45OK && r46OK && r47OK && r48OK;
 console.log('\n結果: ' + (pass ? '✅ 全數通過' : '❌ 有項目未通過'));
 process.exit(pass ? 0 : 1);

@@ -7561,6 +7561,79 @@ function deathbookCount(){
   const d=(SAVE&&SAVE.deaths)||{};
   return DEATHBOOK.filter(x=>d[x.id]).length;
 }
+
+/* =========================================================================
+   R48 隱藏結局系統：條件驅動的「劇本之外的劇本」。
+   鐵律：純疊加層——不動 cat/deathId/評級/事件池機率，全部條件確定性（零 rng）；
+   die() 結算時判定，命中只做三件事：結算頁專屬演出、圖鑑入冊（SAVE.hiddenEnds 只增不改）、
+   戰績卡加一行稀有標記。多重命中全數入冊，演出取陣列先序（越前面越稀有）。
+   chk(s,sv) 收 (S, SAVE)，全程 try 包覆，舊存檔缺鍵一律當未命中不炸。
+   ========================================================================= */
+const HIDDEN_ENDINGS = [
+  {id:"he_pentagod", ic:"🌈", nm:"五維封頂・人類豪華版",
+   cond:"謝幕時五項屬性全部 90 以上",
+   hint:"把健康、智力、顏值、財富、快樂全部練到 90 以上再謝幕——對，全部，一項都不能漏…",
+   text:"健康、智力、顏值、財富、快樂全部 90 起跳——系統懷疑你開掛，人工審核三次後只能蓋章放行：這隻角色是出廠就該直送博物館的人類豪華版。別人玩地球 Online，你玩的是創意工坊。",
+   chk:(s)=>{ const a=s.attr; return a.hp>=90&&a.int>=90&&a.apr>=90&&a.mny>=90&&a.hap>=90; }},
+  {id:"he_bond3", ic:"🏘️", nm:"整條街都是你的人",
+   cond:"同一局走完阿珠、阿標、半仙伯三條跨階段人物線",
+   hint:"人生路上遇到的那三個老面孔——鄰居、死對頭、廟口的半仙，每一條線都陪到最後…",
+   text:"鄰居阿珠、死對頭阿標、廟口半仙伯——三條人生伏線你一條都沒漏接，五個階段場場全勤。別人的人生是單人主線，你的人生是整個社區的群像劇，里長都該頒你一面終身成就獎牌。",
+   chk:(s)=>{ const f=s.flags||{}; return !!(f.r43_cmfin&&f.r43_rvfin&&f.r43_ftfin); }},
+  {id:"he_gen5", ic:"🏯", nm:"百年家業・第五棒交棒成功",
+   cond:"以家族第 5 代（含以上）身分活過 60 歲",
+   hint:"傳承、再傳承、再再傳承——讓家族年表一路寫到第五代，而且這一代要活得夠久…",
+   text:"家族第五代，還活過一甲子——祖譜翻開全是你們家的接力劇本。第一代打地基、第二代蓋房子，到你這代連祖傳的吐槽都背得滾瓜爛熟。孟婆看到你直接續杯不驗身分：老客戶，老位子。",
+   chk:(s)=>(s.gen||0)>=5 && s.age>=60},
+  {id:"he_rarecol", ic:"🗝️", nm:"稀有死法收藏家・最終章",
+   cond:"跨局集滿 6 種稀有死法，且本局以稀有死法謝幕",
+   hint:"死法圖鑑的稀有區集到第 6 種的那一局，死神會親自出來迎接…",
+   text:"第六種稀有死法入手的瞬間，死神親自出來帶位：「收藏家，老位子。」別人收集郵票、收集公仔，你收集登出方式——死法圖鑑的稀有區快被你逛成自家倉庫，連印刷廠都認得你的香油錢。",
+   chk:(s,sv)=>{ if(!s.deathId||!SPECIAL_DEATHS[s.deathId]) return false;
+     const d=(sv&&sv.deaths)||{}; return Object.keys(SPECIAL_DEATHS).filter(k=>d[k]).length>=6; }},
+  {id:"he_nothing", ic:"🍂", nm:"兩袖清風・還是活成了傳奇",
+   cond:"總分 120 以下卻活到 80 歲以上",
+   hint:"什麼都沒有，但就是不登出——把「窮到只剩歲數」活成一種境界…",
+   text:"總分不到 120，你卻硬是活過 80 歲——沒健康、沒存款、沒顏值，連快樂都像借來的，但你就是不登出。系統盤點再三找不到你活著的理由，最後只好把「活著本身」列為傳奇收錄。",
+   chk:(s)=>(s.sum||0)<=120 && s.age>=80},
+  {id:"he_wishS", ic:"🚩", nm:"立旗不倒・嘴上人生全達成",
+   cond:"開局立的志向達成，且總分衝破 380（S 級）",
+   hint:"開局先立一個志向，然後用一條 S 級人生把它原地兌現…",
+   text:"開局立的志向不但達成，總分還衝破 380——你是那種尾牙喊「明年業績翻倍」結果真的翻倍的狠人。全公司最怕的就是你：立 flag 不是為了倒，是立給全世界看的。",
+   chk:(s)=>!!s.wishDone && (s.sum||0)>=380},
+  {id:"he_ghost", ic:"🎓", nm:"鬼島生存學・榮譽博士",
+   cond:"北漂打怪鏈全通關，還活到 65 歲領敬老卡",
+   hint:"從北漂新手村一路通關鬼島日常，最難的不是通關，是活著畢業…",
+   text:"北漂、租屋、慣老闆、低薪——鬼島新手村的每一關你都用肉身通關，還活到領敬老卡。教科書沒收錄你的事蹟是教育界的損失：你是行走的《鬼島生存學》，校方決定直接授予榮譽博士，論文免交。",
+   chk:(s)=>{ const f=s.flags||{}; return !!(f.npiao&&f.ghostchain_done) && s.age>=65; }},
+  {id:"he_egg", ic:"🪺", nm:"程式碼縫隙的旅人",
+   cond:"同一局摸滿 2 顆地球 Online 隱藏彩蛋",
+   hint:"傳說每局人生最多藏著兩顆彩蛋，全摸到的人，看得見牆後面的世界…",
+   text:"一局摸滿兩顆隱藏彩蛋——你不是在玩遊戲，你是在驗收。工程師埋彩蛋時想著「應該沒人找得到」，你找到時想著「就這？」。地球 Online 的程式碼縫隙裡，從此多了一枚你的腳印。",
+   chk:(s)=>{ if(typeof R32_EGGS==="undefined"||!s.seen) return false;
+     return R32_EGGS.filter(e=>s.seen[e.id]).length>=2; }},
+];
+const HE_MAP = Object.fromEntries(HIDDEN_ENDINGS.map(h=>[h.id,h]));
+function hiddenEndCount(){ return Object.keys((SAVE&&SAVE.hiddenEnds)||{}).length; }
+/* die() 內呼叫：判定 + 入冊（回寫 S.hiddenEnd / S.hiddenHits / S.newHidden，渲染與分享層純讀） */
+function evalHiddenEndings(){
+  if(!SAVE.hiddenEnds || typeof SAVE.hiddenEnds!=="object") SAVE.hiddenEnds={};
+  S.hiddenHits=[]; S.hiddenEnd=null; S.newHidden=false;
+  for(const he of HIDDEN_ENDINGS){
+    let hit=false; try{ hit=!!he.chk(S,SAVE); }catch(e){}
+    if(!hit) continue;
+    S.hiddenHits.push(he.id);
+    if(!S.hiddenEnd) S.hiddenEnd=he.id;
+    if(!SAVE.hiddenEnds[he.id]){
+      SAVE.hiddenEnds[he.id]=true; S.newHidden=true;
+      recFound("h", he.id, {w:SAVE.plays, a:S.age, t:stripTags(S.title||"")});
+    }
+  }
+  if(S.hiddenEnd){
+    const he=HE_MAP[S.hiddenEnd];
+    tlPush("🌟", `隱藏結局【${he.nm}】達成——劇本之外的劇本，被你翻出來了`, 2);
+  }
+}
 function die(from){
   S.alive=false;
   let cat, deathId;
@@ -7657,6 +7730,9 @@ function die(from){
     }
     if(r44pk && r44lk) tlPush("🧬", `屬性軌跡：這輩子最罩的是${ATTR[r44pk].nm}（巔峰 ${S.peak[r44pk]}），最掉漆的是${ATTR[r44lk].nm}（谷底 ${S.low[r44lk]}）——${R44_ARCQ[r44pk]}`, 0);
   }
+  // ---- R48 隱藏結局判定（疊加層：不動 cat/deathId/評級；條件全確定性零 rng；
+  //      依賴的 S.sum/S.wishDone/S.gen/r43 旗標都已在上方定案；舊存檔缺 hiddenEnds 鍵自動補空）----
+  evalHiddenEndings();
   S.newAch = evalAchievements(cat, sum, grade);
   // R9 時間軸：本局新解鎖成就補進終點（最多 3 條，避免洗版）
   (S.newAch||[]).slice(0,3).forEach(id=>{ const ax=ACH_MAP[id]; if(ax) tlPush("🏆", `解鎖成就【${ax.nm}】`, 1); });
@@ -8275,6 +8351,7 @@ function screenSummary(cat){
     <div class="panel center">
       <h2 class="etitle${rareDeath?' raretitle':''}">🪦 角色已登出 · 本局結算${rareSpk}</h2>
       ${badgeBannerHTML()}
+      ${r48HiddenHTML()}
       <p class="epitaph">「${S.deathReason}。」</p>
       <p class="muted" style="margin-top:-4px">💀 死法圖鑑 ${deathbookCount()}/${DEATHBOOK.length} 種${S.newDeath?`　<b style="color:var(--good,#39ff88)">🆕 新死法入手！</b>`:""}</p>
       ${(function(){ const n=R32_EGGS.filter(e=>S.seen&&S.seen[e.id]).length; return n?`<p class="muted" style="color:var(--accent,#ffd24a)">🥚 本局摸到 ${n} 顆地球 Online 的隱藏彩蛋——程式碼的縫隙裡，住著驚喜</p>`:""; })()}
@@ -8338,7 +8415,29 @@ function screenSummary(cat){
   try{
     if(S.newAch && S.newAch.length) sfxLater("ach", 500);
     if(S.newDeath) sfxLater("newdeath", 950);
+    if(S.newHidden) sfxLater("ach", 1400);   /* R48 隱藏結局首次入冊：沿用成就叮聲、錯開時間不疊音 */
   }catch(e){}
+}
+
+/* R48 隱藏結局結算演出：金框專屬卡（標題＋有梗文案＋首次入冊提示）；
+   純讀 S.hiddenEnd / S.hiddenHits 渲染，沿用稀有死法的金光標題視覺，零邏輯零 rng */
+function r48HiddenHTML(){
+  if(!S || !S.hiddenEnd || typeof HE_MAP==="undefined") return "";
+  const he=HE_MAP[S.hiddenEnd];
+  if(!he) return "";
+  const spk=`<span class="spk" style="left:-14px;top:-9px">✨</span><span class="spk" style="right:-12px;top:-7px;animation-delay:.55s">✨</span><span class="spk" style="right:28%;bottom:-11px;animation-delay:1.1s">✨</span>`;
+  const more=(S.hiddenHits&&S.hiddenHits.length>1)
+    ? `<p class="muted" style="font-size:12px">本局同時命中 ${S.hiddenHits.length} 個隱藏結局：${S.hiddenHits.map(id=>(HE_MAP[id]||{}).nm||id).join("、")}——全數收進圖鑑</p>`
+    : "";
+  return `<div class="panel center" style="margin:10px 0;border:1px solid var(--accent,#ffd24a);background:linear-gradient(180deg,rgba(255,210,74,.10),rgba(255,210,74,.02))">
+    <h2 class="etitle raretitle" style="position:relative;display:inline-block">🌟 隱 藏 結 局 達 成${spk}</h2>
+    <p style="font-size:17px;font-weight:700;color:var(--accent,#ffd24a);margin:4px 0">${he.ic}【${he.nm}】</p>
+    <p class="etext">${he.text}</p>
+    ${S.newHidden
+      ? `<p class="muted" style="margin-top:6px"><b style="color:var(--good,#39ff88)">🆕 首次達成！已收進收藏館的隱藏結局圖鑑（${hiddenEndCount()}/${HIDDEN_ENDINGS.length}）</b></p>`
+      : `<p class="muted" style="margin-top:6px">圖鑑早已收錄（${hiddenEndCount()}/${HIDDEN_ENDINGS.length}）——熟練達成的傳奇，也是傳奇。</p>`}
+    ${more}
+  </div>`;
 }
 
 /* 本局新解鎖成就區塊 */
@@ -8517,10 +8616,10 @@ const ORIGIN_HINTS = {
 function collStats(){
   const a=Object.keys(SAVE.ach||{}).length, d=deathbookCount(),
         o=Object.keys(SAVE.origins||{}).length, r=rbUnlockedCount(),
-        b=Object.keys(SAVE.badges||{}).length;
-  return {a, d, o, r, b,
-    got:a+d+o+r+b,
-    total:ACHIEVEMENTS.length+DEATHBOOK.length+ORIGINS.length+REBIRTH_TALENTS.length+LIFE_BADGES.length};
+        b=Object.keys(SAVE.badges||{}).length, h=hiddenEndCount();   /* R48 隱藏結局館 */
+  return {a, d, o, r, b, h,
+    got:a+d+o+r+b+h,
+    total:ACHIEVEMENTS.length+DEATHBOOK.length+ORIGINS.length+REBIRTH_TALENTS.length+LIFE_BADGES.length+HIDDEN_ENDINGS.length};
 }
 /* 收集進度條 + 「差 N 個就集滿」提示 */
 function collBarHTML(got,total){
@@ -8568,6 +8667,7 @@ function renderCollection(){
     ["origin","🎴","出身",st.o,ORIGINS.length],
     ["talent","🔄","天賦",st.r,REBIRTH_TALENTS.length],
     ["badge","🏅","稱號",st.b,LIFE_BADGES.length],
+    ["hidden","🌟","結局",st.h,HIDDEN_ENDINGS.length],
   ];
   const tabBar = `<div class="colltabs">${tabs.map(([k,ic,nm,g,t])=>
     `<button class="ctab ${COLL_TAB===k?'on':''}" onclick="collTab('${k}')">
@@ -8614,6 +8714,17 @@ function renderCollection(){
         + (ok&&gb[b.id]>1?`　<span style="color:var(--good,#39ff88);font-size:11px">×${gb[b.id]}</span>`:"");
       const hint=BADGE_HINTS[b.id]||"多換幾種活法，總有一世會領到…";
       return {ok, html:collRow(ok, false, t.ic, b.nm, tag, ok?hint:hintTip(hint), "")};
+    });
+  } else if(COLL_TAB==="hidden"){
+    /* R48 隱藏結局圖鑑：純讀 SAVE.hiddenEnds 與 HIDDEN_ENDINGS，未解鎖只給模糊提示不破梗 */
+    title="🌟 隱藏結局圖鑑"; sub="只有特定活法才看得到的結局。命中時結算頁會有專屬演出，未解鎖的只給一句線索，剩下的自己活出來。";
+    got=st.h; total=HIDDEN_ENDINGS.length;
+    const gh=SAVE.hiddenEnds||{};
+    items = HIDDEN_ENDINGS.map(h=>{
+      const ok=!!gh[h.id];
+      const tag=`　<span style="color:var(--accent,#ffd24a);font-size:11px">【隱藏】</span>`;
+      return {ok, html:collRow(ok, ok&&isNewFound("h",h.id), h.ic, h.nm, tag,
+        ok?`<b>達成條件：</b>${h.cond}<br>${h.text}`:hintTip(h.hint), foundNote("h",h.id))};
     });
   } else {
     title="💀 死法圖鑑"; sub="每種登出方式都值得收藏。未收集的只剩剪影，死過才知道全貌。";
@@ -9693,6 +9804,9 @@ function buildBragText(style){
   if(f.r43_rvfin) fates.push("死對頭阿標");
   if(f.r43_ftfin) fates.push("半仙伯");
   if(fates.length) lines.push(`🏮 一生緣分圓滿：${fates.join("、")}`);
+  // R48 隱藏結局稀有標記：命中才加一行（多重命中只標演出主位那個，曬卡夠稀有就好）
+  if(S.hiddenEnd && typeof HE_MAP!=="undefined" && HE_MAP[S.hiddenEnd])
+    lines.push(`🌟 隱藏結局【${HE_MAP[S.hiddenEnd].nm}】達成${salty?"——這行你貼出去沒人敢嘴":""}`);
   lines.push(lifePick(R47_CLOSE[salty?"salty":"plain"], "r47close"));
   return lines.join("\n");
 }
