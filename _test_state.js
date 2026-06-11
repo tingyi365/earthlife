@@ -914,5 +914,113 @@ ok(r56.passBadge && r56.persist, 'R56 通關：徽章發放＋r56_first 解鎖�
 ok(r56.allAch, 'R56 集滿徽章：r56_all 大滿貫成就解鎖');
 ok(r56.sumTxt && r56.reportTxt, 'R56 結算頁與文字戰報帶「劇本：○○（通關/未通關）」字樣');
 
+// ========================================================================
+// R57 台味理財人生：事件進池/屬性驅動分支（gate+sr）/年代限定進池與絕緣/
+// 死法觸發與收錄/成就正反例/舊存檔相容/非觸發局零汙染
+// ========================================================================
+// ① 一般理財事件：工作期/中年期進池
+const r57Pool = sandbox.__t(s => { s.flags.employed = true; }, 35);
+ok(['r57_hui','r57_polins','r57_leek','r57_fixdep','r57_downpay','r57_fixdep'].every(id => r57Pool.includes(id)), 'R57 理財事件（跟會/保單/股市/定存/頭期款）工作期進池');
+ok(sandbox.__t(s => {}, 22).includes('r57_lotto'), 'R57 樂透刮刮樂青年期進池');
+// ② 屬性驅動 gate：跟會外貌70+ 會頭選項、頭期款財富75+ 下訂選項——高顯示/低隱藏
+const r57HuiHi = vm.runInContext(`__choiceHTML('r57_hui', s=>{ s.attr.apr=75; }, 35)`, sandbox);
+const r57HuiLo = vm.runInContext(`__choiceHTML('r57_hui', s=>{ s.attr.apr=40; }, 35)`, sandbox);
+ok(r57HuiHi.includes('💅外貌70+') && !r57HuiLo.includes('💅外貌70+'), 'R57 跟會：高魅力顯示會頭選項、低魅力隱藏（屬性驅動人脈）');
+const r57DpHi = vm.runInContext(`__choiceHTML('r57_downpay', s=>{ s.attr.mny=80; }, 38)`, sandbox);
+const r57DpLo = vm.runInContext(`__choiceHTML('r57_downpay', s=>{ s.attr.mny=40; }, 38)`, sandbox);
+ok(r57DpHi.includes('💰財富75+') && !r57DpLo.includes('💰財富75+'), 'R57 頭期款：高財富顯示下訂選項、低財富隱藏');
+// ③ sr 智力檢定（投資判斷）：必勝走 win＋r57_leekwin 旗標、必輸走 lose 不落旗標
+const r57Sr = JSON.parse(vm.runInContext(`(function(){
+  const out = {};
+  const ev = EVENTS.find(e=>e.id==='r57_leek');
+  const i = ev.choices.findIndex(c=>c.sr);
+  startGame(); S.age=35; S.flags={}; S.attr.int=100; ensureState(S);
+  let old=rng; rng=()=>0; showEvent(ev); choose(i); rng=old;
+  out.win = S.flags.r57_leekwin===true && S.resume[S.resume.length-1].res.includes('股神');
+  startGame(); S.age=35; S.flags={}; S.attr.int=0; ensureState(S);
+  old=rng; rng=()=>0; showEvent(ev); choose(i); rng=old;
+  out.lose = !S.flags.r57_leekwin && S.resume[S.resume.length-1].res.includes('後照鏡');
+  return JSON.stringify(out);
+})()`, sandbox));
+ok(r57Sr.win, 'R57 股市 sr 智力檢定：高智力必勝（r57_leekwin 旗標＋win 文案）');
+ok(r57Sr.lose, 'R57 股市 sr 智力檢定：低智力必輸（不落旗標、lose 文案）');
+// ④ 年代限定：本年代進池＋R46 里程碑保底自動註冊；他年代/舊存檔無 era 鍵絕緣
+const r57E70 = sandbox.__t(s => { s.era = 'e70'; }, 20);
+ok(r57E70.includes('era70_stockfever') && !r57E70.includes('era80_doublecard') && !r57E70.includes('era00_seagod'), 'R57 e70 局：萬點崩盤進池、他年代理財事件絕緣');
+const r57E80 = sandbox.__t(s => { s.era = 'e80'; }, 25);
+ok(r57E80.includes('era80_doublecard'), 'R57 e80 局：雙卡風暴進池');
+const r57E00 = sandbox.__t(s => { s.era = 'e00'; }, 22);
+ok(r57E00.includes('era00_seagod'), 'R57 e00 局：航海王當沖進池');
+const r57NoEra = sandbox.__t(s => { delete s.era; }, 22);
+ok(!['era70_stockfever','era80_doublecard','era00_seagod'].some(id=>r57NoEra.includes(id)), 'R57 舊存檔無 era 鍵：年代理財事件全不進池');
+ok(vm.runInContext(`R46_MILESTONE['era70_stockfever']===20 && R46_MILESTONE['era80_doublecard']===25 && R46_MILESTONE['era00_seagod']===22`, sandbox), 'R57 年代理財事件自動入 R46 里程碑保底（進窗口 2 年）');
+// ⑤ 死法一：被倒會氣絕（hap≤10 確定性觸發）＋活路分支＋圖鑑收錄
+const r57Hui = JSON.parse(vm.runInContext(`(function(){
+  const out = {};
+  out.book = DEATHBOOK.some(d=>d.id==='huiboom' && d.rare && d.hint.length>4) && !!SPECIAL_DEATHS.huiboom;
+  const ev = EVENTS.find(e=>e.id==='r57_hui');
+  const i = ev.choices.findIndex(c=>c.special==='r57_huidao');
+  startGame(); S.age=35; S.flags={}; ensureState(S); S.attr.hap=8;
+  showEvent(ev); choose(i);
+  out.dying = S.flags.specialDeath==='huiboom' && S.attr.hp<=0;
+  die('choice');
+  out.dead = !S.alive && S.deathId==='huiboom';
+  out.collected = !!SAVE.deaths.huiboom;
+  startGame(); S.age=35; S.flags={}; ensureState(S); S.attr.hap=60;
+  showEvent(EVENTS.find(e=>e.id==='r57_hui')); choose(i);
+  out.alive = S.alive===true && S.flags.r57_huivictim===true && !S.flags.specialDeath;
+  return JSON.stringify(out);
+})()`, sandbox));
+ok(r57Hui.book, 'R57 huiboom 收錄進死法圖鑑（rare＋模糊提示）');
+ok(r57Hui.dying && r57Hui.dead && r57Hui.collected, 'R57 快樂見底重押三會 → 被倒會氣絕全流程＋跨局收集');
+ok(r57Hui.alive, 'R57 快樂正常被倒會：活路分支（虧錢長智慧、零誤殺）');
+// ⑥ 死法二：刮中頭獎嚇死（hp≤12 確定性觸發）＋活路分支＋圖鑑收錄
+const r57Jp = JSON.parse(vm.runInContext(`(function(){
+  const out = {};
+  out.book = DEATHBOOK.some(d=>d.id==='jackpotgg' && d.rare && d.hint.length>4) && !!SPECIAL_DEATHS.jackpotgg;
+  const ev = EVENTS.find(e=>e.id==='r57_lotto');
+  const i = ev.choices.findIndex(c=>c.special==='r57_scratch');
+  startGame(); S.age=30; S.flags={}; ensureState(S); S.attr.hp=10;
+  showEvent(ev); choose(i);
+  out.dying = S.flags.specialDeath==='jackpotgg';
+  die('choice');
+  out.dead = !S.alive && S.deathId==='jackpotgg' && !!SAVE.deaths.jackpotgg;
+  startGame(); S.age=30; S.flags={}; ensureState(S); S.attr.hp=70;
+  showEvent(EVENTS.find(e=>e.id==='r57_lotto')); choose(i);
+  out.alive = S.alive===true && S.flags.r57_scratchking===true;
+  return JSON.stringify(out);
+})()`, sandbox));
+ok(r57Jp.book, 'R57 jackpotgg 收錄進死法圖鑑（rare＋模糊提示）');
+ok(r57Jp.dying && r57Jp.dead, 'R57 體力見底全梭刮刮樂 → 頭獎嚇死全流程＋跨局收集');
+ok(r57Jp.alive, 'R57 體力正常梭哈：活路分支（八百元再投入歸零）');
+// ⑦ 成就：三個新成就 check 正反例＋獵人提示齊備
+const r57Ach = JSON.parse(vm.runInContext(`(function(){
+  const out = {};
+  out.hui = ACH_MAP.r57_huihead.check({S:{flags:{r57_huihead:true}}, age:40});
+  out.huiNeg = !ACH_MAP.r57_huihead.check({S:{flags:{}}, age:40});
+  out.stock = ACH_MAP.r57_stockgod.check({S:{flags:{r57_leekwin:true}}, age:40});
+  out.stockNeg = !ACH_MAP.r57_stockgod.check({S:{flags:{}}, age:40});
+  out.fin = ACH_MAP.r57_fincourse.check({S:{seen:{r57_hui:true,r57_lotto:true,r57_fixdep:true},flags:{}}, age:50});
+  out.finNeg = !ACH_MAP.r57_fincourse.check({S:{seen:{r57_hui:true,r57_lotto:true},flags:{}}, age:50});
+  out.hints = ['r57_huihead','r57_stockgod','r57_fincourse'].every(id=>ACH_MAP[id] && ACH_MAP[id].hint && ACH_MAP[id].hint.length>4);
+  return JSON.stringify(out);
+})()`, sandbox));
+ok(r57Ach.hui && r57Ach.huiNeg, 'R57 成就「巷口央行行長」：會頭旗標解鎖、無旗標不解鎖');
+ok(r57Ach.stock && r57Ach.stockNeg, 'R57 成就「少年股神」：檢定贏旗標解鎖、無旗標不解鎖');
+ok(r57Ach.fin && r57Ach.finNeg, 'R57 成就「台味理財全修課」：同局 3 堂理財課解鎖、2 堂不解鎖');
+ok(r57Ach.hints, 'R57 三個新成就獵人提示齊備');
+// ⑧ 舊存檔相容＋零汙染：缺 seen/era 鍵不炸不誤觸；乾淨局 flags 無 r57 殘留
+const r57Compat = JSON.parse(vm.runInContext(`(function(){
+  const out = {};
+  out.noSeen = !ACH_MAP.r57_fincourse.check({S:{flags:{}}, age:50});   // 舊存檔無 seen 鍵：不炸、不誤觸
+  startGame(); delete S.seen; delete S.era; ensureState(S);
+  out.healed = typeof S.seen==='object';
+  startGame();
+  out.clean = Object.keys(S.flags).every(k=>k.indexOf('r57')!==0);
+  return JSON.stringify(out);
+})()`, sandbox));
+ok(r57Compat.noSeen && r57Compat.healed, 'R57 舊存檔缺 seen/era 鍵：ensureState 補鍵、成就不誤觸不炸');
+ok(r57Compat.clean, 'R57 非觸發局零汙染：開局 S.flags 無任何 r57 鍵');
+
 console.log(fails ? `\n結果: ❌ ${fails} 項未通過` : '\n結果: ✅ 狀態機全數正確');
 process.exit(fails ? 1 : 0);
