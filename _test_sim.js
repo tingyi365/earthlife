@@ -1495,6 +1495,114 @@ try {
   console.log('R44 屬性驅動強化: ❌ ' + e.message);
 }
 
+/* ---- R45 台味鬼島嘲諷文案探針（強制路徑，不靠隨機抽中）----
+   ① 結構：11 個 r45_ 鬼島事件齊備（once＋stage＋meme 場景存在＋選項≥2、一般選項 eff 全固定且 |v|≤8）、
+      3 個鬼島死法 SPECIAL_DEATHS / DEATHBOOK 雙邊完整、4 成就有 hint
+   ② 死法確定性（沿用 R27 門檻慣例、零裸 rng）：門檻內必死（specialDeath＋die() 後 cat 正確）、
+      門檻外必活（無 specialDeath 殘留、倖存旗標有立）
+   ③ 成就正反例：社畜認證（雙旗標，單旗標不亮）/ 無殼蝸牛（55+ 看過蛋黃區無房，有房不亮）/
+      珍奶自由（事件實走）/ 鬼島生存大師（6 種 seen，5 種不亮）
+   ④ 結算神評：lifeVerdict 在只命中 r45 條件的局，回鬼島嘲諷句（Math.random 樁定）
+   ⑤ 零殘留：乾淨局 S.flags / S.seen 無 r45 鍵 */
+let r45OK = false;
+try {
+  const r45Raw = vm.runInContext(`(function(){
+    const out={};
+    const IDS=['r45_firstpay','r45_dutyfree','r45_eggyolk','r45_nhi','r45_scooterfall','r45_powerbill','r45_bobafree','r45_elderline','r45_election','r45_typhoon','r45_tangping'];
+    const evs=IDS.map(id=>EVENTS.find(e=>e.id===id));
+    /* ① 結構 */
+    out.evDef = evs.every(e=>!!e && e.once===true && Array.isArray(e.stage) && e.title && e.text && (e.choices||[]).length>=2);
+    out.scenes = evs.every(e=>e.meme && e.meme.scene && !!SCENES[e.meme.scene] && e.meme.top && e.meme.bot);
+    out.effNorm = evs.every(e=>e.choices.every(c=>!c.eff || Object.values(c.eff).every(v=>Math.abs(v)<=8)));
+    const DKEYS=['sweatout','typhoonwork','tangping'];
+    out.sdDef = DKEYS.every(k=>SPECIAL_DEATHS[k] && SPECIAL_DEATHS[k].cat===k && SPECIAL_DEATHS[k].scene && SCENES[SPECIAL_DEATHS[k].scene] && SPECIAL_DEATHS[k].title && SPECIAL_DEATHS[k].reason);
+    out.dbDef = DKEYS.every(k=>DEATHBOOK.some(d=>d.id===k && d.rare===true && d.nm && d.hint && d.reason));
+    out.achDef = ['r45_shachiku','r45_snail','r45_bobasoul','r45_islander'].every(id=>ACH_MAP[id] && ACH_MAP[id].hint && String(ACH_MAP[id].hint).length>4);
+    /* ② 死法確定性 */
+    const SPECS=[
+      {ev:'r45_powerbill', sp:'r45_sweat',     k:'hp',  lim:10, death:'sweatout',    live:'r45_sweatking'},
+      {ev:'r45_typhoon',   sp:'r45_stormride', k:'hp',  lim:12, death:'typhoonwork', live:'r45_stormhero'},
+      {ev:'r45_tangping',  sp:'r45_tangping',  k:'mny', lim:10, death:'tangping',    live:null},
+    ];
+    let dieOK=true, liveOK=true;
+    SPECS.forEach(t=>{
+      const e=EVENTS.find(x=>x.id===t.ev), i=e.choices.findIndex(c=>c.special===t.sp);
+      if(i<0){ dieOK=false; liveOK=false; return; }
+      /* 門檻內：必觸發 specialDeath，die() 後 cat 正確 */
+      startGame(); S.age=e.stage[0]; S.flags={employed:true}; ensureState(S);
+      S.attr[t.k]=t.lim;
+      showEvent(e); choose(i);
+      if(S.flags.specialDeath!==t.death) dieOK=false;
+      else {
+        const oR=rng; rng=()=>0.5;
+        if(S.alive) die('choice');
+        rng=oR;
+        if(S.cat!==t.death || S.deathId!==t.death || S.alive) dieOK=false;
+      }
+      /* 門檻外：必活，無 specialDeath 殘留，倖存旗標有立 */
+      startGame(); S.age=e.stage[0]; S.flags={employed:true}; ensureState(S);
+      S.attr[t.k]=60; S.attr.hp=Math.max(S.attr.hp,60);
+      showEvent(e); choose(i);
+      if(S.flags.specialDeath || !S.alive) liveOK=false;
+      if(t.live && !S.flags[t.live]) liveOK=false;
+    });
+    out.dieGate = dieOK; out.liveGate = liveOK;
+    /* ③ 成就正反例 */
+    delete SAVE.ach.r45_shachiku;
+    startGame(); S.age=30; S.flags={employed:true}; ensureState(S); S.seen={};
+    const e1=EVENTS.find(e=>e.id==='r45_firstpay');
+    showEvent(e1); choose(e1.choices.findIndex(c=>c.flags&&c.flags.r45_pay22));
+    let oR1=rng; rng=()=>0.5; die(); rng=oR1;
+    out.shaNeg = !SAVE.ach.r45_shachiku;
+    startGame(); S.age=30; S.flags={employed:true}; ensureState(S); S.seen={};
+    const e2=EVENTS.find(e=>e.id==='r45_dutyfree');
+    showEvent(e1); choose(e1.choices.findIndex(c=>c.flags&&c.flags.r45_pay22));
+    showEvent(e2); choose(e2.choices.findIndex(c=>c.flags&&c.flags.r45_otok));
+    let oR2=rng; rng=()=>0.5; die(); rng=oR2;
+    out.shaAch = SAVE.ach.r45_shachiku===true;
+    delete SAVE.ach.r45_snail;
+    startGame(); S.age=56; S.flags={homeowner:true}; ensureState(S); S.seen={r45_eggyolk:true};
+    let oR3=rng; rng=()=>0.5; die(); rng=oR3;
+    out.snailNeg = !SAVE.ach.r45_snail;
+    startGame(); S.age=56; S.flags={}; ensureState(S); S.seen={r45_eggyolk:true};
+    let oR4=rng; rng=()=>0.5; die(); rng=oR4;
+    out.snailAch = SAVE.ach.r45_snail===true;
+    delete SAVE.ach.r45_bobasoul;
+    startGame(); S.age=25; S.flags={}; ensureState(S); S.seen={};
+    const e3=EVENTS.find(e=>e.id==='r45_bobafree');
+    showEvent(e3); choose(e3.choices.findIndex(c=>c.flags&&c.flags.r45_bobaeveryday));
+    let oR5=rng; rng=()=>0.5; die(); rng=oR5;
+    out.bobaAch = SAVE.ach.r45_bobasoul===true;
+    delete SAVE.ach.r45_islander;
+    startGame(); S.age=35; S.flags={}; ensureState(S);
+    S.seen={r45_firstpay:true,r45_dutyfree:true,r45_eggyolk:true,r45_nhi:true,r45_scooterfall:true};
+    let oR6=rng; rng=()=>0.5; die(); rng=oR6;
+    out.isleNeg = !SAVE.ach.r45_islander;
+    startGame(); S.age=35; S.flags={}; ensureState(S);
+    S.seen={r45_firstpay:true,r45_dutyfree:true,r45_eggyolk:true,r45_nhi:true,r45_scooterfall:true,r45_election:true};
+    let oR7=rng; rng=()=>0.5; die(); rng=oR7;
+    out.isleAch = SAVE.ach.r45_islander===true;
+    /* ④ 結算神評：只命中 r45_pay22 條件的局 → 必回鬼島句（Math.random 樁定 0） */
+    startGame(); S.age=65; ensureState(S);
+    S.flags={married:true, r45_pay22:true};
+    for(const k in S.attr) S.attr[k]=50;
+    const oMR=Math.random; Math.random=()=>0;
+    const v=lifeVerdict();
+    Math.random=oMR;
+    out.verdict = typeof v==='string' && v.indexOf('22K')>=0;
+    /* ⑤ 零殘留：乾淨新局無 r45 旗標/seen */
+    startGame();
+    out.clean = Object.keys(S.flags||{}).every(k=>k.indexOf('r45')!==0)
+             && Object.keys(S.seen||{}).every(k=>k.indexOf('r45')!==0);
+    return JSON.stringify(out);
+  })()`, sandbox);
+  const r45 = JSON.parse(r45Raw);
+  r45OK = Object.values(r45).every(v => v === true);
+  console.log(`R45 鬼島嘲諷文案: ${r45OK ? '✅ 全數通過' : '❌ ' + JSON.stringify(r45)}`);
+} catch (e) {
+  console.log('R45 鬼島嘲諷文案: ❌ ' + e.message);
+}
+
 if (__errors.length) {
   console.log('\n--- 錯誤樣本(前5) ---');
   __errors.slice(0, 5).forEach(e => console.log('  ' + e));
@@ -1502,6 +1610,6 @@ if (__errors.length) {
 
 /* 退出碼 */
 const pass = __errors.length === 0 && chk.missingScenes.length === 0 && chk.eventVisible >= 126 && chk.eventTotal >= 126 && lsOK && achUnlocked > 0
-  && chk.deathbookMissing.length === 0 && chk.deathTotal >= 17 && deathsOK && rebirthOK && legacyOK && petOK && r13OK && r17OK && r20OK && r21OK && r22OK && r24OK && r25OK && r34OK && r38OK && r41OK && r42OK && r43OK && r44OK;
+  && chk.deathbookMissing.length === 0 && chk.deathTotal >= 17 && deathsOK && rebirthOK && legacyOK && petOK && r13OK && r17OK && r20OK && r21OK && r22OK && r24OK && r25OK && r34OK && r38OK && r41OK && r42OK && r43OK && r44OK && r45OK;
 console.log('\n結果: ' + (pass ? '✅ 全數通過' : '❌ 有項目未通過'));
 process.exit(pass ? 0 : 1);
