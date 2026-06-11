@@ -1614,6 +1614,38 @@ try {
   console.log('R45 鬼島嘲諷文案: ❌ ' + e.message);
 }
 
+/* ---- R47 精華戰績文字＋開源導流探針 ----
+   ① 函式存在（buildBragText / copyBragText / githubCtaHTML）
+   ② 死局生成：正經版含遊戲連結 earthlife.pages.dev、享年、評級、成就枚數
+   ③ 雙風格：靠北版與正經版內容不同、且兩版各自二次生成逐字一致（零 rng 確定性）
+   ④ 個資護欄：戰績文字不含本名/信箱/本機路徑等任何個資痕跡
+   ⑤ CTA：githubCtaHTML 連到 tingyi365 公開 repo、target=_blank、不含個資以外資訊 */
+let r47OK = false;
+try {
+  const r47Raw = vm.runInContext(`(function(){
+    const out={};
+    out.fnDef = typeof buildBragText==='function' && typeof copyBragText==='function' && typeof githubCtaHTML==='function';
+    startGame(); S.age=72; ensureState(S);
+    let oR=rng; rng=()=>0.5; if(S.alive) die(); rng=oR;
+    const plain=buildBragText('plain'), salty=buildBragText('salty');
+    out.link  = plain.indexOf('https://earthlife.pages.dev')>=0 && salty.indexOf('https://earthlife.pages.dev')>=0;
+    out.body  = plain.indexOf('享年 72 歲')>=0 && plain.indexOf('評級')>=0 && /成就 \\d+ 枚/.test(plain);
+    out.styles = plain!==salty;
+    out.deter = plain===buildBragText('plain') && salty===buildBragText('salty');
+    const pii=/tingyi|gmail|8252683|C:\\\\|Users\\\\/i;
+    out.noPII = !pii.test(plain) && !pii.test(salty);
+    const cta=githubCtaHTML();
+    out.cta = cta.indexOf('https://github.com/tingyi365/earthlife')>=0 && cta.indexOf('target="_blank"')>=0
+           && !/gmail|8252683|C:\\\\|Users\\\\/i.test(cta);
+    return JSON.stringify(out);
+  })()`, sandbox);
+  const r47 = JSON.parse(r47Raw);
+  r47OK = Object.values(r47).every(v => v === true);
+  console.log(`R47 精華戰績與開源導流: ${r47OK ? '✅ 全數通過' : '❌ ' + JSON.stringify(r47)}`);
+} catch (e) {
+  console.log('R47 精華戰績與開源導流: ❌ ' + e.message);
+}
+
 if (__errors.length) {
   console.log('\n--- 錯誤樣本(前5) ---');
   __errors.slice(0, 5).forEach(e => console.log('  ' + e));
@@ -1621,6 +1653,6 @@ if (__errors.length) {
 
 /* 退出碼 */
 const pass = __errors.length === 0 && chk.missingScenes.length === 0 && chk.eventVisible >= 126 && chk.eventTotal >= 126 && lsOK && achUnlocked > 0
-  && chk.deathbookMissing.length === 0 && chk.deathTotal >= 17 && deathsOK && rebirthOK && legacyOK && petOK && r13OK && r17OK && r20OK && r21OK && r22OK && r24OK && r25OK && r34OK && r38OK && r41OK && r42OK && r43OK && r44OK && r45OK && r46OK;
+  && chk.deathbookMissing.length === 0 && chk.deathTotal >= 17 && deathsOK && rebirthOK && legacyOK && petOK && r13OK && r17OK && r20OK && r21OK && r22OK && r24OK && r25OK && r34OK && r38OK && r41OK && r42OK && r43OK && r44OK && r45OK && r46OK && r47OK;
 console.log('\n結果: ' + (pass ? '✅ 全數通過' : '❌ 有項目未通過'));
 process.exit(pass ? 0 : 1);

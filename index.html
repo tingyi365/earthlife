@@ -6418,7 +6418,8 @@ function screenStart(){
       <p class="muted" style="margin-top:10px">本帳號已洗掉 ${SAVE.plays||0} 隻角色 · 每個選擇都會改寫屬性與後續支線</p>
     </div>
     ${historyHTML()}
-    <footer>單檔離線可玩 · 梗圖皆內嵌自製 · 伺服器永不維修 · M3</footer>
+    <footer>單檔離線可玩 · 梗圖皆內嵌自製 · 伺服器永不維修 · M3<br>
+    🤖 AI 每 30 分鐘自我進化 · <a href="${GITHUB_URL}" target="_blank" rel="noopener" style="color:inherit">GitHub 開源，好玩給顆 ⭐</a></footer>
   `;
 }
 
@@ -8310,6 +8311,8 @@ function screenSummary(cat){
         ${S.challenge?`<button class="btn" onclick="startChallenge()">📅 不服，再戰今日種子</button>`:""}
         ${S.battle?`<button class="btn" onclick="startSeedBattle('${S.battle.code}')">⚔️ 不服，再戰這條種子</button>`:""}
         ${(S.seed&&!S.battle&&!S.challenge)?`<button class="btn sec" onclick="startSeedBattle('${S.seed}')">⚔️ 拿這條種子開對戰（裸裝重打）</button>`:""}
+        <button class="btn" onclick="copyBragText(this,'plain')">⚡ 複製精華戰績（正經版 · 短到限動都放得下）</button>
+        <button class="btn" onclick="copyBragText(this,'salty')">🌶️ 複製精華戰績（靠北版 · 貼群必引戰）</button>
         <button class="btn" onclick="copyRoastCard(this)">🃏 一鍵複製分享卡（台味嘲諷版，貼群比慘）</button>
         <button class="btn" onclick="copyShareTextCard(this)">📇 一鍵分享文字卡（含墓誌銘＋種子碼）</button>
         <button class="btn" onclick="makeShareCard()">📤 生成分享卡（存圖丟群）</button>
@@ -8328,6 +8331,7 @@ function screenSummary(cat){
       </div>
     </div>
     ${logHTML()}
+    ${githubCtaHTML()}
     <footer>生成分享卡或比拼連結丟群組 · 看看誰活得最荒誕</footer>
   `;
   // R8 結算演出音：成就解鎖叮 / 新死法入手音（與死亡低沉音錯開，音量克制）
@@ -9030,6 +9034,7 @@ function shareTip(){
    測試 sandbox 無這些全域時自動降級，不影響模擬。
    ========================================================================= */
 const SHARE_URL = "earthlife.pages.dev";
+const GITHUB_URL = "https://github.com/tingyi365/earthlife";   /* R47 開源導流（公開帳號 URL，非個資） */
 const ATTRCOL = {hp:'#ff5a6e',int:'#4aa8ff',apr:'#ff7ac6',mny:'#ffcc44',hap:'#46e08a'};
 
 function stripTags(s){ return String(s==null?"":s).replace(/<[^>]*>/g,"").trim(); }
@@ -9634,6 +9639,91 @@ function copyShareTextCard(btn){
     }
   }catch(e){}
   fallback();
+}
+
+/* =========================================================================
+   R47 精華戰績文字：把一生濃縮成 6~9 行、貼 LINE/IG 限動/Discord 都好讀的純文字。
+   兩種風格：plain 正經版 / salty 靠北版。開場與收尾走查表＋lifeHash 雜湊定選，
+   內容全讀既有結算資料（稱號/壽命/評級/這一生之最/本局成就數/世代/緣分），
+   零裸 rng、不碰任何遊戲數值——同一生兩次複製逐字一致。
+   文末固定帶遊戲連結，貼出去就是入口。
+   ========================================================================= */
+const R47_OPEN = {
+  plain: ["🌍【地球Online 人生戰績】"],
+  salty: [
+    "🌍【地球Online 戰績出土】笑死，先看完再嘴",
+    "🌍【地球Online 驗屍報告】本人親簽，假一賠十",
+    "🌍【地球Online 戰績】手機先放下，這份比你的年終精彩",
+  ],
+};
+const R47_CLOSE = {
+  plain: [
+    "你也來活一條 → https://" + SHARE_URL,
+    "換你登入地球 → https://" + SHARE_URL,
+  ],
+  salty: [
+    "不服來戰，活贏我再說 → https://" + SHARE_URL,
+    "敢笑我？先把你的戰績貼出來 → https://" + SHARE_URL,
+    "看完不玩，等於默認活輸我 → https://" + SHARE_URL,
+  ],
+};
+function buildBragText(style){
+  const salty = style === "salty";
+  const a=S.attr, sum=a.hp+a.int+a.apr+a.mny+a.hap, grade=curGrade();
+  const b=(S.badge)||lifeBadge();
+  const ex=lifeExtremes();
+  const lines=[ lifePick(R47_OPEN[salty?"salty":"plain"], "r47open") ];
+  if(b) lines.push(`🏅 ${b.tier} 稱號「${b.nm}」`);
+  lines.push(salty
+    ? `⏳ 撐了 ${S.age} 年才被踢下線 · 評級 ${grade}（${sum}/500）`
+    : `⏳ 享年 ${S.age} 歲 · 評級 ${grade}（${sum}/500）`);
+  if(ex.best)  lines.push(salty
+    ? `🌟 ${ex.best.age} 歲巔峰「${ex.best.ev}」——之後就沒有之後了`
+    : `🌟 最風光：${ex.best.age} 歲「${ex.best.ev}」`);
+  if(ex.worst) lines.push(salty
+    ? `🌧️ ${ex.worst.age} 歲翻車「${ex.worst.ev}」——當場社會性死亡`
+    : `🌧️ 最低谷：${ex.worst.age} 歲「${ex.worst.ev}」`);
+  const achN=qualifiedAch().length;
+  lines.push(salty ? `🏆 成就 ${achN} 枚，比我戶頭的數字有料` : `🏆 本局解鎖成就 ${achN} 枚`);
+  if((S.gen||0)>=2) lines.push(salty
+    ? `🏠 家族第 ${S.gen} 代——祖傳的不是房，是劇本`
+    : `🏠 家族第 ${S.gen} 代傳人`);
+  const f=S.flags||{}, fates=[];   // R43 緣分圓滿摘要（純讀旗標零 rng，未走完整局自動省略）
+  if(f.r43_cmfin) fates.push("鄰居阿珠");
+  if(f.r43_rvfin) fates.push("死對頭阿標");
+  if(f.r43_ftfin) fates.push("半仙伯");
+  if(fates.length) lines.push(`🏮 一生緣分圓滿：${fates.join("、")}`);
+  lines.push(lifePick(R47_CLOSE[salty?"salty":"plain"], "r47close"));
+  return lines.join("\n");
+}
+function copyBragText(btn, style){
+  let txt; try{ txt=buildBragText(style); }catch(e){ alert("戰績生成失敗："+(e&&e.message||e)); return; }
+  try{   // 共用 R17「人生甩賣員」分享計數，行為與其他分享按鈕一致
+    SAVE.sharecards=(SAVE.sharecards||0)+1;
+    if(!SAVE.ach.sharecard){ SAVE.ach.sharecard=true; recFound("a","sharecard",{w:SAVE.plays||0}); try{ sfxLater("ach",200); }catch(e){} }
+    persist();
+  }catch(e){}
+  const done=()=>{
+    if(!btn) return;
+    if(!btn.dataset.orig) btn.dataset.orig=btn.innerHTML;
+    btn.innerHTML="✅ 戰績已複製，貼出去吧！";
+    setTimeout(()=>{ if(btn.dataset.orig) btn.innerHTML=btn.dataset.orig; },2600);
+  };
+  const fallback=()=>{
+    let ok=false; try{ ok=legacyCopy(txt); }catch(e){}
+    if(ok) done(); else { try{ textReportOverlay(txt); }catch(e){} }
+  };
+  try{
+    if(typeof navigator!=="undefined"&&navigator.clipboard&&navigator.clipboard.writeText){
+      navigator.clipboard.writeText(txt).then(done, fallback);
+      return;
+    }
+  }catch(e){}
+  fallback();
+}
+/* R47 開源導流：一行低調 CTA（只放結算畫面與主選單頁尾，不彈窗不打斷） */
+function githubCtaHTML(){
+  return `<p class="muted" style="margin-top:10px;font-size:12px;text-align:center">🤖 這遊戲由 AI 每 30 分鐘自我進化 · <a href="${GITHUB_URL}" target="_blank" rel="noopener" style="color:var(--accent,#ffd24a);text-decoration:none">開源在 GitHub，覺得好玩給顆 ⭐</a></p>`;
 }
 
 /* =========================================================================
