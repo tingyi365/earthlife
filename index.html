@@ -585,6 +585,50 @@
   /* ⑤ 一致性：鍵盤/輔助操作焦點圈統一走品牌紫 */
   .btn:focus-visible,.choice:focus-visible,.ctab:focus-visible{outline:2px solid var(--accent2); outline-offset:2px;}
   .choice{overflow-wrap:anywhere;}
+
+  /* =======================================================================
+     R40 翻圖鑑・讀一生（純視覺零邏輯）：
+     ① 收藏館「全部/已解鎖/未解鎖」篩選列 ② 圖鑑分組小節標題
+     ③ 未解鎖剪影視覺層次（虛線框＋斜體線索） ④ 時間軸人生階段分隔條
+     ======================================================================= */
+  /* ① 收藏館篩選列（可點面積 ≥40px，手機好按） */
+  .collfilter{display:flex; gap:6px; margin:10px 0 0;}
+  .cfbtn{flex:1 1 0; min-width:0; min-height:40px; border-radius:999px; border:1px solid var(--line);
+    background:var(--panel2); color:var(--sub); font-weight:800; font-size:12px; cursor:pointer; transition:.15s;}
+  .cfbtn:hover{border-color:var(--accent2,#8b6cff);}
+  .cfbtn.on{border-color:var(--accent); color:var(--accent); background:rgba(255,210,74,.1);
+    box-shadow:0 0 10px rgba(255,210,74,.14);}
+  .cfbtn .n{opacity:.85; font-size:10.5px; margin-left:3px; font-weight:700;}
+  .cfbtn:focus-visible{outline:2px solid var(--accent2); outline-offset:2px;}
+  .collempty{text-align:center; color:var(--sub); font-size:13px; padding:20px 0 10px;}
+  /* ② 圖鑑分組小節標題（死法館：一般／稀有／節令） */
+  .collsec{display:flex; align-items:center; gap:8px; margin:14px 0 2px; font-size:12.5px; font-weight:900;
+    letter-spacing:1.5px; color:#aab1d6;}
+  .collsec::before{content:""; flex:0 0 16px; height:1px; background:var(--line2,#3a3f66);}
+  .collsec::after{content:""; flex:1; height:1px; background:linear-gradient(90deg,var(--line2,#3a3f66),transparent);}
+  .collsec .cnt{font-size:10.5px; color:var(--sub); font-weight:700; letter-spacing:.3px;}
+  .collsec.sec-rare{color:var(--accent,#ffd24a);}
+  .collsec.sec-season{color:#7fd7ff;}
+  /* ③ 未解鎖視覺層次：虛線框＋???字距＋斜體線索，和已解鎖一眼分層 */
+  .achrow.lock{border-style:dashed;}
+  .achrow.lock b{color:#8f96c2; letter-spacing:2px;}
+  .hinttip{font-style:italic; color:#9aa0c4;}
+  .hinttip::before{content:"🔍 "; font-style:normal;}
+  /* ④ 時間軸人生階段分隔條：童年→求學→工作→中年→老年，翻一生像翻章節 */
+  .tlstage{display:flex; align-items:baseline; gap:7px; margin:13px 0 3px; font-size:13px; font-weight:900;
+    color:#b9a6ff; letter-spacing:1.5px;}
+  .tlstage::before{content:""; flex:0 0 18px; height:1px; align-self:center; background:var(--line2,#3a3f66);}
+  .tlstage::after{content:""; flex:1; height:1px; align-self:center;
+    background:linear-gradient(90deg,var(--line2,#3a3f66),transparent);}
+  .tlstage .ages{font-size:10px; color:var(--sub); font-weight:700; letter-spacing:.5px;}
+  .tllist .tlstage{margin-left:0;}
+  /* 手機直向：篩選列與分隔條字級微縮，五分頁不擠爆 */
+  .ctab{min-height:46px;}
+  @media (max-width:400px){
+    .cfbtn{font-size:11px;}
+    .tlstage{font-size:12px; letter-spacing:1px;}
+    .collsec{font-size:11.5px; letter-spacing:1px;}
+  }
 </style>
 </head>
 <body>
@@ -7474,13 +7518,19 @@ function restoreOr(fallback){
 function resumeListHTML(){
   const r = (S && S.resume) || [];
   if(!r.length) return `<p class="muted">還沒有重大選擇的紀錄，先去活出幾個決定吧。</p>`;
-  return `<div class="histlist">` + r.slice().reverse().map(x=>`
+  // R40 章節分隔：履歷由新到舊倒敘，跨人生階段時插一條章節條（同 stageIndex 切分，純顯示）
+  let rsLastStage=-1;
+  return `<div class="histlist">` + r.slice().reverse().map(x=>{
+    const si=stageIndex(x.age);
+    const chap = si!==rsLastStage ? tlStageHTML(si) : "";
+    rsLastStage=si;
+    return chap+`
     <div class="histrow" style="flex-direction:column;align-items:stretch;gap:5px">
       <div><b>${x.age} 歲</b>　<span class="muted">${x.ev}</span></div>
       <div style="font-size:13px">↪ ${x.label}</div>
       <div class="etext" style="font-size:12.5px;opacity:.85">${x.res}</div>
       ${deltaHTML(x.eff)}
-    </div>`).join("") + `</div>`;
+    </div>`;}).join("") + `</div>`;
 }
 function screenResume(){
   snapshot();
@@ -7537,16 +7587,28 @@ function lifeVerdict(){
   const pool = c.length ? c : LIFE_VERDICTS_FALLBACK;
   return pool[Math.floor(Math.random()*pool.length)];
 }
+/* R40 人生階段章節條：時間軸/履歷共用（純顯示，沿用 stageIndex 的階段切分） */
+const TL_STAGE_META=[["👶","童年","0–12 歲"],["🎒","求學","13–22 歲"],["💼","工作","23–40 歲"],["🧭","中年","41–60 歲"],["🌇","老年","61 歲起"]];
+function tlStageHTML(si){
+  const m=TL_STAGE_META[si]||TL_STAGE_META[4];
+  return `<div class="tlstage">${m[0]} ${m[1]}<span class="ages">${m[2]}</span></div>`;
+}
 function screenTimeline(){
   snapshot();
   const tl=((S&&S.tl)||[]).slice().sort((x,y)=>x.age-y.age);
+  // R40 翻故事書：依年齡跨入新人生階段時插一條章節分隔（童年→求學→工作→中年→老年）
+  let tlLastStage=-1;
   const rows = tl.length
-    ? `<div class="tllist">`+tl.map(x=>`
+    ? `<div class="tllist">`+tl.map(x=>{
+        const si=stageIndex(x.age);
+        const chap = si!==tlLastStage ? tlStageHTML(si) : "";
+        tlLastStage=si;
+        return chap+`
         <div class="tlrow lv${x.lv||0}">
           <span class="tlage">${x.age}歲</span>
           <span class="tlic">${x.ic}</span>
           <div class="tltxt">${x.txt}</div>
-        </div>`).join("")+`</div>`
+        </div>`;}).join("")+`</div>`
     : `<p class="muted">這一生過於平靜，連時間軸都是空白的——本身也算一種成就。</p>`;
   const verdict = S && !S.alive
     ? `<div class="tlverdict"><span class="vh">—— AI 一生總評 ——</span>「${lifeVerdict()}」</div>` : "";
@@ -7554,7 +7616,7 @@ function screenTimeline(){
     ${topbarHTML()}
     <div class="panel">
       <h2 class="etitle">📜 人生回顧</h2>
-      <p class="muted">這一生共留下 <b>${tl.length}</b> 個值得回頭看的瞬間　·　<span style="color:var(--accent,#ffd24a)">金＝稀有/終點</span>　藍＝里程碑</p>
+      <p class="muted">這一生共留下 <b>${tl.length}</b> 個值得回頭看的瞬間，按人生章節翻頁　·　<span style="color:var(--accent,#ffd24a)">金＝稀有/終點</span>　藍＝里程碑</p>
       ${rows}
       ${verdict}
       <div class="choices" style="margin-top:14px">
@@ -7616,8 +7678,25 @@ function collBarHTML(got,total){
     <p class="collhint">${hint}</p>`;
 }
 let COLL_TAB = "death";
+let COLL_FILTER = "all";   // R40 圖鑑篩選：all=全部 / got=已解鎖 / lock=未解鎖（純顯示層，零狀態零 rng）
 function screenCollection(tab){ snapshot(); if(tab) COLL_TAB=tab; renderCollection(); }
 function collTab(tab){ COLL_TAB=tab; renderCollection(); }
+function collFilter(f){ COLL_FILTER=f; renderCollection(); }
+/* R40 未解鎖線索統一樣式（🔍＋斜體由 .hinttip 處理，視覺上和已解鎖內文一眼分層） */
+function hintTip(h){ return `<span class="hinttip">線索：${h||"尚未解鎖"}</span>`; }
+/* R40 篩選列＋套用：items=[{ok,html}]，回傳通過篩選的清單（空清單給逛館嘴砲文案） */
+function collFilterBar(items){
+  const g=items.filter(it=>it.ok).length, l=items.length-g;
+  const btn=(k,nm,n)=>`<button class="cfbtn ${COLL_FILTER===k?'on':''}" onclick="collFilter('${k}')">${nm}<span class="n">${n}</span></button>`;
+  return `<div class="collfilter">${btn("all","全部",items.length)}${btn("got","✅ 已解鎖",g)}${btn("lock","🔒 未解鎖",l)}</div>`;
+}
+function collApplyFilter(items){
+  return items.filter(it=> COLL_FILTER==="got" ? it.ok : COLL_FILTER==="lock" ? !it.ok : true);
+}
+const COLL_EMPTY = {
+  got:`<div class="collempty">這一館還一個都沒解鎖——快去輪迴幾趟，館長等你的捐贈。</div>`,
+  lock:`<div class="collempty">🎉 全數解鎖，沒有漏網之魚——這一館被你逛成了自家客廳。</div>`,
+};
 function collRow(ok,isNew,icon,name,metaTags,body,note,revealName){
   return `<div class="achrow ${ok?'got':'lock'}${isNew?' collnew':''}">
     <span class="aic${ok?'':' sil'}">${icon}</span>
@@ -7638,35 +7717,35 @@ function renderCollection(){
   const tabBar = `<div class="colltabs">${tabs.map(([k,ic,nm,g,t])=>
     `<button class="ctab ${COLL_TAB===k?'on':''}" onclick="collTab('${k}')">
       <span class="ci">${ic}</span><span class="cn">${nm}</span><span class="cc">${g}/${t}</span></button>`).join("")}</div>`;
-  let title, sub, got, total, rows, extra="";
+  let title, sub, got, total, rows, extra="", items;
   if(COLL_TAB==="ach"){
     title="🏆 成就牆"; sub="跨輪迴累計解鎖。未解鎖的只給剪影和一句線索，自己活出來。";
     got=st.a; total=ACHIEVEMENTS.length;
-    rows = ACHIEVEMENTS.map(x=>{
+    items = ACHIEVEMENTS.map(x=>{
       const ok=!!SAVE.ach[x.id];
-      return collRow(ok, ok&&isNewFound("a",x.id), x.ic, x.nm, "",
-        ok?x.desc:("線索："+(x.hint||"尚未解鎖")), foundNote("a",x.id));
-    }).join("");
+      return {ok, html:collRow(ok, ok&&isNewFound("a",x.id), x.ic, x.nm, "",
+        ok?x.desc:hintTip(x.hint), foundNote("a",x.id))};
+    });
   } else if(COLL_TAB==="origin"){
     title="🎴 出身圖鑑"; sub="投胎轉蛋機的全部出生點。集滿一輪，從天龍區到離島都當過囝仔。";
     got=st.o; total=ORIGINS.length;
-    rows = ORIGINS.map(o=>{
+    items = ORIGINS.map(o=>{
       const ok=!!(SAVE.origins||{})[o.id];
       const chips = `<div class="delta" style="margin-top:5px">${Object.entries(o.eff).map(([k,v])=>
         `<span class="chip ${v>0?'up':'dn'}">${ATTR[k].ic}${v>0?"+":""}${v}</span>`).join("")}</div>`;
-      return collRow(ok, ok&&isNewFound("o",o.id), o.ic, o.nm, "",
-        ok?(o.open+chips):("線索："+(ORIGIN_HINTS[o.id]||"再多投胎幾次就遇得到…")), foundNote("o",o.id));
-    }).join("");
+      return {ok, html:collRow(ok, ok&&isNewFound("o",o.id), o.ic, o.nm, "",
+        ok?(o.open+chips):hintTip(ORIGIN_HINTS[o.id]||"再多投胎幾次就遇得到…"), foundNote("o",o.id))};
+    });
   } else if(COLL_TAB==="talent"){
     const r=rebirthData(), eq=rebirthEquipped();
     title="🔄 天賦架"; sub=`轉生殿的永久天賦收藏架。目前持有 ${r.pts} 輪迴點，要兌換或換裝請到轉生殿。`;
     got=st.r; total=REBIRTH_TALENTS.length;
-    rows = REBIRTH_TALENTS.map(t=>{
+    items = REBIRTH_TALENTS.map(t=>{
       const ok=!!r.talents[t.id], on=eq.indexOf(t.id)>=0;
       const tag = ok?(on?`　<span style="color:var(--good,#39ff88);font-size:11px">【裝備中】</span>`:"")
                     :`　<span style="color:var(--accent,#ffd24a);font-size:11px">【需 ${t.cost} 點】</span>`;
-      return collRow(ok, ok&&isNewFound("r",t.id), t.ic, t.nm, tag, t.desc, foundNote("r",t.id), true);
-    }).join("");
+      return {ok, html:collRow(ok, ok&&isNewFound("r",t.id), t.ic, t.nm, tag, t.desc, foundNote("r",t.id), true)};
+    });
     extra = `<button class="btn sec" style="margin-top:10px" onclick="screenRebirth()">🔄 前往轉生殿兌換／換裝（${r.pts} 點可花）</button>`;
   } else if(COLL_TAB==="badge"){
     /* R31 稱號名人堂：純讀 SAVE.badges 與 LIFE_BADGES，零 rng 零狀態改動 */
@@ -7674,25 +7753,41 @@ function renderCollection(){
     got=st.b; total=LIFE_BADGES.length;
     const gb=SAVE.badges||{};
     const tierCol={SSR:"#ffd24a",SR:"#7fd7ff",R:"#cfd3e6",N:"#9aa0b5"};
-    rows = LIFE_BADGES.map(b=>{
+    items = LIFE_BADGES.map(b=>{
       const ok=!!gb[b.id], t=BADGE_TIERS[b.tier]||BADGE_TIERS.N;
       const tag = `　<span style="color:${tierCol[b.tier]||"#9aa0b5"};font-size:11px">【${t.nm}】</span>`
         + (ok&&gb[b.id]>1?`　<span style="color:var(--good,#39ff88);font-size:11px">×${gb[b.id]}</span>`:"");
       const hint=BADGE_HINTS[b.id]||"多換幾種活法，總有一世會領到…";
-      return collRow(ok, false, t.ic, b.nm, tag, ok?hint:("線索："+hint), "");
-    }).join("");
+      return {ok, html:collRow(ok, false, t.ic, b.nm, tag, ok?hint:hintTip(hint), "")};
+    });
   } else {
     title="💀 死法圖鑑"; sub="每種登出方式都值得收藏。未收集的只剩剪影，死過才知道全貌。";
     got=st.d; total=DEATHBOOK.length;
     const gd=SAVE.deaths||{};
-    rows = DEATHBOOK.map(d=>{
+    items = DEATHBOOK.map(d=>{
       const ok=!!gd[d.id];
       const tag = (d.rare?`　<span style="color:var(--accent,#ffd24a);font-size:11px">【稀有】</span>`:"")
                 + (d.season?`　<span style="color:#7fd7ff;font-size:11px">【${d.season}】</span>`:"");
-      return collRow(ok, ok&&isNewFound("d",d.id), d.ic, d.nm, tag,
-        ok?d.reason:("線索："+d.hint), foundNote("d",d.id));
-    }).join("");
+      return {ok, grp:(d.season?"season":d.rare?"rare":"norm"),
+        html:collRow(ok, ok&&isNewFound("d",d.id), d.ic, d.nm, tag,
+          ok?d.reason:hintTip(d.hint), foundNote("d",d.id))};
+    });
   }
+  /* R40 篩選＋分組組裝：死法館依 一般/稀有/節令 分組（小節標題帶各組解鎖數），其餘館平鋪 */
+  const filterBar = collFilterBar(items);
+  if(COLL_TAB==="death"){
+    const grpDef=[["norm","💀 一般死法",""],["rare","✨ 稀有死法","sec-rare"],["season","🗓️ 節令限定","sec-season"]];
+    rows = grpDef.map(([g,label,cls])=>{
+      const all=items.filter(it=>it.grp===g), show=collApplyFilter(all);
+      if(!show.length) return "";
+      const gn=all.filter(it=>it.ok).length;
+      return `<div class="collsec ${cls}"><span>${label}</span><span class="cnt">${gn} / ${all.length}</span></div>`
+        + show.map(it=>it.html).join("");
+    }).join("");
+  } else {
+    rows = collApplyFilter(items).map(it=>it.html).join("");
+  }
+  if(!rows) rows = COLL_EMPTY[COLL_FILTER] || "";
   $("#app").innerHTML = `
     ${topbarHTML()}
     ${renderMeme("luck","收藏館",`全館收集 ${st.got} / ${st.total}`,"🗃️")}
@@ -7704,6 +7799,7 @@ function renderCollection(){
         <h2 class="etitle" style="font-size:15px">${title}</h2>
         <p class="muted" style="margin:0 0 4px">${sub}</p>
         ${collBarHTML(got,total)}
+        ${filterBar}
         <div class="achlist" style="margin-top:10px">${rows}</div>
         ${extra}
       </div>
