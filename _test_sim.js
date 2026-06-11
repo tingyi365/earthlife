@@ -1047,6 +1047,100 @@ try {
   console.log('R38 隱藏彩蛋: ❌ ' + e.message);
 }
 
+/* ---- R41 人生志向探針（強制路徑，不靠隨機抽中）----
+   ① 結構：志向 8~12 個、欄位完整（fit/prog/done/win/fail）、id 唯一；11 成就 hint 配齊
+   ② 確定性：同種子兩次開局 → 同志向同候選池；開局卡顯示志向＋重抽鈕
+   ③ 重抽限 1 次：換池內次名、第二次無效、鈕消失
+   ④ 零 rng：進度塊渲染＋全志向 fit/prog/done 不消耗 rng/Math.random；statsHTML 掛載
+   ⑤ 抉擇事件：年齡 gating／once／堅持不換志向／轉向換池內次一未立過志向＋代價＋計數
+   ⑥ 結算：達成 → ✅＋榮耀結語＋r41_* 成就；未達成 → ❌＋自嘲結語；舊存檔無 wishId → 面板/進度塊/事件全省略不炸 */
+let r41OK = false;
+try {
+  const r41Raw = vm.runInContext(`(function(){
+    const out={};
+    /* ① 結構 */
+    out.count = R41_WISHES.length>=8 && R41_WISHES.length<=12;
+    out.fields = R41_WISHES.every(w=>w.id&&w.ic&&w.nm&&w.desc&&w.goal&&typeof w.fit==='function'&&typeof w.prog==='function'&&typeof w.done==='function'&&typeof w.win==='string'&&w.win.length>10&&typeof w.fail==='string'&&w.fail.length>10);
+    out.uniq = new Set(R41_WISHES.map(w=>w.id)).size===R41_WISHES.length;
+    out.achDef = R41_WISHES.every(w=>ACH_MAP['r41_'+w.id] && ACH_MAP['r41_'+w.id].hint && String(ACH_MAP['r41_'+w.id].hint).length>4);
+    /* ② 同種子確定性 */
+    startSeedBattle('K7PQ2X');
+    const w1=S.wishId, p1=(S.wishPool||[]).join(',');
+    out.init = !!w1 && Array.isArray(S.wishPool) && S.wishPool.length===R41_WISHES.length && (S.wishHist||[])[0]===w1 && S.flags.r41wish===true;
+    startSeedBattle('K7PQ2X');
+    out.det = S.wishId===w1 && (S.wishPool||[]).join(',')===p1;
+    let h=document.querySelector('#app').innerHTML;
+    out.birthCard = h.includes('人生志向') && h.includes('r41Reroll');
+    /* ③ 重抽限一次 */
+    r41Reroll();
+    const w2=S.wishId;
+    out.reroll = w2===p1.split(',')[1] && S.wishRerolled===true && w2!==w1;
+    r41Reroll();
+    out.rerollOnce = S.wishId===w2;
+    out.rerollBtnGone = !document.querySelector('#app').innerHTML.includes('r41Reroll()');
+    /* ④ 零 rng */
+    let used=0,mused=0; const oldR=rng,oldM=Math.random;
+    rng=function(){used++;return oldR();}; Math.random=function(){mused++;return oldM();};
+    const ph=r41ProgHTML(); R41_WISHES.forEach(w=>{w.fit(S);w.prog(S);w.done(S);});
+    rng=oldR; Math.random=oldM;
+    out.zeroRandom = used===0 && mused===0;
+    out.progBox = ph.includes('wishbox') && ph.includes('志向：') && /\\d+%/.test(ph);
+    out.inStats = statsHTML().includes('wishbox');
+    /* ⑤ 抉擇事件 */
+    startGame(); S.age=30; ensureState(S);
+    out.doubtIn = eligible().some(e=>e.id==='cb_r41_doubt');
+    out.crossGate = !eligible().some(e=>e.id==='cb_r41_cross');
+    const keep=S.wishId;
+    showEvent(EVENTS.find(e=>e.id==='cb_r41_doubt')); choose(0);
+    out.persist = S.flags.r41_d1===true && S.flags.r41_persist===true && S.wishId===keep;
+    out.doubtOnce = !eligible().some(e=>e.id==='cb_r41_doubt');
+    S.age=50;
+    out.crossIn = eligible().some(e=>e.id==='cb_r41_cross');
+    const before=S.wishId, expect=S.wishPool.find(id=>id!==before && (S.wishHist||[]).indexOf(id)<0);
+    const hap0=S.attr.hap;
+    showEvent(EVENTS.find(e=>e.id==='cb_r41_cross')); choose(1);
+    out.pivot = S.wishId===expect && S.wishId!==before && S.flags.r41pivot===1 && S.flags.r41_d2===true && (S.wishHist||[]).indexOf(before)>=0;
+    out.pivotCost = S.attr.hap<hap0;
+    out.pivotText = document.querySelector('#app').innerHTML.indexOf('🧭')>=0;
+    /* 舊存檔相容：無 wishId → 事件不進池、進度塊省略 */
+    startGame(); S.age=30; ensureState(S);
+    delete S.wishId; delete S.wishPool; delete S.wishHist;
+    out.compatPool = !eligible().some(e=>e.id==='cb_r41_doubt'||e.id==='cb_r41_cross');
+    out.compatStats = statsHTML().indexOf('wishbox')<0;
+    /* ⑥ 結算：達成 → 榮耀＋成就 */
+    delete SAVE.ach.r41_live90;
+    startGame(); S.age=92; ensureState(S);
+    for(const k in S.attr) S.attr[k]=60;
+    S.wishId='live90'; S.wishPool=R41_WISHES.map(w=>w.id); S.wishHist=['live90'];
+    const oR=rng; rng=()=>0.5; die(); rng=oR;
+    out.doneFlag = S.wishDone===true;
+    h=document.querySelector('#app').innerHTML;
+    out.sumWin = h.includes('志向結算') && h.includes('✅ 達成') && h.includes(R41_MAP.live90.win);
+    out.achWin = SAVE.ach.r41_live90===true && (S.newAch||[]).indexOf('r41_live90')>=0;
+    /* 未達成 → 自嘲、成就不解鎖 */
+    delete SAVE.ach.r41_house;
+    startGame(); S.age=40; ensureState(S);
+    for(const k in S.attr) S.attr[k]=60;
+    S.wishId='house'; S.wishPool=R41_WISHES.map(w=>w.id); S.wishHist=['house'];
+    const oR2=rng; rng=()=>0.5; die(); rng=oR2;
+    out.failFlag = S.wishDone===false;
+    h=document.querySelector('#app').innerHTML;
+    out.sumFail = h.includes('❌ 未達成') && h.includes(R41_MAP.house.fail);
+    out.achFailNeg = !SAVE.ach.r41_house && (S.newAch||[]).indexOf('r41_house')<0;
+    /* 舊存檔無 wishId → 結算面板省略、die 不炸 */
+    startGame(); S.age=40; ensureState(S);
+    delete S.wishId;
+    const oR3=rng; rng=()=>0.5; die(); rng=oR3;
+    out.compatSum = !document.querySelector('#app').innerHTML.includes('志向結算');
+    return JSON.stringify(out);
+  })()`, sandbox);
+  const r41 = JSON.parse(r41Raw);
+  r41OK = Object.values(r41).every(v => v === true);
+  console.log(`R41 人生志向: ${r41OK ? '✅ 全數通過' : '❌ ' + JSON.stringify(r41)}`);
+} catch (e) {
+  console.log('R41 人生志向: ❌ ' + e.message);
+}
+
 if (__errors.length) {
   console.log('\n--- 錯誤樣本(前5) ---');
   __errors.slice(0, 5).forEach(e => console.log('  ' + e));
@@ -1054,6 +1148,6 @@ if (__errors.length) {
 
 /* 退出碼 */
 const pass = __errors.length === 0 && chk.missingScenes.length === 0 && chk.eventVisible >= 126 && chk.eventTotal >= 126 && lsOK && achUnlocked > 0
-  && chk.deathbookMissing.length === 0 && chk.deathTotal >= 17 && deathsOK && rebirthOK && legacyOK && petOK && r13OK && r17OK && r20OK && r21OK && r22OK && r24OK && r25OK && r34OK && r38OK;
+  && chk.deathbookMissing.length === 0 && chk.deathTotal >= 17 && deathsOK && rebirthOK && legacyOK && petOK && r13OK && r17OK && r20OK && r21OK && r22OK && r24OK && r25OK && r34OK && r38OK && r41OK;
 console.log('\n結果: ' + (pass ? '✅ 全數通過' : '❌ 有項目未通過'));
 process.exit(pass ? 0 : 1);

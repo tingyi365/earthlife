@@ -18,6 +18,7 @@
 <!-- R36_EVOLVE（屬性驅動化：數值系統存在感全面拉高）：①16 個高頻既有事件加屬性門檻選項（firstlove外貌68/puberty智力60/lottery財富75/army健康75/health_decline健康72/marathon健康80/kid_firstday外貌70/rl_oldlove財富78/rl_kidback智力75/cram_school智力70/first_salary智力65/dating_app外貌72/cny_redpacket智力55/fan_concert財富70/machine_island健康70/cny_marriage_push財富80），全走 cond+gate:true 確定性門檻、零裸 rng，自動串既有 gateWin 成就/稱號；文案台味自嘲（談判桌叛逆期/紅包借據/鈔能力包牌/武嶺攻頂）。②3 個屬性軌跡分流結局進 die()（門檻確定性、不消耗 rng）：高智92+且70歲前爆肝死→mindburnout 智者燃盡、高財85+低樂30-壽終→goldlonely 金山孤塔、高樂90+低財20-且巔峰財富≤50壽終→zenpoor 快樂歸西；進 SPECIAL_DEATHS+DEATHBOOK（附 hint）+3 成就 r36_mindburn/r36_goldtower/r36_zenmaster（ACH_HINTS 配齊）。③結算新記憶點「🪪 屬性人格認證」attrPersonaHTML()：一生巔峰最高屬性×谷底最低屬性查 R36_PERSONA 20 格人格表發卡（爆肝學霸/精緻窮天花板/金山上的憂鬱富豪…），巔峰谷底差<25 發「全勤平衡型玩家」，純 S.peak/S.low 查表零 rng，插在屬性人生回顧上方。未刪未改既有內容與數值，舊存檔零影響。 -->
 <!-- R33_EVOLVE（UI/節奏手感打磨，純顯示層零邏輯）：①fmtStory 文案排版層——事件/結果長文自動分段（句末標點+引號深度判斷、尾段防孤行）、屬性關鍵字按五圍配色上色、『台詞』金黃高亮；只在渲染當下套用，S.resume/時間軸/分享卡/墓誌銘全拿原始字串，零 rng 消耗。②事件視覺分級——彩蛋金框脈動+「✨隱藏際遇」徽章、節令青框+節令限定徽章、cb_ 連鎖紫框、含 gate/sr/br 選項的事件掛「⚖️關鍵抉擇」徽章。③微回饋——死亡結果幕 deadend 暗紅警示框、屬性 chips 入場錯峰動畫（70ms 階差）。④375px 行動端加固——topbar logo 防溢出省略、觸控目標下限（sfxbtn 38px/btnrow 42px）、etext/resultbox/choice overflow-wrap、結果幕字級行高與事件幕統一、focus-visible 鍵盤焦點圈統一品牌紫。⑤測試確定化（只動測試探針不動遊戲邏輯）——__choiceHTML/diceProbe/deathRun 固定出身清旗標清 quirk，消除 startGame 隨機出身/權衡天賦造成的偶發紅（R29 出生旗標漏選項、qk_tie 抵銷 rb_dice、跨局計數成就 ±1 輪迴點噪音）。新增 _check_r33_mobile.js 七景 375px 截圖抽查全過。不動任何事件/數值/結局/成就/彩蛋邏輯，舊存檔零影響。 -->
 <!-- R38_EVOLVE（隱藏彩蛋＋彩蛋成就）：新增 5 顆確定性隱藏彩蛋，全部掛進既有 R32 攔截器（r32trig，零裸 rng、一局至多 2 顆、每顆一生一次護欄沿用）：egg38_funeralstar（出身 funeral × 天賦天選社牛，告別式氣氛組）、egg38_samedeath（連續兩世同一 deathId 登出觸發孟婆常客夢，新增 SAVE.deathStreak/lastDeathId 跨局計數，挑戰/對戰局不計不影響全服公平）、egg38_reaper90（90 歲 × 健康 70+ 死神勘景）、egg38_poorface（外貌 90+ × 財富 ≤10 夜市星探）、egg38_whalecare（whale × scammed 旗標 × 財富 75+ 風控 AI 白名單）。每顆配一個隱藏成就（r38_*，圖鑑未解鎖顯示 ??? ＋隱晦 hint，解鎖才揭曉），效果量級全部 ±8 內比照 R32。不動既有事件機率/權重/數值平衡、不動 R37 結算分享區與屬性系統本體、不刪任何內容；迷因全用既有場景（funeral/huhcat/death/broke/gacha）不需新圖。_test_sim 新增 R38 五蛋觸發/邊界/成就/計數探針。 -->
+<!-- R41_EVOLVE（人生志向系統）：①開局依出身/屬性確定性立 1 個「人生志向」（R41_WISHES ×11：買房上車/發大財/環遊世界/活過90/平凡終老/人生勝利組/執手偕老/萬人迷/智慧大師/快樂就好/做頭家），選志走 fit 評分＋種子雜湊抖動（零 rng 消耗、同種子同志向），開局卡可重抽 1 次（換候選池次名，限一次）。②遊戲中狀態列下常駐志向進度小塊（wishbox，prog 全走屬性/旗標/年齡確定性判定、零裸 rng），跨階段 2 個志向抉擇事件 cb_r41_doubt（24-38 歲）/cb_r41_cross（45-62 歲）走既有 cb_ 因果鏈優先池：堅持得小增益、轉向換志向但付代價（special:r41pivot 換 wishPool 次一候選，確定性零 rng）。③結算頁「🎯 志向結算」面板（插屬性人格認證後方，不擠 R24 稱號區與 R37 分享卡）：die() 內確定性達成判定 S.wishDone，達成給專屬榮耀結語、未達成給台味自嘲結語。④每志向配 1 個達成成就 r41_*（共 11 個，hint 配齊），沿用既有成就機制與 R40 篩選 UI 不改其行為。志向資料只存 id/池（純字串，續玩存檔可序列化），舊存檔無 wishId 全部 UI 自動省略、零影響。_test_sim 新增 R41 志向探針（結構/確定性/重抽/零 rng/轉向/結算/相容）納入通過條件。 -->
 <html lang="zh-Hant">
 <head>
 <meta charset="UTF-8">
@@ -629,6 +630,23 @@
     .tlstage{font-size:12px; letter-spacing:1px;}
     .collsec{font-size:11.5px; letter-spacing:1px;}
   }
+
+  /* =======================================================================
+     R41 人生志向（抱負）系統：開局立志卡 / 遊戲中常駐進度小塊 / 結算達成判定
+     ======================================================================= */
+  .wishbox{display:flex; align-items:center; gap:8px; margin:-2px 2px 8px; padding:7px 10px;
+    background:var(--panel2); border:1px solid var(--line); border-radius:10px; font-size:12px;}
+  .wishbox .wic{font-size:15px; flex:0 0 auto;}
+  .wishbox .wbody{flex:1; min-width:0;}
+  .wishbox .wnm{font-weight:800; color:#b9a6ff; letter-spacing:.5px;}
+  .wishbox .wtxt{color:var(--sub); font-size:11px; margin-top:1px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .wishbox .wbar{height:5px; border-radius:99px; background:#11131f; margin-top:4px; overflow:hidden;}
+  .wishbox .wbar i{display:block; height:100%; border-radius:99px; background:linear-gradient(90deg,#8b6cff,#ffd24a); transition:width .4s;}
+  .wishbox .wpct{flex:0 0 auto; font-weight:800; font-size:12.5px; color:var(--accent,#ffd24a);}
+  .wishcard{border:1px dashed #8b6cff; border-radius:12px; padding:10px 12px; margin-top:10px; background:rgba(139,108,255,.06);}
+  .wishcard .t{color:#b9a6ff;}
+  .wishverdict{font-size:13px; line-height:1.7; margin-top:8px;}
+  .wishverdict.win{color:var(--accent,#ffd24a);}
 </style>
 </head>
 <body>
@@ -1555,6 +1573,18 @@ const ACHIEVEMENTS = [
   {id:"r39_timebox", ic:"🥫", nm:"鐵盒裡的三十年", desc:"童年在老厝挖到的那個鐵盒，三十年後以你想不到的方式回到人生裡——原來那一天的選擇，一直在等你長大。", check:c=>!!c.S.flags.r39_boxdone},
   {id:"r39_noodle", ic:"🍢", nm:"菜尾仔的利息", desc:"年輕時欠下的那碗麵，中年回去連本帶利還清，老了被寫進滷味店的故事牆——人情帳本，圓滿結清。", check:c=>!!c.S.flags.r39_meepay},
   {id:"r39_song", ic:"🎸", nm:"寫進歌裡的名字", desc:"年輕時押在死黨身上的那筆青春，多年後在演唱會的大螢幕上連本帶利回收——他真的把你寫進去了。", check:c=>!!c.S.flags.r39_gtrmid},
+  /* ---- R41 人生志向達成成就（開局立的志、結算驗的收；wishDone 在 die() 確定性判定、零裸 rng）---- */
+  {id:"r41_house",  ic:"🏠", nm:"說好的厝・真的買了", desc:"開局立志買房上車，謝幕前真的把名字寫上權狀——在這座島上，這是比中樂透更勵志的劇本。", check:c=>!!(c.S.wishId==="house"&&c.S.wishDone), hint:"開局立志買房的人很多，真的把權狀拿到手再來謝幕的…"},
+  {id:"r41_rich",   ic:"🤑", nm:"發大財・說到做到", desc:"立志發大財，然後真的發了——巔峰財富 85+ 的對帳單，就是你寫給年輕自己的回信。", check:c=>!!(c.S.wishId==="rich"&&c.S.wishDone), hint:"有一種志向叫發大財——喊出來不稀奇，存摺證明才算數…"},
+  {id:"r41_travel", ic:"✈️", nm:"地球儀打卡完賽", desc:"立志環遊世界，最後護照真的蓋滿章——你把『以後再說』活成了『我去過了』。", check:c=>!!(c.S.wishId==="travel"&&c.S.wishDone), hint:"把環遊世界寫進志向欄，然後真的出發——護照不會自己長腳…"},
+  {id:"r41_live90", ic:"🐢", nm:"立志長壽・言出必行", desc:"開局就立志活過 90，然後真的活過去了——對自己壽命下的注，你全押全中。", check:c=>!!(c.S.wishId==="live90"&&c.S.wishDone), hint:"立志活過 90 的人，要嘛保溫杯不離手，要嘛說到做到…"},
+  {id:"r41_plain",  ic:"🍚", nm:"平凡終老・地獄級通關", desc:"立志平凡終老並真的辦到：沒上新聞、沒進稀有圖鑑、安穩活過 70——在這個瘋狂伺服器裡，無事就是神蹟。", check:c=>!!(c.S.wishId==="plain"&&c.S.wishDone), hint:"最難的志向其實是『什麼大事都別發生』——試著把日子過成白飯…"},
+  {id:"r41_winner", ic:"👑", nm:"自己立的勝利組 Flag", desc:"開局立志當人生勝利組，結算總分真的衝破 380——自己插的旗，自己親手收割。", check:c=>!!(c.S.wishId==="winner"&&c.S.wishDone), hint:"敢開局就立志當勝利組的，要嘛被打臉，要嘛總分 380 走人…"},
+  {id:"r41_love",   ic:"💞", nm:"白頭偕老・志向兌現", desc:"立志執手偕老，60 歲那年牽著的還是同一隻手——婚姻這款地獄副本，你打出了白金結局。", check:c=>!!(c.S.wishId==="love"&&c.S.wishDone), hint:"把白頭偕老寫進志向欄，然後把婚姻撐過 60 歲那條線…"},
+  {id:"r41_fame",   ic:"🌟", nm:"萬人迷養成計畫達標", desc:"立志成為萬人迷，最後顏值衝破 90（或流量認證）——這份回頭率，是你自己許願自己還願。", check:c=>!!(c.S.wishId==="fame"&&c.S.wishDone), hint:"立志萬人迷的路有兩條：把臉練到 90，或把流量做起來…"},
+  {id:"r41_brain",  ic:"🧠", nm:"智慧大師・畢業認證", desc:"立志成為智慧大師，最後智力衝破 90（或頂大畢業）——這顆腦袋，從志向欄一路長到天花板。", check:c=>!!(c.S.wishId==="brain"&&c.S.wishDone), hint:"立志靠腦袋活著的人，要嘛把智力練破 90，要嘛把頂大讀出來…"},
+  {id:"r41_happy",  ic:"😄", nm:"快樂就好・真的做到", desc:"立志快樂就好，謝幕那刻快樂還穩穩 80+——全場都在捲，只有你笑著通關。", check:c=>!!(c.S.wishId==="happy"&&c.S.wishDone), hint:"志向寫快樂就好的人不少，謝幕那刻快樂還在 80 以上的…"},
+  {id:"r41_boss",   ic:"🍵", nm:"頭家夢・開張大吉", desc:"立志自己做頭家，這輩子真的開了張——從此慣老闆是自己，全年無休也姓自己的姓。", check:c=>!!(c.S.wishId==="boss"&&c.S.wishDone), hint:"立志當頭家的，總得真的開過一次店（或創過一次業）…"},
 ];
 const ACH_MAP = {}; ACHIEVEMENTS.forEach(a=>ACH_MAP[a.id]=a);
 
@@ -5744,6 +5774,26 @@ function buildEvents(){ return [
       {label:"翻出你媽收在鐵櫃的那張《投資契約書》", eff:{mny:7,hap:5}, cond:s=>!!s.flags.r39_invest, flags:{r39_gtrmid:true}, res:"💼 演唱會後台，你把泛黃的計算紙遞過去。經紀人臉色發白，阿凱本人笑到蹲下去：『法務！這張有效！我簽的！』隔月起你的戶頭多了一筆版稅分潤，匯款備註欄寫著：『依約履行，違約的唱跳一百次改天補。』你大概是流行音樂史上報酬率最高的天使投資人。"},
       {label:"看到 MV 最後一幕——那把吉他的特寫", eff:{hap:9}, cond:s=>!!s.flags.r39_guitar, flags:{r39_gtrmid:true}, res:"🎸 MV 最後三十秒，鏡頭緩緩推近那把舊木吉他，琴箱內側的立可白字跡清晰可見：『要紅，要快。』下一幕黑屏，浮出一行字：『獻給說這句話的人——紅是紅了，慢了一點，歹勢。』演唱會那天，你坐在第一排正中央，他抱著那把琴，唱完了整場。"},
     ]},
+
+  /* =====================================================================
+     R41 志向抉擇 ×2：跨階段各一次「堅持 or 轉向」（cb_ 前綴走既有因果鏈
+     優先池；cond 純讀 wishId/旗標零裸 rng；轉向 special:r41pivot 換
+     候選池次一志向＝確定性，代價直接寫在 eff；舊存檔無 wishId 不進池）
+     ===================================================================== */
+  {id:"cb_r41_doubt", stage:[24,38], w:2.5, once:true, cond:s=>!!s.wishId&&!s.flags.r41_d1,
+    title:"志向期中考", text:"加完班的深夜，你滑到一篇《同齡人都在過怎樣的人生》，配圖是某個同學的近況。你想起投胎表格上自己親手寫下的那個志向——它最近過得怎樣？你又過得怎樣？房間很安靜，只有冰箱在嗡嗡地替你焦慮。",
+    meme:{scene:"midlife", top:"當年立的志向", bot:"現在進度條跑到哪", tag:"抉擇"},
+    choices:[
+      {label:"堅持初心——志向是用來熬的，不是用來換的", eff:{hap:4,int:1}, flags:{r41_d1:true,r41_persist:true}, res:"你把那篇文章滑掉，打開記事本看了一眼自己的志向，又默默關上。沒有發限動、沒有立新 flag——你只是繼續過日子，但走路的方向沒有變。多年後你會知道，深夜裡這種不出聲的堅持，才是志向真正的樣子。"},
+      {label:"轉向——夢想不是不見了，是該換一個了", eff:{hap:-3,mny:-3}, flags:{r41_d1:true}, special:"r41pivot", res:""},
+    ]},
+  {id:"cb_r41_cross", stage:[45,62], w:2.5, once:true, cond:s=>!!s.wishId&&!s.flags.r41_d2,
+    title:"志向的最後召集令", text:"同學會散場，大家輪流報告人生進度，輪到你的志向時你打了個哈哈帶過。回家的計程車上，你看著窗外想：人生折返點已過，這個志向，是要拚到底，還是趁還來得及換一條跑道？司機從後照鏡看你一眼：『先生，到了。』到了，但你還沒決定。",
+    meme:{scene:"old", top:"人生折返點已過", bot:"志向是要拚還是要換", tag:"抉擇"},
+    choices:[
+      {label:"拚到底——半路換志向，跟半路下車一樣難看", eff:{hap:5,hp:-1}, flags:{r41_d2:true,r41_persist:true}, res:"你付了車錢，在巷口站了五分鐘，然後傳了訊息給自己：『繼續。』中年的堅持沒有少年的熱血，只有一種把事情做完的固執——但固執，往往才是志向走到終點的腿。"},
+      {label:"換跑道——認清現實不可恥，可恥的是硬撐", eff:{hap:-4,mny:-4}, flags:{r41_d2:true}, special:"r41pivot", res:""},
+    ]},
 ];}
 const EVENTS_BASE = buildEvents();   // 載入時建一份（行為與舊版 const EVENTS 完全一致）
 let EVENTS = EVENTS_BASE;            // 每日挑戰時暫時換成種子重建版，結束即還原
@@ -5851,6 +5901,8 @@ function statsHTML(){
   if(S && S.origin) badges+=`${S.origin.ic} 出身：${S.origin.nm}`;
   if(S && S.flags && S.flags.petkind) badges+=`${badges?"　":""}${S.flags.petgone?"🌈 想念毛孩中":(S.flags.petkind==="cat"?"🐱 主子在家等門":"🐶 毛孩在家等門")}`;
   if(badges) h+=`<div class="muted" style="text-align:right;font-size:11.5px;margin:-4px 2px 8px">${badges}</div>`;
+  // R41 志向進度小塊：常駐顯示志向與確定性達成度（零 rng；舊存檔無 wishId 自動省略）
+  h+=r41ProgHTML();
   return h;
 }
 /* 結果幕：把剛變動的數值從舊值滾到新值（純視覺，無 DOM 自動略過） */
@@ -6063,7 +6115,16 @@ function screenSeedBattle(){
 }
 
 function renderBirth(){
+  r41Init();   // R41 開局立志：種子就緒後確定性選志（零 rng；已有志向或舊存檔自動跳過）
   const ch = S.challenge, bt = S.battle;
+  const w41 = (S.wishId && R41_MAP[S.wishId]) || null;
+  const wishCard = w41 ? `<div class="wishcard">
+        <div class="t">🎯 人生志向：${w41.ic} ${w41.nm}</div>
+        <div class="muted" style="margin-top:3px">${w41.desc}</div>
+        <div class="muted" style="font-size:11.5px;margin-top:3px">📌 達成條件：${w41.goal}（結算時驗收，達成有專屬榮耀）</div>
+        ${S.wishRerolled?`<div class="muted" style="font-size:11.5px;margin-top:3px">🔁 已重抽過，這次要認命了。</div>`
+          :`<button class="btn sec" style="margin-top:8px;padding:8px 10px;font-size:12px" onclick="r41Reroll()">🔁 這志向不太對勁，撕掉重寫（限 1 次）</button>`}
+      </div>` : "";
   const chBanner = ch ? `<div class="origin center" style="margin-bottom:10px">📅 <b>今日挑戰 #${ch.date}</b> · 第 ${ch.attempt} 次嘗試<br>
         <span class="muted">同一天全服同種子同開局——比的不是運氣，是選擇。</span><br>
         <span class="muted">🔄 挑戰模式天賦無效：轉生天賦全部停用，裸體上陣才公平。</span></div>`
@@ -6090,6 +6151,7 @@ function renderBirth(){
         ${(S.rtal&&S.rtal.length)?`<div class="t" style="margin-top:8px">🔄 轉生天賦：${S.rtal.map(id=>RB_MAP[id].ic+" "+RB_MAP[id].nm).join("、")}</div>
         <div class="muted">前世的你打錢過來了，效果已計入開局屬性。</div>`:""}
       </div>
+      ${wishCard}
       <div class="choices" style="margin-top:12px">
         <button class="btn" onclick="nextYear()">👶 帶著這套配裝出生 →</button>
       </div>
@@ -6564,6 +6626,21 @@ function choose(i){
     if(brOut.flags) Object.assign(S.flags, brOut.flags);
     if(brHit) S.flags.brHi=(S.flags.brHi||0)+1;   // 分流好結局計數（成就「分流路口的常勝軍」用）
     else S.flags.brLo=(S.flags.brLo||0)+1;
+  }
+  /* ---- R41 志向轉向：換候選池中下一個沒立過的志向（確定性、零 rng）；
+          代價寫在選項 eff（快樂/財富小扣），轉向次數記 r41pivot 供結算與成就觀察 ---- */
+  if(c.special==="r41pivot"){
+    const oldW=(S.wishId&&R41_MAP[S.wishId])||null;
+    const newW=r41NextWish();
+    if(oldW && newW){
+      S.wishId=newW.id;
+      (S.wishHist=S.wishHist||[]).push(newW.id);
+      S.flags.r41pivot=(S.flags.r41pivot||0)+1;
+      res=`🧭 你把【${oldW.nm}】從人生待辦清單上劃掉，筆尖頓了頓，寫上【${newW.ic}${newW.nm}】。轉向是有代價的——沉沒成本不會退費，朋友的『蛤？你不是要${oldW.nm}？』也要一一應付。但方向盤在自己手上的感覺，久違了。新目標：${newW.goal}。`;
+      tlPush("🧭", `志向轉向：【${oldW.nm}】→【${newW.nm}】，換跑道費已扣款`, 1);
+    } else {
+      res="🧭 你攤開人生的志願表想改填，發現能換的跑道都跑過一輪了——也罷，跑道跑久了，哪一條都是自己的路。你把表格摺好收回口袋，繼續走。";
+    }
   }
   /* R15 智力極端彩蛋：凌晨四點挑戰宇宙終極題（智力 90+ 門檻選項限定，小機率稀有死亡） */
   if(c.special==="brainmax"){
@@ -7076,6 +7153,12 @@ function die(from){
   S.badge = lifeBadge();
   S.newBadge = !!(S.badge && !SAVE.badges[S.badge.id]);
   if(S.badge) SAVE.badges[S.badge.id] = (SAVE.badges[S.badge.id]||0)+1;
+  // ---- R41 志向達成判定（純門檻/旗標確定性、零 rng）：成就評估前先判，r41_* 成就當局即可解鎖；
+  //      舊存檔無 wishId → wishDone 恆 false 且結算面板省略，行為同舊版 ----
+  const w41=(S.wishId&&typeof R41_MAP!=="undefined")?R41_MAP[S.wishId]:null;
+  S.wishDone=false;
+  if(w41){ try{ S.wishDone=!!w41.done(S); }catch(e){} }
+  if(S.wishDone) tlPush("🎯", `人生志向【${w41.nm}】達成——主線任務結案`, 2);
   S.newAch = evalAchievements(cat, sum, grade);
   // R9 時間軸：本局新解鎖成就補進終點（最多 3 條，避免洗版）
   (S.newAch||[]).slice(0,3).forEach(id=>{ const ax=ACH_MAP[id]; if(ax) tlPush("🏆", `解鎖成就【${ax.nm}】`, 1); });
@@ -7334,6 +7417,150 @@ function attrPersonaHTML(){
 }
 
 /* =========================================================================
+   R41 人生志向（抱負）系統：開局依出身/屬性立 1 個志向、可重抽 1 次；
+   遊戲中常駐進度小塊；中段/後段各 1 次「堅持 or 轉向」抉擇（轉向有代價）；
+   結算確定性判定達成 → 榮耀結語 / 台味自嘲結語，並各配 1 個達成成就。
+   一致性鐵律：選志 = fit 評分（屬性/出身查表）+ 種子字串 FNV 雜湊抖動，
+   全程零 rng() / 零 Math.random 消耗 —— 同種子同開局必同志向候選池，
+   挑戰/對戰復現性不受影響（重抽與轉向是玩家選擇，與擲骰無關）。
+   志向只存 id 與候選池（純字串），續玩存檔可序列化；舊存檔無 wishId →
+   進度塊/抉擇事件/結算面板全部自動省略，行為同舊版。
+   ========================================================================= */
+const R41_WISHES = [
+  {id:"house", ic:"🏠", nm:"買房上車", desc:"在這個房價跟天比高的島上，擁有一間寫自己名字的厝。", goal:"這輩子買下屬於自己的房子",
+    fit:s=>60-((s.attr.mny-45)*0.5)+((s.origin&&(s.origin.id==="northdrift"||s.origin.id==="office"))?10:0),
+    prog:s=>s.flags.homeowner?{p:1,txt:"已上車！權狀在手，房貸在肩"}:{p:Math.min((s.attr.mny||0)/80,0.92),txt:"頭期款集資中，離斡旋金還有一段路"},
+    done:s=>!!s.flags.homeowner,
+    win:"🏠 你真的把名字寫上了權狀。從此颱風天不用怕房東漲租——屋頂雖然抵押給銀行三十年，但門牌是你一輩子的。志向欄，蓋章結案。",
+    fail:"志向欄寫著買房上車，結局欄寫著還在租屋——你沒有自己的房子，但你幫房東養了一間。這輩子搬家紙箱都沒拆完，下輩子記得直接投胎進建設公司。"},
+  {id:"rich", ic:"🤑", nm:"發大財", desc:"別人的夢想是星辰大海，你的夢想很誠實：就是錢。", goal:"巔峰財富衝上 85（或謝幕財富 80+）",
+    fit:s=>(s.attr.mny||0)+8+((s.origin&&(s.origin.id==="landlord"||s.origin.id==="tech2nd"))?8:0),
+    prog:s=>{const v=Math.max((s.peak&&s.peak.mny)||0,(s.attr.mny||0)); return v>=85?{p:1,txt:"已經發了！等結算蓋章認證"}:{p:Math.min(v/85,0.95),txt:"對帳單離『大財』還差幾個逗點"};},
+    done:s=>((s.peak&&s.peak.mny)||0)>=85||(s.attr.mny||0)>=80,
+    win:"🤑 你說要發大財，然後你真的發了。對帳單的逗點多到要用唸的，親戚的電話也多到要用擋的——恭喜，你活成了過年餐桌上別人的壓力。",
+    fail:"開局喊著發大財，結局存摺餘額連提款機都懶得吐明細——大財沒發到，倒是發了不少誓。沒關係，你還有下輩子，以及這輩子剩下的對發票人生。"},
+  {id:"travel", ic:"✈️", nm:"環遊世界", desc:"護照拿來蓋章，不是拿來壓泡麵的。", goal:"在退休後真的出發環遊世界",
+    fit:s=>(((s.attr.hap||0)+(s.attr.apr||0))/2)+2+((s.origin&&(s.origin.id==="island"||s.origin.id==="seafarer"))?10:0),
+    prog:s=>s.flags.worldtrip?{p:1,txt:"護照蓋好蓋滿，世界走完一圈"}:{p:Math.min(0.1+(isEmployed(s)||s.flags.retired?0.25:0)+((s.attr.mny||0)>=55?0.3:0)+(s.age>=50?0.2:0),0.9),txt:"旅費與假單，湊齊的那天就出發"},
+    done:s=>!!s.flags.worldtrip,
+    win:"✈️ 你真的把存款蓋成了一本護照章。從時差醒來的那些清晨，比任何鬧鐘都值得——世界很大，而你說到做到。",
+    fail:"志向是環遊世界，結局是環遊街口——這輩子飛最遠的一次是被夢想放鴿子。護照在抽屜裡過期了兩本，泡麵倒是壓得很平。"},
+  {id:"live90", ic:"🐢", nm:"活過 90", desc:"比起轟轟烈烈，你更想贏在長度：把同梯通通熬走。", goal:"活到 90 歲以上",
+    fit:s=>(s.attr.hp||0)+5+((s.origin&&(s.origin.id==="herbal"||s.origin.id==="orchard"))?8:0),
+    prog:s=>({p:Math.min((s.age||0)/90,0.99),txt:s.age>=80?"最後一哩路，保溫杯握緊":"續命進度條穩定推進中"}),
+    done:s=>(s.age||0)>=90,
+    win:"🐢 90 歲達標。你用一輩子證明：人生這場馬拉松，跑得快的都先去領便當了，跑得久的才有資格寫回憶錄——而你連回憶錄都活成了連載。",
+    fail:"立志活過 90，結果提前登出——死神看了你的志向欄也只能聳肩：『排程衝突，抱歉。』下一世記得把保溫杯抓緊一點，順便閃開馬路三寶。"},
+  {id:"plain", ic:"🍚", nm:"平凡終老", desc:"不求大富大貴，只求無事退散——平凡，其實是地獄級成就。", goal:"不搞大新聞，安安穩穩活過 70 歲",
+    fit:s=>{const avg=((s.attr.hp||0)+(s.attr.int||0)+(s.attr.apr||0)+(s.attr.mny||0)+(s.attr.hap||0))/5; return 58-Math.abs(avg-50)+((s.origin&&(s.origin.id==="office"||s.origin.id==="civil"))?8:0);},
+    prog:s=>(s.flags.ipo||s.flags.jackpot||s.flags.luckywin)?{p:0.3,txt:"你已經太不平凡了，志向出現裂痕"}:{p:Math.min((s.age||0)/70,0.99),txt:"無事是貴人，繼續低調做人"},
+    done:s=>(s.age||0)>=70&&!(s.deathId&&SPECIAL_DEATHS[s.deathId])&&!s.flags.ipo&&!s.flags.jackpot,
+    win:"🍚 你成功地平凡了一輩子：沒上新聞、沒進圖鑑、沒被命運點名——在這個瘋狂的伺服器裡，把日子過成白飯，是最被低估的神技。",
+    fail:"立志平凡終老，結果人生根本沒收到這份企劃書——不是走得太早，就是活得太精彩。平凡這座山，你終究沒爬上去，因為它只收無聊的人。"},
+  {id:"winner", ic:"👑", nm:"成為人生勝利組", desc:"五圍全面開花，活成別人家的小孩。", goal:"謝幕時五屬性總分衝上 380",
+    fit:s=>(((s.attr.hp||0)+(s.attr.int||0)+(s.attr.apr||0)+(s.attr.mny||0)+(s.attr.hap||0))/5)+4,
+    prog:s=>{const sum=(s.attr.hp||0)+(s.attr.int||0)+(s.attr.apr||0)+(s.attr.mny||0)+(s.attr.hap||0); return {p:Math.min(sum/380,0.99),txt:sum>=340?"離勝利組門票一步之遙":"五邊形雷達圖持續擴張中"};},
+    done:s=>(((s.attr.hp||0)+(s.attr.int||0)+(s.attr.apr||0)+(s.attr.mny||0)+(s.attr.hap||0))>=380),
+    win:"👑 總分 380+，你不只活成了別人家的小孩，還活成了別人家的祖先牌位範本——勝利組認證下來了，討厭歸討厭，實至名歸。",
+    fail:"立志當人生勝利組，結算單出來像段考沒唸書——雷達圖縮成一顆鈕扣。沒關係，勝利組名額本來就是用來讓我們陪跑的，你跑好跑滿。"},
+  {id:"love", ic:"💞", nm:"執手偕老", desc:"找到那個人，然後一起慢慢變舊。", goal:"婚姻維持到 60 歲以後",
+    fit:s=>(((s.attr.apr||0)+(s.attr.hap||0))/2)+3+((s.origin&&s.origin.id==="southhouse")?6:0),
+    prog:s=>isMarried(s)?((s.age||0)>=60?{p:1,txt:"牽好牽滿，等結算蓋章"}:{p:0.7,txt:"婚是結了，剩下交給時間"}):(s.flags.inlove||s.flags.rl==="dating"||s.flags.rl==="couple")?{p:0.35,txt:"戀愛進行式，離白頭還很遠"}:{p:0.1,txt:"那個人還在地圖的迷霧裡"},
+    done:s=>isMarried(s)&&(s.age||0)>=60,
+    win:"💞 60 歲那年，牽著的還是同一隻手。婚姻這款地獄級副本你打成了養成遊戲——吵過的架都成了梗，這是志向欄裡最浪漫的一筆結案。",
+    fail:"立志執手偕老，結局手上只有手機——不是沒愛過，是緣分都簽短約。沒關係，單人床睡得開、遺產不用分，自由也是一種白頭到老。"},
+  {id:"fame", ic:"🌟", nm:"成為萬人迷", desc:"走到哪都有人回頭——不管是因為臉還是流量。", goal:"巔峰外貌衝上 90（或當過網紅）",
+    fit:s=>(s.attr.apr||0)+5+((s.origin&&(s.origin.id==="troupe"||s.origin.id==="nightmarket"))?8:0),
+    prog:s=>{if(s.flags.influencer)return {p:1,txt:"流量認證萬人迷，等結算蓋章"};const v=Math.max((s.peak&&s.peak.apr)||0,(s.attr.apr||0));return v>=90?{p:1,txt:"顏值已達天花板，等結算蓋章"}:{p:Math.min(v/90,0.95),txt:"回頭率穩定上升中"};},
+    done:s=>!!s.flags.influencer||((s.peak&&s.peak.apr)||0)>=90,
+    win:"🌟 你真的活成了萬人迷：路過的野狗都對你搖尾巴。這張臉（或這份流量）是老天爺打的錢，而你一毛都沒浪費——志向達成，鎂光燈請就位。",
+    fail:"立志當萬人迷，結局是路人甲裡的資深路人——迷倒的萬人裡有九千九百多個是你自己照鏡子。還好人生不是選秀節目，淘汰了還能繼續活。"},
+  {id:"brain", ic:"🧠", nm:"成為智慧大師", desc:"用腦袋活著，最好還能用腦袋吃飯。", goal:"巔峰智力衝上 90（或讀到頂大）",
+    fit:s=>(s.attr.int||0)+5+((s.origin&&s.origin.id==="cram")?8:0),
+    prog:s=>{if(s.flags.edu==="elite")return {p:1,txt:"頂大學歷入手，等結算蓋章"};const v=Math.max((s.peak&&s.peak.int)||0,(s.attr.int||0));return v>=90?{p:1,txt:"腦力已達標，等結算蓋章"}:{p:Math.min(v/90,0.95),txt:"腦內版本持續更新中"};},
+    done:s=>s.flags.edu==="elite"||((s.peak&&s.peak.int)||0)>=90,
+    win:"🧠 智慧大師認證通過。這顆腦袋這輩子解過的題、看穿的局、講贏的架，足夠開一間補習班——建議身後捐給國家，附使用說明書。",
+    fail:"立志成為智慧大師，結局是大師兄都比你聰明——這輩子最常說的話是『蛤？』。還好傻人有傻福，福在哪不知道，傻是確定的。"},
+  {id:"happy", ic:"😄", nm:"快樂就好", desc:"別人捲學歷捲存款，你只想捲一條舒服的被子。", goal:"謝幕那一刻快樂還有 80+",
+    fit:s=>(s.attr.hap||0)+3+((s.origin&&(s.origin.id==="temple"||s.origin.id==="kamati"))?8:0),
+    prog:s=>({p:Math.min((s.attr.hap||0)/80,1),txt:(s.attr.hap||0)>=80?"快樂滿格——撐到謝幕才算數":"快樂存款持續定期定額"}),
+    done:s=>(s.attr.hap||0)>=80,
+    win:"😄 謝幕那一刻，快樂還穩穩握在手上 80+。你證明了人生這場比賽根本不用贏，笑到最後的人直接改寫計分規則——快樂就好，而你真的就好。",
+    fail:"志向寫著快樂就好，結局連快樂都沒存到——人生像訂了甜點卻送來帳單。下次記得：快樂要謝幕那刻還在手上才算數，中途的都只是試吃。"},
+  {id:"boss", ic:"🍵", nm:"自己做頭家", desc:"與其幫老闆圓夢，不如自己開一間來虧。", goal:"這輩子當過一次老闆（開店/創業）",
+    fit:s=>(((s.attr.int||0)+(s.attr.mny||0))/2)+2+((s.origin&&(s.origin.id==="breakfast"||s.origin.id==="nightmarket"||s.origin.id==="pundoh"||s.origin.id==="blackhand"||s.origin.id==="kamati"))?10:0),
+    prog:s=>(s.flags.entrepreneur||s.flags.smallbiz||s.flags.boba_shop||s.flags.stall||s.flags.ipo)?{p:1,txt:"開張了！頭家夢進行式"}:isEmployed(s)?{p:0.45,txt:"還在幫別人打工，創業金偷偷在存"}:{p:0.15,txt:"頭家夢還在腦內招商中"},
+    done:s=>!!(s.flags.entrepreneur||s.flags.smallbiz||s.flags.boba_shop||s.flags.stall||s.flags.ipo),
+    win:"🍵 你真的當上了頭家。從此沒有慣老闆——因為慣老闆就是你自己。招牌掛上去的那天，你終於懂了：自由的代價是全年無休，但這份累，姓你的姓。",
+    fail:"立志自己做頭家，結局打卡打到謝幕——創業計畫書寫了十八版，全部存在『新增資料夾(3)』裡。安慰獎是：你至少沒有負債，這在創業圈已經是人生勝利組。"},
+];
+const R41_MAP = {}; R41_WISHES.forEach(w=>R41_MAP[w.id]=w);
+/* 種子字串（同 lifeHash 取源）：一般/對戰局用種子碼、每日挑戰用日期，皆在 renderBirth 前就緒 */
+function r41SeedStr(){ return (S&&S.seed)||(S&&S.challenge&&("D"+S.challenge.date))||"X"; }
+function r41Hash(str){ let h=2166136261; for(let i=0;i<str.length;i++){ h^=str.charCodeAt(i); h=Math.imul(h,16777619); } return h>>>0; }
+/* 開局立志：fit 評分 + 種子雜湊抖動排序 → 候選池；池首即志向。零 rng 消耗 */
+function r41Init(){
+  if(!S || S.wishId || !S.attr) return;
+  const seed=r41SeedStr();
+  const scored=R41_WISHES.map(w=>{
+    let f=50; try{ f=w.fit(S)||50; }catch(e){}
+    return {id:w.id, sc:f+(r41Hash(seed+"|"+w.id)%23)};
+  });
+  scored.sort((a,b)=>b.sc-a.sc || (a.id<b.id?-1:1));
+  S.wishPool=scored.map(x=>x.id);
+  S.wishId=S.wishPool[0];
+  S.wishHist=[S.wishId];
+  S.flags.r41wish=true;
+  const w=R41_MAP[S.wishId];
+  S.log.push(`<span class="yr">第 0 年</span> 🎯 你在投胎表格的「人生志向」欄寫下：【${w.ic}${w.nm}】——${w.desc}`);
+  tlPush("🎯", `立下人生志向【${w.nm}】，地球 Online 主線任務接取`, 1);
+}
+/* 重抽 1 次：換候選池次名（確定性，玩家選擇不吃種子序列） */
+function r41Reroll(){
+  if(!S || !S.alive || S.wishRerolled || !S.wishId || !Array.isArray(S.wishPool)) return;
+  const nxt=S.wishPool.find(id=>id!==S.wishId);
+  if(!nxt) return;
+  const oldW=R41_MAP[S.wishId], newW=R41_MAP[nxt];
+  S.wishRerolled=true;
+  S.wishId=nxt; S.wishHist=[nxt];
+  S.log.push(`<span class="yr">第 0 年</span> 🔁 你嫌【${oldW?oldW.nm:"?"}】不夠看，把志願卡撕掉重寫：【${newW.ic}${newW.nm}】。投胎櫃台蓋章：『限改一次，後果自負。』`);
+  renderBirth();
+}
+/* 轉向：候選池中第一個沒立過的志向（抉擇事件 special:r41pivot 用，零 rng） */
+function r41NextWish(){
+  if(!S || !Array.isArray(S.wishPool)) return null;
+  const hist=S.wishHist||[];
+  const nid=S.wishPool.find(id=>id!==S.wishId && hist.indexOf(id)<0);
+  return nid ? R41_MAP[nid] : null;
+}
+/* 常駐進度小塊（statsHTML 掛載）：純讀狀態確定性判定，零 rng；無志向（舊存檔）回空 */
+function r41ProgHTML(){
+  if(!S || !S.alive || !S.wishId || !R41_MAP[S.wishId] || !S.attr) return "";
+  const w=R41_MAP[S.wishId];
+  let pr={p:0,txt:""}; try{ pr=w.prog(S)||pr; }catch(e){}
+  const pct=Math.max(0,Math.min(100,Math.round((pr.p||0)*100)));
+  return `<div class="wishbox"><span class="wic">${w.ic}</span><div class="wbody">
+    <span class="wnm">志向：${w.nm}</span><div class="wtxt">${pr.txt||""}</div>
+    <div class="wbar"><i style="width:${pct}%"></i></div></div>
+    <span class="wpct">${pct}%</span></div>`;
+}
+/* 結算面板：達成 → 榮耀結語；未達成 → 台味自嘲。零 rng、同一生重渲染逐字一致 */
+function r41WishHTML(){
+  if(!S || !S.wishId || !R41_MAP[S.wishId]) return "";
+  const w=R41_MAP[S.wishId];
+  const hist=(S.wishHist||[]).length;
+  const pivotLine = (S.flags&&S.flags.r41pivot) ? `<div class="muted" style="font-size:11.5px;margin-top:4px">🧭 中途轉向 ${S.flags.r41pivot} 次${S.wishRerolled?"（開局還重抽過一次）":""}——夢想是活的，會自己換跑道。</div>`
+    : S.wishRerolled ? `<div class="muted" style="font-size:11.5px;margin-top:4px">🔁 開局重抽過一次志向——第一眼的命運，被你退貨了。</div>` : "";
+  return `<div class="panel" style="margin-top:12px;background:var(--panel2)">
+    <h2 class="sec">🎯 志向結算</h2>
+    <div style="text-align:center;padding:2px 6px">
+      <div style="font-size:17px;font-weight:800;letter-spacing:1px">${w.ic} ${w.nm}　${S.wishDone?`<span style="color:var(--good,#39ff88)">✅ 達成</span>`:`<span style="color:#ff5d73">❌ 未達成</span>`}</div>
+      <div class="wishverdict${S.wishDone?" win":""}">${S.wishDone?w.win:w.fail}</div>
+      ${pivotLine}
+    </div></div>`;
+}
+
+/* =========================================================================
    R22 屬性軌跡回顧：從人生履歷（S.resume）挑出屬性大起大落的轉折點
    單筆主導屬性 |Δ|≥10 才入選，取絕對值前 6 名、按年齡排序呈現
    純資料決定、零 rng 消耗，同種子同軌跡 → 同回顧，挑戰/對戰復現性不受影響
@@ -7441,6 +7668,7 @@ function screenSummary(cat){
       ${(S.origin&&R35_ORIGIN_EPI[S.origin.id])?`<p class="etext" style="color:var(--accent,#ffd24a)">${S.origin.ic} ${R35_ORIGIN_EPI[S.origin.id]}</p>`:""}
       <div class="stats" style="margin:12px 0">${attrRows}</div>
       ${attrPersonaHTML()}
+      ${r41WishHTML()}
       ${attrReviewHTML()}
       ${attrCurveHTML()}
       ${attrTurnsHTML()}
