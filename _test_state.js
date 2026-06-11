@@ -831,5 +831,16 @@ const lgScreen = JSON.parse(vm.runInContext(`(function(){
 ok(lgScreen.zeroRng, 'R23 祖祠面板渲染零 rng 消耗');
 ok(lgScreen.title && lgScreen.perks && lgScreen.owned && lgScreen.roster, 'R23 祖祠面板：加成列表/世襲標記/歷代名冊齊備');
 
+// ========================================================================
+// R55 台灣時代背景：年代互斥 gating（同年代進池、他年代不進池、無 era 鍵零誤觸）
+// ========================================================================
+const era90 = sandbox.__t(s => { s.era = 'e90'; }, 8);
+ok(era90.includes('era90_921') && era90.includes('era90_y2k'), 'R55 e90 局：本年代兩事件進池');
+ok(!era90.includes('era70_living') && !era90.includes('era00_sars') && !era90.includes('era20_mask'), 'R55 e90 局：他年代事件不進池');
+const era10w = sandbox.__t(s => { s.era = 'e10'; s.flags.employed = true; }, 24);
+ok(era10w.includes('era10_22k'), 'R55 e10 局：起薪傳說在工作期進池');
+const noEra = sandbox.__t(s => { delete s.era; }, 8);
+ok(!noEra.some(id => /^era\d/.test(id)), 'R55 舊存檔無 era 鍵：年代事件全不進池');
+
 console.log(fails ? `\n結果: ❌ ${fails} 項未通過` : '\n結果: ✅ 狀態機全數正確');
 process.exit(fails ? 1 : 0);

@@ -2347,6 +2347,79 @@ try {
   console.log('R54 台味寵物夥伴系統: ❌ ' + e.message);
 }
 
+/* ---- R55 台灣時代背景探針（強制路徑，不靠隨機抽中）----
+   ① 結構：6 年代註冊（id/nm/ic/open/sum 齊備）、12 個年代事件全為 once＋cond＋stage、
+      全數自動入 R46 里程碑表（進窗口 2 年保底）、2 個新成就皆有獵人提示
+   ② newLife 必 roll 年代（60 種子全落在合法年代且 6 種都抽得到）＋ SAVE.eraSeen 跨局收集
+   ③ 年代互斥 gating：e90 局只進 e90 事件池，其他 5 個年代 10 個事件全不進池
+   ④ 同年代兩事件走完 → r55_hit1/hit2 → die() 解鎖成就 r55_native；
+      eraSeen 集滿 ≥4 → 任意局謝幕解鎖 r55_traveler
+   ⑤ 開局膠囊／結算「你生於」回顧／人生戰報皆帶年代字樣（確定性渲染）
+   ⑥ 舊存檔相容：無 era 鍵 → 膠囊與回顧自動省略、年代事件全不進池、零誤觸 */
+let r55OK = false;
+try {
+  const r55Raw = vm.runInContext(`(function(){
+    const out={};
+    const ERA_EVS={e70:['era70_living','era70_tv'],e80:['era80_dajiale','era80_rollcall'],
+                   e90:['era90_921','era90_y2k'],e00:['era00_sars','era00_msn'],
+                   e10:['era10_pokemon','era10_22k'],e20:['era20_mask','era20_ai']};
+    /* ① 結構 */
+    out.eras = R55_ERAS.length===6 && R55_ERAS.every(e=>R55_MAP[e.id]===e && e.nm && e.ic
+      && e.open && e.open.length>20 && e.sum && e.sum.length>20);
+    out.evDef = Object.keys(ERA_EVS).every(era=>ERA_EVS[era].every(id=>{
+      const ev=EVENTS.find(e=>e.id===id);
+      return ev && ev.once && ev.stage && ev.cond && ev.cond({era:era}) && !ev.cond({era:'eXX'});
+    }));
+    out.milestone = Object.keys(ERA_EVS).every(era=>ERA_EVS[era].every(id=>{
+      const ev=EVENTS.find(e=>e.id===id);
+      return R46_MILESTONE[id]===Math.min(ev.stage[0]+2, ev.stage[1]);
+    }));
+    out.achDef = ['r55_native','r55_traveler'].every(id=>ACH_MAP[id] && ACH_MAP[id].hint && String(ACH_MAP[id].hint).length>4);
+    /* ② roll＋跨局收集 */
+    let rollOK=true; const seenEras={};
+    for(let i=0;i<60;i++){ rng=mulberry32(9100+i); newLife(true); if(!R55_MAP[S.era]) rollOK=false; seenEras[S.era]=true; }
+    rng=Math.random;
+    out.roll = rollOK && Object.keys(seenEras).length===6;
+    out.collect = Object.keys(SAVE.eraSeen||{}).length===6;
+    /* ③ 年代互斥 gating ＋ ④ 全鏈 → 成就 */
+    delete SAVE.ach.r55_native;
+    startGame(); S.era='e90'; S.age=8; S.flags={}; ensureState(S);
+    const pool90=eligible().map(e=>e.id);
+    out.in90 = pool90.includes('era90_921') && pool90.includes('era90_y2k');
+    out.gated = Object.keys(ERA_EVS).filter(k=>k!=='e90').every(era=>ERA_EVS[era].every(id=>!pool90.includes(id)));
+    showEvent(EVENTS.find(e=>e.id==='era90_921')); choose(0);
+    showEvent(EVENTS.find(e=>e.id==='era90_y2k')); choose(0);
+    out.hits = S.flags.r55_hit1===true && S.flags.r55_hit2===true;
+    out.tlBirth = (S.tl||[]).some(t=>/降落在【/.test(t.txt));
+    die();
+    out.achNative = !!SAVE.ach.r55_native;
+    delete SAVE.ach.r55_traveler;   // eraSeen 已集滿 6 ≥ 4 → 任意局謝幕即解鎖
+    startGame(); S.age=30; ensureState(S); die();
+    out.achTraveler = !!SAVE.ach.r55_traveler;
+    /* ⑤ 開局膠囊／結算回顧／戰報 */
+    startGame(); S.era='e80'; renderBirth();
+    out.capsule = document.querySelector('#app').innerHTML.includes('年代膠囊：'+R55_MAP.e80.nm);
+    S.age=70; ensureState(S); die();
+    const sh=document.querySelector('#app').innerHTML;
+    out.summaryEra = sh.includes('你生於【'+R55_MAP.e80.nm+'】');
+    out.report = buildTextReport().includes('生於【'+R55_MAP.e80.nm+'】');
+    /* ⑥ 舊存檔相容：無 era 鍵零誤觸 */
+    startGame(); delete S.era; renderBirth();
+    out.compatBirth = !document.querySelector('#app').innerHTML.includes('年代膠囊');
+    S.age=8; ensureState(S);
+    out.compatPool = !eligible().some(e=>/^era\\d/.test(e.id));
+    die();
+    out.compatSummary = !document.querySelector('#app').innerHTML.includes('你生於【');
+    out.compatReport = !buildTextReport().includes('生於【');
+    return JSON.stringify(out);
+  })()`, sandbox);
+  const r55 = JSON.parse(r55Raw);
+  r55OK = Object.values(r55).every(v => v === true);
+  console.log(`R55 台灣時代背景系統: ${r55OK ? '✅ 全數通過' : '❌ ' + JSON.stringify(r55)}`);
+} catch (e) {
+  console.log('R55 台灣時代背景系統: ❌ ' + e.message);
+}
+
 if (__errors.length) {
   console.log('\n--- 錯誤樣本(前5) ---');
   __errors.slice(0, 5).forEach(e => console.log('  ' + e));
@@ -2354,6 +2427,6 @@ if (__errors.length) {
 
 /* 退出碼 */
 const pass = __errors.length === 0 && chk.missingScenes.length === 0 && chk.eventVisible >= 126 && chk.eventTotal >= 126 && lsOK && achUnlocked > 0
-  && chk.deathbookMissing.length === 0 && chk.deathTotal >= 17 && deathsOK && rebirthOK && legacyOK && petOK && r13OK && r17OK && r20OK && r21OK && r22OK && r24OK && r25OK && r34OK && r38OK && r41OK && r42OK && r43OK && r44OK && r45OK && r46OK && r47OK && r48OK && r49OK && r51OK && r52OK && r53OK && r54OK;
+  && chk.deathbookMissing.length === 0 && chk.deathTotal >= 17 && deathsOK && rebirthOK && legacyOK && petOK && r13OK && r17OK && r20OK && r21OK && r22OK && r24OK && r25OK && r34OK && r38OK && r41OK && r42OK && r43OK && r44OK && r45OK && r46OK && r47OK && r48OK && r49OK && r51OK && r52OK && r53OK && r54OK && r55OK;
 console.log('\n結果: ' + (pass ? '✅ 全數通過' : '❌ 有項目未通過'));
 process.exit(pass ? 0 : 1);
