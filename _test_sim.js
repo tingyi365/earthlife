@@ -1255,6 +1255,107 @@ try {
   console.log('R42 世代傳承: ❌ ' + e.message);
 }
 
+/* ---- R43 跨階段 NPC 緣分探針（強制路徑，不靠隨機抽中）----
+   ① 結構：13 事件齊備（once+stage+合法 scene）、cb_ 後段全數入 CHAIN_IDS 優先池、
+      單段 eff 全部 ±8 內（R39 常態幅度）、3 成就有 hint
+   ② 進池/旗標串接：種子事件在窗口內進池、後段無旗標不進池；同一局走完三條線
+      （cm 走彈珠/rv 走偷練/ft 走求符三種分支索引），每段旗標正確落地、once 不重複
+   ③ 文案呼應：重逢事件只渲染對應分支的選項（旗標 cond 過濾），他分支選項不得出現
+   ④ 零殘留：沒展開人物線的局——後段全不進池、S.flags 無 r43_*、結算無緣分註記
+   ⑤ 復現性：r43 事件 cond/eligible 全程零 rng/Math.random 消耗、同旗標同池兩次一致
+   ⑥ 結算：走完三線 → r43_mate/r43_rival/r43_fate 當局解鎖、人生回顧時間軸三行緣分註記 */
+let r43OK = false;
+try {
+  const r43Raw = vm.runInContext(`(function(){
+    const out={};
+    /* ① 結構 */
+    const IDS=['r43_cm_seed','cb_r43_cm_teen','cb_r43_cm_work','cb_r43_cm_mid','cb_r43_cm_old',
+               'r43_rv_seed','cb_r43_rv_sch','cb_r43_rv_work','cb_r43_rv_old',
+               'r43_ft_seed','cb_r43_ft_yng','cb_r43_ft_mid','cb_r43_ft_old'];
+    const evs=IDS.map(id=>EVENTS.find(e=>e.id===id));
+    out.allDef = evs.every(e=>!!e);
+    out.onceAll = evs.every(e=>e.once===true && Array.isArray(e.stage) && e.stage.length===2 && e.stage[0]<e.stage[1]);
+    out.scenes = evs.every(e=>e.meme && e.meme.scene && !!SCENES[e.meme.scene]);
+    out.chainPri = IDS.filter(id=>id.indexOf('cb_')===0).every(id=>CHAIN_IDS.has(id));
+    out.effCap = evs.every(e=>e.choices.every(c=>Object.values(c.eff||{}).every(v=>Math.abs(v)<=8)));
+    out.cbCond = evs.filter(e=>e.id.indexOf('cb_')===0).every(e=>typeof e.cond==='function');
+    out.achDef = ['r43_mate','r43_rival','r43_fate'].every(id=>ACH_MAP[id]&&ACH_MAP[id].hint&&String(ACH_MAP[id].hint).length>4);
+    /* ④ 零殘留（先驗乾淨局：無種子旗標 → 後段全不進池、結算無註記） */
+    startGame(); S.flags={}; ensureState(S); S.seen={};
+    S.age=30;
+    out.cleanGate = IDS.filter(id=>id.indexOf('cb_')===0).every(id=>!eligible().some(e=>e.id===id));
+    const oRc=rng; rng=()=>0.5; die(); rng=oRc;
+    out.cleanNote = !(S.tl||[]).some(t=>String(t.txt).indexOf('緣分圓滿')>=0);
+    out.cleanFlags = Object.keys(S.flags||{}).every(k=>k.indexOf('r43_')!==0);
+    /* ② 同一局走完三條線（cm=彈珠 idx0 / rv=偷練 idx1 / ft=求符 idx2） */
+    delete SAVE.ach.r43_mate; delete SAVE.ach.r43_rival; delete SAVE.ach.r43_fate;
+    startGame(); S.flags={}; ensureState(S); S.seen={};
+    S.age=8;
+    out.seedIn = eligible().some(e=>e.id==='r43_cm_seed') && eligible().some(e=>e.id==='r43_rv_seed') && eligible().some(e=>e.id==='r43_ft_seed');
+    /* ⑤ 復現性：cond/eligible 零 rng 消耗、同旗標同池 */
+    let used=0,mused=0; const oR1=rng,oM1=Math.random;
+    rng=function(){used++;return oR1();}; Math.random=function(){mused++;return oM1();};
+    const p1=eligible().map(e=>e.id).join(','), p2=eligible().map(e=>e.id).join(',');
+    evs.forEach(e=>{ if(e.cond) e.cond(S); e.choices.forEach(c=>{ if(c.cond) c.cond(S); }); });
+    rng=oR1; Math.random=oM1;
+    out.zeroRandom = used===0 && mused===0;
+    out.poolStable = p1===p2;
+    /* 童年：三顆種子各選一個分支 */
+    showEvent(EVENTS.find(e=>e.id==='r43_cm_seed')); choose(0);
+    showEvent(EVENTS.find(e=>e.id==='r43_rv_seed')); choose(1);
+    showEvent(EVENTS.find(e=>e.id==='r43_ft_seed')); choose(2);
+    out.seedFlags = S.flags.r43_cm===true && S.flags.r43_cm_gift===true
+                 && S.flags.r43_rv===true && S.flags.r43_rv_sneak===true
+                 && S.flags.r43_ft===true && S.flags.r43_ft_pay===true;
+    out.seedOnce = !eligible().some(e=>e.id==='r43_cm_seed');
+    /* 求學：cm_teen / rv_sch；③ 重逢只渲染對應分支選項 */
+    S.age=18; ensureState(S);
+    out.teenIn = eligible().some(e=>e.id==='cb_r43_cm_teen') && eligible().some(e=>e.id==='cb_r43_rv_sch');
+    showEvent(EVENTS.find(e=>e.id==='cb_r43_cm_teen'));
+    let h=document.querySelector('#app').innerHTML;
+    out.cmEcho = h.indexOf('彈珠')>=0 && h.indexOf('換你追我')<0;
+    choose(0);
+    showEvent(EVENTS.find(e=>e.id==='cb_r43_rv_sch'));
+    h=document.querySelector('#app').innerHTML;
+    out.rvEcho = h.indexOf('圖書館')>=0 && h.indexOf('書卷獎')<0;
+    choose(1);
+    out.schFlags = S.flags.r43_cm2===true && S.flags.r43_rv2===true;
+    /* 工作：cm_work / rv_work / ft_yng */
+    S.age=30; ensureState(S);
+    showEvent(EVENTS.find(e=>e.id==='cb_r43_cm_work')); choose(0);
+    showEvent(EVENTS.find(e=>e.id==='cb_r43_rv_work')); choose(1);
+    showEvent(EVENTS.find(e=>e.id==='cb_r43_ft_yng'));
+    h=document.querySelector('#app').innerHTML;
+    out.ftEcho = h.indexOf('續約')>=0 && h.indexOf('田野調查')<0;
+    choose(2);
+    out.workFlags = S.flags.r43_cm3===true && S.flags.r43_rv3===true && S.flags.r43_ft2===true;
+    /* 中年：cm_mid / ft_mid */
+    S.age=50; ensureState(S);
+    showEvent(EVENTS.find(e=>e.id==='cb_r43_cm_mid')); choose(0);
+    showEvent(EVENTS.find(e=>e.id==='cb_r43_ft_mid')); choose(2);
+    out.midFlags = S.flags.r43_cm4===true && S.flags.r43_ft3===true;
+    /* 老年：cm_old / rv_old / ft_old → 三線 *fin 落地 */
+    S.age=70; ensureState(S);
+    showEvent(EVENTS.find(e=>e.id==='cb_r43_cm_old')); choose(0);
+    showEvent(EVENTS.find(e=>e.id==='cb_r43_rv_old')); choose(1);
+    showEvent(EVENTS.find(e=>e.id==='cb_r43_ft_old')); choose(2);
+    out.finFlags = S.flags.r43_cmfin===true && S.flags.r43_rvfin===true && S.flags.r43_ftfin===true;
+    out.finOnce = !eligible().some(e=>e.id==='cb_r43_cm_old'||e.id==='cb_r43_rv_old'||e.id==='cb_r43_ft_old');
+    /* ⑥ 結算：成就當局解鎖＋時間軸三行緣分註記 */
+    const oR2=rng; rng=()=>0.5; die(); rng=oR2;
+    out.achAll = SAVE.ach.r43_mate===true && SAVE.ach.r43_rival===true && SAVE.ach.r43_fate===true;
+    out.achNew = ['r43_mate','r43_rival','r43_fate'].every(id=>(S.newAch||[]).indexOf(id)>=0);
+    const notes=(S.tl||[]).filter(t=>String(t.txt).indexOf('緣分圓滿')>=0);
+    out.note3 = notes.length===3;
+    return JSON.stringify(out);
+  })()`, sandbox);
+  const r43 = JSON.parse(r43Raw);
+  r43OK = Object.values(r43).every(v => v === true);
+  console.log(`R43 NPC 緣分: ${r43OK ? '✅ 全數通過' : '❌ ' + JSON.stringify(r43)}`);
+} catch (e) {
+  console.log('R43 NPC 緣分: ❌ ' + e.message);
+}
+
 if (__errors.length) {
   console.log('\n--- 錯誤樣本(前5) ---');
   __errors.slice(0, 5).forEach(e => console.log('  ' + e));
@@ -1262,6 +1363,6 @@ if (__errors.length) {
 
 /* 退出碼 */
 const pass = __errors.length === 0 && chk.missingScenes.length === 0 && chk.eventVisible >= 126 && chk.eventTotal >= 126 && lsOK && achUnlocked > 0
-  && chk.deathbookMissing.length === 0 && chk.deathTotal >= 17 && deathsOK && rebirthOK && legacyOK && petOK && r13OK && r17OK && r20OK && r21OK && r22OK && r24OK && r25OK && r34OK && r38OK && r41OK && r42OK;
+  && chk.deathbookMissing.length === 0 && chk.deathTotal >= 17 && deathsOK && rebirthOK && legacyOK && petOK && r13OK && r17OK && r20OK && r21OK && r22OK && r24OK && r25OK && r34OK && r38OK && r41OK && r42OK && r43OK;
 console.log('\n結果: ' + (pass ? '✅ 全數通過' : '❌ 有項目未通過'));
 process.exit(pass ? 0 : 1);
