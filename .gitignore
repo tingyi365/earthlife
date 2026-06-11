@@ -1,0 +1,30 @@
+# === 部署 / 建置產物（由 wrangler 部署流程產生，不入版控）===
+.wrangler/
+dist/
+node_modules/
+
+# === 憑證與機密（任何情況都不得入版控）===
+.env
+.env.*
+*.pem
+*.key
+.secrets/
+
+# === 內部開發筆記（不開源）===
+RESUME.md
+_TASK_*.md
+docs/_*
+
+# === 開發過程備份 / 截圖 / 探針腳本（不開源）===
+_backup_*
+_check_*
+_preview_*
+_probe_*
+_retheme*
+_smoke_*
+*.bak
+
+# === 內部一次性測試腳本（保留正式測試 _test_sim.js / _test_state.js）===
+_test_*
+!_test_sim.js
+!_test_state.js

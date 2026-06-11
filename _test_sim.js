@@ -1,0 +1,1059 @@
+/* EarthLife M2 自我驗證：抽出 index.html 的 JS，套 DOM stub，跑 ≥200 輪模擬 */
+const fs = require('fs');
+const path = require('path');
+
+const html = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
+const m = html.match(/<script>([\s\S]*?)<\/script>/);
+if (!m) { console.error('找不到 <script>'); process.exit(1); }
+let code = m[1];
+
+/* ---- DOM / 環境 stub ---- */
+const appEl = { innerHTML: '' };
+const document = { querySelector: (s) => (s === '#app' ? appEl : { innerHTML: '' }) };
+const _ls = {};
+/* R3 相容性測試：預埋一份「舊版存檔」（無 deaths 鍵），驗證載入與死亡寫入不炸 */
+_ls['earthlife_save_v2'] = JSON.stringify({ v: 2, plays: 3, ach: {}, history: [], current: null });
+const localStorage = {
+  getItem: (k) => (k in _ls ? _ls[k] : null),
+  setItem: (k, v) => { _ls[k] = String(v); },
+  removeItem: (k) => { delete _ls[k]; },
+};
+function alert() {}
+
+/* ---- 統計容器（注入到 script 作用域） ---- */
+const __triggered = new Set();          // 跨局：觸發過的事件 id
+const __stageHit = {};                  // 各階段命中次數
+const __lifespans = [];
+const __endings = {};                   // 結局 cat 分布
+const __errors = [];
+let __plays = 0;
+let __grades = {};
+
+/* 把測試驅動程式接在 script 後面（共用同一作用域，能存取 EVENTS/SCENES/S/各函式） */
+const harness = `
+/* ===== 測試驅動 ===== */
+;(function(){
+  globalThis.__check = {};
+  // 場景 key 檢查
+  const missing = [];
+  EVENTS.forEach(e=>{ if(e.meme && e.meme.scene && !SCENES[e.meme.scene]) missing.push(e.id+':'+e.meme.scene); });
+  // 程式內其他用到的場景
+  ['heaven','accident','death','old','midlife','work','school','child','baby','luck'].forEach(k=>{ if(!SCENES[k]) missing.push('code:'+k); });
+  globalThis.__check.missingScenes = missing;
+  globalThis.__check.eventTotal = EVENTS.length;
+  globalThis.__check.eventVisible = EVENTS.filter(e=>!e.hidden).length;
+  globalThis.__check.sceneCount = Object.keys(SCENES).length;
+  globalThis.__check.achTotal = ACHIEVEMENTS.length;
+  // R3 死法圖鑑完整性：稀有死亡場景存在、所有死法都收錄進 DEATHBOOK、id 不重複
+  Object.values(SPECIAL_DEATHS).forEach(sp=>{ if(!SCENES[sp.scene]) missing.push('sd:'+sp.scene); });
+  const dbIds = new Set(DEATHBOOK.map(d=>d.id));
+  const dbMissing = [];
+  if(dbIds.size !== DEATHBOOK.length) dbMissing.push('duplicate-ids');
+  Object.keys(SPECIAL_DEATHS).forEach(k=>{ if(!dbIds.has(k)) dbMissing.push('special:'+k); });
+  Object.keys(DEATH_REASONS).forEach(cat=>DEATH_REASONS[cat].forEach((_,i)=>{ if(!dbIds.has(cat+'_'+i)) dbMissing.push(cat+'_'+i); }));
+  DEATHBOOK.forEach(d=>{ if(!d.reason || !d.hint || !d.nm || !d.ic) dbMissing.push('incomplete:'+d.id); });
+  globalThis.__check.deathbookMissing = dbMissing;
+  globalThis.__check.deathTotal = DEATHBOOK.length;
+  // R13 成就獵人提示：每個成就都必須有非空 hint（隱藏成就可隱晦但不可留白）
+  globalThis.__check.achNoHint = ACHIEVEMENTS.filter(a=>!a.hint || String(a.hint).length<4).map(a=>a.id);
+
+  // 包裝 showEvent 以記錄觸發
+  const _se = showEvent;
+  showEvent = function(ev){ globalThis.__rec(ev.id); return _se(ev); };
+})();
+`;
+
+const stageOf = (age) => age <= 12 ? '童年' : age <= 22 ? '求學' : age <= 40 ? '工作' : age <= 60 ? '中年' : '老年';
+
+function makeRec() {
+  return function (id) {
+    __triggered.add(id);
+  };
+}
+
+/* 用 vm 在帶 stub 的 context 執行 */
+const vm = require('vm');
+const sandbox = {
+  document, localStorage, alert,
+  Math, JSON, Object, Array, console,
+  __rec: null,
+};
+sandbox.globalThis = sandbox;
+vm.createContext(sandbox);
+
+try {
+  vm.runInContext(code + harness, sandbox, { filename: 'earthlife.js' });
+} catch (e) {
+  console.error('腳本載入失敗：', e);
+  process.exit(1);
+}
+
+const chk = sandbox.__check;
+sandbox.__rec = function (id) {
+  __triggered.add(id);
+  // 以當前年紀分類
+  try { __stageHit[stageOf(sandbox.eval ? 0 : 0)] = 0; } catch (e) {}
+};
+
+/* 由於需要讀取 S.age，改用注入函式回傳當前狀態 */
+vm.runInContext(`
+  globalThis.__getAge = ()=> (typeof S!=='undefined' && S) ? S.age : -1;
+  globalThis.__getAlive = ()=> (typeof S!=='undefined' && S) ? S.alive : false;
+  globalThis.__startGame = startGame;
+  globalThis.__nextYear = nextYear;
+  globalThis.__choose = choose;
+  globalThis.__die = die;
+  globalThis.__showEventById = (id)=> showEvent(EVENTS.find(e=>e.id===id));
+  globalThis.__html = ()=> document.querySelector('#app').innerHTML;
+  globalThis.__SAVE = ()=> SAVE;
+  globalThis.__seenCount = ()=> Object.keys(S.seen).length;
+`, sandbox);
+
+/* 真正的記錄器：showEvent 包裝會呼叫 __rec */
+sandbox.__rec = function (id) {
+  __triggered.add(id);
+  const age = sandbox.__getAge();
+  const st = stageOf(age);
+  __stageHit[st] = (__stageHit[st] || 0) + 1;
+};
+
+/* ---- 模擬 N 局 ---- */
+const N = 220;
+for (let life = 0; life < N; life++) {
+  try {
+    sandbox.__startGame();
+    let guard = 0;
+    while (sandbox.__getAlive() && guard++ < 500) {
+      const html = sandbox.__html();
+      const chooseMatches = [...html.matchAll(/onclick="choose\((\d+)\)"/g)].map(x => Number(x[1]));
+      const chainMatch = html.match(/showEvent\(EVENTS\.find\(e=>e\.id==='([^']+)'\)\)/);
+      if (chooseMatches.length) {
+        const i = chooseMatches[Math.floor(Math.random() * chooseMatches.length)];
+        sandbox.__choose(i);
+      } else if (/onclick="die\('choice'\)"/.test(html)) {
+        sandbox.__die('choice');
+      } else if (chainMatch) {
+        sandbox.__showEventById(chainMatch[1]);
+      } else if (/onclick="nextYear\(\)"/.test(html)) {
+        sandbox.__nextYear();
+      } else {
+        // 沒有可前進的按鈕（理論上不該發生）
+        __errors.push(`life ${life} age ${sandbox.__getAge()} 卡住，無前進按鈕`);
+        break;
+      }
+    }
+    if (sandbox.__getAlive()) { __errors.push(`life ${life} 超過守衛上限仍未死亡`); }
+    else {
+      __plays++;
+      __lifespans.push(sandbox.__getAge());
+      const last = (sandbox.__SAVE().history || [])[0];   // die 會 unshift，[0] 即本局
+      if (last) {
+        __endings[last.cat] = (__endings[last.cat] || 0) + 1;
+        __grades = __grades || {};
+        __grades[last.grade] = (__grades[last.grade] || 0) + 1;
+      }
+    }
+  } catch (e) {
+    __errors.push(`life ${life}: ${e.message}`);
+  }
+}
+
+/* 結局/評級分布：逐局累計（__endings / __grades） */
+const save = sandbox.__SAVE();
+const gradeDist = __grades || {};
+
+/* ---- 報告 ---- */
+const avg = __lifespans.reduce((a, b) => a + b, 0) / (__lifespans.length || 1);
+const sorted = [...__lifespans].sort((a, b) => a - b);
+const median = sorted[Math.floor(sorted.length / 2)] || 0;
+const min = sorted[0] || 0, max = sorted[sorted.length - 1] || 0;
+const over60 = __lifespans.filter(a => a >= 60).length;
+
+console.log('===== EarthLife M2 模擬報告 =====');
+console.log(`事件總數: ${chk.eventTotal}（可觸發 ${chk.eventVisible} + 連鎖 ${chk.eventTotal - chk.eventVisible}）`);
+console.log(`場景數: ${chk.sceneCount} ｜ 成就數: ${chk.achTotal}`);
+console.log(`缺失場景 key: ${chk.missingScenes.length ? chk.missingScenes.join(', ') : '無 ✅'}`);
+console.log(`模擬局數: ${N} ｜ 正常結束: ${__plays} ｜ runtime error: ${__errors.length}`);
+console.log(`壽命  平均 ${avg.toFixed(1)} / 中位 ${median} / 最短 ${min} / 最長 ${max} ｜ 活到60+: ${over60} (${(over60 / __plays * 100).toFixed(0)}%)`);
+console.log(`各階段事件命中次數: ${JSON.stringify(__stageHit)}`);
+console.log(`結局分布(cat): ${JSON.stringify(__endings)}`);
+console.log(`評級分布: ${JSON.stringify(gradeDist)}`);
+console.log(`累計觸發不同事件: ${__triggered.size} / 應約 ${chk.eventVisible}`);
+
+/* 未觸發的可觸發事件（應為空或極少） */
+const allVisible = vm.runInContext('EVENTS.filter(e=>!e.hidden).map(e=>e.id)', sandbox);
+const never = allVisible.filter(id => !__triggered.has(id));
+console.log(`從未觸發的可觸發事件(${never.length}): ${never.length ? never.join(', ') : '無 ✅'}`);
+
+/* localStorage 存讀驗證（含 R3 死法圖鑑：舊存檔無 deaths 鍵 → 載入後應自動補空集合並正常收集） */
+const rawSave = localStorage.getItem('earthlife_save_v2');
+let lsOK = false, achUnlocked = 0, deathsOK = false, deathsGot = 0;
+let rebirthOK = false, rbTotal = 0, rbPts = 0;
+try {
+  const parsed = JSON.parse(rawSave);
+  achUnlocked = Object.keys(parsed.ach || {}).length;
+  lsOK = parsed && parsed.plays === save.plays && Array.isArray(parsed.history);
+  deathsGot = Object.keys(parsed.deaths || {}).length;
+  deathsOK = parsed.deaths && typeof parsed.deaths === 'object' && deathsGot >= 5;
+  /* R6 轉生：舊存檔（無 rebirth 鍵）載入後應自動補結構，且每局結算 1-5 輪迴點全數入帳 */
+  rbTotal = (parsed.rebirth && parsed.rebirth.total) || 0;
+  rbPts = (parsed.rebirth && parsed.rebirth.pts) || 0;
+  rebirthOK = parsed.rebirth && typeof parsed.rebirth === 'object'
+    && parsed.rebirth.talents && typeof parsed.rebirth.talents === 'object'
+    && Array.isArray(parsed.rebirth.equipped)
+    && rbTotal >= N && rbTotal <= N * 5 && rbPts === rbTotal;   // 每局至少 1 點、至多 5 點，未消費前 pts=total
+} catch (e) {}
+console.log(`localStorage 寫入: ${rawSave ? '有資料' : '無'} ｜ 結構正確: ${lsOK ? '✅' : '❌'} ｜ 累計解鎖成就: ${achUnlocked}/${chk.achTotal} ｜ plays: ${save.plays}`);
+console.log(`死法圖鑑: 總死法 ${chk.deathTotal} ｜ 收錄缺漏: ${chk.deathbookMissing.length ? chk.deathbookMissing.join(', ') : '無 ✅'} ｜ 模擬累計收集: ${deathsGot}/${chk.deathTotal} ｜ 舊存檔相容: ${deathsOK ? '✅' : '❌'}`);
+console.log(`R6 轉生: 舊存檔自動補 rebirth 結構且輪迴點入帳: ${rebirthOK ? '✅' : '❌'} ｜ ${N} 局累計 ${rbTotal} 點（pts=${rbPts}）`);
+
+/* R23 祖產：舊存檔（無 legacy 鍵）載入後自動補結構、每局陰德入帳（每局至少 1）、
+   歷代名冊 cap 10 且欄位完整（w 世數 / a 享年 / g 評級 / d 死法摘要）、未消費前 yd=ydTotal */
+let legacyOK = false, ydTotal = 0, rosterLen = 0;
+try {
+  const parsed23 = JSON.parse(rawSave);
+  const lgp = parsed23.legacy;
+  ydTotal = (lgp && lgp.ydTotal) || 0;
+  rosterLen = (lgp && lgp.roster && lgp.roster.length) || 0;
+  legacyOK = !!lgp && typeof lgp === 'object'
+    && lgp.perks && typeof lgp.perks === 'object'
+    && Array.isArray(lgp.roster) && rosterLen === 10
+    && ydTotal >= N && lgp.yd === ydTotal
+    && typeof lgp.lastMny === 'number'
+    && lgp.roster.every(r => typeof r.w === 'number' && typeof r.a === 'number'
+        && typeof r.g === 'string' && 'SABCD'.includes(r.g)
+        && typeof r.d === 'string' && r.d.length > 0);
+} catch (e) {}
+console.log(`R23 祖產: 舊存檔自動補 legacy 結構且陰德入帳: ${legacyOK ? '✅' : '❌'} ｜ ${N} 局累計 ${ydTotal} 陰德 ｜ 名冊 ${rosterLen}/10`);
+
+/* ---- R13 生涯統計驗證 ----
+   ① 舊存檔（無 lifelog 鍵）載入後自動補空陣列，每局死亡寫入一筆摘要
+   ② cap 200：N=220 局後 lifelog 必須恰為 200 筆（最舊的被淘汰）
+   ③ 每筆摘要欄位完整（a 享年 / s 總分 / g 評級 / d 死法 / o 出身）
+   ④ 成就提示全配：無任何成就缺 hint
+   ⑤ 統計頁渲染零 rng 消耗，且關鍵欄位（履歷表/死法 TOP3/收集進度）都有渲染 */
+let r13OK = false;
+try {
+  const parsed = JSON.parse(rawSave);
+  const ll = parsed.lifelog;
+  const llIsArr = Array.isArray(ll);
+  const llCap = llIsArr && ll.length === 200 && save.plays > 200;
+  const llFields = llIsArr && ll.every(r =>
+    typeof r.a === 'number' && r.a >= 0 &&
+    typeof r.s === 'number' && r.s >= 0 && r.s <= 500 &&
+    typeof r.g === 'string' && 'SABCD'.includes(r.g) &&
+    typeof r.d === 'string' && r.d.length > 0 &&
+    typeof r.o === 'string');
+  const hintsOK = chk.achNoHint.length === 0;
+  const statsProbe = JSON.parse(vm.runInContext(`(function(){
+    let used = 0;
+    const old = rng;
+    rng = function(){ used++; return old(); };
+    screenStats();
+    const h = document.querySelector('#app').innerHTML;
+    rng = old;
+    screenAchievements();
+    const ah = document.querySelector('#app').innerHTML;
+    return JSON.stringify({
+      rngUsed: used,
+      hasTitle: h.includes('人生履歷表'),
+      hasTop3: h.includes('最常見死法 TOP3'),
+      hasOrigin: h.includes('出身使用統計'),
+      hasCollect: h.includes('收集進度總覽'),
+      hasYears: h.includes('生涯總年數'),
+      hintShown: ah.includes('提示：') || !ah.includes('？？？'),
+    });
+  })()`, sandbox));
+  const statsOK = statsProbe.rngUsed === 0 && statsProbe.hasTitle && statsProbe.hasTop3
+    && statsProbe.hasOrigin && statsProbe.hasCollect && statsProbe.hasYears && statsProbe.hintShown;
+  r13OK = llIsArr && llCap && llFields && hintsOK && statsOK;
+  console.log(`R13 生涯統計: lifelog 寫入: ${llIsArr ? '✅' : '❌'} ｜ cap 200: ${llCap ? '✅ (plays=' + save.plays + ' → 留 ' + ll.length + ' 筆)' : '❌'} ｜ 欄位完整: ${llFields ? '✅' : '❌'}`);
+  console.log(`R13 成就提示: 缺提示成就: ${chk.achNoHint.length ? chk.achNoHint.join(', ') : '無 ✅'} ｜ 統計頁零 rng 消耗+渲染: ${statsOK ? '✅' : '❌ ' + JSON.stringify(statsProbe)}`);
+} catch (e) {
+  console.log('R13 生涯統計: ❌ ' + e.message);
+}
+
+/* ---- R11 寵物線 flag 路徑驗證（強制路徑，不靠隨機抽中）----
+   貓線：領養→petkind/petAge 正確→貓事件進池、狗事件不進池→10 年後離別解鎖
+   →離別後 flags/時間軸/快樂大跌/全線退池→成就與戰報；狗線同理走一遍 */
+let petOK = false;
+try {
+  const petRaw = vm.runInContext(`(function(){
+    const out={};
+    /* 貓線 */
+    startGame(); S.age=25; S.flags={}; ensureState(S);
+    out.strayIn = eligible().some(e=>e.id==='pet_stray');
+    showEvent(EVENTS.find(e=>e.id==='pet_stray')); choose(0);
+    out.catFlags = S.flags.pet===true && S.flags.petkind==='cat' && S.flags.petAge===25;
+    S.age=30;
+    const pool = eligible().map(e=>e.id);
+    out.catPool = ['pet_cat_run','pet_cat_cup','pet_cat_kb','pet_cat_sick'].every(id=>pool.includes(id));
+    out.noDogPool = ['pet_dog_chaos','pet_dog_walk','pet_dog_courier','pet_dog_sick'].every(id=>!pool.includes(id));
+    out.noByeYet = !pool.includes('pet_bye');
+    out.oldByeGated = !pool.includes('pet_farewell');   // 分線領養者不再走舊版通用離別
+    S.age=36; S.attr.hap=60;
+    out.byeIn = eligible().some(e=>e.id==='pet_bye');
+    showEvent(EVENTS.find(e=>e.id==='pet_bye')); choose(0);
+    out.byeFlags = S.flags.petgone===true && S.flags.petfarewell===true && S.flags.petgoneAge===36;
+    out.hapDrop = S.attr.hap < 60;
+    out.tlBye = (S.tl||[]).some(t=>/彩虹橋/.test(t.txt));
+    out.poolAfterBye = !eligible().some(e=>/^pet_/.test(e.id) || e.id==='cb_pet');   // 含舊通用寵物事件全退池
+    die();
+    out.achCat = !!SAVE.ach.catslave;
+    out.achBye = !!SAVE.ach.petfarewell;
+    out.reportLine = /彩虹橋/.test(buildTextReport());
+    /* 狗線 */
+    startGame(); S.age=25; S.flags={}; ensureState(S);
+    showEvent(EVENTS.find(e=>e.id==='pet_stray')); choose(1);
+    out.dogFlags = S.flags.pet===true && S.flags.petkind==='dog' && S.flags.petAge===25;
+    S.age=30;
+    out.dogPool = eligible().some(e=>e.id==='pet_dog_chaos');
+    out.noCatPool = !eligible().some(e=>e.id==='pet_cat_run');
+    die();
+    out.achDog = !!SAVE.ach.dogparty;
+    /* 稀有死法收錄 */
+    out.deathBook = DEATHBOOK.some(d=>d.id==='cattrip') && !!SPECIAL_DEATHS.cattrip;
+    return JSON.stringify(out);
+  })()`, sandbox);
+  const petRes = JSON.parse(petRaw);
+  petOK = Object.values(petRes).every(v => v === true);
+  console.log(`R11 寵物線路徑: ${petOK ? '✅ 全數通過' : '❌ ' + JSON.stringify(petRes)}`);
+} catch (e) {
+  console.log('R11 寵物線路徑: ❌ ' + e.message);
+}
+
+/* ---- R17 結算記憶點驗證 ----
+   ① 結算頁渲染：墓誌銘/屬性軌跡總評/高光時刻面板/一鍵分享卡按鈕
+   ② 墓誌銘與分享卡確定性：同一局重複呼叫逐字一致、零 rng 零 Math.random 消耗
+   ③ 分享卡含正確種子碼 + 召喚句 + 完整欄位
+   ④ 成就：複製分享卡解鎖 sharecard（沙箱無 clipboard 走 fallback 不炸）、
+      220 局後 summarySeen>=10 解鎖 summary10 */
+let r17OK = false;
+try {
+  const r17Raw = vm.runInContext(`(function(){
+    const out={};
+    startSeedBattle('R7R7R7');
+    let guard=0;
+    while(S && S.alive && guard++<600){
+      const h=document.querySelector('#app').innerHTML;
+      const m=[...h.matchAll(/onclick="choose\\((\\d+)\\)"/g)].map(x=>Number(x[1]));
+      const chain=h.match(/showEvent\\(EVENTS\\.find\\(e=>e\\.id==='([^']+)'\\)\\)/);
+      if(m.length) choose(m[0]);
+      else if(/onclick="die\\('choice'\\)"/.test(h)) die('choice');
+      else if(chain) showEvent(EVENTS.find(e=>e.id===chain[1]));
+      else nextYear();
+    }
+    const h=document.querySelector('#app').innerHTML;
+    out.hasEpitaphPanel = h.includes('🪦 墓誌銘');
+    out.hasArcQuip = h.includes('class="arcsum"');
+    out.hasShareBtn = h.includes('copyShareTextCard');
+    out.hasHighlights = (S.tl && S.tl.filter(x=>x.ic!=='💀'&&x.ic!=='🏆'&&x.ic!=='🐣').length) ? h.includes('🎬 人生高光時刻') : true;
+    const e1=epitaphText(), e2=epitaphText();
+    out.epitaphStable = typeof e1==='string' && e1.length>=6 && e1===e2;
+    const c1=buildShareText();
+    out.cardStable = c1===buildShareText();
+    out.cardSeed = c1.includes('🧬 種子碼：R7R7R7') && c1.includes('用種子碼 R7R7R7 來活活看我這條命');
+    out.cardFields = c1.includes('👤 稱號：') && c1.includes('🕯️ 墓誌銘：「') && /享年 \\d+ 歲/.test(c1) && c1.includes('☠️ 死法：');
+    let used=0; const oldR=rng; rng=function(){used++; return oldR();};
+    let mused=0; const oldM=Math.random; Math.random=function(){mused++; return oldM();};
+    epitaphText(); buildShareText(); attrArcQuip(); highlightsHTML(); epitaphHTML();
+    rng=oldR; Math.random=oldM;
+    out.zeroRandom = used===0 && mused===0;
+    copyShareTextCard(null);
+    out.achShare = SAVE.ach.sharecard===true && (SAVE.sharecards||0)>=1;
+    out.achSummary = (SAVE.summarySeen||0)>=10 && SAVE.ach.summary10===true;
+    out.epitaphSample = e1;   // 報告用
+    out.arcSample = attrArcQuip();
+    return JSON.stringify(out);
+  })()`, sandbox);
+  const r17 = JSON.parse(r17Raw);
+  const sampleE = r17.epitaphSample, sampleA = r17.arcSample;
+  delete r17.epitaphSample; delete r17.arcSample;
+  r17OK = Object.values(r17).every(v => v === true);
+  console.log(`R17 結算記憶點: ${r17OK ? '✅ 全數通過' : '❌ ' + JSON.stringify(r17)}`);
+  console.log(`  墓誌銘樣例:「${sampleE}」`);
+  console.log(`  軌跡總評樣例:「${sampleA}」`);
+} catch (e) {
+  console.log('R17 結算記憶點: ❌ ' + e.message);
+}
+
+/* ---- R20 隱藏彩蛋探針（強制路徑，不靠隨機抽中）----
+   ① 結構：gmban/ascend 進 SPECIAL_DEATHS + DEATHBOOK（含 hint），6 個新成就皆有 hint
+   ② egg_gm（屬性組合）：五圍全 80+ 才進池、差一點即不進池；嗆 GM 分支
+      Ban 帳死（gmban + 成就 gmbanned）與歐皇認證（gmverified）兩種結果皆可達 → 機率閘非死碼
+   ③ egg_godbill（出身×際遇連動）：宮廟出身 × luckywin 同時成立才進池；
+      殺價分支 白日飛升死（ascend + 成就 ascended）與殺價成功皆可達
+   ④ egg_hundred（百歲限定）：age<100 不進池、age=100 進池；兩選項皆點亮 centistar → 成就
+   ⑤ egg_pastlife（跨局彩蛋）：die() 對 SAVE.oldStreak 活到 80+ 累計、早死歸零；
+      streak<3 不進池、>=3 進池；覺醒選項 → awakened → 成就 samsara */
+let r20OK = false;
+try {
+  const r20Raw = vm.runInContext(`(function(){
+    const out={};
+    /* ① 結構完整性 */
+    out.sdDef = !!SPECIAL_DEATHS.gmban && !!SPECIAL_DEATHS.ascend;
+    out.book = ['gmban','ascend'].every(id=>DEATHBOOK.some(d=>d.id===id && d.rare && d.hint.length>4));
+    out.achDef = ['gmverified','gmbanned','godvow','ascended','centistar','samsara'].every(id=>ACH_MAP[id] && ACH_MAP[id].hint && ACH_MAP[id].hint.length>4);
+    /* ② egg_gm：屬性門檻 */
+    const setAttrs=v=>{ for(const k in S.attr) S.attr[k]=v; };
+    startGame(); S.age=30; S.flags={}; ensureState(S); setAttrs(85);
+    out.gmIn = eligible().some(e=>e.id==='egg_gm');
+    S.attr.hp=79;
+    out.gmGate = !eligible().some(e=>e.id==='egg_gm');
+    let gmDie=false, gmLive=false;
+    for(let i=0;i<400 && !(gmDie&&gmLive);i++){
+      startGame(); S.age=30; S.flags={}; ensureState(S); setAttrs(85);
+      showEvent(EVENTS.find(e=>e.id==='egg_gm')); choose(0);
+      if(S.flags.specialDeath==='gmban'){ die('choice'); gmDie=true; }
+      else if(S.flags.gmverified){ gmLive=true; }
+    }
+    out.gmBoth = gmDie && gmLive;
+    out.gmDeath = !!SAVE.deaths.gmban && !!SAVE.ach.gmbanned;
+    /* 認證歐皇成就：活著走完一局 */
+    startGame(); S.age=30; S.flags={gmverified:true}; ensureState(S); die();
+    out.gmAch = !!SAVE.ach.gmverified;
+    /* ③ egg_godbill：出身×際遇連動 */
+    const temple=ORIGINS.find(o=>o.id==='temple');
+    startGame(); S.age=40; S.flags={}; ensureState(S); S.origin=temple;
+    out.godGateNoWin = !eligible().some(e=>e.id==='egg_godbill');
+    S.flags.luckywin=true; ensureState(S);
+    out.godIn = eligible().some(e=>e.id==='egg_godbill');
+    startGame(); S.age=40; S.flags={luckywin:true}; ensureState(S);
+    out.godGateNoTemple = S.origin.id==='temple' ? true : !eligible().some(e=>e.id==='egg_godbill');
+    let godDie=false, godLive=false;
+    for(let i=0;i<500 && !(godDie&&godLive);i++){
+      startGame(); S.age=40; S.flags={luckywin:true}; ensureState(S); S.origin=temple;
+      showEvent(EVENTS.find(e=>e.id==='egg_godbill')); choose(1);
+      if(S.flags.specialDeath==='ascend'){ die('choice'); godDie=true; }
+      else if(S.flags.godhaggler){ godLive=true; }
+    }
+    out.godBoth = godDie && godLive;
+    out.godDeath = !!SAVE.deaths.ascend && !!SAVE.ach.ascended;
+    startGame(); S.age=40; S.flags={godvow:true}; ensureState(S); die();
+    out.godVowAch = !!SAVE.ach.godvow;
+    /* ④ egg_hundred：百歲限定 */
+    startGame(); S.age=99; S.flags={}; ensureState(S);
+    out.hunGate = !eligible().some(e=>e.id==='egg_hundred');
+    S.age=100;
+    out.hunIn = eligible().some(e=>e.id==='egg_hundred');
+    showEvent(EVENTS.find(e=>e.id==='egg_hundred')); choose(0);
+    out.hunFlag = S.flags.centistar===true;
+    die();
+    out.hunAch = !!SAVE.ach.centistar;
+    /* ⑤ egg_pastlife：跨局 streak */
+    SAVE.oldStreak=0;
+    startGame(); S.age=85; S.flags={}; ensureState(S); die();
+    out.streakUp = SAVE.oldStreak===1;
+    startGame(); S.age=30; S.flags={}; ensureState(S); die();
+    out.streakReset = SAVE.oldStreak===0;
+    SAVE.oldStreak=2;
+    startGame(); S.age=20; S.flags={}; ensureState(S);
+    out.pastGate = !eligible().some(e=>e.id==='egg_pastlife');
+    SAVE.oldStreak=3;
+    out.pastIn = eligible().some(e=>e.id==='egg_pastlife');
+    showEvent(EVENTS.find(e=>e.id==='egg_pastlife')); choose(0);
+    out.pastFlag = S.flags.awakened===true;
+    die();
+    out.pastAch = !!SAVE.ach.samsara;
+    return JSON.stringify(out);
+  })()`, sandbox);
+  const r20 = JSON.parse(r20Raw);
+  r20OK = Object.values(r20).every(v => v === true);
+  console.log(`R20 隱藏彩蛋路徑: ${r20OK ? '✅ 全數通過' : '❌ ' + JSON.stringify(r20)}`);
+} catch (e) {
+  console.log('R20 隱藏彩蛋路徑: ❌ ' + e.message);
+}
+
+/* ---- R21 感情主線探針（強制路徑，不靠隨機抽中）----
+   ① 結構：handinhand 進 SPECIAL_DEATHS + DEATHBOOK（rare+hint），3 個新成就皆有 hint
+   ② 全鏈可達：meet→confess→branch(求婚)→wedding(chain 接續)→baby→tuition→oldlove→kidback 逐段進池且旗標正確推進
+   ③ 真心值回扣：高真心(rlScore≥3) 金婚牽手/子女孝順可選；低真心(≤1) 金婚選項隱藏、翻舊帳/啃老浮現
+   ④ 分手線：branch 選分手 → rl=over + breakups+1 → 70 歲謝幕解鎖「孤獨終老但很自由」
+   ⑤ 稀有死法：oldlovewalk 強制命中 → handinhand 死亡全流程 + 成就「執子之手」「模範老公/老婆」
+   ⑥ 狀態 gating：未開線不出後段、已婚（非主線）不出告白段 */
+let r21OK = false;
+try {
+  const r21Raw = vm.runInContext(`(function(){
+    const out={};
+    /* ① 結構完整性 */
+    out.sdDef = !!SPECIAL_DEATHS.handinhand;
+    out.book = DEATHBOOK.some(d=>d.id==='handinhand' && d.rare && d.hint.length>4);
+    out.achDef = ['rl_model','rl_freesoul','holdhands'].every(id=>ACH_MAP[id] && ACH_MAP[id].hint && ACH_MAP[id].hint.length>4);
+    /* ② 全鏈可達（高真心路線：每段選用心選項） */
+    startGame(); S.age=24; S.flags={}; ensureState(S);
+    out.meetIn = eligible().some(e=>e.id==='rl_meet');
+    showEvent(EVENTS.find(e=>e.id==='rl_meet')); choose(0);
+    out.meetFlag = S.flags.rl==='dating' && S.flags.rlc1===true;
+    S.age=26;
+    out.confessIn = eligible().some(e=>e.id==='rl_confess');
+    out.branchGated = !eligible().some(e=>e.id==='rl_branch');   // 還沒在一起，長跑段不進池
+    showEvent(EVENTS.find(e=>e.id==='rl_confess')); choose(0);
+    out.confessFlag = S.flags.rl==='couple' && S.flags.rlc2===true && S.flags.inlove===true;
+    S.age=30;
+    out.branchIn = eligible().some(e=>e.id==='rl_branch');
+    showEvent(EVENTS.find(e=>e.id==='rl_branch')); choose(0);
+    out.branchFlag = S.flags.rl==='married' && S.flags.marital==='married' && S.flags.rlc3===true && (S.flags.marriages||0)===1;
+    out.weddingChained = document.querySelector('#app').innerHTML.includes("e.id==='rl_wedding'");   // 結果幕出現「繼續 →」接婚禮
+    showEvent(EVENTS.find(e=>e.id==='rl_wedding')); choose(0);
+    out.weddingFlag = S.flags.rlc4===true;
+    S.age=32;
+    out.babyIn = eligible().some(e=>e.id==='rl_baby');
+    showEvent(EVENTS.find(e=>e.id==='rl_baby')); choose(0);
+    out.babyFlag = S.flags.haskid===true && S.flags.kids===1 && S.flags.rlc5===true;
+    S.age=40;
+    out.tuitionIn = eligible().some(e=>e.id==='rl_tuition');
+    showEvent(EVENTS.find(e=>e.id==='rl_tuition')); choose(1);
+    /* ③ 高真心回扣：rlScore=5 → 金婚牽手可選、翻舊帳隱藏；子女孝順可選、啃老隱藏 */
+    out.score5 = rlScore(S)===5;
+    S.age=65;
+    out.oldloveIn = eligible().some(e=>e.id==='rl_oldlove');
+    showEvent(EVENTS.find(e=>e.id==='rl_oldlove'));
+    let h=document.querySelector('#app').innerHTML;
+    out.goldShown = h.includes('💞真心3+') && !h.includes('翻了三十年舊帳');
+    const oldRng1 = rng; rng = () => 0.99;   // chance(0.06) 不中 → 活著走完金婚散步
+    choose(0);
+    rng = oldRng1;
+    out.goldLive = S.flags.rl_goldlove===true && !S.flags.specialDeath && S.attr.hp>0;
+    S.age=66;
+    out.kidbackIn = eligible().some(e=>e.id==='rl_kidback');
+    showEvent(EVENTS.find(e=>e.id==='rl_kidback'));
+    h=document.querySelector('#app').innerHTML;
+    out.filialShown = h.includes('孩子搶著接你回家住') && !h.includes('還躺在你家沙發上');
+    choose(0);
+    out.filialFlag = S.flags.rl_filial===true;
+    out.tlGold = (S.tl||[]).some(t=>/金婚之年牽手散步/.test(t.txt)) && (S.tl||[]).some(t=>/養兒防老開出 SSR/.test(t.txt));
+    die();
+    out.achModel = !!SAVE.ach.rl_model;
+    /* ③b 低真心回扣：只拿 rlc3 → score=1 → 金婚選項隱藏、翻舊帳/啃老浮現 */
+    startGame(); S.age=24; S.flags={}; ensureState(S);
+    showEvent(EVENTS.find(e=>e.id==='rl_meet')); choose(1);        // 已讀亂回，不記真心
+    S.age=26; showEvent(EVENTS.find(e=>e.id==='rl_confess')); choose(1);  // 被告白，不記真心
+    S.age=30; showEvent(EVENTS.find(e=>e.id==='rl_branch')); choose(0);   // 求婚 → rlc3
+    S.age=32; showEvent(EVENTS.find(e=>e.id==='rl_baby')); choose(1);     // 自己坐月子，不記真心
+    out.score1 = rlScore(S)===1;
+    S.age=65; showEvent(EVENTS.find(e=>e.id==='rl_oldlove'));
+    h=document.querySelector('#app').innerHTML;
+    out.coldShown = !h.includes('💞真心3+') && h.includes('翻了三十年舊帳');
+    choose(2);
+    out.coldFlag = S.flags.rl_coldlove===true;
+    S.age=66; showEvent(EVENTS.find(e=>e.id==='rl_kidback'));
+    h=document.querySelector('#app').innerHTML;
+    out.leechShown = !h.includes('孩子搶著接你回家住') && h.includes('還躺在你家沙發上');
+    choose(2);
+    out.leechFlag = S.flags.rl_leech===true && !S.flags.rl_filial;
+    /* ④ 分手線 → 孤獨終老但很自由 */
+    startGame(); S.age=24; S.flags={}; ensureState(S);
+    showEvent(EVENTS.find(e=>e.id==='rl_meet')); choose(0);
+    S.age=26; showEvent(EVENTS.find(e=>e.id==='rl_confess')); choose(0);
+    S.age=30; showEvent(EVENTS.find(e=>e.id==='rl_branch')); choose(1);   // 和平分手
+    out.overFlag = S.flags.rl==='over' && (S.flags.breakups||0)===1 && S.flags.marital!=='married';
+    out.afterOverGated = !eligible().some(e=>['rl_baby','rl_oldlove','rl_kidback'].includes(e.id));
+    S.age=70; die();
+    out.achFree = !!SAVE.ach.rl_freesoul;
+    /* ⑤ handinhand 稀有死法全流程 */
+    startGame(); S.age=65; S.flags={rl:'married',marital:'married',married:true,rlc1:true,rlc2:true,rlc3:true}; ensureState(S);
+    showEvent(EVENTS.find(e=>e.id==='rl_oldlove'));
+    const oldRng2 = rng; rng = () => 0;   // chance(0.06) 必中
+    choose(0);
+    rng = oldRng2;
+    out.hhDying = S.flags.specialDeath==='handinhand' && S.attr.hp<=0;
+    die('choice');
+    out.hhDead = !S.alive && S.deathId==='handinhand' && /執手偕老/.test(S.deathReason);
+    out.hhBook = !!SAVE.deaths.handinhand;
+    out.hhAch = !!SAVE.ach.holdhands;
+    /* ⑥ 狀態 gating：未開線不出後段；已婚（非主線）不出告白段 */
+    startGame(); S.age=28; S.flags={}; ensureState(S);
+    out.noLineGated = !eligible().some(e=>['rl_confess','rl_branch','rl_baby','rl_tuition','rl_oldlove','rl_kidback'].includes(e.id));
+    startGame(); S.age=28; S.flags={rl:'dating',marital:'married',married:true}; ensureState(S);
+    out.marriedGated = !eligible().some(e=>e.id==='rl_confess' || e.id==='rl_meet');
+    return JSON.stringify(out);
+  })()`, sandbox);
+  const r21 = JSON.parse(r21Raw);
+  r21OK = Object.values(r21).every(v => v === true);
+  console.log(`R21 感情主線路徑: ${r21OK ? '✅ 全數通過' : '❌ ' + JSON.stringify(r21)}`);
+} catch (e) {
+  console.log('R21 感情主線路徑: ❌ ' + e.message);
+}
+
+/* ---- R22 數值驅動探針（強制路徑，不靠隨機抽中）----
+   ① 結構：r22 檢定選項 ≥9 個、覆蓋全部 5 種屬性、皆有 gtag 膠囊標籤與 sr 完整結構，
+      且每個 win.eff 都含至少一項負值（拚屬性必付代價的權衡層）
+   ② 行為：每個 r22 選項 高屬性(95)必勝（gateWin+1、走 win 文案）、
+      低屬性(5)必翻車（srLose+1、走 lose 文案）→ 證明高低屬性走到不同分支、非死碼
+   ③ 結算「屬性軌跡回顧」：|Δ|≥10 轉折點入榜、小變化不入榜、零 rng、實際渲染進結算頁
+   ④ 新成就：六邊形戰士（五圍同時80+，79 不亮）/ 一窮二白活到老 / 骰子恨我（翻車3次）皆可達且有提示 */
+let r22OK = false;
+try {
+  const r22Raw = vm.runInContext(`(function(){
+    const out={};
+    /* ① 結構 */
+    const opts=[];
+    EVENTS.forEach(e=>(e.choices||[]).forEach(c=>{ if(c.r22) opts.push({ev:e, c:c}); }));
+    out.count = opts.length>=9;
+    out.attrCover = new Set(opts.map(o=>o.c.sr&&o.c.sr.k)).size===5;
+    out.structOK = opts.every(o=>o.c.sr && o.c.sr.k && o.c.sr.need>50 && o.c.sr.need<=90 && o.c.sr.spread===40
+      && o.c.sr.win && o.c.sr.win.eff && o.c.sr.win.res && o.c.sr.lose && o.c.sr.lose.eff && o.c.sr.lose.res
+      && /class="gtag"/.test(o.c.label) && /⚖️/.test(o.c.label));
+    out.tradeoff = opts.every(o=>Object.values(o.c.sr.win.eff).some(v=>v<0));
+    /* ② 高低屬性分支（need ≤90 → attr 95 必勝；need >50、spread 40 → attr 5 最高 roll 45 必輸） */
+    let winsOK=true, losesOK=true;
+    opts.forEach(o=>{
+      const i=o.ev.choices.indexOf(o.c), k=o.c.sr.k;
+      startGame(); S.age=o.ev.stage[0]; S.flags={employed:true}; ensureState(S);
+      S.attr[k]=95; const gw0=S.flags.gateWin||0;
+      showEvent(o.ev); choose(i);
+      if((S.flags.gateWin||0)!==gw0+1 || (S.flags.srLose||0)!==0
+         || S.resume[S.resume.length-1].res!==o.c.sr.win.res) winsOK=false;
+      startGame(); S.age=o.ev.stage[0]; S.flags={employed:true}; ensureState(S);
+      S.attr[k]=5;
+      showEvent(o.ev); choose(i);
+      if((S.flags.srLose||0)!==1 || (S.flags.gateWin||0)!==0
+         || S.resume[S.resume.length-1].res!==o.c.sr.lose.res) losesOK=false;
+    });
+    out.hiWin = winsOK;
+    out.loFlip = losesOK;
+    /* ③ 屬性軌跡回顧 */
+    startGame(); S.age=50; ensureState(S);
+    S.resume=[{age:18,ev:"測試大跌事件",eff:{mny:-25},res:""},{age:30,ev:"測試大漲事件",eff:{int:15},res:""},{age:40,ev:"測試小變化",eff:{hap:3},res:""}];
+    let used=0; const oldR=rng; rng=function(){used++; return oldR();};
+    const th=attrTurnsHTML();
+    rng=oldR;
+    out.turnZeroRng = used===0;
+    out.turnPick = th.includes("屬性軌跡回顧") && th.includes("18 歲") && th.includes("測試大跌事件")
+      && th.includes("▼") && th.includes("▲ 🧠智力+15") && !th.includes("測試小變化");
+    out.turnStable = th===attrTurnsHTML();
+    die();
+    out.turnInSummary = document.querySelector('#app').innerHTML.includes("屬性軌跡回顧");
+    startGame(); S.age=20; ensureState(S); S.resume=[];
+    out.turnEmpty = attrTurnsHTML().includes("風平浪靜");
+    /* ④ 新成就 */
+    out.achDef = ['hexagon','poorlong','dicehater'].every(id=>ACH_MAP[id] && ACH_MAP[id].hint && ACH_MAP[id].hint.length>4);
+    const ev=EVENTS.find(e=>e.id==='gooddeed');
+    startGame(); S.age=30; S.flags={}; ensureState(S);
+    for(const k in S.attr) S.attr[k]=79;
+    showEvent(ev); choose(0);
+    out.hexNeg = !S.flags.hexagon;
+    startGame(); S.age=30; S.flags={}; ensureState(S);
+    for(const k in S.attr) S.attr[k]=85;
+    showEvent(ev); choose(0);
+    out.hexFlag = S.flags.hexagon===true;
+    out.hexTl = (S.tl||[]).some(t=>/六邊形戰士成形/.test(t.txt));
+    die();
+    out.hexAch = !!SAVE.ach.hexagon;
+    startGame(); S.age=80; S.flags={}; ensureState(S); S.attr.mny=10; die();
+    out.poorAch = !!SAVE.ach.poorlong;
+    out.poorNeg = !ACH_MAP.poorlong.check({S:{attr:{mny:10},flags:{}}, age:74})
+               && !ACH_MAP.poorlong.check({S:{attr:{mny:21},flags:{}}, age:90});
+    startGame(); S.age=30; S.flags={}; ensureState(S);
+    const sc=EVENTS.find(e=>e.id==='socialcompare'), si=sc.choices.findIndex(c=>c.r22);
+    for(let j=0;j<3;j++){ S.attr.hap=5; showEvent(sc); choose(si); }
+    out.flip3 = (S.flags.srLose||0)===3;
+    die();
+    out.diceAch = !!SAVE.ach.dicehater;
+    return JSON.stringify(out);
+  })()`, sandbox);
+  const r22 = JSON.parse(r22Raw);
+  r22OK = Object.values(r22).every(v => v === true);
+  console.log(`R22 數值驅動: ${r22OK ? '✅ 全數通過' : '❌ ' + JSON.stringify(r22)}`);
+} catch (e) {
+  console.log('R22 數值驅動: ❌ ' + e.message);
+}
+
+/* ---- R24 人生稱號 + 一鍵分享戰績探針 ----
+   ① 結構：稱號 ≥20 個、tier 合法、id 不重複、必有永真保底
+   ② 覆蓋＋確定性：50 種屬性/年齡組合的人生全都頒得出稱號（不 undefined），
+      同一生重算 → 同稱號
+   ③ 零隨機：稱號判定/這一生之最/分享文案皆零 rng 零 Math.random（種子序列不污染）
+   ④ 分享文案：欄位完整（人生稱號/嗆聲/享年/死法/網址）且兩次生成逐字一致
+   ⑤ 結算頁渲染：頂部稱號牌 + 收藏進度 + 這一生之最（最慘/最風光確定性挑選）
+   ⑥ 成就：badge_ssr / badge10 / badge_main 皆可達且有獵人提示；
+      舊存檔缺 badges 鍵 → die() 就地修補不炸 */
+let r24OK = false;
+try {
+  const r24Raw = vm.runInContext(`(function(){
+    const out={};
+    /* ① 結構 */
+    out.count = LIFE_BADGES.length>=20;
+    out.tiers = LIFE_BADGES.every(b=>['SSR','SR','R','N'].includes(b.tier) && b.id && b.nm && b.nm.length>=3 && typeof b.cond==='function');
+    out.uniq = new Set(LIFE_BADGES.map(b=>b.id)).size===LIFE_BADGES.length;
+    /* ② 覆蓋＋確定性 */
+    let cover=true, det=true;
+    const vals=[0,15,45,75,95];
+    for(let i=0;i<50;i++){
+      startGame(); S.age=(i*7)%101; S.flags={}; ensureState(S);
+      let j=0; for(const k in S.attr){ S.attr[k]=vals[(i+j++)%5]; }
+      const old=rng; rng=()=>0.5; die(); rng=old;
+      if(!S.badge || !S.badge.nm || !S.badge.tier || !S.badge.id) cover=false;
+      const b2=lifeBadge();
+      if(!b2 || b2.id!==S.badge.id) det=false;
+    }
+    out.cover=cover; out.det=det;
+    /* ③ 零隨機 */
+    let used=0, mused=0;
+    const oldR=rng, oldM=Math.random;
+    rng=function(){used++;return oldR();}; Math.random=function(){mused++;return oldM();};
+    lifeBadge(); lifeExtremes(); extremesHTML(); badgeBannerHTML(); buildShareText(); tauntText();
+    rng=oldR; Math.random=oldM;
+    out.zeroRandom = used===0 && mused===0;
+    /* ④ 分享文案 */
+    const c1=buildShareText();
+    out.cardStable = c1===buildShareText();
+    out.cardBadge = /🏅 人生稱號：【(SSR|SR|R|N)】.+/.test(c1);
+    out.cardTaunt = /🗯️ .+/.test(c1);
+    out.cardCore = /享年 \\d+ 歲/.test(c1) && c1.includes('☠️ 死法：') && c1.includes(SHARE_URL);
+    /* ⑤ 結算頁渲染 + 這一生之最 */
+    startGame(); S.age=60; S.flags={}; ensureState(S);
+    S.resume=[{age:22,ev:"慘案之年",eff:{mny:-30,hap:-10},res:""},{age:35,ev:"高光時刻",eff:{mny:25,hap:10},res:""},{age:40,ev:"小事一樁",eff:{hap:2},res:""}];
+    const o2=rng; rng=()=>0.5; die(); rng=o2;
+    const h=document.querySelector('#app').innerHTML;
+    out.banner = h.includes('class="lbadge') && h.includes('人生稱號') && h.includes('稱號收藏');
+    const ex=lifeExtremes();
+    out.extremes = !!(ex.worst && ex.worst.age===22 && ex.worst.d===-40 && ex.best && ex.best.age===35 && ex.best.d===35);
+    out.extremesShown = h.includes('這一生之最') && h.includes('最慘的一年') && h.includes('最風光的一刻') && h.includes('慘案之年') && h.includes('高光時刻');
+    out.extremesStable = extremesHTML()===extremesHTML();
+    /* ⑥ 成就 + 舊存檔相容 */
+    out.achDef = ['badge_ssr','badge10','badge_main'].every(id=>ACH_MAP[id] && ACH_MAP[id].hint && ACH_MAP[id].hint.length>4);
+    delete SAVE.badges; delete SAVE.ach.badge_ssr;
+    startGame(); S.age=30; S.flags={specialDeath:'boba'}; ensureState(S); die('choice');
+    out.compat = !!SAVE.badges && typeof SAVE.badges==='object' && Object.keys(SAVE.badges).length>=1 && SAVE.badges[S.badge.id]===1;
+    out.ssrBadge = !!(S.badge && S.badge.tier==='SSR' && S.newBadge===true);
+    out.achSSR = SAVE.ach.badge_ssr===true && (S.newAch||[]).includes('badge_ssr');
+    delete SAVE.ach.badge10;
+    SAVE.badges={}; for(let i=0;i<9;i++) SAVE.badges['x'+i]=1;
+    startGame(); S.age=40; S.flags={}; ensureState(S); const o3=rng; rng=()=>0.5; die(); rng=o3;
+    out.ach10 = Object.keys(SAVE.badges).length>=10 && SAVE.ach.badge10===true;
+    delete SAVE.ach.badge_main;
+    SAVE.badges={dummy:3};
+    startGame(); S.age=40; S.flags={}; ensureState(S); const o4=rng; rng=()=>0.5; die(); rng=o4;
+    out.achMain = SAVE.ach.badge_main===true;
+    out.badgeSample = S.badge ? ('【'+S.badge.tier+'】'+S.badge.nm) : 'none';
+    return JSON.stringify(out);
+  })()`, sandbox);
+  const r24 = JSON.parse(r24Raw);
+  const sampleB = r24.badgeSample; delete r24.badgeSample;
+  r24OK = Object.values(r24).every(v => v === true);
+  console.log(`R24 人生稱號/分享戰績: ${r24OK ? '✅ 全數通過' : '❌ ' + JSON.stringify(r24)}`);
+  console.log(`  稱號樣例: ${sampleB}`);
+} catch (e) {
+  console.log('R24 人生稱號/分享戰績: ❌ ' + e.message);
+}
+
+/* ---- R25 屬性命運探針（強制路徑，不靠隨機抽中）----
+   ① br 確定性分流：≥10 個分流選項、覆蓋全部 5 種屬性、結構完整（need 50-70、hi/lo 文案相異、🧭膠囊標籤）
+   ② 行為：高屬性必走 hi（brHi+1）、低屬性必走 lo（brLo+1）——純門檻零擲骰，同屬性同結果
+   ③ 隱藏際遇 gating：5 個 r25_ 事件門檻內進池、差一點即不進池（含雙屬性組合與全中庸帶）
+   ④ 偏科稅：頂標(85+)再堆 → 搭檔屬性被抽稅且 r25tax 計數；85 以下完全無感
+   ⑤ 谷底追蹤：S.low/lowAge 隨選擇記錄、結算「屬性人生回顧」渲染谷底、舊存檔缺鍵不炸
+   ⑥ 新成就：forkmaster / taxking / comeback20 / fatedoor 皆可達且有獵人提示 */
+let r25OK = false;
+try {
+  const r25Raw = vm.runInContext(`(function(){
+    const out={};
+    /* ① br 結構 */
+    const brs=[];
+    EVENTS.forEach(e=>(e.choices||[]).forEach(c=>{ if(c.br) brs.push({ev:e,c:c}); }));
+    out.count = brs.length>=10;
+    out.attrCover = new Set(brs.map(o=>o.c.br.k)).size===5;
+    out.structOK = brs.every(o=>o.c.br.need>=50 && o.c.br.need<=70
+      && o.c.br.hi && o.c.br.hi.eff && o.c.br.hi.res && o.c.br.lo && o.c.br.lo.eff && o.c.br.lo.res
+      && o.c.br.hi.res!==o.c.br.lo.res && /class="gtag"/.test(o.c.label) && /🧭/.test(o.c.label));
+    /* ② 高低屬性分流行為 */
+    let hiOK=true, loOK=true;
+    brs.forEach(o=>{
+      const i=o.ev.choices.indexOf(o.c), k=o.c.br.k;
+      startGame(); S.age=o.ev.stage[0]; S.flags={employed:true}; ensureState(S);
+      S.attr[k]=Math.min(84, o.c.br.need+20);
+      showEvent(o.ev); choose(i);
+      if(S.resume[S.resume.length-1].res!==o.c.br.hi.res || (S.flags.brHi||0)!==1 || (S.flags.brLo||0)) hiOK=false;
+      startGame(); S.age=o.ev.stage[0]; S.flags={employed:true}; ensureState(S);
+      S.attr[k]=Math.max(0, o.c.br.need-20);
+      showEvent(o.ev); choose(i);
+      if(S.resume[S.resume.length-1].res!==o.c.br.lo.res || (S.flags.brLo||0)!==1 || (S.flags.brHi||0)) loOK=false;
+    });
+    out.hiOK=hiOK; out.loOK=loOK;
+    /* ③ 隱藏際遇 gating */
+    startGame(); S.age=30; S.flags={}; ensureState(S);
+    S.attr.int=85; out.bhIn = eligible().some(e=>e.id==='r25_brainhunt');
+    S.attr.int=84; out.bhGate = !eligible().some(e=>e.id==='r25_brainhunt');
+    S.attr.hp=20; out.hpIn = eligible().some(e=>e.id==='r25_lowhp');
+    S.attr.hp=21; out.hpGate = !eligible().some(e=>e.id==='r25_lowhp');
+    startGame(); S.age=40; S.flags={}; ensureState(S);
+    S.attr.mny=85; S.attr.hp=45; out.richIn = eligible().some(e=>e.id==='r25_burnrich');
+    S.attr.hp=46; out.richGate = !eligible().some(e=>e.id==='r25_burnrich');
+    startGame(); S.age=30; S.flags={}; ensureState(S);
+    S.attr.apr=80; S.attr.int=80; out.dcIn = eligible().some(e=>e.id==='r25_doublecrown');
+    S.attr.int=79; out.dcGate = !eligible().some(e=>e.id==='r25_doublecrown');
+    startGame(); S.age=35; S.flags={}; ensureState(S);
+    for(const k in S.attr) S.attr[k]=50;
+    out.mmIn = eligible().some(e=>e.id==='r25_midman');
+    S.attr.int=70; out.mmGate = !eligible().some(e=>e.id==='r25_midman');
+    /* 際遇成就：單局吃 2 個 → fatedoor */
+    startGame(); S.age=30; S.flags={}; ensureState(S);
+    showEvent(EVENTS.find(e=>e.id==='r25_brainhunt')); choose(0);
+    showEvent(EVENTS.find(e=>e.id==='r25_lowhp')); choose(0);
+    out.fateCnt = (S.flags.r25ev||0)===2;
+    die();
+    out.fateAch = !!SAVE.ach.fatedoor;
+    /* ④ 偏科稅 */
+    EVENTS.push({id:'t25tax', title:'測試偏科', text:'t', stage:[0,120], meme:{scene:'work',top:'t',bot:'b'},
+      choices:[{label:'堆', eff:{int:12}, res:'r25taxres'}]});
+    const tev=EVENTS[EVENTS.length-1];
+    startGame(); S.age=30; S.flags={}; ensureState(S);
+    S.attr.int=90; S.attr.hap=50;
+    showEvent(tev); choose(0);
+    out.taxHit = S.attr.hap===48 && S.attr.int===100 && (S.flags.r25tax||0)===2
+      && (S.lastWarn===null || true);   // 稅後 lastWarn 用完即清，這裡只驗數值
+    startGame(); S.age=30; S.flags={}; ensureState(S);
+    S.attr.int=70; S.attr.hap=50;
+    showEvent(tev); choose(0);
+    out.taxFree = S.attr.hap===50 && S.attr.int===82 && !S.flags.r25tax;
+    /* taxking：單局累計 8 點 */
+    startGame(); S.age=30; S.flags={}; ensureState(S);
+    for(let j=0;j<4;j++){ S.attr.int=90; S.attr.hap=60; showEvent(tev); choose(0); }
+    out.taxCnt=(S.flags.r25tax||0)===8;
+    die();
+    out.taxAch = !!SAVE.ach.taxking;
+    /* forkmaster：單局 4 次分流好結局 */
+    const bex=brs[0], bi=bex.ev.choices.indexOf(bex.c);
+    startGame(); S.age=bex.ev.stage[0]; S.flags={employed:true}; ensureState(S);
+    for(let j=0;j<4;j++){ S.attr[bex.c.br.k]=Math.min(84,bex.c.br.need+20); showEvent(bex.ev); choose(bi); }
+    out.forkCnt=(S.flags.brHi||0)===4;
+    die();
+    out.forkAch = !!SAVE.ach.forkmaster;
+    /* ⑤ 谷底追蹤 + comeback20 + 結算渲染 */
+    EVENTS.push({id:'t25dip', title:'測試谷底', text:'t', stage:[0,120], meme:{scene:'work',top:'t',bot:'b'},
+      choices:[{label:'跌', eff:{mny:-60}, res:'dip'},{label:'漲', eff:{mny:80}, res:'rise'}]});
+    const dev=EVENTS[EVENTS.length-1];
+    startGame(); S.age=25; S.flags={}; ensureState(S);
+    S.attr.mny=50;
+    showEvent(dev); choose(0);
+    out.lowTrack = S.low && S.low.mny<=20 && S.lowAge.mny===25;
+    S.age=40;
+    showEvent(dev); choose(1);
+    out.lowRise = S.low.mny<=20 && S.attr.mny>=70;
+    die();
+    out.cbAch = !!SAVE.ach.comeback20;
+    out.sumLow = document.querySelector('#app').innerHTML.includes('谷底');
+    /* 舊存檔缺 low 鍵：ensureState 補空、回顧 fallback 不炸 */
+    startGame(); S.age=40; delete S.low; delete S.lowAge; ensureState(S);
+    out.compat = typeof S.low==='object' && attrReviewHTML().includes('谷底');
+    /* ⑥ 成就提示 */
+    out.achDef = ['forkmaster','taxking','comeback20','fatedoor'].every(id=>ACH_MAP[id] && ACH_MAP[id].hint && ACH_MAP[id].hint.length>4);
+    return JSON.stringify(out);
+  })()`, sandbox);
+  const r25 = JSON.parse(r25Raw);
+  r25OK = Object.values(r25).every(v => v === true);
+  console.log(`R25 屬性命運: ${r25OK ? '✅ 全數通過' : '❌ ' + JSON.stringify(r25)}`);
+} catch (e) {
+  console.log('R25 屬性命運: ❌ ' + e.message);
+}
+
+/* ---- R34 求學鏈探針（強制路徑，不靠隨機抽中）----
+   ① 結構：5 段事件皆存在、cb_ 段進 CHAIN_IDS 優先池；examburn 進 SPECIAL_DEATHS+DEATHBOOK（rare+hint）；3 新成就有 hint
+   ② gating：沒種 r34_start 不出國中段；補習線/放養線只看得到自己的分支選項（cond 互斥）
+   ③ 補習全勤線：入班→私中→衝刺→頂大放榜 → r34_fullcram 成就
+   ④ 叛逆線：入班→翹班→成發→特殊選才 → r34_rebelwin 成就
+   ⑤ 放養校隊線：放養→校隊→特殊選才→錄取 → r34_dreamdept
+   ⑥ 重考線：衝刺後放榜選重考 → r34_retry 成就
+   ⑦ 初戀回扣：翹班線組讀書會→同城填志願 → r34_couple
+   ⑧ 死法：hp<=14 開第八罐 → examburn 入圖鑑；hp=15 邊界與高 hp 皆活（r34_ironliver）→ 非死碼 */
+let r34OK = false;
+try {
+  const r34Raw = vm.runInContext(`(function(){
+    const out={};
+    /* ① 結構 */
+    const ids=['r34_seed','cb_r34_junior','cb_r34_senior','cb_r34_allnighter','cb_r34_final'];
+    out.evDef = ids.every(id=>EVENTS.some(e=>e.id===id));
+    out.chainPool = ['cb_r34_junior','cb_r34_senior','cb_r34_allnighter','cb_r34_final'].every(id=>CHAIN_IDS.has(id));
+    out.sdDef = !!SPECIAL_DEATHS.examburn;
+    out.book = DEATHBOOK.some(d=>d.id==='examburn' && d.rare && d.hint.length>4);
+    out.achDef = ['r34_fullcram','r34_rebelwin','r34_retry'].every(id=>ACH_MAP[id] && ACH_MAP[id].hint && ACH_MAP[id].hint.length>4);
+    const html=()=>document.querySelector('#app').innerHTML;
+    /* ② gating：旗標未種 → 國中段不進池；童年段在窗口內進池 */
+    startGame(); S.age=13; S.flags={}; S.quirk=null; ensureState(S);
+    out.jGate = !eligible().some(e=>e.id==='cb_r34_junior');
+    startGame(); S.age=9; S.flags={}; S.quirk=null; ensureState(S);
+    out.seedIn = eligible().some(e=>e.id==='r34_seed');
+    /* 補習線只見補習選項、放養線只見放養選項 */
+    startGame(); S.age=13; S.flags={r34_start:true,r34_cram:true}; S.quirk=null; ensureState(S);
+    out.jIn = eligible().some(e=>e.id==='cb_r34_junior');
+    showEvent(EVENTS.find(e=>e.id==='cb_r34_junior'));
+    out.cramSees = html().includes('考私中') && html().includes('翹補習班') && !html().includes('加入校隊') && !html().includes('搶救');
+    startGame(); S.age=13; S.flags={r34_start:true,r34_free:true}; S.quirk=null; ensureState(S);
+    showEvent(EVENTS.find(e=>e.id==='cb_r34_junior'));
+    out.freeSees = !html().includes('考私中') && html().includes('加入校隊') && html().includes('搶救');
+    /* ③ 補習全勤線（seed0→junior0 私中→senior0 衝刺→final0 頂大 gate int70） */
+    startGame(); S.age=9; S.flags={}; S.quirk=null; ensureState(S);
+    showEvent(EVENTS.find(e=>e.id==='r34_seed')); choose(0);
+    out.cramFlag = S.flags.r34_cram===true && S.flags.r34_start===true;
+    S.age=13; showEvent(EVENTS.find(e=>e.id==='cb_r34_junior')); choose(0);
+    out.privFlag = S.flags.r34_private===true && S.flags.r34_mid===true;
+    S.age=17; showEvent(EVENTS.find(e=>e.id==='cb_r34_senior')); choose(0);
+    out.grindFlag = S.flags.r34_grind===true && S.flags.r34_sen===true;
+    S.age=18; S.attr.int=80;
+    showEvent(EVENTS.find(e=>e.id==='cb_r34_final')); choose(0);
+    out.topFlag = S.flags.r34_topuni===true && S.flags.r34_done===true;
+    out.tlDone = S.tl.some(t=>t.txt.indexOf('求學長征')>=0);
+    die();
+    out.cramAch = !!SAVE.ach.r34_fullcram;
+    /* ④ 叛逆線（seed0→junior1 翹班→senior1 成發→final2 特殊選才） */
+    startGame(); S.age=9; S.flags={}; S.quirk=null; ensureState(S);
+    showEvent(EVENTS.find(e=>e.id==='r34_seed')); choose(0);
+    S.age=13; showEvent(EVENTS.find(e=>e.id==='cb_r34_junior')); choose(1);
+    out.rebelFlag = S.flags.r34_rebel===true;
+    S.age=17; showEvent(EVENTS.find(e=>e.id==='cb_r34_senior')); choose(1);
+    out.stageFlag = S.flags.r34_stage===true;
+    S.age=18; showEvent(EVENTS.find(e=>e.id==='cb_r34_final')); choose(2);
+    out.dreamFlag = S.flags.r34_dreamdept===true && S.flags.r34_done===true;
+    die();
+    out.rebelAch = !!SAVE.ach.r34_rebelwin;
+    /* ⑤ 放養校隊線（seed1→junior2 校隊→senior2 特殊選才→final3 錄取） */
+    startGame(); S.age=9; S.flags={}; S.quirk=null; ensureState(S);
+    showEvent(EVENTS.find(e=>e.id==='r34_seed')); choose(1);
+    out.freeFlag = S.flags.r34_free===true;
+    S.age=13; showEvent(EVENTS.find(e=>e.id==='cb_r34_junior')); choose(2);
+    out.talentFlag = S.flags.r34_talent===true;
+    S.age=17; showEvent(EVENTS.find(e=>e.id==='cb_r34_senior')); choose(2);
+    out.specFlag = S.flags.r34_special===true;
+    S.age=18; showEvent(EVENTS.find(e=>e.id==='cb_r34_final')); choose(3);
+    out.freeDream = S.flags.r34_dreamdept===true && S.flags.r34_done===true;
+    /* ⑥ 重考線：衝刺旗標 + final1 */
+    startGame(); S.age=18; S.flags={r34_start:true,r34_cram:true,r34_mid:true,r34_sen:true,r34_grind:true}; S.quirk=null; ensureState(S);
+    showEvent(EVENTS.find(e=>e.id==='cb_r34_final')); choose(1);
+    out.repeatFlag = S.flags.r34_repeat===true && S.flags.r34_done===true;
+    out.tlRepeat = S.tl.some(t=>t.txt.indexOf('重考班')>=0);
+    die();
+    out.retryAch = !!SAVE.ach.r34_retry;
+    /* ⑦ 初戀回扣：翹班線 senior3 讀書會 → final4 同城 */
+    startGame(); S.age=17; S.flags={r34_start:true,r34_cram:true,r34_mid:true,r34_rebel:true}; S.quirk=null; ensureState(S);
+    showEvent(EVENTS.find(e=>e.id==='cb_r34_senior')); choose(3);
+    out.loveFlag = S.flags.r34_studylove===true;
+    S.age=18; showEvent(EVENTS.find(e=>e.id==='cb_r34_final')); choose(4);
+    out.coupleFlag = S.flags.r34_couple===true && S.flags.r34_done===true;
+    /* ⑧ examburn 死法：hp<=14 確定性觸發；hp=15 邊界活；衝刺旗標 gating */
+    startGame(); S.age=17; S.flags={r34_start:true,r34_cram:true,r34_mid:true,r34_sen:true}; S.quirk=null; ensureState(S);
+    out.anGate = !eligible().some(e=>e.id==='cb_r34_allnighter');
+    S.flags.r34_grind=true;
+    out.anIn = eligible().some(e=>e.id==='cb_r34_allnighter');
+    startGame(); S.age=17; S.flags={r34_grind:true}; S.quirk=null; ensureState(S); S.attr.hp=14;
+    showEvent(EVENTS.find(e=>e.id==='cb_r34_allnighter')); choose(0);
+    out.burnHit = S.flags.specialDeath==='examburn';
+    die('choice');
+    out.burnBook = !!SAVE.deaths.examburn;
+    startGame(); S.age=17; S.flags={r34_grind:true}; S.quirk=null; ensureState(S); S.attr.hp=15;
+    showEvent(EVENTS.find(e=>e.id==='cb_r34_allnighter')); choose(0);
+    out.burnEdge = !S.flags.specialDeath && S.flags.r34_ironliver===true && S.alive===true;
+    startGame(); S.age=17; S.flags={r34_grind:true}; S.quirk=null; ensureState(S); S.attr.hp=80;
+    showEvent(EVENTS.find(e=>e.id==='cb_r34_allnighter')); choose(0);
+    out.burnLive = !S.flags.specialDeath && S.flags.r34_ironliver===true;
+    return JSON.stringify(out);
+  })()`, sandbox);
+  const r34 = JSON.parse(r34Raw);
+  r34OK = Object.values(r34).every(v => v === true);
+  console.log(`R34 求學鏈: ${r34OK ? '✅ 全數通過' : '❌ ' + JSON.stringify(r34)}`);
+} catch (e) {
+  console.log('R34 求學鏈: ❌ ' + e.message);
+}
+
+/* ---- R38 隱藏彩蛋探針（強制路徑，不靠隨機抽中）----
+   ① 定義完整性：5 蛋 hidden + r32trig 掛進 R32_EGGS；5 隱藏成就 hint 配齊
+   ② funeralstar（出身×天賦）：天賦不符不觸發；全齊經 r32EggPick 插播→seen→死後成就
+   ③ samedeath（跨局同死法）：deathStreak<2 不觸發、>=2 觸發；挑戰局排除；die() 計數欄位有寫
+   ④ reaper90（高齡×健康）：89 歲 / hp69 邊界不觸發，90×70 觸發→成就
+   ⑤ poorface（屬性極端組合）：apr89 不觸發，apr90×mny10 觸發→成就
+   ⑥ whalecare（旗標連鎖×門檻）：缺 scammed 不觸發，全齊觸發→成就；egg32n>=2 護欄回 null */
+let r38OK = false;
+try {
+  const r38Raw = vm.runInContext(`(function(){
+    const out={};
+    const E=id=>EVENTS.find(e=>e.id===id);
+    /* ① 定義完整性 */
+    const ids=['egg38_funeralstar','egg38_samedeath','egg38_reaper90','egg38_poorface','egg38_whalecare'];
+    out.def = ids.every(id=>{const e=E(id); return !!e&&e.hidden===true&&typeof e.r32trig==='function'&&R32_EGGS.some(g=>g.id===id);});
+    out.achDef = ['r38_funeralstar','r38_samedeath','r38_reaper90','r38_poorface','r38_whalecare'].every(id=>ACH_MAP[id]&&ACH_MAP[id].hint&&String(ACH_MAP[id].hint).length>4);
+    /* ② funeralstar：出身×天賦 */
+    startGame(); S.age=30; S.flags={}; S.quirk=null; S.challenge=null; S.battle=null; ensureState(S);
+    S.attr={hp:50,int:50,apr:50,mny:50,hap:50}; S.seen={}; S.egg32n=0; SAVE.deathStreak=0; SAVE.lastDeathId='';
+    S.origin={id:'funeral',nm:'禮儀社世家'}; S.talent={nm:'過目不忘'};
+    out.fsGate = !E('egg38_funeralstar').r32trig(S);
+    S.talent={nm:'天選社牛'};
+    const p1=r32EggPick();
+    out.fsIn = !!p1 && p1.id==='egg38_funeralstar';
+    showEvent(p1); choose(0);
+    out.fsSeen = S.seen.egg38_funeralstar===true;
+    die();
+    out.fsAch = !!SAVE.ach.r38_funeralstar;
+    /* ③ samedeath：跨局同死法連續 */
+    startGame(); S.age=20; S.flags={}; S.quirk=null; S.challenge=null; S.battle=null; ensureState(S);
+    S.attr={hp:50,int:50,apr:50,mny:50,hap:50}; S.seen={}; S.egg32n=0;
+    S.origin={id:'normal',nm:'普通'}; S.talent={nm:'過目不忘'};
+    SAVE.deathStreak=1;
+    out.sdGate = !E('egg38_samedeath').r32trig(S);
+    SAVE.deathStreak=2;
+    S.challenge={date:'t',attempt:1};
+    out.sdChGate = !E('egg38_samedeath').r32trig(S);
+    S.challenge=null;
+    const p2=r32EggPick();
+    out.sdIn = !!p2 && p2.id==='egg38_samedeath';
+    showEvent(p2); choose(1);
+    out.sdSeen = S.seen.egg38_samedeath===true;
+    die();
+    out.sdAch = !!SAVE.ach.r38_samedeath;
+    out.sdTrack = SAVE.lastDeathId===S.deathId && (SAVE.deathStreak||0)>=1;
+    /* ④ reaper90：高齡×健康邊界 */
+    startGame(); S.age=89; S.flags={}; S.quirk=null; S.challenge=null; S.battle=null; ensureState(S);
+    S.attr={hp:70,int:50,apr:50,mny:50,hap:50}; S.seen={}; S.egg32n=0; SAVE.deathStreak=0;
+    S.origin={id:'normal',nm:'普通'}; S.talent={nm:'過目不忘'};
+    out.rpGateAge = !E('egg38_reaper90').r32trig(S);
+    S.age=90; S.attr.hp=69;
+    out.rpGateHp = !E('egg38_reaper90').r32trig(S);
+    S.attr.hp=70;
+    const p3=r32EggPick();
+    out.rpIn = !!p3 && p3.id==='egg38_reaper90';
+    showEvent(p3); choose(0);
+    die();
+    out.rpAch = !!SAVE.ach.r38_reaper90;
+    /* ⑤ poorface：屬性極端組合邊界 */
+    startGame(); S.age=30; S.flags={}; S.quirk=null; S.challenge=null; S.battle=null; ensureState(S);
+    S.attr={hp:50,int:50,apr:89,mny:10,hap:50}; S.seen={}; S.egg32n=0; SAVE.deathStreak=0;
+    S.origin={id:'normal',nm:'普通'}; S.talent={nm:'過目不忘'};
+    out.pfGate = !E('egg38_poorface').r32trig(S);
+    S.attr.apr=90;
+    const p4=r32EggPick();
+    out.pfIn = !!p4 && p4.id==='egg38_poorface';
+    showEvent(p4); choose(0);
+    die();
+    out.pfAch = !!SAVE.ach.r38_poorface;
+    /* ⑥ whalecare：旗標連鎖＋一局兩顆護欄 */
+    startGame(); S.age=40; S.flags={whale:true}; S.quirk=null; S.challenge=null; S.battle=null; ensureState(S);
+    S.attr={hp:50,int:50,apr:50,mny:75,hap:50}; S.seen={}; S.egg32n=0; SAVE.deathStreak=0;
+    S.origin={id:'normal',nm:'普通'}; S.talent={nm:'過目不忘'};
+    out.wcGate = !E('egg38_whalecare').r32trig(S);
+    S.flags.scammed=true;
+    S.egg32n=2;
+    out.wcCap = r32EggPick()===null;
+    S.egg32n=0;
+    const p5=r32EggPick();
+    out.wcIn = !!p5 && p5.id==='egg38_whalecare';
+    showEvent(p5); choose(1);
+    die();
+    out.wcAch = !!SAVE.ach.r38_whalecare;
+    return JSON.stringify(out);
+  })()`, sandbox);
+  const r38 = JSON.parse(r38Raw);
+  r38OK = Object.values(r38).every(v => v === true);
+  console.log(`R38 隱藏彩蛋: ${r38OK ? '✅ 全數通過' : '❌ ' + JSON.stringify(r38)}`);
+} catch (e) {
+  console.log('R38 隱藏彩蛋: ❌ ' + e.message);
+}
+
+if (__errors.length) {
+  console.log('\n--- 錯誤樣本(前5) ---');
+  __errors.slice(0, 5).forEach(e => console.log('  ' + e));
+}
+
+/* 退出碼 */
+const pass = __errors.length === 0 && chk.missingScenes.length === 0 && chk.eventVisible >= 126 && chk.eventTotal >= 126 && lsOK && achUnlocked > 0
+  && chk.deathbookMissing.length === 0 && chk.deathTotal >= 17 && deathsOK && rebirthOK && legacyOK && petOK && r13OK && r17OK && r20OK && r21OK && r22OK && r24OK && r25OK && r34OK && r38OK;
+console.log('\n結果: ' + (pass ? '✅ 全數通過' : '❌ 有項目未通過'));
+process.exit(pass ? 0 : 1);
