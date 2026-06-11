@@ -1773,6 +1773,147 @@ try {
   console.log('R49 開局天賦三選一: ❌ ' + e.message);
 }
 
+/* ---- R51 成家事件鏈探針（強制路徑，不靠隨機抽中）----
+   ① 結構：4 段事件齊備（once＋stage＋場景存在＋選項數）、toastdown 死法雙邊收錄、
+      3 成就有 hint、R46 保底表收 4 個入口、3 個 cb_ 段進因果鏈優先池
+   ② 相親線全鏈：seed→wedding→house→kid 逐段進池、旗標正確推進、後段未到不進池；
+      走完婚禮＋買房＋生養 → 解鎖 r51_fullnest（頂客路線不誤觸）
+   ③ 分支互斥：相親線看不到戀愛限定選項（反之亦然）；不婚線跳過婚禮直入買房段、
+      solo 限定選項只給 solo
+   ④ R50 職業膠囊：careerId=eng 才見工程師買房線、stall 才見攤二代育兒線
+   ⑤ 世代輪迴：r34_cram 出身見「補習地圖傳承」且通用雞娃隱藏 → 選之 → r51_cycle → 成就
+   ⑥ 死法確定性（比照 R27 門檻慣例、零裸 rng）：hp<=14 自辦流水席必死（cat=toastdown）、
+      門檻外必活（r51_toastking 倖存旗標）
+   ⑦ 狀態 gating：已婚不進 seed／wedding；不婚活到 70+ 解鎖 r51_freebird；乾淨局零 r51 殘留 */
+let r51OK = false;
+try {
+  const r51Raw = vm.runInContext(`(function(){
+    const out={};
+    const IDS=['r51_seed','cb_r51_wedding','cb_r51_house','cb_r51_kid'];
+    const evs=IDS.map(id=>EVENTS.find(e=>e.id===id));
+    /* ① 結構 */
+    out.evDef = evs.every(e=>!!e && e.once===true && Array.isArray(e.stage) && e.title && e.text && (e.choices||[]).length>=4);
+    out.scenes = evs.every(e=>e.meme && e.meme.scene && !!SCENES[e.meme.scene] && e.meme.top && e.meme.bot);
+    out.sdDef = !!SPECIAL_DEATHS.toastdown && SPECIAL_DEATHS.toastdown.cat==='toastdown' && !!SCENES[SPECIAL_DEATHS.toastdown.scene];
+    out.dbDef = DEATHBOOK.some(d=>d.id==='toastdown' && d.rare===true && d.nm && d.hint && d.hint.length>4 && d.reason);
+    out.achDef = ['r51_fullnest','r51_cycle','r51_freebird'].every(id=>ACH_MAP[id] && ACH_MAP[id].hint && String(ACH_MAP[id].hint).length>4);
+    out.milestone = R46_MILESTONE.r51_seed===29 && R46_MILESTONE.cb_r51_wedding===33 && R46_MILESTONE.cb_r51_house===37 && R46_MILESTONE.cb_r51_kid===41;
+    out.chainPool = ['cb_r51_wedding','cb_r51_house','cb_r51_kid'].every(id=>CHAIN_IDS.has(id));
+    /* ② 相親線全鏈 */
+    delete SAVE.ach.r51_fullnest;
+    startGame(); S.age=28; S.flags={}; ensureState(S); S.seen={};
+    out.seedIn = eligible().some(e=>e.id==='r51_seed');
+    out.laterGated = !eligible().some(e=>['cb_r51_wedding','cb_r51_house','cb_r51_kid'].includes(e.id));
+    showEvent(EVENTS.find(e=>e.id==='r51_seed')); choose(0);
+    out.matchFlag = S.flags.r51_match===true && !S.flags.r51_love && !S.flags.r51_solo;
+    S.age=30;
+    out.wedIn = eligible().some(e=>e.id==='cb_r51_wedding');
+    out.houseGated = !eligible().some(e=>e.id==='cb_r51_house');
+    showEvent(EVENTS.find(e=>e.id==='cb_r51_wedding'));
+    let h=document.querySelector('#app').innerHTML;
+    out.matchOnly = h.includes('長輩全包辦') && !h.includes('小辦精緻場');
+    choose(0);
+    out.wedFlag = S.flags.r51_wed===true && S.flags.r51_sponsor===true && S.flags.marital==='married' && S.flags.married===true;
+    S.age=33;
+    out.houseIn = eligible().some(e=>e.id==='cb_r51_house');
+    out.kidGated = !eligible().some(e=>e.id==='cb_r51_kid');
+    showEvent(EVENTS.find(e=>e.id==='cb_r51_house'));
+    h=document.querySelector('#app').innerHTML;
+    out.noSoloOpt = h.includes('頭期款靠爸') && !h.includes('單身小宅');
+    choose(0);
+    out.houseFlag = S.flags.r51_house===true && S.flags.r51_dadpay===true && S.flags.homeowner===true;
+    S.age=36;
+    out.kidIn = eligible().some(e=>e.id==='cb_r51_kid');
+    showEvent(EVENTS.find(e=>e.id==='cb_r51_kid'));
+    h=document.querySelector('#app').innerHTML;
+    out.kidOpts = h.includes('雞娃全餐') && h.includes('佛系放養') && !h.includes('攤二代養成計畫') && !h.includes('補習地圖');
+    choose(2);
+    out.kidFlag = S.flags.r51_kid===true && S.flags.r51_tiger===true && S.flags.haskid===true && S.flags.kids===1;
+    const oR1=rng; rng=()=>0.5; die(); rng=oR1;
+    out.fullAch = SAVE.ach.r51_fullnest===true;
+    /* ②b 頂客路線不誤觸 fullnest */
+    delete SAVE.ach.r51_fullnest;
+    startGame(); S.age=36; S.flags={r51_wed:true,r51_house:true}; ensureState(S); S.seen={};
+    showEvent(EVENTS.find(e=>e.id==='cb_r51_kid')); choose(4);
+    out.dinkFlag = S.flags.r51_nokid===true && S.flags.dink===true && !S.flags.haskid;
+    const oR2=rng; rng=()=>0.5; die(); rng=oR2;
+    out.dinkNeg = !SAVE.ach.r51_fullnest;
+    /* ③ 戀愛線互斥＋不婚線跳段 */
+    startGame(); S.age=28; S.flags={}; ensureState(S); S.seen={};
+    showEvent(EVENTS.find(e=>e.id==='r51_seed')); choose(1);
+    out.loveFlag = S.flags.r51_love===true;
+    S.age=30;
+    showEvent(EVENTS.find(e=>e.id==='cb_r51_wedding'));
+    h=document.querySelector('#app').innerHTML;
+    out.loveOnly = h.includes('小辦精緻場') && !h.includes('長輩全包辦');
+    startGame(); S.age=28; S.flags={}; ensureState(S); S.seen={};
+    showEvent(EVENTS.find(e=>e.id==='r51_seed')); choose(2);
+    out.soloFlag = S.flags.r51_solo===true;
+    S.age=32;
+    out.soloSkipWed = !eligible().some(e=>e.id==='cb_r51_wedding');
+    out.soloHouseIn = eligible().some(e=>e.id==='cb_r51_house');
+    showEvent(EVENTS.find(e=>e.id==='cb_r51_house'));
+    h=document.querySelector('#app').innerHTML;
+    out.soloOpt = h.includes('單身小宅') && !h.includes('頭期款靠爸');
+    choose(4);
+    out.soloHouse = S.flags.r51_house===true && S.flags.r51_solohouse===true && S.flags.homeowner===true;
+    /* ④ R50 職業膠囊 */
+    startGame(); S.age=32; S.flags={r51_wed:true}; ensureState(S); S.seen={}; S.careerId='eng';
+    showEvent(EVENTS.find(e=>e.id==='cb_r51_house'));
+    out.engShown = document.querySelector('#app').innerHTML.includes('爆肝工程師');
+    startGame(); S.age=32; S.flags={r51_wed:true}; ensureState(S); S.seen={}; S.careerId=null;
+    showEvent(EVENTS.find(e=>e.id==='cb_r51_house'));
+    out.engHidden = !document.querySelector('#app').innerHTML.includes('爆肝工程師');
+    startGame(); S.age=36; S.flags={r51_wed:true,r51_house:true}; ensureState(S); S.seen={}; S.careerId='stall';
+    showEvent(EVENTS.find(e=>e.id==='cb_r51_kid'));
+    out.stallShown = document.querySelector('#app').innerHTML.includes('攤二代養成計畫');
+    /* ⑤ 世代輪迴 */
+    delete SAVE.ach.r51_cycle;
+    startGame(); S.age=36; S.flags={r51_wed:true,r51_house:true,r34_cram:true}; ensureState(S); S.seen={};
+    showEvent(EVENTS.find(e=>e.id==='cb_r51_kid'));
+    h=document.querySelector('#app').innerHTML;
+    out.cycleShown = h.includes('補習地圖') && !h.includes('雞娃全餐');
+    choose(0);
+    out.cycleFlag = S.flags.r51_cycle===true && S.flags.r51_tiger===true && S.flags.haskid===true;
+    const oR3=rng; rng=()=>0.5; die(); rng=oR3;
+    out.cycleAch = SAVE.ach.r51_cycle===true;
+    /* ⑥ 死法確定性 */
+    const wev=EVENTS.find(e=>e.id==='cb_r51_wedding'), wi=wev.choices.findIndex(c=>c.special==='r51_toast');
+    startGame(); S.age=30; S.flags={r51_match:true}; ensureState(S); S.seen={};
+    S.attr.hp=14;
+    showEvent(wev); choose(wi);
+    out.toastDie = S.flags.specialDeath==='toastdown';
+    const oR4=rng; rng=()=>0.5; if(S.alive) die('choice'); rng=oR4;
+    out.toastCat = S.cat==='toastdown' && S.deathId==='toastdown' && !S.alive && !!SAVE.deaths.toastdown;
+    startGame(); S.age=30; S.flags={r51_match:true}; ensureState(S); S.seen={};
+    S.attr.hp=60;
+    showEvent(wev); choose(wi);
+    out.toastLive = S.alive && !S.flags.specialDeath && S.flags.r51_toastking===true && S.flags.r51_wed===true && S.flags.marital==='married';
+    /* ⑦ 狀態 gating＋零殘留 */
+    startGame(); S.age=28; S.flags={marital:'married',married:true}; ensureState(S); S.seen={};
+    out.marriedGated = !eligible().some(e=>e.id==='r51_seed');
+    startGame(); S.age=30; S.flags={r51_match:true,marital:'married',married:true}; ensureState(S); S.seen={};
+    out.marriedWedGated = !eligible().some(e=>e.id==='cb_r51_wedding');
+    delete SAVE.ach.r51_freebird;
+    startGame(); S.age=70; S.flags={r51_solo:true}; ensureState(S);
+    const oR5=rng; rng=()=>0.5; die(); rng=oR5;
+    out.freeAch = SAVE.ach.r51_freebird===true;
+    delete SAVE.ach.r51_freebird;
+    startGame(); S.age=69; S.flags={r51_solo:true}; ensureState(S);
+    const oR6=rng; rng=()=>0.5; die(); rng=oR6;
+    out.freeNeg = !SAVE.ach.r51_freebird;
+    startGame();
+    out.clean = Object.keys(S.flags||{}).every(k=>k.indexOf('r51')!==0)
+             && Object.keys(S.seen||{}).every(k=>k.indexOf('r51')!==0);
+    return JSON.stringify(out);
+  })()`, sandbox);
+  const r51 = JSON.parse(r51Raw);
+  r51OK = Object.values(r51).every(v => v === true);
+  console.log(`R51 成家人生事件鏈: ${r51OK ? '✅ 全數通過' : '❌ ' + JSON.stringify(r51)}`);
+} catch (e) {
+  console.log('R51 成家人生事件鏈: ❌ ' + e.message);
+}
+
 if (__errors.length) {
   console.log('\n--- 錯誤樣本(前5) ---');
   __errors.slice(0, 5).forEach(e => console.log('  ' + e));
@@ -1780,6 +1921,6 @@ if (__errors.length) {
 
 /* 退出碼 */
 const pass = __errors.length === 0 && chk.missingScenes.length === 0 && chk.eventVisible >= 126 && chk.eventTotal >= 126 && lsOK && achUnlocked > 0
-  && chk.deathbookMissing.length === 0 && chk.deathTotal >= 17 && deathsOK && rebirthOK && legacyOK && petOK && r13OK && r17OK && r20OK && r21OK && r22OK && r24OK && r25OK && r34OK && r38OK && r41OK && r42OK && r43OK && r44OK && r45OK && r46OK && r47OK && r48OK && r49OK;
+  && chk.deathbookMissing.length === 0 && chk.deathTotal >= 17 && deathsOK && rebirthOK && legacyOK && petOK && r13OK && r17OK && r20OK && r21OK && r22OK && r24OK && r25OK && r34OK && r38OK && r41OK && r42OK && r43OK && r44OK && r45OK && r46OK && r47OK && r48OK && r49OK && r51OK;
 console.log('\n結果: ' + (pass ? '✅ 全數通過' : '❌ 有項目未通過'));
 process.exit(pass ? 0 : 1);

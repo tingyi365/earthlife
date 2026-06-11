@@ -1843,6 +1843,10 @@ const ACHIEVEMENTS = [
   {id:"r50_godfather", ic:"🏮", nm:"神明欽點・廟公本公", desc:"接下廟公的棒子，還親自扛完進香大日子——神明看人很準，看你尤其準。", check:c=>c.S.careerId==="temple"&&!!(c.S.flags&&c.S.flags.r50_blessed), hint:"快樂與人緣養得夠高的人，廟裡的師父會多看你兩眼——接了棒，大日子要自己親自扛…"},
   {id:"r50_cashcow", ic:"📡", nm:"流量變現・演算法親兒子", desc:"以全職直播主身分謝幕時財富仍站穩 80——在演算法的海嘯裡你不只活著，還上岸買了房。", check:c=>c.S.careerId==="live"&&c.S.attr.mny>=80, hint:"靠臉與快樂吃飯的那條路線，把戶頭數字一路顧到謝幕都不掉漆…"},
   {id:"r50_slashie", ic:"🪪", nm:"百工圖鑑・轉職大師", desc:"跨輪迴體驗過 4 種不同職業路線——別人是一技之長，你是每一世都換一張名片。", check:c=>Object.keys(SAVE.careerSeen||{}).length>=4, hint:"職業是 25 歲那年由五圍形狀決定的——多投胎幾次、把屬性養出不同長相，名片自然會換…"},
+  /* ---- R51 成家鏈成就（旗標確定性判定，零裸 rng；未進鏈的局永不誤觸） ---- */
+  {id:"r51_fullnest", ic:"🏡", nm:"成家全餐・親戚集體失業", desc:"從年夜飯催婚一路走完婚禮、買房抉擇、生養下一代——三大魔王全通關，從此圍爐桌上再也沒有人敢問你問題。", check:c=>!!c.S.flags.r51_wed&&!!c.S.flags.r51_house&&!!c.S.flags.r51_kid&&!!c.S.flags.haskid, hint:"年夜飯那桌的催婚連續技，如果照單全收——婚禮、房事、生養三關一關不漏地走完…"},
+  {id:"r51_cycle", ic:"🔄", nm:"世代輪迴・都是為你好 2.0", desc:"自己怎麼被養大的，就怎麼養下一代——補習地圖原封不動傳承，或把童年那陣自由的風留給孩子。輪迴的不是業障，是教養。", check:c=>!!c.S.flags.r51_cycle, hint:"小時候走過『都是為你好』那條路的人，當了爸媽站在同一個巷口時，會做出似曾相識的決定…"},
+  {id:"r51_freebird", ic:"🕊️", nm:"不婚不生・自由終老", desc:"在年夜飯桌上宣布不婚，扛住三十年親戚火力，自由自在活過 70 歲——人生這題，你交了一份只有自己看得懂、但分數很高的答案卷。", check:c=>!!c.S.flags.r51_solo&&c.age>=70, hint:"圍爐桌上敢把『我不婚』說出口的人，如果把這份自由一路守到七十歲…"},
 ];
 const ACH_MAP = {}; ACHIEVEMENTS.forEach(a=>ACH_MAP[a.id]=a);
 
@@ -6541,6 +6545,61 @@ function buildEvents(){ return [
       {label:"硬撐帶課，腰是消耗品", eff:{mny:4,hp:-8,hap:-3}, res:"你綁著護腰繼續示範，課是沒停，腰卻從此會看天氣預報。學員都說你敬業，物理治療師說你欠揍——兩邊都對。"},
       {label:"轉型線上課＋姿勢顧問", eff:{int:5,mny:3,hp:2}, flags:{r50_online:true}, res:"你趁養傷把課程搬上線，意外打開全島市場。腰好了之後你維持雙軌經營——那聲『啪』，後來被你稱為『創業的起跑槍』。"},
     ]},
+
+  /* =====================================================================
+     R51 台味成家事件鏈「成家進度條」：催婚 → 婚禮 → 買房 → 育兒，前面的選擇一路回扣
+     旗標推進：r51_match（相親線）／r51_love（自由戀愛線）／r51_solo（不婚線）
+       → r51_wed（r51_sponsor 長輩全包／r51_smallwed 小辦／r51_naked 公證裸婚／r51_bigwed 自辦流水席）
+       → r51_house（r51_dadpay 靠爸頭期款／r51_rent4ever 租屋訂閱制／r51_oldapt 蛋白區老公寓／
+          r51_enghouse 工程師重劃區／r51_solohouse 單身小宅）
+       → r51_kid（r51_tiger 雞娃／r51_freerange 放養／r51_nokid 頂客／r51_stallkid 攤二代；
+          r51_cycle＝走過 R34 求學鏈又把同款童年複製給下一代的「世代輪迴」）
+     cb_ 前綴沿用既有因果鏈優先抽選；分歧全走旗標＋choice.cond＋門檻膠囊（零裸 rng 賭命），
+     職業膠囊只讀 R50 careerId、屬性門檻只用在本輪新增選項，不動任何既有檢定數值。
+     不婚線跳過婚禮與育兒、直入買房段；中途經其他事件先婚者自動退鏈（語意自洽）。
+     鏈內附 1 稀有死法 toastdown（喜宴敬酒馬拉松，hp<=14 確定性觸發，比照 R27 模式）。
+     文案走台味成家自嘲（催婚親戚／紅包行情／頭期款天文數字／月子中心／少子化），不踩紅線。
+     ===================================================================== */
+  {id:"r51_seed", stage:[26,32], w:2.5, once:true, cond:s=>s.flags.marital!=="married",
+    title:"年夜飯催婚總力戰", text:"年夜飯才上第二道菜，二姑就發動先制攻擊：『有對象沒？』三舅媽接技能連段：『隔壁阿芬的女兒小你兩歲，孩子都會叫阿嬤了。』最後大伯放出全桌靜止的大絕：『少年欸，不生，對得起國家嗎？』全場目光集中在你的碗上——這頓飯，你不表態是吃不完的。",
+    meme:{scene:"bernie", top:"親戚：何時結婚？何時生？", bot:"我：先讓我把這隻雞腿吃完", tag:"成家"},
+    choices:[
+      {label:"舉白旗，進親戚牌相親流水席", eff:{hap:-3,int:2,apr:2}, flags:{r51_match:true}, res:"你話一出口，三舅媽的手機相簿三秒內攤開在桌上，候選人照片比年菜還豐盛。從此你的週末改由親戚排程：咖啡廳、素食餐廳、宮廟前廣場——每一場都有『剛好路過』的長輩在隔壁桌觀戰。你終於理解什麼叫主場作戰：對方的主場。"},
+      {label:"承認有曖昧對象，自由戀愛自己來", eff:{hap:6,apr:2}, flags:{r51_love:true}, res:"你鼓起勇氣說『我自己有在認識了』，全桌瞬間安靜，然後爆出比中獎還熱烈的歡呼。二姑當場要照片、三舅媽開始查星座合不合、阿嬤默默去房間翻出一個紅包說要先押起來。壓力沒有消失——它只是改名叫『進度回報』，每週準時催收。"},
+      {label:"當場宣布不婚主義，一個人也是一桌", eff:{hap:4,mny:3}, flags:{r51_solo:true}, res:"你放下筷子，平靜地說：『我不婚。』空氣凝結三秒，大伯的『對得起國家嗎』剛要出口，你補刀：『國家有對得起我的薪水單嗎？』全桌長輩集體噎住，只有表妹在桌下偷偷對你比讚。從此每年圍爐，你的戰場都在，但你的立場也在。"},
+      {label:'<i class="gtag">🧠智力65+</i> 打開試算表，用數據讓全桌靜音', eff:{int:4,hap:5}, cond:s=>s.attr.int>=65, gate:true, flags:{r51_solo:true,r51_sheet:true}, res:"你慢條斯理打開手機：『來，我們看一下數字。』聘金、婚宴、頭期款、月子中心、養到大學畢業——試算表往下捲了八個畫面，總額後面的零多到二姑扶了一下老花眼鏡。你合上手機：『各位股東，這個案子需要更多預算。』全桌靜音，大伯默默幫你夾了一塊東坡肉。"},
+    ]},
+  {id:"cb_r51_wedding", stage:[27,38], w:2.5, once:true, cond:s=>(!!s.flags.r51_match||!!s.flags.r51_love)&&!s.flags.r51_wed&&s.flags.marital!=="married",
+    title:"紅包行情修羅場", text:"婚期一定，你才發現結婚是一場大型專案管理：喜餅要分南北版、婚攝分平面動態、長輩名單分『一定要請』和『不請會死』。最致命的是那張流傳已久的紅包行情表——飯店桌菜一人兩千起跳，你看著賓客名單心算：這場婚禮，是盈利還是慈善？",
+    meme:{scene:"wedding", top:"紅包行情表 vs 喜宴報價單", bot:"原來婚禮是一場對賭", tag:"成家"},
+    choices:[
+      {label:'<i class="gtag">🧧相親線</i> 長輩全包辦：三十桌流水席＋電子花車', eff:{mny:4,hap:-3,apr:2}, cond:s=>!!s.flags.r51_match, flags:{r51_wed:true,r51_sponsor:true,married:true,marital:"married"}, res:"既然是親戚牽的線，婚禮自然也是親戚的主場。菜單長輩定、桌次長輩排、連你進場的歌都是大伯點的〈愛拚才會贏〉。三十桌裡你認識的不到五桌，但紅包收入意外做出順差。敬酒敬到第二十桌時你突然想通：這不是你的婚禮，這是兩個家族的業績發表會——而你，是年度代表作。"},
+      {label:'<i class="gtag">💞戀愛線</i> 小辦精緻場：只請真的認識的人', eff:{hap:8,mny:-6}, cond:s=>!!s.flags.r51_love, flags:{r51_wed:true,r51_smallwed:true,married:true,marital:"married"}, res:"你們頂住兩邊長輩『阿姨的乾妹妹不請說不過去』的車輪戰，硬是把名單砍到三桌。婚禮上每個人你都叫得出名字，致詞的死黨爆料爆到你想搶麥克風，沒有電子花車、沒有乾冰，只有真的會哭的人。長輩事後嘀咕『辦這麼小氣』，但偷偷把你們的婚禮照設成了頭貼。"},
+      {label:"公證裸婚，省下的全拿去蜜月", eff:{hap:6,mny:-2}, flags:{r51_wed:true,r51_naked:true,married:true,marital:"married"}, res:"你們挑了個平日上午去戶政事務所，排在你們前面的是來辦門牌的阿伯。十五分鐘、兩個簽名、一本結婚書約，公務員微笑說『恭喜』的瞬間正式生效。省下的五十萬變成兩張環島之外的機票——長輩氣到三天不接電話，第四天傳來訊息：『照片拍好看一點，我要跟會仔的人交代。』"},
+      {label:"自辦三十桌流水席，全場敬酒不缺席", eff:{}, special:"r51_toast", flags:{r51_wed:true,r51_bigwed:true,married:true,marital:"married"}},
+      {label:'<i class="gtag">💅外貌75+</i> 婚紗照美到被廠商贊助', eff:{apr:3,mny:5,hap:6}, cond:s=>s.attr.apr>=75, gate:true, flags:{r51_wed:true,r51_photogenic:true,married:true,marital:"married"}, res:"婚紗公司看到試拍片，當場提出全額贊助換授權：你們的婚紗照三個月後出現在捷運燈箱上，路人以為是偶像劇劇照。婚禮當天，賓客的手機記憶體集體告急，攝影師最後說了句業界真心話：『這場我應該付錢給你們。』"},
+    ]},
+  {id:"cb_r51_house", stage:[28,42], w:2.5, once:true, cond:s=>(!!s.flags.r51_wed||!!s.flags.r51_solo)&&!s.flags.r51_house,
+    title:"頭期款天文台", text:"你打開房屋網站，把篩選條件一路放寬：蛋黃區改蛋白區、三房改兩房、電梯改公寓、新成屋改『屋齡 40 年內』——頭期款的數字依然像天文觀測，看得到，到不了。房仲熱情地遞上計算機：『現在不買，明年更貴喔。』你心想：明年的我，也是這麼跟今年的我說的。",
+    meme:{scene:"house", top:"頭期款：一個天文數字", bot:"我的存款：一個天文笑話", tag:"成家"},
+    choices:[
+      {label:'<i class="gtag">🧧成家線</i> 頭期款靠爸：兩家長輩湊起來', eff:{mny:-4,hap:3,apr:-3}, cond:s=>!!s.flags.r51_wed, flags:{r51_house:true,r51_dadpay:true,homeowner:true}, res:"兩邊爸媽各搬出一筆『早就幫你們留著』的定存，頭期款奇蹟般湊齊。交屋那天全家來參觀，你媽摸著牆說『這面要掛全家福』，丈人量了陽台說『這裡可以種蔥』。權狀上是你的名字，但裝潢話語權的持分，你大概只有兩成——啃老上車的利息，是用餘生的家庭聚餐分期攤還的。"},
+      {label:"宣布租屋一輩子：人生改訂閱制", eff:{hap:5,mny:4}, flags:{r51_house:true,r51_rent4ever:true}, res:"你算完三十年房貸的總利息，冷靜地關掉房屋網站：『我選擇訂閱制人生。』房子是房東的，自由是自己的——存下來的頭期款拿去投資和旅行，租約到期就換個街區重新做人。親戚說你不踏實，你回：『我很踏實啊，每個月一號準時踏實地匯房租。』"},
+      {label:"蛋白區四十年老公寓，通勤換坪數", eff:{mny:-10,hap:2,hp:-3}, flags:{r51_house:true,r51_oldapt:true,homeowner:true}, res:"你簽下那間『屋況有歷史感』的老公寓：爬五樓當健身、水管交響樂當白噪音、鄰居阿姨比管理員可靠。每天通勤九十分鐘，你在捷運上看完的書比大學四年還多。朋友問你後悔嗎？你看著權狀上自己的名字：『至少在這座島上，有三十坪確定姓我的姓。』"},
+      {label:'<i class="gtag">💻爆肝工程師</i> 信貸全開，重劃區預售屋直上', eff:{mny:-12,hap:5,hp:-4}, cond:s=>s.careerId==="eng", flags:{r51_house:true,r51_enghouse:true,homeowner:true}, res:"你用年薪證明和股票對帳單說服銀行開出貸款上限，簽下重劃區的預售屋——目前那裡只有一片工地和一張很美的 3D 圖。接下來三年你的人生只剩兩個按鈕：上線、加班。交屋那天你站在空屋中央，聽見自己的肝輕聲說：『這房子有我的一半。』"},
+      {label:'<i class="gtag">🧘不婚線</i> 單身小宅：一人飽全家飽', eff:{mny:-8,hap:7}, cond:s=>!!s.flags.r51_solo, flags:{r51_house:true,r51_solohouse:true,homeowner:true}, res:"你買下市區邊緣的兩房小宅，一房睡覺、一房放興趣。沒有人跟你搶遙控器、冰箱裡的布丁永遠是你的、半夜打電動不用戴耳機。喬遷那天親戚來訪，視察完問：『一個人住這麼好幹嘛？』你環顧自己的小宇宙：『就是一個人，才要住這麼好。』"},
+    ]},
+  {id:"cb_r51_kid", stage:[30,45], w:2.5, once:true, cond:s=>!!s.flags.r51_wed&&!!s.flags.r51_house&&!s.flags.r51_kid,
+    title:"少子化救星選拔會", text:"婚也結了、房事也定了，親戚的第二波攻勢準時抵達：『什麼時候生？』你隨手查了一下行情：月子中心一個月十五萬起跳、雙語幼稚園學費比大學貴、新聞標題寫著『生育率全球倒數第一』。大伯的聲音又在耳邊響起：『不生，對得起國家嗎？』你看著存摺心想：生了，國家對得起這本存摺嗎？",
+    meme:{scene:"dilemma", top:"月子中心 15 萬/月", bot:"少子化的原因 找到了", tag:"成家"},
+    choices:[
+      {label:'<i class="gtag">🔄世代輪迴</i> 把當年的補習地圖，原封不動傳下去', eff:{int:2,mny:-8,hap:-2}, cond:s=>!!s.flags.r34_cram, flags:{r51_kid:true,r51_tiger:true,r51_cycle:true,haskid:true}, inc:"kids", res:"你抱著剛滿月的孩子，鬼使神差地走到巷口那間補習班前——櫃檯阿姨居然還認得你。你聽見自己說出那句話：『請問現在……要排多久？』孩子還不會翻身，已經候補上了潛能開發班。當年那句『都是為你好』，原來不是台詞，是世襲的。"},
+      {label:'<i class="gtag">🔄世代輪迴</i> 當年被放養的你，堅持放養 2.0', eff:{hap:6,mny:-5}, cond:s=>!!s.flags.r34_free, flags:{r51_kid:true,r51_freerange:true,r51_cycle:true,haskid:true}, inc:"kids", res:"親戚塞來的全美語幼稚園簡章，你笑著收下，然後帶孩子去巷口騎腳踏車。你記得自己童年風吹過耳朵的聲音，決定把同一陣風留給下一代。隔壁媽媽焦慮地問：『不補真的可以嗎？』你看著孩子滿身泥巴的笑：『我就是這樣長大的——好像，還行？』"},
+      {label:"雞娃全餐：雙語幼稚園＋才藝五修", eff:{mny:-10,hap:-3,int:2}, cond:s=>!s.flags.r34_cram, flags:{r51_kid:true,r51_tiger:true,haskid:true}, inc:"kids", res:"你研究學區的認真程度超過當年自己聯考：雙語幼稚園要兩歲排隊、鋼琴圍棋游泳畫畫程式五修並行，行事曆精細到以十五分鐘為單位。某天孩子問你：『把拔，我可以發呆嗎？』你看著自己排的課表，突然不知道怎麼回答——發呆，好像真的沒排進去。"},
+      {label:"佛系放養：快樂就好，長大再說", eff:{hap:6,mny:-5,hp:-2}, cond:s=>!s.flags.r34_free, flags:{r51_kid:true,r51_freerange:true,haskid:true}, inc:"kids", res:"你決定當佛系爸媽：不搶幼稚園、不修才藝、功課寫完就放電。孩子在公園野到天黑，回家路上睡死在你肩上——肩膀很痠，但你想不到比這更好的重量。家長群組在比較全美語進度時，你家小孩正在研究西瓜蟲會不會轉彎，而且研究得非常認真。"},
+      {label:"頂客到底：不生，先對得起自己", eff:{hap:5,mny:5}, flags:{r51_kid:true,r51_nokid:true,dink:true}, res:"你們認真討論了三個晚上，最後在便利商店的關東煮前達成共識：不生。把育兒基金改名叫『兩人環遊世界基金』，把兒童房改成電影房。親戚輪番上陣勸了三年，最後在你們的京都旅行限動底下留言：『……好啦看起來是真的很快樂。』少子化你們確實有貢獻——貢獻了一個想清楚的示範。"},
+      {label:'<i class="gtag">🍢夜市攤販</i> 攤二代養成計畫：孩子在攤車邊長大', eff:{mny:-4,hap:7,hp:-2}, cond:s=>s.careerId==="stall", flags:{r51_kid:true,r51_stallkid:true,haskid:true}, inc:"kids", res:"別人的孩子在安親班寫評量，你的孩子在攤車邊收錢找零，心算速度海放同齡人三條街。常客阿姨們輪流當保母，整條夜市都是他的遊樂場。小學作文〈我的家〉他寫：『我家很大，從第一攤到最後一攤都是。』老師給了滿分，還偷偷來捧場了兩次。"},
+    ]},
 ];}
 const EVENTS_BASE = buildEvents();   // 載入時建一份（行為與舊版 const EVENTS 完全一致）
 let EVENTS = EVENTS_BASE;            // 每日挑戰時暫時換成種子重建版，結束即還原
@@ -6575,6 +6634,7 @@ const R46_MILESTONE={
   cb_r28_band:30, cb_r28_etf:50, cb_r28_yolo:45, cb_r28_dugout:35,
   cb_r34_senior:16, cb_r34_allnighter:17, cb_r34_final:18,
   cb_r39_mee_old:64, cb_r43_rv_old:62, cb_npiao_rent:24,
+  r51_seed:29, cb_r51_wedding:33, cb_r51_house:37, cb_r51_kid:41,   // R51 成家鏈四段入口保底
 };
 /* og_ 出身回收事件（全為 once＋出身限定）自動入里程碑表：進窗口 2 年後保底，
    確保每種出身的專屬橋段在那一世必定演出 */
@@ -7624,6 +7684,12 @@ function choose(i){
     else { eff={hap:5,mny:-3}; S.flags.lazy=(S.flags.lazy||0)+1; res="🛌 你正式進入低慾望模式：不買房、不比較、不參加同學會。存款緩慢縮水，快樂穩定回升。親戚說你沒出息，你在沙發上回：『我不是沒出息，我是提早退休體驗版。』"; }
   }
 
+  /* ---- R51 成家鏈 special：喜宴敬酒馬拉松（屬性門檻確定性觸發，比照 R27 零裸 rng）---- */
+  if(c.special==="r51_toast"){
+    if(S.attr.hp<=14){ S.flags.specialDeath="toastdown"; eff={hp:-100}; res="🥂 第三十桌舉杯的那一刻，你的心跳搶先說了『我先乾為敬』。賓客以為你是喜極而泣地暈倒，司儀展現專業默契：『新人去換第三套禮服囉～』——你確實換了一套，白色的，有翅膀的那種。全場掌聲中，電子花車剛好唱到〈祝你幸福〉。"; }
+    else { eff={hap:6,apr:3,hp:-6,mny:6}; S.flags.r51_toastking=true; res="🥂 三十桌、三十輪、杯杯見底，你用鋼鐵肝撐完整場敬酒馬拉松，最後站著送完最後一位賓客——婚宴界的全勤獎。隔天你在床上躺了一整天，紅包數了三遍：扣掉場地菜錢，居然小賺。岳父從此逢人就誇：『阮囝婿，海量！』"; }
+  }
+
   // 旗標 / 計數（成就追蹤）
   if(c.flags) Object.assign(S.flags, c.flags);
   if(c.inc) S.flags[c.inc]=(S.flags[c.inc]||0)+1;
@@ -7850,6 +7916,9 @@ const SPECIAL_DEATHS = {
     reason:"風雨生信念——颱風天照常上班，你騎上橋才發現自己成了風箏。落地前手機跳出通知：『本市改為停止上班上課』，老闆在群組回了一個 🙏。你的全勤獎金，最後折成了奠儀"},
   tangping:   {cat:"tangping",  scene:"heaven",    title:"躺出新境界的羽化系沙發仙人",
     reason:"躺平成仙——你在沙發上以完美大字形躺到羽化登仙，表情是這輩子最安詳的一次。土地公親自收編，職稱『勸世副尊』，業務範圍：托夢勸世人毋通太操。開宮以來業績最好的，就是你這一尊"},
+  /* ---- R51 成家鏈稀有死法（自辦流水席敬酒馬拉松，hp 見底還堅持三十桌全乾才會觸發）---- */
+  toastdown:  {cat:"toastdown", scene:"wedding",   title:"在自己喜宴上先行下桌的最強新人",
+    reason:"敬酒馬拉松——自辦三十桌流水席，你堅持桌桌都乾真的，第三十桌舉杯那刻，心跳搶先說了『我先乾為敬』。司儀專業救場：『新人去換第三套禮服囉』——你確實換了，白色的，有翅膀的那種"},
 };
 
 /* =========================================================================
@@ -7909,6 +7978,8 @@ const DEATHBOOK = [
   {id:"sweatout",   ic:"🥵", rare:true,  nm:"節電成仁",     hint:"七月的電費單前，有人選擇用肉身對抗夏季電價…體力快見底還硬撐整個夏天不開冷氣的話…", reason:SPECIAL_DEATHS.sweatout.reason},
   {id:"typhoonwork",ic:"🌀", rare:true,  nm:"風雨生信念",   hint:"隔壁縣市放假、你的縣市觀察中…身體快散了還硬騎車衝全勤，會直接騎進天氣圖裡…", reason:SPECIAL_DEATHS.typhoonwork.reason},
   {id:"tangping",   ic:"🛌", rare:true,  nm:"躺平成仙",     hint:"看破一切宣布躺平的人…口袋見底還躺好躺滿，會躺出編制外的神職…", reason:SPECIAL_DEATHS.tangping.reason},
+  /* ---- R51 成家鏈稀有死法 ---- */
+  {id:"toastdown",  ic:"🥂", rare:true,  nm:"敬酒馬拉松",   hint:"走進成家鏈、選擇自辦三十桌流水席的人…身體快見底還堅持桌桌喝真的，最後一輪就是終點線…", reason:SPECIAL_DEATHS.toastdown.reason},
 ];
 function deathbookCount(){
   const d=(SAVE&&SAVE.deaths)||{};
