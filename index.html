@@ -1341,7 +1341,8 @@ function r49Draw(){
 }
 /* 開局鋪牌：只在第 0 年的新人生鋪一次；舊進行中存檔無 perkPool → 永不補鋪、零殘留 */
 function r49Init(){
-  if(!S || !S.alive || S.age!==0 || S.perkId || Array.isArray(S.perkPool)) return;
+  // R56 劇本局不鋪牌：開局天賦會改寫屬性，與劇本「鎖定開局」互斥（非劇本局完全不變）
+  if(!S || !S.alive || S.age!==0 || S.perkId || Array.isArray(S.perkPool) || S.script) return;
   S.perkPool = r49Draw();
   const seen = perkSeenMap();
   S.perkPool.forEach(id=>{ if(!seen[id]){ seen[id]=true; recFound("k", id, {w:(SAVE.plays||0)+1}); } });
@@ -1482,6 +1483,91 @@ const R55_ERAS = [
 const R55_MAP = {}; R55_ERAS.forEach(e=>R55_MAP[e.id]=e);
 
 /* =========================================================================
+   R56 人生劇本挑戰（命題開局）：主選單選一張「劇本卡」開特殊局——
+   特殊開局（鎖屬性/鎖年代）＋特殊規則＋可判定通關目標，通關發專屬徽章
+   （存 SAVE.scriptBadges 跨輪迴持久化）。
+   設計鐵律：
+   ① 劇本局比照挑戰局禁用轉生/祖傳/世代傳承/開局三選一（newLife(true)＋r49 跳鋪），
+      命題鎖定不被 meta 稀釋；但徽章/成就/輪迴點/陰德照常入帳——劇本是內容不是 PvP
+   ② 特殊規則全掛 S.script 檢查，非劇本局（含舊進行中存檔無 script 鍵）零汙染：
+      effWeight 加權、choose 財富修正、結算判定全部不碰一般局
+   ③ 通關目標全為門檻/旗標確定性判定（零裸 rng）；年代鎖定在 pick(R55_ERAS)
+      照常消耗 rng 後覆寫——種子序列不變、鎖定確定生效
+   ④ 不新增任何事件：田僑仔的「敗家/詐騙加權」全部加權既有事件，未觸發事件數零變化
+   ========================================================================= */
+const R56_SCRIPTS = [
+  {id:"loser", ic:"🐢", nm:"魯蛇大翻身",
+   intro:"投胎抽卡抽到爛尾——五圍全部貼地開局，連天賦紅利都被孟婆當場沒收。",
+   rule:"開局五維一律鎖 20（天賦/出身/開局天賦加成全失效）",
+   goalTxt:"財富或快樂任一練到 70，且活過 60 歲",
+   attrs:{hp:20,int:20,apr:20,mny:20,hap:20},
+   goal:s=>s.age>=60 && ((s.attr.mny||0)>=70 || (s.attr.hap||0)>=70)},
+  {id:"rich", ic:"🏚️", nm:"田僑仔的詛咒",
+   intro:"阿公留下三甲地和一句遺言：『好好守。』全台的理專、話術與酒肉朋友聞錢而來。",
+   rule:"開局財富鎖 95，但整局財富流失 ×1.5、敗家/詐騙類事件加權出沒",
+   goalTxt:"謝幕時財富仍 ≥ 48（守住一半家產）",
+   attrs:{mny:95},
+   goal:s=>(s.attr.mny||0)>=48},
+  {id:"k22", ic:"🧋", nm:"22K 永動機",
+   intro:"你的職涯被時代蓋了個章：起薪 22K，加薪靠通膨。錢是別人的劇情，快樂得自己寫。",
+   rule:"鎖低薪職涯線：整局財富增益砍半（最低保留 1）",
+   goalTxt:"活過 40 歲且謝幕時快樂 ≥ 70（窮，但快樂向結局）",
+   goal:s=>s.age>=40 && (s.attr.hap||0)>=70},
+  {id:"covid", ic:"😷", nm:"天選之人・疫情世代",
+   intro:"出生即戴口罩、作業交給 AI 檢查——你是 2020 世代的全程見證人（R55 年代限定開局）。",
+   rule:"出生年代鎖定【2020 疫情×AI 世代】（其餘年代事件整局絕緣）",
+   goalTxt:"親歷該年代兩段限定風景（口罩童年＋AI 時代作業）且活過 50 歲",
+   lockEra:"e20",
+   goal:s=>s.age>=50 && !!(s.flags && s.flags.r55_hit1 && s.flags.r55_hit2)},
+];
+const R56_MAP = {}; R56_SCRIPTS.forEach(sc=>R56_MAP[sc.id]=sc);
+let R56_NEXT = null;   // startScriptGame → newLife 的年代鎖定通道（開局用完即清）
+/* 田僑仔的詛咒：加權出沒的「既有」敗家/詐騙類事件清單（不新增內容，僅調權重） */
+const R56_RICH_BAIT = {online_scam:1, scam_again:1, cb_scammed:1, kid_loan:1, tycoon:1, highmny_angel:1, tr_medspa:1};
+function r56Script(){ return (S && S.script && R56_MAP[S.script]) || null; }
+function r56BadgeCount(){ return Object.keys(SAVE.scriptBadges||{}).length; }
+/* 劇本開局：比照 startGame 種子化；newLife(true) 禁用 meta 加成。
+   屬性鎖定後同步重置巔峰/谷底/年史第一筆（與 R49 同邏輯，第 0 年即基準、零 rng） */
+function startScriptGame(id){
+  const sc=R56_MAP[id]; if(!sc) return;
+  const code=randomSeedCode();
+  rng=mulberry32(seedCodeToInt(code));
+  EVENTS=buildEvents();
+  R56_NEXT=sc;
+  try{ newLife(true); } finally { R56_NEXT=null; }
+  S.script=sc.id; S.seed=code;
+  if(sc.attrs){
+    for(const k in sc.attrs) S.attr[k]=clamp(sc.attrs[k]);
+    S.peak=Object.assign({},S.attr); S.peakAge={hp:0,int:0,apr:0,mny:0,hap:0};
+    S.low =Object.assign({},S.attr); S.lowAge ={hp:0,int:0,apr:0,mny:0,hap:0};
+    S.attrHist=[[0,S.attr.hp,S.attr.int,S.attr.apr,S.attr.mny,S.attr.hap]];
+  }
+  S.log.push(`<span class="yr">系統</span> ${sc.ic} 劇本挑戰【${sc.nm}】開演——${sc.rule}。通關目標：${sc.goalTxt}。`);
+  tlPush(sc.ic, `接下命題劇本【${sc.nm}】——${sc.goalTxt}`, 1);
+  renderBirth();
+}
+/* 劇本挑戰入口：4 張劇本卡（台味簡介＋特殊規則＋通關目標＋徽章狀態），純渲染零 rng */
+function screenScripts(){
+  const sb=SAVE.scriptBadges||{};
+  const cards=R56_SCRIPTS.map(sc=>{
+    const done=!!sb[sc.id];
+    return `<div class="panel">
+      <b style="font-size:15px">${sc.ic} ${sc.nm}</b>　${done?`<span style="color:var(--good,#39ff88)">🎖️ 已通關・徽章入手</span>`:`<span class="muted">⬜ 徽章未入手</span>`}
+      <p class="etext" style="margin:6px 0 4px">${sc.intro}</p>
+      <p class="muted" style="font-size:12px;margin:0 0 8px">📜 特殊規則：${sc.rule}<br>🎯 通關目標：${sc.goalTxt}</p>
+      <button class="btn ${done?'sec':''}" onclick="startScriptGame('${sc.id}')">${done?"🎬 重演這個劇本":"🎬 接下這個劇本"}</button>
+    </div>`;
+  }).join("");
+  $("#app").innerHTML=`${topbarHTML()}
+    <div class="panel center"><h2 class="sec">🎭 人生劇本挑戰</h2>
+      <p class="etext">投胎也能玩命題作文——每張劇本卡＝特殊開局＋特殊規則＋通關目標，<br>規則只在劇本局生效，通關發專屬徽章（跨輪迴保存）。</p>
+      <p class="muted" style="font-size:12px">🎖️ 徽章進度 ${Object.keys(sb).length}/${R56_SCRIPTS.length}　·　劇本局禁用轉生天賦與祖傳加成，輸贏全看本事</p>
+    </div>
+    ${cards}
+    <div class="panel center"><button class="btn sec" onclick="screenStart()">↩ 回主選單</button></div>`;
+}
+
+/* =========================================================================
    遊戲狀態
    ========================================================================= */
 let S = null;
@@ -1489,7 +1575,9 @@ function newLife(isChallenge){
   const talent = pick(TALENTS);
   const fam = pick(FAMILIES);
   const origin = pick(ORIGINS);   // R5 出身：走 rng()，每日挑戰同種子全服同出身
-  const era55 = pick(R55_ERAS);   // R55 出生年代：走 rng()，同種子同年代（環境因素非玩家選擇，公平不破）
+  let era55 = pick(R55_ERAS);     // R55 出生年代：走 rng()，同種子同年代（環境因素非玩家選擇，公平不破）
+  // R56 劇本年代鎖定：rng 照常消耗（種子序列不變）後覆寫——僅劇本局生效，一般局完全不變
+  if(R56_NEXT && R56_NEXT.lockEra && R55_MAP[R56_NEXT.lockEra]) era55 = R55_MAP[R56_NEXT.lockEra];
   // R26 權衡天賦：約半數人生抽到一張「有利必有弊」卡（走 rng() → 同種子同 quirk，挑戰/對戰全服公平）
   const quirk = chance(0.5) ? pick(QUIRK_TALENTS) : null;
   const base = {hp:rnd(45,65), int:rnd(40,60), apr:rnd(40,60), mny:rnd(35,55), hap:rnd(45,65)};
@@ -1643,6 +1731,7 @@ function loadSave(){
     if(!SAVE.perkSeen || typeof SAVE.perkSeen!=="object") SAVE.perkSeen={}; // R49 開局天賦收集（抽到過）：缺鍵當空集合
     if(!SAVE.perkUsed || typeof SAVE.perkUsed!=="object") SAVE.perkUsed={}; // R49 開局天賦收集（選用過）：缺鍵當空集合
     if(!SAVE.careerSeen || typeof SAVE.careerSeen!=="object") SAVE.careerSeen={}; // R50 職業路線收集：缺鍵當空集合
+    if(!SAVE.scriptBadges || typeof SAVE.scriptBadges!=="object") SAVE.scriptBadges={}; // R56 劇本徽章：缺鍵當空集合，舊存檔不炸
     rebirthData();   // R6 轉生：舊存檔缺鍵就地補上 {pts,total,talents,equipped}，不可炸
     legacyData();    // R23 祖產：舊存檔缺鍵就地補上 {yd,ydTotal,perks,roster,lastMny,pickAttr}，不可炸
     dynastyData();   // R42 世代傳承：舊存檔缺鍵就地補上 {pending,lineage}，不可炸
@@ -1895,6 +1984,9 @@ const ACHIEVEMENTS = [
   /* ---- R55 台灣時代背景成就（era/旗標確定性判定，零裸 rng；舊存檔無 era 永不誤觸） ---- */
   {id:"r55_native", ic:"🗓️", nm:"時代的親歷者", desc:"在同一局把自己年代的兩段專屬風景全數經歷——別人讀的是歷史課本，你讀的是回憶錄，而且你是作者。", check:c=>!!(c.S.flags&&c.S.flags.r55_hit1&&c.S.flags.r55_hit2), hint:"每個年代都有兩段只屬於那代人的風景——生在哪個年代不能選，但既然生了，兩段都別錯過…"},
   {id:"r55_traveler", ic:"⏳", nm:"穿越時空的投胎客", desc:"跨輪迴在 4 個不同的台灣年代出生過——孟婆湯加湯不加價，時代體驗券一張一張收，你是輪迴站最資深的觀光客。", check:c=>Object.keys(SAVE.eraSeen||{}).length>=4, hint:"投胎是隨機降落在某個年代的——多輪迴幾次，把不同年代的出生證明集起來，集到第 4 張…"},
+  /* ---- R56 人生劇本挑戰成就（徽章存 SAVE.scriptBadges 跨輪迴；結算前先頒徽章，當局即可解鎖；零裸 rng） ---- */
+  {id:"r56_first", ic:"🎬", nm:"照著劇本還能活", desc:"首次通關任一張人生劇本——命題作文也能寫出自己的名字，孟婆在評語欄蓋了個讚。", check:c=>Object.keys(SAVE.scriptBadges||{}).length>=1, hint:"主選單的「🎭 劇本挑戰」裡躺著幾張命題人生——挑一張接下來，把通關目標打完…"},
+  {id:"r56_all", ic:"🏆", nm:"劇本殺大滿貫", desc:`集滿全部 ${R56_SCRIPTS.length} 張劇本徽章——孟婆的命題庫被你寫完了，下次投胎請自由發揮。`, check:c=>R56_SCRIPTS.every(s=>(SAVE.scriptBadges||{})[s.id]), hint:"每張劇本通關都發一枚專屬徽章、跨輪迴保存——魯蛇翻身、田僑守產、22K 求樂、疫世見證，一張都別放過…"},
 ];
 const ACH_MAP = {}; ACHIEVEMENTS.forEach(a=>ACH_MAP[a.id]=a);
 
@@ -7139,6 +7231,8 @@ function effWeight(e){
   if((e.w||1)<1 && rtActive("rb_egg")) w*=1.1;
   // R49 開局天賦：稀有事件權重倍率（疊加層，不動基礎 w；無天賦/舊存檔完全不變）
   if((e.w||1)<1){ const p49=r49Perk(); if(p49 && p49.rare) w*=p49.rare; }
+  // R56 劇本特殊規則：「田僑仔的詛咒」敗家/詐騙類既有事件加權 ×2.5（僅劇本局生效，非劇本局零汙染）
+  if(S.script==="rich" && R56_RICH_BAIT[e.id]) w*=2.5;
   return Math.max(w,0.04);
 }
 
@@ -7205,7 +7299,7 @@ function topbarHTML(){
     ? `<button class="btn sec" style="width:auto;padding:8px 11px;font-size:12px;margin-left:auto" onclick="screenResume()">📋 履歷</button>`
     : "";
   return `<div class="topbar">
-    <div class="logo">地球 Online<small>${(S&&S.challenge)?("📅 今日挑戰 #"+S.challenge.date):(S&&S.battle)?("⚔️ 種子對戰 #"+S.battle.code):"EARTH · TEXT EDITION"}</small></div>
+    <div class="logo">地球 Online<small>${(S&&S.challenge)?("📅 今日挑戰 #"+S.challenge.date):(S&&S.battle)?("⚔️ 種子對戰 #"+S.battle.code):(S&&S.script&&R56_MAP[S.script])?("🎭 劇本・"+R56_MAP[S.script].nm):"EARTH · TEXT EDITION"}</small></div>
     ${lowwarn}
     ${resumeBtn}
     <div class="agebox" ${resumeBtn?'':'style="margin-left:auto"'}><b>${age}</b><span> 歲</span></div>
@@ -7244,6 +7338,7 @@ function screenStart(){
         <button class="btn sec" onclick="startChallenge()">📅 今日挑戰 #${today}</button>
         <p class="muted" style="margin:-2px 0 2px;font-size:12px">${dailyStatus}</p>
         <button class="btn sec" onclick="screenSeedBattle()">⚔️ 種子對戰（輸入朋友的種子碼）</button>
+        <button class="btn sec" onclick="screenScripts()">🎭 劇本挑戰（命題開局 · 徽章 ${r56BadgeCount()}/${R56_SCRIPTS.length}）</button>
         ${seasonLine}
         <button class="btn sec" onclick="screenRebirth()">🔄 轉生殿（轉生天賦 ${rbUnlockedCount()}/${REBIRTH_TALENTS.length} · ${rebirthData().pts} 點）</button>
         <button class="btn sec" onclick="screenLegacy()">⛩️ 祖祠・輪迴殿（祖傳加成 ${lgOwnedCount()}/${LEGACY_PERKS.length} · 陰德 ${legacyData().yd}）</button>
@@ -8151,6 +8246,19 @@ function choose(i){
     if(n!==o){ eff.hap=n; qkNotes.push({t:o<0?"pw":"lw", s:`🗿 情緒絕緣體：快樂變化 ${o>0?"+":""}${o} 鈍化為 ${n>0?"+":""}${n}`}); }
   }
 
+  /* ---- R56 劇本特殊規則：財富修正（固定規則、零 rng 消耗；非劇本局/舊存檔無 script 鍵完全無感）----
+     田僑仔的詛咒：財富流失 ×1.5（向下取整）；22K 永動機：財富增益砍半（最低保留 1）。
+     放在 R25 偏科稅之前，稅金以修正後的實際增益計算 */
+  const r56Notes=[];
+  if(S.script==="rich" && (eff.mny||0)<0){
+    const o=eff.mny; eff.mny=Math.floor(o*1.5);
+    r56Notes.push({t:"lw", s:`🏚️ 田僑仔的詛咒：財富流失 ${o} 加重為 ${eff.mny}`});
+  }
+  if(S.script==="k22" && (eff.mny||0)>=2){
+    const o=eff.mny; eff.mny=Math.max(1,Math.floor(o/2));
+    r56Notes.push({t:"lw", s:`🧋 22K 永動機：財富增益 +${o} 被低薪天花板壓成 +${eff.mny}`});
+  }
+
   /* ---- R25 偏科代價：頂標屬性（85+）還要往上堆，搭檔屬性會被抽稅 ----
      配對與稅率全固定（每 6 點增益抽 1 點、單次上限 3）、零 rng 消耗——
      懲罰只咬「已經頂標還無腦狂拉」的玩法，85 以下完全無感，不動既有平衡 */
@@ -8181,7 +8289,7 @@ function choose(i){
     if(before>=20 && after<20) warns.push({t:"lw", s:`${ATTR[k].ic} ${DANGER_LINE[k]}`});
     if(before<=85 && after>85) warns.push({t:"pw", s:`${ATTR[k].ic} ${PEAK_LINE[k]}`});
   }
-  S.lastWarn=qkNotes.concat(taxNotes, warns);   // R26 權衡天賦提示最前、R25 稅單次之，玩家看得到每一筆帳
+  S.lastWarn=qkNotes.concat(r56Notes, taxNotes, warns);   // R26 權衡天賦提示最前、R56 劇本帳次之、R25 稅單再次，玩家看得到每一筆帳
 
   // ---- 人生履歷：記下每個重大選擇（幾歲→做了什麼→結果如何）----
   if(!S.resume) S.resume=[];
@@ -8568,6 +8676,19 @@ function die(from){
   S.badge = lifeBadge();
   S.newBadge = !!(S.badge && !SAVE.badges[S.badge.id]);
   if(S.badge) SAVE.badges[S.badge.id] = (SAVE.badges[S.badge.id]||0)+1;
+  // ---- R56 劇本挑戰結算：通關判定（純門檻/旗標確定性、零 rng）＋專屬徽章跨輪迴收集 ----
+  //      徽章存 SAVE.scriptBadges；成就評估前先頒，r56_* 成就當局即可解鎖；非劇本局零殘留
+  const sc56=r56Script();
+  S.scriptDone=false; S.newScriptBadge=false;
+  if(sc56){
+    try{ S.scriptDone=!!sc56.goal(S); }catch(e){}
+    if(!SAVE.scriptBadges || typeof SAVE.scriptBadges!=="object") SAVE.scriptBadges={};
+    if(S.scriptDone){
+      S.newScriptBadge=!SAVE.scriptBadges[sc56.id];
+      SAVE.scriptBadges[sc56.id]=true;
+    }
+    tlPush(sc56.ic, S.scriptDone?`劇本【${sc56.nm}】通關——專屬徽章入手，命題人生照樣演出花`:`劇本【${sc56.nm}】未通關——劇本不會跑，隨時回來重演`, S.scriptDone?2:1);
+  }
   // ---- R41 志向達成判定（純門檻/旗標確定性、零 rng）：成就評估前先判，r41_* 成就當局即可解鎖；
   //      舊存檔無 wishId → wishDone 恆 false 且結算面板省略，行為同舊版 ----
   const w41=(S.wishId&&typeof R41_MAP!=="undefined")?R41_MAP[S.wishId]:null;
@@ -8577,7 +8698,7 @@ function die(from){
   // ---- R42 世代傳承：家族年表記錄（挑戰/對戰局不入表；成就評估前先記，r42_* 成就當局即可解鎖；
   //      舊進行中存檔無 gen → 視為第 1 代；cap 8 防爆量，結算只展示近 5 代）----
   const dn42 = dynastyData();
-  if(!S.challenge && !S.battle){
+  if(!S.challenge && !S.battle && !S.script){   // R56 劇本局比照挑戰局：不入家族年表
     S.gen = S.gen || 1;
     dn42.lineage.push({g:S.gen, a:S.age, t:stripTags(S.title||"").slice(0,24), d:stripTags(S.deathReason||"").slice(0,30)});
     if(dn42.lineage.length>8) dn42.lineage = dn42.lineage.slice(-8);
@@ -8631,7 +8752,7 @@ function die(from){
   yd = Math.min(30, yd);
   S.ydGain = yd; lg23.yd += yd; lg23.ydTotal += yd;
   // 上一世財富（祖產紅包繼承用）：挑戰/對戰局不更新，跟天賦禁用同一套公平邏輯
-  if(!S.challenge && !S.battle) lg23.lastMny = a.mny||0;
+  if(!S.challenge && !S.battle && !S.script) lg23.lastMny = a.mny||0;   // R56 劇本局鎖定財富不外溢成祖產
   // ---- R23 歷代名冊：最近 10 世一句話小傳（純記錄層，零 rng，渲染時自動生成文案）----
   const topAch = (S.newAch && S.newAch.length && ACH_MAP[S.newAch[0]]) ? ACH_MAP[S.newAch[0]].nm : "";
   lg23.roster.unshift({w:SAVE.plays, a:S.age, g:grade, d:stripTags(S.deathReason||"").slice(0,36), ach:topAch});
@@ -8650,9 +8771,9 @@ function die(from){
   SAVE.lifelog.unshift({a:S.age, s:sum, g:grade, d:deathId||cat, o:S.origin?S.origin.id:""});
   if(SAVE.lifelog.length>200) SAVE.lifelog.length=200;
   // ---- R20 跨局彩蛋計數：連續世代活到 80+（中斷即歸零；挑戰/對戰局不計，不影響全服公平）----
-  if(!S.challenge && !S.battle) SAVE.oldStreak = (S.age>=80) ? (SAVE.oldStreak||0)+1 : 0;
-  // ---- R38 跨局彩蛋計數：連續世代同一種死法（deathId 逐字相同才累計、中斷即重計；挑戰/對戰局不計）----
-  if(!S.challenge && !S.battle){
+  if(!S.challenge && !S.battle && !S.script) SAVE.oldStreak = (S.age>=80) ? (SAVE.oldStreak||0)+1 : 0;
+  // ---- R38 跨局彩蛋計數：連續世代同一種死法（deathId 逐字相同才累計、中斷即重計；挑戰/對戰/劇本局不計）----
+  if(!S.challenge && !S.battle && !S.script){
     SAVE.deathStreak = (deathId && SAVE.lastDeathId===deathId) ? (SAVE.deathStreak||0)+1 : 1;
     SAVE.lastDeathId = deathId || "";
   }
@@ -9076,7 +9197,7 @@ function r42Apply(base, it){
 }
 /* 候選：依剛謝幕的這一生（純門檻確定性、零 rng）取命中前 3；保底兩款永真 → 至少 2 個 */
 function r42Candidates(){
-  if(!S || S.alive || S.challenge || S.battle) return [];
+  if(!S || S.alive || S.challenge || S.battle || S.script) return [];   // R56 劇本局不留傳承物（鎖定屬性不外溢）
   return R42_HEIRS.filter(it=>{ try{ return !!it.cond(S); }catch(e){ return false; } }).slice(0,3);
 }
 function r42Pick(id){
@@ -9118,7 +9239,7 @@ function r42LineageHTML(){
 }
 /* 結算頁傳承小塊：世代數＋年表＋候選按鈕；挑戰/對戰局整塊省略（不適用傳承） */
 function r42SummaryHTML(){
-  if(!S || S.challenge || S.battle) return "";
+  if(!S || S.challenge || S.battle || S.script) return "";
   const gen=S.gen||1;
   return `<div class="origin center" style="margin-top:10px">🏠 <b>世代傳承 · 家族第 ${gen} 代</b><br>
     <span class="muted">${gen>=2?"香火沒斷，這條家族故事還在連載中":"家族故事第一章——要不要寫第二章，看你下面的選擇"}</span>
@@ -9252,7 +9373,10 @@ function screenSummary(cat){
       ${S.battle?`<div class="origin center" style="margin-top:10px">⚔️ <b>種子對戰 #${S.battle.code}</b><br>
       <span class="muted">對戰第 ${S.battle.attempt} 次嘗試 · 本次總分 <b>${sum}</b> · 個人最佳 <b>${((SAVE.seedpb||{})[S.battle.code]||{}).best||sum}</b></span><br>
       <span class="muted">把戰報丟回群組，看對手敢不敢接著打。</span></div>`:""}
-      ${(S.seed&&!S.battle&&!S.challenge)?`<div class="origin center" style="margin-top:10px">🧬 人生種子碼：<b style="font-size:18px;letter-spacing:3px">${S.seed}</b><br>
+      ${(S.script&&R56_MAP[S.script])?`<div class="origin center" style="margin-top:10px">${R56_MAP[S.script].ic} <b>劇本：${R56_MAP[S.script].nm}（${S.scriptDone?"✅ 通關":"❌ 未通關"}）</b><br>
+      <span class="muted">🎯 ${R56_MAP[S.script].goalTxt}</span><br>
+      <span class="muted">${S.scriptDone?(S.newScriptBadge?`🎖️ 專屬徽章入手！跨輪迴保存（${r56BadgeCount()}/${R56_SCRIPTS.length}）`:`🎖️ 徽章早已在收藏中（${r56BadgeCount()}/${R56_SCRIPTS.length}）`):"劇本不會跑，從主選單隨時回來重演"}</span></div>`:""}
+      ${(S.seed&&!S.battle&&!S.challenge&&!S.script)?`<div class="origin center" style="margin-top:10px">🧬 人生種子碼：<b style="font-size:18px;letter-spacing:3px">${S.seed}</b><br>
       <span class="muted">朋友在主選單「⚔️ 種子對戰」輸入這串碼，就會活進跟你完全相同的人生——同開局、同事件，輸贏全看選擇。</span></div>`:""}
       <div class="origin center" style="margin-top:10px">🔄 <b>輪迴點 +${S.rpGain||0}</b>　<span class="muted">可用 ${rebirthData().pts} 點 · 歷史累計 ${rebirthData().total} 點</span><br>
       <span class="muted">輪迴第 ${SAVE.plays} 世 · 轉生天賦 ${rbUnlockedCount()}/${REBIRTH_TALENTS.length}，到「轉生殿」把點數花掉</span></div>
@@ -9263,7 +9387,8 @@ function screenSummary(cat){
       <div class="choices" style="margin-top:14px">
         ${S.challenge?`<button class="btn" onclick="startChallenge()">📅 不服，再戰今日種子</button>`:""}
         ${S.battle?`<button class="btn" onclick="startSeedBattle('${S.battle.code}')">⚔️ 不服，再戰這條種子</button>`:""}
-        ${(S.seed&&!S.battle&&!S.challenge)?`<button class="btn sec" onclick="startSeedBattle('${S.seed}')">⚔️ 拿這條種子開對戰（裸裝重打）</button>`:""}
+        ${(S.script&&R56_MAP[S.script])?`<button class="btn" onclick="startScriptGame('${S.script}')">🎭 ${S.scriptDone?"再演一次":"不服，重演"}劇本【${R56_MAP[S.script].nm}】</button>`:""}
+        ${(S.seed&&!S.battle&&!S.challenge&&!S.script)?`<button class="btn sec" onclick="startSeedBattle('${S.seed}')">⚔️ 拿這條種子開對戰（裸裝重打）</button>`:""}
         <button class="btn" onclick="copyBragText(this,'plain')">⚡ 複製精華戰績（正經版 · 短到限動都放得下）</button>
         <button class="btn" onclick="copyBragText(this,'salty')">🌶️ 複製精華戰績（靠北版 · 貼群必引戰）</button>
         <button class="btn" onclick="copyRoastCard(this)">🃏 一鍵複製分享卡（台味嘲諷版，貼群比慘）</button>
@@ -10236,6 +10361,7 @@ function buildTextReport(){
     ...(ch ? [`🎯 挑戰總分 ${sum}/500 · 第 ${ch.attempt} 次嘗試（今日最高 ${(SAVE.daily&&SAVE.daily[ch.date]&&SAVE.daily[ch.date].best)||sum}）`] : []),
     ...(bt ? [`🎯 對戰總分 ${sum}/500 · 對戰第 ${bt.attempt} 次嘗試（個人最佳 ${(SAVE.seedpb&&SAVE.seedpb[bt.code]&&SAVE.seedpb[bt.code].best)||sum}）`] : []),
     ...(bd31 ? [`🎖️ 本局人生稱號：【${bd31.tier}】${bd31.nm}`] : []),
+    ...((S.script&&R56_MAP[S.script]) ? [`🎭 劇本：${R56_MAP[S.script].nm}（${S.scriptDone?"通關 ✅":"未通關 ❌"}）`] : []),
     `${(S.era&&R55_MAP[S.era])?`生於【${R55_MAP[S.era].nm}】、`:''}${S.origin?`${S.origin.ic}「${S.origin.nm}」出身的你`:'玩家'}以「${S.title}」之姿在線 ${S.age} 年，已被系統強制登出。`,
     ...(petLine?[petLine]:[]),
     `☠️ 死因：${stripTags(S.deathReason)}`,
@@ -10245,7 +10371,7 @@ function buildTextReport(){
     (ch ? `今天全服同一條命運種子，敢不敢開「📅 今日挑戰 #${ch.date}」跟我比分？輸的請喝飲料 👇 `
         : bt ? `同一個人生，你活成這樣？種子碼 ${bt.code} 來挑戰，輸的請喝飲料 👇 `
              : lifePick(REPORT_TAUNTS,"taunt31")+' ')+'https://'+SHARE_URL,
-    ...((S.seed&&!ch&&!bt) ? [`🧬 人生種子碼：${S.seed}（主選單「⚔️ 種子對戰」輸入它，活同一個人生跟我比）`] : []),
+    ...((S.seed&&!ch&&!bt&&!S.script) ? [`🧬 人生種子碼：${S.seed}（主選單「⚔️ 種子對戰」輸入它，活同一個人生跟我比）`] : []),
   ].join('\n');
 }
 /* 舊瀏覽器 / 非 https fallback：隱形 textarea + execCommand('copy') */
@@ -10677,6 +10803,9 @@ function buildBragText(style){
   const ex=lifeExtremes();
   const lines=[ lifePick(R47_OPEN[salty?"salty":"plain"], "r47open") ];
   if(b) lines.push(`🏅 ${b.tier} 稱號「${b.nm}」`);
+  // R56 劇本局標記：非劇本局/舊存檔自動省略，零 rng
+  const sc47=r56Script();
+  if(sc47) lines.push(`🎭 劇本「${sc47.nm}」${S.scriptDone?"通關":"未通關"}${salty?(S.scriptDone?"——命題作文照樣寫出滿級分":"——是劇本太難，不是我不會演"):""}`);
   // R49 本局開局天賦：沒選天賦/舊局自動省略，零 rng
   const pk49=(S.perkId&&R49_MAP[S.perkId])||null;
   if(pk49) lines.push(salty

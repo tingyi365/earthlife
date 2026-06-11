@@ -842,5 +842,77 @@ ok(era10w.includes('era10_22k'), 'R55 e10 局：起薪傳說在工作期進池')
 const noEra = sandbox.__t(s => { delete s.era; }, 8);
 ok(!noEra.some(id => /^era\d/.test(id)), 'R55 舊存檔無 era 鍵：年代事件全不進池');
 
+// ========================================================================
+// R56 人生劇本挑戰：開局鎖定生效、特殊規則僅劇本局生效（非劇本局零汙染）、
+// 通關判定與徽章跨輪迴持久化、未通關不發徽章、結算頁/戰報帶劇本字樣
+// ========================================================================
+const r56 = JSON.parse(vm.runInContext(`(function(){
+  const out={};
+  // 探針事件：固定 eff 供財富修正規則斷言（hidden 不進池，不影響其他統計）。
+  // 每次開局 buildEvents() 會重建事件庫 → 開局後重新注入再取用
+  const probeEv=()=>{ EVENTS.push({id:'__r56probe', hidden:true, title:'R56 探針', text:'probe',
+    meme:{scene:'work',top:'t',bot:'b'},
+    choices:[{label:'a', eff:{mny:-10}, res:'x'},{label:'b', eff:{mny:10}, res:'y'}]}); return EVENTS[EVENTS.length-1]; };
+  // ① 魯蛇大翻身：五維鎖 20、巔峰/谷底/年史第一筆同步重置、meta 全禁用
+  startScriptGame('loser');
+  out.loserLock = ['hp','int','apr','mny','hap'].every(k=>S.attr[k]===20 && S.peak[k]===20 && S.low[k]===20);
+  out.loserHist = S.attrHist.length===1 && S.attrHist[0].slice(1).every(v=>v===20);
+  out.loserMeta = S.script==='loser' && (S.rtal||[]).length===0 && (S.lgk||[]).length===0 && !S.perkPool;
+  // ② 疫情世代：年代鎖定 e20、e20 限定事件進池、他年代絕緣
+  startScriptGame('covid');
+  out.covidEra = S.era==='e20';
+  S.age=5; ensureState(S);
+  const pool=eligible().map(e=>e.id);
+  out.covidPool = pool.includes('era20_mask') && !pool.includes('era90_921') && !pool.includes('era70_living');
+  // ③ 田僑仔：開局財富鎖 95、財富流失 ×1.5、敗家/詐騙事件加權 ×2.5
+  startScriptGame('rich');
+  out.richLock = S.attr.mny===95;
+  S.age=30; ensureState(S);
+  const m0=S.attr.mny;
+  showEvent(probeEv()); choose(0);
+  out.richLoss = (m0 - S.attr.mny)===15;
+  const bait1=EVENTS.find(e=>e.id==='online_scam');
+  out.richWeight = Math.abs(effWeight(bait1) - (bait1.w||1)*2.5) < 1e-9;
+  // ④ 22K 永動機：財富增益砍半（最低保留 1）
+  startScriptGame('k22');
+  S.age=30; ensureState(S); S.attr.mny=50;
+  showEvent(probeEv()); choose(1);
+  out.k22Gain = S.attr.mny===55;
+  // ⑤ 非劇本局零汙染：一般局無 script 鍵、財富修正不動、權重不動
+  startGame();
+  out.cleanScript = !S.script;
+  S.age=30; ensureState(S); S.attr.mny=50;
+  showEvent(probeEv()); choose(0);
+  out.cleanLoss = S.attr.mny===40;
+  const bait2=EVENTS.find(e=>e.id==='online_scam');
+  out.cleanWeight = Math.abs(effWeight(bait2) - (bait2.w||1)) < 1e-9;
+  // ⑥ 通關判定＋徽章：未通關不發；通關發放＋成就 r56_first；跨輪迴持久化
+  SAVE.scriptBadges={}; delete SAVE.ach.r56_first; delete SAVE.ach.r56_all;
+  startScriptGame('rich'); S.age=40; S.attr.mny=10; die();
+  out.failNoBadge = S.scriptDone===false && !SAVE.scriptBadges.rich && !SAVE.ach.r56_first;
+  startScriptGame('rich'); S.age=40; S.attr.mny=80; die();
+  out.passBadge = S.scriptDone===true && S.newScriptBadge===true && SAVE.scriptBadges.rich===true && SAVE.ach.r56_first===true;
+  startGame();
+  out.persist = SAVE.scriptBadges.rich===true;   // 開新的一般局，徽章仍在（跨輪迴）
+  // ⑦ 大滿貫成就：集滿全部徽章後任一劇本局結算解鎖；結算頁/戰報帶劇本字樣
+  R56_SCRIPTS.forEach(sc=>SAVE.scriptBadges[sc.id]=true);
+  startScriptGame('loser'); S.age=70; S.attr.hap=80; die();
+  out.allAch = SAVE.ach.r56_all===true && S.scriptDone===true;
+  out.sumTxt = document.querySelector('#app').innerHTML.includes('劇本：魯蛇大翻身');
+  out.reportTxt = buildTextReport().includes('🎭 劇本：魯蛇大翻身（通關 ✅）')
+    && buildBragText('plain').includes('劇本「魯蛇大翻身」通關');
+  return JSON.stringify(out);
+})()`, sandbox));
+ok(r56.loserLock && r56.loserHist, 'R56 魯蛇大翻身：五維鎖 20、巔峰/谷底/年史同步重置');
+ok(r56.loserMeta, 'R56 劇本局：轉生/祖傳/開局天賦三選一全禁用');
+ok(r56.covidEra && r56.covidPool, 'R56 疫情世代：年代鎖定 e20、限定事件進池、他年代絕緣');
+ok(r56.richLock && r56.richLoss && r56.richWeight, 'R56 田僑仔：財富鎖 95、流失 ×1.5、敗家事件加權 ×2.5');
+ok(r56.k22Gain, 'R56 22K 永動機：財富增益砍半');
+ok(r56.cleanScript && r56.cleanLoss && r56.cleanWeight, 'R56 非劇本局零汙染：規則與權重完全不變');
+ok(r56.failNoBadge, 'R56 未通關：不發徽章、不解成就');
+ok(r56.passBadge && r56.persist, 'R56 通關：徽章發放＋r56_first 解鎖＋跨輪迴持久化');
+ok(r56.allAch, 'R56 集滿徽章：r56_all 大滿貫成就解鎖');
+ok(r56.sumTxt && r56.reportTxt, 'R56 結算頁與文字戰報帶「劇本：○○（通關/未通關）」字樣');
+
 console.log(fails ? `\n結果: ❌ ${fails} 項未通過` : '\n結果: ✅ 狀態機全數正確');
 process.exit(fails ? 1 : 0);
