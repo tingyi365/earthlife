@@ -189,9 +189,14 @@ console.log(`從未觸發的可觸發事件(${never.length}): ${never.length ? n
    目標：220 局「從未觸發」數從 R45 基準 83 壓到 ≤45。
    豁免（不計入門檻，理由如下；仍照常列在上方清單供觀察）：
    - se_*（節令限定）：activeSeasonKeys 由真實執行日決定，模擬日非當令時結構上不可能觸發，
-     實際玩家在節令期間可正常遇到，非死內容。 */
+     實際玩家在節令期間可正常遇到，非死內容。
+   - cb_r54_fish/fishbye/fishnight、cb_r54_turtlezen/turtlewill（R54 金魚/巴西龜深漏斗線）：
+     入口掛在 R53 童年鏈深處的稀有旗標（夜市撈金魚／阿嬤線，220 隨機局僅 1-3 局成立）＋
+     收編後的續線選擇，隨機亂選模擬的觸達統計上不穩定；可達性由下方 R54 強制路徑探針
+     另行逐段斷言（非死碼），實際玩家走該線時有 R46 保底＋cb_ 因果鏈優先池確保觸達。 */
 const R46_EXEMPT = new Set(['se_cny_red','se_cny_dinner','se_tax','se_ghost','se_typhoon_bet',
-  'se_typhoon_mart','se_typhoon_wave','se_moon','se_xmas','se_nye']);
+  'se_typhoon_mart','se_typhoon_wave','se_moon','se_xmas','se_nye',
+  'cb_r54_fish','cb_r54_fishbye','cb_r54_fishnight','cb_r54_turtlezen','cb_r54_turtlewill']);
 const neverCounted = never.filter(id => !R46_EXEMPT.has(id));
 const r46OK = neverCounted.length <= 45;
 console.log(`R46 觸達率: 未觸發(計入門檻) ${neverCounted.length}/45 ｜ 節令豁免 ${never.filter(id=>R46_EXEMPT.has(id)).length} ｜ ${r46OK ? '✅' : '❌ 超標'}`);
@@ -2176,6 +2181,172 @@ try {
   console.log('R53 童年黃金歲月事件鏈: ❌ ' + e.message);
 }
 
+/* ---- R54 台味寵物夥伴系統探針（強制路徑，不靠隨機抽中）----
+   ① 結構：3 獲得＋4 陪伴＋4 離別事件齊備（once＋stage＋場景存在）、3 成就有 hint、
+      R46 保底表收 4 個離別收尾段＋3 個稀路線段（cond 全掛收編旗標、未養的局零擠壓；
+      無前置旗標的 r54_meet_dog／r54_meet_zoo 不配保底走自然池）、
+      cb_ 段全進因果鏈優先池、TL_ONESHOT 收 1 個記憶點（r54_pet）
+   ② 金魚線：r53_goldfish 限定進池、收編寫 r54_pet/kind/age、收編後其他獲得事件互斥退場；
+      隔年離別確定性進池 → 二代目襲名續線 → 加班夜療法＋爆紅段 → die() 解鎖 r54_dynasty
+   ③ 金魚海葬線：不續線 → r54_gone → 陪伴段全退場；不收編則名額保留
+   ④ 土狗線：收編 → 遛狗段（14 年未滿離別不進池）→ 14 年離別 → r54_dogfull → 成就 r54_loyal；
+      R51 回扣：r54_dog 且在世才見 cb_r51_kid 尾端選項（index 7 附加），離世/未養不可見
+   ⑤ 龜線：阿嬤線限定才見巴西龜選項；龜速哲學段 → 68+ 遺囑段（有後/自由線選項分流）→
+      r54_will → 成就 r54_heirloom；R52 回扣：cb_r52_life 尾端選項（index 6 附加）
+   ⑥ 街貓線：收編 → 12 年確定性離別；麻雀放飛不佔名額
+   ⑦ 門檻膠囊只在新增選項（gate:true 標記齊備）；⑧ 乾淨局零 r54 殘留 */
+let r54OK = false;
+try {
+  const r54Raw = vm.runInContext(`(function(){
+    const out={};
+    const ALL=['cb_r54_fish','r54_meet_dog','r54_meet_zoo','cb_r54_fishbye','cb_r54_fishnight',
+               'cb_r54_dogwalk','cb_r54_turtlezen','cb_r54_viral','cb_r54_dogbye','cb_r54_catbye','cb_r54_turtlewill'];
+    const evs=ALL.map(id=>EVENTS.find(e=>e.id===id));
+    /* ① 結構 */
+    out.evDef = evs.every(e=>!!e && e.once===true && Array.isArray(e.stage) && e.title && e.text && (e.choices||[]).length>=2);
+    out.scenes = evs.every(e=>e.meme && e.meme.scene && !!SCENES[e.meme.scene] && e.meme.top && e.meme.bot);
+    out.achDef = ['r54_loyal','r54_dynasty','r54_heirloom'].every(id=>ACH_MAP[id] && ACH_MAP[id].hint && String(ACH_MAP[id].hint).length>4);
+    out.milestone = R46_MILESTONE.cb_r54_fishbye===14 && R46_MILESTONE.cb_r54_catbye===38
+                 && R46_MILESTONE.cb_r54_dogbye===42 && R46_MILESTONE.cb_r54_turtlewill===72
+                 && R46_MILESTONE.cb_r54_fish===12 && R46_MILESTONE.cb_r54_fishnight===30
+                 && R46_MILESTONE.cb_r54_turtlezen===40 && R46_MILESTONE.r54_meet_dog===undefined
+                 && R46_MILESTONE.r54_meet_zoo===undefined && R46_MILESTONE.cb_r54_viral===undefined;
+    out.chainPool = ['cb_r54_fish','cb_r54_fishbye','cb_r54_fishnight','cb_r54_dogwalk',
+                     'cb_r54_turtlezen','cb_r54_viral','cb_r54_dogbye','cb_r54_catbye','cb_r54_turtlewill']
+                    .every(id=>CHAIN_IDS.has(id));
+    out.tlDef = TL_ONESHOT.some(o=>o[0]==='r54_pet');
+    /* ② 金魚線（撈過金魚限定 → 收編 → 互斥 → 隔年離別 → 二代目 → 加班夜＋爆紅 → 成就） */
+    delete SAVE.ach.r54_dynasty;
+    startGame(); S.age=9; S.flags={r53_goldfish:true}; ensureState(S); S.seen={};
+    out.fishIn = eligible().some(e=>e.id==='cb_r54_fish');
+    out.laterGated = !eligible().some(e=>['cb_r54_fishbye','cb_r54_fishnight','cb_r54_dogwalk','cb_r54_turtlezen','cb_r54_viral','cb_r54_dogbye','cb_r54_catbye','cb_r54_turtlewill'].includes(e.id));
+    showEvent(EVENTS.find(e=>e.id==='cb_r54_fish')); choose(0);
+    out.adoptFlag = S.flags.r54_pet===true && S.flags.r54_fish===true && S.flags.r54_kind==='fish' && S.flags.r54_age===9;
+    S.age=12;
+    out.exclusive = !eligible().some(e=>e.id==='r54_meet_dog'||e.id==='r54_meet_zoo');
+    out.byeIn = eligible().some(e=>e.id==='cb_r54_fishbye');
+    showEvent(EVENTS.find(e=>e.id==='cb_r54_fishbye')); choose(1);
+    out.fish2Flag = S.flags.r54_fish2===true && !S.flags.r54_gone;
+    S.age=30; S.flags.employed=true;
+    out.nightIn = eligible().some(e=>e.id==='cb_r54_fishnight');
+    out.viralIn = eligible().some(e=>e.id==='cb_r54_viral');
+    showEvent(EVENTS.find(e=>e.id==='cb_r54_fishnight')); choose(0);
+    out.healedFlag = S.flags.r54_healed===true;
+    showEvent(EVENTS.find(e=>e.id==='cb_r54_viral')); choose(0);
+    out.starFlag = S.flags.r54_petstar===true;
+    const oR1=rng; rng=()=>0.5; die(); rng=oR1;
+    out.dynastyAch = SAVE.ach.r54_dynasty===true;
+    /* ③ 金魚海葬線＋不收編名額保留 */
+    startGame(); S.age=10; S.flags={r54_pet:true,r54_fish:true,r54_kind:'fish',r54_age:9}; ensureState(S); S.seen={};
+    showEvent(EVENTS.find(e=>e.id==='cb_r54_fishbye')); choose(0);
+    out.goneFlag = S.flags.r54_gone===true && !S.flags.r54_fish2;
+    S.age=30; S.flags.employed=true;
+    out.goneGates = !eligible().some(e=>e.id==='cb_r54_fishnight'||e.id==='cb_r54_viral');
+    startGame(); S.age=9; S.flags={r53_goldfish:true}; ensureState(S); S.seen={};
+    showEvent(EVENTS.find(e=>e.id==='cb_r54_fish')); choose(2);
+    out.watchKeeps = !S.flags.r54_pet && S.flags.r54_fishwatch===true;
+    S.age=12;
+    out.slotFree = eligible().some(e=>e.id==='r54_meet_dog');
+    /* ④ 土狗線＋R51 回扣 */
+    delete SAVE.ach.r54_loyal;
+    startGame(); S.age=12; S.flags={}; ensureState(S); S.seen={};
+    out.dogIn = eligible().some(e=>e.id==='r54_meet_dog');
+    out.zooIn = eligible().some(e=>e.id==='r54_meet_zoo');
+    out.fishGated = !eligible().some(e=>e.id==='cb_r54_fish');
+    showEvent(EVENTS.find(e=>e.id==='r54_meet_dog')); choose(0);
+    out.dogFlag = S.flags.r54_dog===true && S.flags.r54_kind==='dog' && S.flags.r54_age===12;
+    S.age=20;
+    out.walkIn = eligible().some(e=>e.id==='cb_r54_dogwalk');
+    out.byeNotYet = !eligible().some(e=>e.id==='cb_r54_dogbye');
+    showEvent(EVENTS.find(e=>e.id==='cb_r54_dogwalk')); choose(0);
+    out.socialFlag = S.flags.r54_dogsocial===true;
+    S.age=26;
+    out.dogByeIn = eligible().some(e=>e.id==='cb_r54_dogbye');
+    showEvent(EVENTS.find(e=>e.id==='cb_r54_dogbye')); choose(0);
+    out.dogFullFlag = S.flags.r54_gone===true && S.flags.r54_dogfull===true;
+    const oR2=rng; rng=()=>0.5; die(); rng=oR2;
+    out.loyalAch = SAVE.ach.r54_loyal===true;
+    startGame(); S.age=36; S.flags={r51_wed:true,r51_house:true,r54_dog:true}; ensureState(S); S.seen={};
+    showEvent(EVENTS.find(e=>e.id==='cb_r51_kid'));
+    let h=document.querySelector('#app').innerHTML;
+    out.kidGrowShown = h.includes('小孩跟土狗一起長大');
+    choose(7);
+    out.kidGrowFlag = S.flags.r51_kid===true && S.flags.r54_kidgrow===true && S.flags.haskid===true && S.flags.kids===1;
+    startGame(); S.age=36; S.flags={r51_wed:true,r51_house:true}; ensureState(S); S.seen={};
+    showEvent(EVENTS.find(e=>e.id==='cb_r51_kid'));
+    out.kidGrowHidden = !document.querySelector('#app').innerHTML.includes('小孩跟土狗一起長大');
+    startGame(); S.age=36; S.flags={r51_wed:true,r51_house:true,r54_dog:true,r54_gone:true}; ensureState(S); S.seen={};
+    showEvent(EVENTS.find(e=>e.id==='cb_r51_kid'));
+    out.kidGrowGoneHidden = !document.querySelector('#app').innerHTML.includes('小孩跟土狗一起長大');
+    /* ⑤ 龜線＋R52 回扣 */
+    delete SAVE.ach.r54_heirloom;
+    startGame(); S.age=10; S.flags={r53_grandma:true}; ensureState(S); S.seen={};
+    showEvent(EVENTS.find(e=>e.id==='r54_meet_zoo'));
+    h=document.querySelector('#app').innerHTML;
+    out.turtleShown = h.includes('接手神桌下的資深房客');
+    choose(0);
+    out.turtleFlag = S.flags.r54_turtle===true && S.flags.r54_kind==='turtle';
+    startGame(); S.age=10; S.flags={}; ensureState(S); S.seen={};
+    showEvent(EVENTS.find(e=>e.id==='r54_meet_zoo'));
+    h=document.querySelector('#app').innerHTML;
+    out.turtleHidden = !h.includes('接手神桌下的資深房客') && h.includes('陽台貓別墅正式開張');
+    startGame(); S.age=45; S.flags={r54_pet:true,r54_turtle:true,r54_kind:'turtle',r54_age:10}; ensureState(S); S.seen={};
+    out.zenIn = eligible().some(e=>e.id==='cb_r54_turtlezen');
+    showEvent(EVENTS.find(e=>e.id==='cb_r54_turtlezen')); choose(0);
+    out.zenFlag = S.flags.r54_zen===true;
+    S.age=72;
+    out.willIn = eligible().some(e=>e.id==='cb_r54_turtlewill');
+    showEvent(EVENTS.find(e=>e.id==='cb_r54_turtlewill'));
+    h=document.querySelector('#app').innerHTML;
+    out.soloWill = h.includes('託孤里長伯') && !h.includes('愛龜傳金孫');
+    choose(2);
+    out.willFlag = S.flags.r54_will===true && !S.flags.r54_gone;
+    const oR3=rng; rng=()=>0.5; die(); rng=oR3;
+    out.heirloomAch = SAVE.ach.r54_heirloom===true;
+    startGame(); S.age=72; S.flags={r54_pet:true,r54_turtle:true,r54_kind:'turtle',r54_age:10,haskid:true}; ensureState(S); S.seen={};
+    showEvent(EVENTS.find(e=>e.id==='cb_r54_turtlewill'));
+    h=document.querySelector('#app').innerHTML;
+    out.kidWill = h.includes('愛龜傳金孫') && !h.includes('託孤里長伯');
+    startGame(); S.age=64; S.flags={r52_ret:true,r54_turtle:true}; ensureState(S); S.seen={};
+    showEvent(EVENTS.find(e=>e.id==='cb_r52_life'));
+    h=document.querySelector('#app').innerHTML;
+    out.oldBuddyShown = h.includes('帶巴西龜上長青大學');
+    choose(6);
+    out.oldBuddyFlag = S.flags.r52_life===true && S.flags.r54_oldbuddy===true;
+    startGame(); S.age=64; S.flags={r52_ret:true}; ensureState(S); S.seen={};
+    showEvent(EVENTS.find(e=>e.id==='cb_r52_life'));
+    out.oldBuddyHidden = !document.querySelector('#app').innerHTML.includes('帶巴西龜上長青大學');
+    /* ⑥ 街貓線＋麻雀放飛 */
+    startGame(); S.age=14; S.flags={}; ensureState(S); S.seen={};
+    showEvent(EVENTS.find(e=>e.id==='r54_meet_zoo')); choose(2);
+    out.catFlag = S.flags.r54_cat===true && S.flags.r54_kind==='cat' && S.flags.r54_age===14;
+    S.age=25;
+    out.catByeNotYet = !eligible().some(e=>e.id==='cb_r54_catbye');
+    S.age=26;
+    out.catByeIn = eligible().some(e=>e.id==='cb_r54_catbye');
+    showEvent(EVENTS.find(e=>e.id==='cb_r54_catbye')); choose(0);
+    out.catGone = S.flags.r54_gone===true && S.flags.r54_catfree===true;
+    startGame(); S.age=14; S.flags={}; ensureState(S); S.seen={};
+    showEvent(EVENTS.find(e=>e.id==='r54_meet_zoo')); choose(1);
+    out.sparrowFree = S.flags.r54_sparrow===true && !S.flags.r54_pet;
+    /* ⑦ 門檻膠囊只在新增選項（gate:true 標記） */
+    out.gateDef = EVENTS.find(e=>e.id==='cb_r54_fish').choices.some(c=>c.gate&&c.cond)
+               && EVENTS.find(e=>e.id==='r54_meet_dog').choices.some(c=>c.gate&&c.cond)
+               && EVENTS.find(e=>e.id==='cb_r54_dogwalk').choices.some(c=>c.gate&&c.cond)
+               && EVENTS.find(e=>e.id==='cb_r54_viral').choices.some(c=>c.gate&&c.cond);
+    /* ⑧ 零殘留 */
+    startGame();
+    out.clean = Object.keys(S.flags||{}).every(k=>k.indexOf('r54')!==0)
+             && Object.keys(S.seen||{}).every(k=>k.indexOf('r54')!==0);
+    return JSON.stringify(out);
+  })()`, sandbox);
+  const r54 = JSON.parse(r54Raw);
+  r54OK = Object.values(r54).every(v => v === true);
+  console.log(`R54 台味寵物夥伴系統: ${r54OK ? '✅ 全數通過' : '❌ ' + JSON.stringify(r54)}`);
+} catch (e) {
+  console.log('R54 台味寵物夥伴系統: ❌ ' + e.message);
+}
+
 if (__errors.length) {
   console.log('\n--- 錯誤樣本(前5) ---');
   __errors.slice(0, 5).forEach(e => console.log('  ' + e));
@@ -2183,6 +2354,6 @@ if (__errors.length) {
 
 /* 退出碼 */
 const pass = __errors.length === 0 && chk.missingScenes.length === 0 && chk.eventVisible >= 126 && chk.eventTotal >= 126 && lsOK && achUnlocked > 0
-  && chk.deathbookMissing.length === 0 && chk.deathTotal >= 17 && deathsOK && rebirthOK && legacyOK && petOK && r13OK && r17OK && r20OK && r21OK && r22OK && r24OK && r25OK && r34OK && r38OK && r41OK && r42OK && r43OK && r44OK && r45OK && r46OK && r47OK && r48OK && r49OK && r51OK && r52OK && r53OK;
+  && chk.deathbookMissing.length === 0 && chk.deathTotal >= 17 && deathsOK && rebirthOK && legacyOK && petOK && r13OK && r17OK && r20OK && r21OK && r22OK && r24OK && r25OK && r34OK && r38OK && r41OK && r42OK && r43OK && r44OK && r45OK && r46OK && r47OK && r48OK && r49OK && r51OK && r52OK && r53OK && r54OK;
 console.log('\n結果: ' + (pass ? '✅ 全數通過' : '❌ 有項目未通過'));
 process.exit(pass ? 0 : 1);
