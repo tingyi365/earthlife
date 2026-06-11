@@ -1403,6 +1403,58 @@ function r49CardHTML(){
 }
 
 /* =========================================================================
+   R50 職業人生路線：青年期（25 歲）依屬性與旗標確定性分流進一條台味職業線
+   設計鐵律：
+   ① 分流純打分取最高（屬性×係數＋旗標加成，同分取陣列先序）、零裸 rng——
+      同種子同選擇必同職業，挑戰/對戰復現性不破壞
+   ② 入行當下不動任何屬性，影響全靠專屬事件（±12 級距內），不破壞既有平衡
+   ③ 舊進行中存檔已超過 30 歲 → 永不分流，整套系統完全無感；
+      S.careerId 缺鍵一律當「無職業」，結算/分享卡自動省略，舊存檔不可能壞檔
+   ④ 吃 R44 屬性檢定（專屬事件帶 sr 檢定）、與 R42 傳承/R43 NPC/R49 天賦零衝突
+   ========================================================================= */
+const R50_CAREERS = [
+  {id:"eng",    ic:"💻", nm:"爆肝工程師",   score:s=>s.attr.int*1.0+((s.flags||{}).bigco?8:0)+((s.flags||{}).startupjob?8:0),
+   quip:"從此你的肝有了 KPI，體檢報告比績效考核還刺激。"},
+  {id:"gov",    ic:"🏛️", nm:"鐵飯碗公務員", score:s=>s.attr.int*0.7+s.attr.hap*0.3+((s.flags||{}).gov?40:0),
+   quip:"碗是鐵的沒錯，但沒人說過端碗的肩頸不會痠。"},
+  {id:"live",   ic:"📱", nm:"全職直播主",   score:s=>s.attr.apr*0.7+s.attr.hap*0.35+((s.flags||{}).influencer?20:0),
+   quip:"你把人生外包給演算法，從此心情隨流量曲線開盤。"},
+  {id:"stall",  ic:"🍢", nm:"夜市攤販老闆", score:s=>s.attr.mny*0.8+s.attr.hp*0.4+(((s.flags||{}).smallbiz||(s.flags||{}).entrepreneur)?18:0),
+   quip:"別人下班你上工，全島的宵夜罪惡感由你供應。"},
+  {id:"drama",  ic:"✍️", nm:"八點檔編劇",   score:s=>s.attr.int*0.55+s.attr.hap*0.5+(((s.flags||{}).goodguy||(s.flags||{}).heartbroken)?10:0),
+   quip:"失憶、車禍、雙胞胎——你寫的不是劇本，是全島阿嬤的作息表。"},
+  {id:"temple", ic:"🏮", nm:"廟公接班人",   score:s=>s.attr.hap*0.75+s.attr.apr*0.25+((s.flags||{}).kind?15:0)+((s.origin&&/廟/.test(s.origin.nm||""))?25:0),
+   quip:"神明面試你的方式很簡單：看你笑起來像不像有保庇。"},
+  {id:"sales",  ic:"🤝", nm:"保險業務王",   score:s=>s.attr.apr*0.65+s.attr.mny*0.55,
+   quip:"從此你的人脈以『張』計價，喜宴訃聞都是商機。"},
+  {id:"coach",  ic:"💪", nm:"健身教練",     score:s=>s.attr.hp*1.0+6+((s.flags||{}).marathoner?18:0),
+   quip:"你靠別人的新年新希望吃飯——幸好那個願望每年都會復活。"},
+];
+const R50_MAP = {}; R50_CAREERS.forEach(c=>R50_MAP[c.id]=c);
+/* 本局職業（無職業/舊存檔回 null，所有掛接點據此完全無感） */
+function r50Career(){ return (S && S.careerId && R50_MAP[S.careerId]) || null; }
+/* 年度節拍：nextYear 每年一呼（與 r49YearTick 同點）。25 歲打分入行、30 歲後永不補發；
+   純查狀態零 rng，已入行/超齡/未達齡直接 return */
+function r50CareerTick(){
+  if(!S || !S.alive || S.careerId || S.age<25 || S.age>30) return;
+  let best=null, bs=-1e9;
+  R50_CAREERS.forEach(c=>{ let v=0; try{ v=c.score(S); }catch(e){} if(v>bs){ bs=v; best=c; } });
+  if(!best) return;
+  S.careerId = best.id;
+  // 跨局職業收集（成就「百工圖鑑」用）：挑戰/對戰局也記，純收集層不影響公平
+  if(!SAVE.careerSeen || typeof SAVE.careerSeen!=="object") SAVE.careerSeen={};
+  SAVE.careerSeen[best.id]=true;
+  S.log.push(`<span class="yr">第 ${S.age} 年</span> ${best.ic} 命運的人力銀行替你媒合成功——你正式入行【${best.nm}】。${best.quip}`);
+  tlPush(best.ic, `入行【${best.nm}】——職業路線鎖定，專屬任務線開啟`, 1);
+}
+/* 結算頁職業小卡：無職業（舊局/早夭）整塊省略，零 rng */
+function r50SummaryHTML(){
+  const c=r50Career(); if(!c) return "";
+  return `<div class="origin center" style="margin-top:10px">${c.ic} <b>本局職業：${c.nm}</b><br>
+    <span class="muted">${c.quip}</span></div>`;
+}
+
+/* =========================================================================
    遊戲狀態
    ========================================================================= */
 let S = null;
@@ -1557,6 +1609,7 @@ function loadSave(){
     if(!SAVE.badges || typeof SAVE.badges!=="object") SAVE.badges={}; // R24 人生稱號收集（id→獲得次數）：缺鍵當空集合，舊存檔不炸
     if(!SAVE.perkSeen || typeof SAVE.perkSeen!=="object") SAVE.perkSeen={}; // R49 開局天賦收集（抽到過）：缺鍵當空集合
     if(!SAVE.perkUsed || typeof SAVE.perkUsed!=="object") SAVE.perkUsed={}; // R49 開局天賦收集（選用過）：缺鍵當空集合
+    if(!SAVE.careerSeen || typeof SAVE.careerSeen!=="object") SAVE.careerSeen={}; // R50 職業路線收集：缺鍵當空集合
     rebirthData();   // R6 轉生：舊存檔缺鍵就地補上 {pts,total,talents,equipped}，不可炸
     legacyData();    // R23 祖產：舊存檔缺鍵就地補上 {yd,ydTotal,perks,roster,lastMny,pickAttr}，不可炸
     dynastyData();   // R42 世代傳承：舊存檔缺鍵就地補上 {pending,lineage}，不可炸
@@ -1784,6 +1837,12 @@ const ACHIEVEMENTS = [
   {id:"r45_snail", ic:"🐌", nm:"無殼蝸牛・資深終身會員", desc:"逛過蛋黃區、活過 55 歲、名下依然一坪都沒有——不是你買不起，是這座島賣太貴，會員資格自動續約。", check:c=>c.age>=55 && !!(c.S.seen&&c.S.seen.r45_eggyolk) && !c.S.flags.homeowner, hint:"逛過蛋黃區接待中心、一路租到年過半百還是無殼的人…"},
   {id:"r45_bobasoul", ic:"🧋", nm:"珍奶自由捍衛者", desc:"手搖漲十五塊你眉頭都不皺，當場升級大杯宣示主權——在薪水不漲的島上，全糖去冰是平民最後的尊嚴。", check:c=>!!c.S.flags.r45_bobaeveryday, hint:"巷口手搖店漲價那天，有人降級、有人自己煮，也有人選擇照喝，而且加大…"},
   {id:"r45_islander", ic:"🏝️", nm:"鬼島生存大師", desc:"單局親身走過 6 種以上鬼島日常——低薪、房價、機車瀑布、電費、選舉季全套體驗，還活著笑著，這就是這座島教你的韌性。", check:c=>['r45_firstpay','r45_dutyfree','r45_eggyolk','r45_nhi','r45_scooterfall','r45_powerbill','r45_bobafree','r45_elderline','r45_election','r45_typhoon','r45_tangping'].filter(id=>c.S.seen&&c.S.seen[id]).length>=6, hint:"這座島的日常修羅場——薪資單、責任制、蛋黃區、機車瀑布、電費單…單局走過六關以上…"},
+  /* ---- R50 職業人生路線成就（careerId/旗標確定性判定，零裸 rng；舊存檔無 careerId 永不誤觸） ---- */
+  {id:"r50_hired", ic:"💼", nm:"入行儀式・路線鎖定", desc:"在 25 歲那年被命運（與你的五圍）分發進一條職業路線——填志願是假的，屬性分發才是真的。", check:c=>!!c.S.careerId, hint:"把一隻角色平安養到 25 歲，命運的人力銀行會自動替你投履歷…"},
+  {id:"r50_liver", ic:"🫀", nm:"肝帝不死・只是登出", desc:"以爆肝工程師之身活到 75 歲——體檢報告年年全紅字，但你本人比公司的伺服器還穩。", check:c=>c.S.careerId==="eng"&&c.age>=75, hint:"有一條吃智力的爆肝路線——入了那行，再把那顆肝用到 75 歲還沒壞…"},
+  {id:"r50_godfather", ic:"🏮", nm:"神明欽點・廟公本公", desc:"接下廟公的棒子，還親自扛完進香大日子——神明看人很準，看你尤其準。", check:c=>c.S.careerId==="temple"&&!!(c.S.flags&&c.S.flags.r50_blessed), hint:"快樂與人緣養得夠高的人，廟裡的師父會多看你兩眼——接了棒，大日子要自己親自扛…"},
+  {id:"r50_cashcow", ic:"📡", nm:"流量變現・演算法親兒子", desc:"以全職直播主身分謝幕時財富仍站穩 80——在演算法的海嘯裡你不只活著，還上岸買了房。", check:c=>c.S.careerId==="live"&&c.S.attr.mny>=80, hint:"靠臉與快樂吃飯的那條路線，把戶頭數字一路顧到謝幕都不掉漆…"},
+  {id:"r50_slashie", ic:"🪪", nm:"百工圖鑑・轉職大師", desc:"跨輪迴體驗過 4 種不同職業路線——別人是一技之長，你是每一世都換一張名片。", check:c=>Object.keys(SAVE.careerSeen||{}).length>=4, hint:"職業是 25 歲那年由五圍形狀決定的——多投胎幾次、把屬性養出不同長相，名片自然會換…"},
 ];
 const ACH_MAP = {}; ACHIEVEMENTS.forEach(a=>ACH_MAP[a.id]=a);
 
@@ -6340,6 +6399,148 @@ function buildEvents(){ return [
       {label:"躺一半：週間社畜，週末廢人", eff:{hap:3,hp:1}, res:"你發明折衷方案：上班認真演出，下班手機靜音，週末躺到自然醒。同事說你變佛了，你糾正：『不是佛，是省電模式。』——在鬼島永續生存的祕訣，是學會跟自己的電量和解。"},
       {label:"把開悟收回去，繼續捲", eff:{mny:4,hp:-4,int:1}, res:"你隔天照常打卡、進修、斜槓。累是真的累，但你想親眼看看努力的天花板在哪——就算這座島的天花板，蓋得特別低。"},
     ]},
+
+  /* =====================================================================
+     R50 職業人生路線專屬事件：cond 純讀 s.careerId（25 歲分流確定性寫入），
+     舊存檔無 careerId → 整批永不入池，行為同舊版；每職業 2 事件（1 隨機 + 1 once 里程碑），
+     效果全在 ±12 既有級距內，sr 檢定沿用 R44 公式（屬性+骰0~40），不破壞平衡
+     ===================================================================== */
+  /* ---- 💻 爆肝工程師 ---- */
+  {id:"r50_eng_oncall", stage:[26,52], w:2, cond:s=>s.careerId==="eng",
+    title:"凌晨三點的 on-call", text:"手機在床頭炸響：「系統掛了，全站 500。」你瞇著眼打開筆電，螢幕的光照亮你還沒做完的夢。群組裡老闆已上線：「先救，天亮再解釋。」",
+    meme:{scene:"panik", top:"凌晨三點手機響", bot:"不是鬧鐘 是正式環境", tag:"職業"},
+    choices:[
+      {label:"爆肝救火，天亮前修好", eff:{mny:6,int:3,hp:-7}, res:"你頂著黑眼圈在日出前把服務拉起來，老闆在群組丟了一個讚——只有一個讚。你的肝在工時表上默默畫了正字記號。"},
+      {label:"回報「正在看」然後繼續睡", eff:{hap:4,mny:-4}, res:"你回了句『查 log 中』就把手機反蓋。隔天發現同事已經修好了，你補了張珍奶券道歉——睡眠是你唯一不肯讓步的 SLA。"},
+      {label:'<i class="gtag">⚖️智力檢定78（智力+骰0~40）</i> 半小時寫好自動修復腳本', r44:true, sr:{k:"int", need:78, spread:40,
+        win:{eff:{int:8,mny:6,hp:-2}, flags:{r50_script:true}, res:"你睡眼惺忪地寫了支腳本，讓系統以後自己救自己。從此 on-call 輪到你那週，全組睡得最熟——你被尊稱為『不用拜的乩身』。"},
+        lose:{eff:{hp:-6,hap:-4,int:2}, res:"腳本寫到一半把備援機也弄掛了，你從救火隊升級成縱火犯，邊修邊把『不要在凌晨三點寫 shell』刻進 DNA。"}}},
+    ]},
+  {id:"r50_eng_offer", stage:[30,48], w:2, once:true, cond:s=>s.careerId==="eng",
+    title:"外商獵頭的深夜訊息", text:"LinkedIn 跳出訊息：外商開出 1.8 倍薪水挖你，但出了名的『高薪高壓高流動』。現公司雖然錢少，至少加班加得很有人情味。",
+    meme:{scene:"deal", top:"外商開1.8倍挖角", bot:"附註：前任只撐了八個月", tag:"職業"},
+    choices:[
+      {label:"跳！錢到位了肝自然會跟上", eff:{mny:10,int:4,hp:-6,hap:-2}, res:"你換上全英文信箱簽名檔，薪水條變漂亮了，頭髮變少了。每次想離職，看一眼薪資單又默默把辭職信存回草稿匣。"},
+      {label:"留下來，跟熟悉的爛 code 相依為命", eff:{hap:5,hp:3,mny:-3}, res:"你婉拒了獵頭，繼續維護那坨只有你看得懂的祖傳程式碼——它綁架了你，你也綁架了它，這也算一種雙向奔赴。"},
+      {label:"拿 offer 回來談加薪", eff:{mny:7,apr:2,hap:-3}, res:"你把 offer 截圖放上談判桌，老闆臉綠了三秒後幫你加了薪。從此考績表上多了一行看不見的小字：此人隨時會跑。"},
+    ]},
+  /* ---- 🏛️ 鐵飯碗公務員 ---- */
+  {id:"r50_gov_window", stage:[27,55], w:2, cond:s=>s.careerId==="gov",
+    title:"櫃台前的暴怒民眾", text:"一位民眾拍著櫃台咆哮，因為缺一份文件不能辦。規定就是規定，但他身後的隊伍越排越長，手機鏡頭已經舉起來了。",
+    meme:{scene:"yellcat", top:"民眾：我繳稅養你們", bot:"我：所以文件還是要補", tag:"職業"},
+    choices:[
+      {label:"依法行政，微笑複誦規定", eff:{int:3,mny:3,hap:-4}, res:"你像復讀機一樣溫柔而堅定，民眾罵累了自己回去補件。當天你上了爆料公社，留言區一半罵你一半挺你——公門修行，先修罵不還口。"},
+      {label:"多走一步，幫他想替代方案", eff:{hap:6,apr:3,hp:-3}, flags:{kind:true}, res:"你翻出另一條可行的申請路徑，民眾從咆哮轉為鞠躬。一週後機關收到感謝函，科長把它釘在公布欄——旁邊是你積了三個月的補休單。"},
+    ]},
+  {id:"r50_gov_moonlight", stage:[30,55], w:2, once:true, cond:s=>s.careerId==="gov",
+    title:"死薪水與斜槓的誘惑", text:"同學會上人人聊副業，只有你不能聊——公務員依法不得兼職。但你的文筆其實不錯，匿名投稿平台在向你招手。",
+    meme:{scene:"temptation", top:"全桌都在聊副業", bot:"我：依法只能聊心酸", tag:"職業"},
+    choices:[
+      {label:"恪守本分，把興趣留給退休", eff:{hap:3,mny:2,int:1}, res:"你把靈感記在備忘錄裡，檔名《退休後再說》。穩定是你選的路，無聊是路上的風景——至少年金看得到、領得到（吧）。"},
+      {label:'<i class="gtag">⚖️智力檢定75（智力+骰0~40）</i> 匿名寫作，行政中立地爆紅', r44:true, sr:{k:"int", need:75, spread:40,
+        win:{eff:{hap:7,int:5,hp:-2}, flags:{r50_penname:true}, res:"你的匿名專欄《公門夜記》悄悄爆紅，全機關都在傳閱，科長還推薦給你：『寫得真好，不知道是哪個單位的。』你低頭喝茶，深藏功與名。"},
+        lose:{eff:{hap:-5,int:3,mny:-2}, res:"投稿石沉大海，唯一的留言是『AI 寫的吧』。你默默關掉帳號，認清自己最暢銷的作品還是公文——至少那個有人看，還非看不可。"}}},
+    ]},
+  /* ---- 📱 全職直播主 ---- */
+  {id:"r50_live_algo", stage:[26,46], w:2, cond:s=>s.careerId==="live",
+    title:"演算法大改版", text:"平台一夜改版，你的觀看數從五位數跳水成三位數。後台曲線像懸崖，粉絲群有人問：「你是不是被 ban 了？」你也很想知道。",
+    meme:{scene:"stonks", top:"昨天觀看數5萬", bot:"今天：你和你的47位鐵粉", tag:"職業"},
+    choices:[
+      {label:"跟風挑戰，演算法要什麼給什麼", eff:{mny:5,apr:3,hap:-5}, res:"你含淚拍了三天流行梗，流量回來了一半，靈魂少了一半。你在置頂留言寫：『我變了，因為我想活。』粉絲回：『懂，吃飯重要。』"},
+      {label:"深耕鐵粉，小而美經營", eff:{hap:6,mny:-4,int:2}, res:"你開了會員制小直播間，47 位鐵粉各個是 VIP。錢變少了，但每場直播都像老友聚會——演算法給不了的，人給了。"},
+      {label:'<i class="gtag">⚖️外貌檢定76（外貌+骰0~40）</i> 賭一支精心企劃的轉型片', r44:true, sr:{k:"apr", need:76, spread:40,
+        win:{eff:{mny:9,apr:6,hp:-3}, flags:{r50_comeback:true}, res:"轉型片一夜百萬觀看，演算法重新把你抱回懷裡。業配排到三個月後，你在感言裡哽咽：『謝謝大家……和那位看不見的演算法工程師。』"},
+        lose:{eff:{mny:-6,hap:-6,int:3}, res:"企劃片撲街，觀看數還輸給你三年前拍的開箱。你盯著後台數據學會了人生功課：觀眾要的不是你想給的——這句話業界叫『市場』。"}}},
+    ]},
+  {id:"r50_live_adfork", stage:[27,48], w:2, once:true, cond:s=>s.careerId==="live",
+    title:"七位數的爭議業配", text:"一個來路微妙的投資 App 開價七位數找你業配，合約寫明「不得提及風險」。你的房租和你的良心同時舉手發言。",
+    meme:{scene:"temptation", top:"七位數業配費", bot:"代價：粉絲的信任餘額", tag:"職業"},
+    choices:[
+      {label:"接了，房租會替我原諒我自己", eff:{mny:9,apr:-4,hap:-4}, flags:{r50_sellout:true}, res:"影片上線三個月後該 App 出事上了新聞，你的留言區變成靈堂。你發了道歉影片，學會了一件事：有些錢入帳很快，扣信任值更快。"},
+      {label:"推掉，發一支「為什麼我不接」", eff:{hap:5,int:3,mny:-3}, flags:{r50_integrity:true}, res:"你把拒絕過程拍成影片，意外小爆紅。錢沒賺到，但粉絲黏性暴漲——多年後同行業配翻車時，你的留言區都是『還好你當年沒接』。"},
+    ]},
+  /* ---- 🍢 夜市攤販老闆 ---- */
+  {id:"r50_stall_rain", stage:[26,58], w:2, cond:s=>s.careerId==="stall",
+    title:"連雨週的夜市", text:"梅雨鋒面賴著不走，夜市冷清得能聽見隔壁攤的嘆氣。食材進了、攤租繳了，雨棚上的雨聲像在幫你算損益表。",
+    meme:{scene:"disaster", top:"氣象：降雨機率100%", bot:"我的營收：機率同上", tag:"職業"},
+    choices:[
+      {label:"照常出攤，撐傘的都是真愛", eff:{hp:-4,mny:3,hap:2}, res:"你在雨裡炸了一整晚，來的客人不多，但每個都說『下雨還開，真有你的』。你笑笑不語——攤租可不會下雨打折。"},
+      {label:"收攤研發新菜單", eff:{int:4,hap:3,mny:-4}, res:"你窩在家裡試了三天新口味，把失敗品全餵給家人。雨停那天，新品掛牌上市，老客人嚐一口：『欸，可以！』這就是攤販的研發部門。"},
+      {label:"轉戰外送平台，雨天財", eff:{mny:6,hp:-3,int:2}, res:"你連夜上架外送平台，雨天訂單嗶嗶響不停。抽成是痛的，但看著營收逆勢上漲，你承認了：科技始終來自於懶得出門的人性。"},
+    ]},
+  {id:"r50_stall_tv", stage:[28,58], w:2, once:true, cond:s=>s.careerId==="stall",
+    title:"美食節目找上門", text:"知名美食節目要來拍你的攤位，主持人的招牌台詞是「哇～這個太誇張了吧！」。播出後保證排隊，但老客人最怕的就是排隊。",
+    meme:{scene:"award", top:"節目播出後", bot:"排隊兩小時 老客人含淚改吃別攤", tag:"職業"},
+    choices:[
+      {label:"上節目，衝一波觀光財", eff:{mny:9,apr:3,hp:-5,hap:-2}, res:"播出後人龍繞了半個夜市，你數錢數到手抽筋，也忙到三個月沒跟老客人講過一句話。爆紅是租來的，幸好手藝是自己的。"},
+      {label:"婉拒，顧好巷仔內的口碑", eff:{hap:6,mny:-2,int:2}, res:"你跟製作單位說『生意夠做就好』。老客人聽說後比你還驕傲，逢人就講『這攤是我們在地人在罩的』——你的米其林，在熟客的舌頭上。"},
+    ]},
+  /* ---- ✍️ 八點檔編劇 ---- */
+  {id:"r50_drama_rating", stage:[26,55], w:2, cond:s=>s.careerId==="drama",
+    title:"收視率保衛戰", text:"隔壁台新戲來勢洶洶，製作人拍桌：「下週給我失憶！車禍！雙胞胎！最好再來個地下情！」你看著筆下角色，向他們道歉。",
+    meme:{scene:"yellcat", top:"製作人：要爆點", bot:"我：第八次失憶會不會太多", tag:"職業"},
+    choices:[
+      {label:"狗血全上，收視率是唯一正義", eff:{mny:7,hap:-4,int:-2}, res:"你含淚讓男主角第八次失憶，收視率果然衝破 5。慶功宴上製作人摟著你說『你最懂觀眾』，你笑著乾杯，心裡跟文學系的自己說了聲節哀。"},
+      {label:"堅持文本，戲保住靈魂", eff:{int:4,hap:4,mny:-5}, res:"你死守劇本的邏輯線，收視輸了半個百分點，卻被劇評人點名『近年最不侮辱觀眾智商的八點檔』。獎金沒了，腰桿直了。"},
+      {label:'<i class="gtag">⚖️智力檢定80（智力+骰0~40）</i> 寫一個沒人想得到的神展開', r44:true, sr:{k:"int", need:80, spread:40,
+        win:{eff:{int:7,mny:8,hp:-3}, flags:{r50_twist:true}, res:"你的神展開播出當晚，全島論壇炸鍋，『#編劇是天才吧』掛了三天熱搜。製作人從此不敢催你失憶——你用實力證明，狗血以外還有別條路。"},
+        lose:{eff:{hap:-5,mny:-4,int:3}, res:"神展開播出後觀眾全程問號，收視崩盤，論壇熱帖標題是『編劇出來面對』。你關掉社群躲了一週，把這次教訓寫進下一部戲——當然，配上車禍跟失憶。"}}},
+    ]},
+  {id:"r50_drama_irl", stage:[30,60], w:2, once:true, cond:s=>s.careerId==="drama",
+    title:"人生比劇本狗血", text:"家族聚會上爆出一樁陳年祕辛，曲折程度讓你倒抽一口氣——這要寫進戲裡，觀眾一定罵太扯。可它就真實地發生在你家餐桌上。",
+    meme:{scene:"realize", top:"我寫的：被罵太扯", bot:"我家的：比戲還扯", tag:"職業"},
+    choices:[
+      {label:"改頭換面寫進劇本", eff:{mny:6,int:4,hap:-3}, res:"你把家醜換了姓名搬上螢幕，該集收視創新高。親戚邊看邊罵『哪有人這樣』，沒人發現主角就是自己——編劇的職業道德：素材就地取材，姓名必換。"},
+      {label:"封存它，家人比題材重要", eff:{hap:5,apr:2,mny:-2}, flags:{kind:true}, res:"你把那一頁從靈感本撕掉，陪長輩把話講開。後來你寫了一場和解戲，演員問你怎麼寫得這麼真，你說：『看過現場。』"},
+    ]},
+  /* ---- 🏮 廟公接班人 ---- */
+  {id:"r50_temple_fair", stage:[26,62], w:2, cond:s=>s.careerId==="temple",
+    title:"進香團大日子", text:"一年一度遶境大典，三個進香團同日報到，鞭炮、轎班、香客便當全要你調度。老廟公在旁邊泡茶看你，眼神寫著「換你了」。",
+    meme:{scene:"luck", top:"三個進香團同日駕到", bot:"神明淡定 我先去吐", tag:"職業"},
+    choices:[
+      {label:"親自扛全場，一條龍調度", eff:{hap:5,apr:3,hp:-5}, flags:{r50_blessed:true}, res:"你從清晨指揮到深夜，嗓子啞了、腿軟了，但三團香客平安盡興。老廟公遞來一杯茶：『有模有樣矣。』——這句認證，比金牌還重。"},
+      {label:"外包活動公司，自己顧大局", eff:{mny:-5,int:3,hap:2}, res:"你花錢請了專業團隊，自己專心顧科儀。長老們嘀咕『少年仔就是愛花錢』，但看到流程順到不可思議，也默默把嘀咕吞了回去。"},
+    ]},
+  {id:"r50_temple_live", stage:[30,62], w:2, once:true, cond:s=>s.careerId==="temple",
+    title:"線上求籤的提案", text:"廟裡香火一年比一年淡，年輕人只在考試前出現。廟委會年輕委員提案：開直播、線上求籤、文創周邊。老委員拍桌：「成何體統！」全場看向你。",
+    meme:{scene:"phone", top:"神明也要數位轉型?", bot:"籤詩：宜直播 忌已讀", tag:"職業"},
+    choices:[
+      {label:"數位轉型，神明上線", eff:{mny:6,int:4,hap:-2}, res:"你開了廟方頻道，遶境直播觀看數破十萬，文創御守賣到缺貨。老委員嘴上不認同，私下偷偷問你：『那個……按讚是要按哪裡？』"},
+      {label:"守住老規矩，香火慢慢傳", eff:{hap:5,apr:2,mny:-3}, res:"你婉拒了提案，但把廟埕整理得更親人，辦起說故事茶會。香客沒有暴增，但來的人都留得住——你賭的是百年，不是流量。"},
+    ]},
+  /* ---- 🤝 保險業務王 ---- */
+  {id:"r50_sales_quota", stage:[26,55], w:2, cond:s=>s.careerId==="sales",
+    title:"月底差一張單", text:"競賽榜上你排第二，差一張單就能站上頒獎台。通訊錄滑到底，剩下的名字不是已成交，就是已封鎖。表姐的婚宴請帖躺在桌上。",
+    meme:{scene:"deal", top:"月底業績差一張", bot:"親戚看到我 比看到鬼還怕", tag:"職業"},
+    choices:[
+      {label:"婚宴上順便開發，雙喜臨門", eff:{mny:6,apr:-3,hap:-3}, res:"你在喜宴敬酒時遞出了名片，單成了，表姐的臉也綠了。隔年家族聚會你的座位被排在最角落——業績榜上有名，家族群組裡無聲。"},
+      {label:"放掉這單，業績換人情", eff:{hap:4,mny:-3,int:2}, res:"你把請帖當請帖、親戚當親戚，頒獎台讓給了別人。多年後表姐主動找你保了全家保單：『因為你那次沒推銷。』——慢，有時候比較快。"},
+      {label:'<i class="gtag">⚖️外貌檢定78（外貌+骰0~40）</i> 陌生開發，電梯三十秒成交', r44:true, sr:{k:"apr", need:78, spread:40,
+        win:{eff:{mny:8,apr:5,hp:-2}, flags:{r50_closer:true}, res:"你在電梯裡跟陌生人聊了三十秒，對方主動約你喝咖啡簽約。同事問你祕訣，你說：『先當人，再當業務。』這句話後來被印在公司月曆上。"},
+        lose:{eff:{hap:-4,apr:-2,mny:-2}, res:"你在電梯開口第二句，對方就按開門鍵逃走，還順手檢舉你騷擾。警衛請你喝了杯水：『少年仔，電梯是密室，不是商機。』"}}},
+    ]},
+  {id:"r50_sales_claim", stage:[30,60], w:2, once:true, cond:s=>s.careerId==="sales",
+    title:"老客戶的理賠戰", text:"跟了你十五年的老客戶住院申請理賠，公司核賠部門咬文嚼字想打折。一邊是發你薪水的公司，一邊是把全家保單都交給你的人。",
+    meme:{scene:"court", top:"公司：條款第8條之3", bot:"客戶：我只剩你了", tag:"職業"},
+    choices:[
+      {label:"替客戶硬剛公司", eff:{hap:5,int:3,mny:-4}, flags:{kind:true}, res:"你抱著病歷和條款跟核賠部門周旋三週，理賠全額下來那天，客戶在病床上握著你的手。公司給你記了個『態度需輔導』，你裱起來當座右銘。"},
+      {label:"按公司流程走，不蹚渾水", eff:{mny:4,hap:-5}, res:"你照 SOP 轉達了打折的核賠結果，客戶沒罵你，只是隔年默默沒續約。你看著那串消失的保單號碼，懂了什麼叫『業績是租的，信任是買斷的』。"},
+    ]},
+  /* ---- 💪 健身教練 ---- */
+  {id:"r50_coach_newyear", stage:[26,52], w:2, cond:s=>s.careerId==="coach",
+    title:"新年新希望大潮", text:"一月的健身房擠得像跨年晚會，新會員人人喊著「今年一定瘦」。你心裡清楚：二月過後，這裡會安靜得能聽見啞鈴生鏽的聲音。",
+    meme:{scene:"gym", top:"一月：人潮如跨年", bot:"三月：教練與啞鈴相依為命", tag:"職業"},
+    choices:[
+      {label:"趁熱推課，一月吃全年", eff:{mny:7,hp:-4,hap:-2}, res:"你連上 14 天班，把課程賣好賣滿。三月會員消失大半，但訂金不會退——你對著空蕩的器材區舉杯：敬人性，敬訂金。"},
+      {label:"認真陪跑，把三分鐘熱度變習慣", eff:{hap:6,hp:2,mny:-3}, res:"你替每個新會員客製菜單、每週追蹤，留下來的不到一半——但留下的全成了你的鐵粉學員，續約十年起跳。教練這行，慢養才是養老金。"},
+    ]},
+  {id:"r50_coach_injury", stage:[30,55], w:2, once:true, cond:s=>s.careerId==="coach",
+    title:"教練的職業傷害", text:"示範硬舉時腰間「啪」了一聲，醫生看著片子說：「三個月不准負重。」可你的收入表上，每一格都寫著『體力』兩個字。",
+    meme:{scene:"hospital", top:"醫生：三個月不能教課", bot:"房貸：那我先教訓你", tag:"職業"},
+    choices:[
+      {label:"硬撐帶課，腰是消耗品", eff:{mny:4,hp:-8,hap:-3}, res:"你綁著護腰繼續示範，課是沒停，腰卻從此會看天氣預報。學員都說你敬業，物理治療師說你欠揍——兩邊都對。"},
+      {label:"轉型線上課＋姿勢顧問", eff:{int:5,mny:3,hp:2}, flags:{r50_online:true}, res:"你趁養傷把課程搬上線，意外打開全島市場。腰好了之後你維持雙軌經營——那聲『啪』，後來被你稱為『創業的起跑槍』。"},
+    ]},
 ];}
 const EVENTS_BASE = buildEvents();   // 載入時建一份（行為與舊版 const EVENTS 完全一致）
 let EVENTS = EVENTS_BASE;            // 每日挑戰時暫時換成種子重建版，結束即還原
@@ -6880,6 +7081,7 @@ function nextYear(){
   // R26 權衡天賦年度節拍：純查狀態、零 rng；無 quirk（含舊進行中存檔）完全無感
   quirkYearTick();
   r49YearTick();   // R49 開局天賦年度節拍：純查狀態零 rng，無天賦直接 return
+  r50CareerTick(); // R50 職業分流：25 歲依屬性/旗標確定性入行（零裸 rng；已入行/超齡直接 return）
   // R30 屬性年史：年度快照（平淡年也記，曲線不斷線）
   histTick();
 
@@ -8512,6 +8714,7 @@ function screenSummary(cat){
       這隻角色在地球 Online 線上 <b>${S.age}</b> 年，<br>
       最終以 <b>${S.title}</b> 的身分被系統強制下線。</p>
       ${(S.origin&&R35_ORIGIN_EPI[S.origin.id])?`<p class="etext" style="color:var(--accent,#ffd24a)">${S.origin.ic} ${R35_ORIGIN_EPI[S.origin.id]}</p>`:""}
+      ${r50SummaryHTML()}
       <div class="stats" style="margin:12px 0">${attrRows}</div>
       ${attrPersonaHTML()}
       ${r41WishHTML()}
@@ -9879,6 +10082,7 @@ function buildShareText(){
   );
   if((S.gen||0)>=2) lines.push(`🏠 家族第 ${S.gen} 代傳人（香火連載中）`);   // R42 分享文案帶世代數（第 1 代省略，零 rng）
   if(S.origin) lines.push(`🎴 出身：${S.origin.ic} ${S.origin.nm}`);   // R29 分享卡自然帶出身（舊局無 origin 自動省略，零 rng）
+  if(S.careerId&&R50_MAP[S.careerId]) lines.push(`💼 職業：${R50_MAP[S.careerId].ic} ${R50_MAP[S.careerId].nm}`);   // R50 分享卡帶職業（舊局/早夭無職業自動省略，零 rng）
   const ta=topAch(1)[0];   // R24 最高成就（本局達標制，零 rng）
   if(ta) lines.push(`🏆 最高成就：${ta.ic} ${ta.nm}`);
   lines.push(`🗯️ ${tauntText()}`);
@@ -10101,6 +10305,7 @@ function buildRoastCard(){
   const lines=[
     "🃏【地球Online 人生嘲諷卡】",
     `🪪 人格認證：${pd?pd.p[0]:"🧍 地球路人"}`,
+    ...((S.careerId&&R50_MAP[S.careerId])?[`💼 本局職業：${R50_MAP[S.careerId].ic} ${R50_MAP[S.careerId].nm}`]:[]),   // R50 嘲諷卡帶職業（無職業自動省略，零 rng）
     `⏳ 享年 ${S.age} 歲 · 人生評價 ${grade} 級（${sum}/500）`,
     `☠️ 死法：${r37DeathLine()}`,
     `📈 最強屬性：${ATTR[topK].ic}${ATTR[topK].nm} ${a[topK]}`,
