@@ -1914,6 +1914,139 @@ try {
   console.log('R51 成家人生事件鏈: ❌ ' + e.message);
 }
 
+/* ---- R52 晚年事件鏈探針（強制路徑，不靠隨機抽中）----
+   ① 結構：4 段事件齊備（once＋stage＋場景存在＋選項數≥4）、scamfeast 死法雙邊收錄、
+      3 成就有 hint、R46 保底表收 4 個入口、3 個 cb_ 段進因果鏈優先池
+   ② 有子女線全鏈：retire→life→health→final 逐段進池、旗標正確推進、後段未到不進池；
+      走完四段 → 解鎖 r52_sunset；顧孫 → 解鎖 r52_nanny
+   ③ 分支互斥（R51 旗標回扣）：有子女看得到顧孫/啃老回流、看不到老友互助與窗簾暗號；
+      無子女反之；以房養老只給無子女＋homeowner
+   ④ R50 職業膠囊回扣：careerId=eng 才見 FIRE 試算、stall 才見攤車做到倒；
+      r52_forced 優離者才見環島回扣選項
+   ⑤ 屬性門檻膠囊：mny>=60 才見請看護、hp>=70 才見公園鐵人（只用在新增選項）
+   ⑥ 死法確定性（比照 R27 門檻慣例、零裸 rng）：int<=20 接詐騙電話必死（cat=scamfeast）、
+      門檻外必活（r52_scambuster 旗標 + r52_scamhero 成就）
+   ⑦ 狀態 gating：未退休不進 life；乾淨局零 r52 殘留 */
+let r52OK = false;
+try {
+  const r52Raw = vm.runInContext(`(function(){
+    const out={};
+    const IDS=['r52_retire','cb_r52_life','cb_r52_health','cb_r52_final'];
+    const evs=IDS.map(id=>EVENTS.find(e=>e.id===id));
+    /* ① 結構 */
+    out.evDef = evs.every(e=>!!e && e.once===true && Array.isArray(e.stage) && e.title && e.text && (e.choices||[]).length>=4);
+    out.scenes = evs.every(e=>e.meme && e.meme.scene && !!SCENES[e.meme.scene] && e.meme.top && e.meme.bot);
+    out.sdDef = !!SPECIAL_DEATHS.scamfeast && SPECIAL_DEATHS.scamfeast.cat==='scamfeast' && !!SCENES[SPECIAL_DEATHS.scamfeast.scene];
+    out.dbDef = DEATHBOOK.some(d=>d.id==='scamfeast' && d.rare===true && d.nm && d.hint && d.hint.length>4 && d.reason);
+    out.achDef = ['r52_sunset','r52_nanny','r52_scamhero'].every(id=>ACH_MAP[id] && ACH_MAP[id].hint && String(ACH_MAP[id].hint).length>4);
+    out.milestone = R46_MILESTONE.r52_retire===58 && R46_MILESTONE.cb_r52_life===65 && R46_MILESTONE.cb_r52_health===71 && R46_MILESTONE.cb_r52_final===76;
+    out.chainPool = ['cb_r52_life','cb_r52_health','cb_r52_final'].every(id=>CHAIN_IDS.has(id));
+    /* ② 有子女線全鏈 */
+    delete SAVE.ach.r52_sunset; delete SAVE.ach.r52_nanny;
+    startGame(); S.age=58; S.flags={haskid:true}; ensureState(S); S.seen={};
+    out.retIn = eligible().some(e=>e.id==='r52_retire');
+    out.laterGated = !eligible().some(e=>['cb_r52_life','cb_r52_health','cb_r52_final'].includes(e.id));
+    showEvent(EVENTS.find(e=>e.id==='r52_retire')); choose(0);
+    out.retFlag = S.flags.r52_ret===true && S.flags.r52_pension===true;
+    S.age=65;
+    out.lifeIn = eligible().some(e=>e.id==='cb_r52_life');
+    out.healthGated = !eligible().some(e=>e.id==='cb_r52_health');
+    showEvent(EVENTS.find(e=>e.id==='cb_r52_life'));
+    let h=document.querySelector('#app').innerHTML;
+    out.kidLifeOpts = h.includes('金孫駕到') && h.includes('帶著行李回來了') && !h.includes('老友互助群組') && !h.includes('以房養老');
+    choose(0);
+    out.lifeFlag = S.flags.r52_life===true && S.flags.r52_nanny===true;
+    S.age=71;
+    out.healthIn = eligible().some(e=>e.id==='cb_r52_health');
+    out.finalGated = !eligible().some(e=>e.id==='cb_r52_final');
+    showEvent(EVENTS.find(e=>e.id==='cb_r52_health'));
+    h=document.querySelector('#app').innerHTML;
+    out.kidcareShown = h.includes('子女照顧輪值表');
+    choose(0);
+    out.healthFlag = S.flags.r52_health===true && S.flags.r52_nhi===true;
+    S.age=76;
+    out.finalIn = eligible().some(e=>e.id==='cb_r52_final');
+    showEvent(EVENTS.find(e=>e.id==='cb_r52_final'));
+    h=document.querySelector('#app').innerHTML;
+    out.kidFinalOpts = h.includes('預立遺囑') && !h.includes('窗簾暗號');
+    choose(0);
+    out.finalFlag = S.flags.r52_final===true && S.flags.r52_will===true;
+    const oR1=rng; rng=()=>0.5; die(); rng=oR1;
+    out.sunsetAch = SAVE.ach.r52_sunset===true && SAVE.ach.r52_nanny===true;
+    /* ③ 無子女線互斥（R51 不婚旗標回扣） */
+    startGame(); S.age=65; S.flags={r51_solo:true,r52_ret:true}; ensureState(S); S.seen={};
+    showEvent(EVENTS.find(e=>e.id==='cb_r52_life'));
+    h=document.querySelector('#app').innerHTML;
+    out.soloLifeOpts = h.includes('老友互助群組') && !h.includes('金孫駕到') && !h.includes('帶著行李回來了') && !h.includes('以房養老');
+    startGame(); S.age=65; S.flags={r51_solo:true,r52_ret:true,homeowner:true}; ensureState(S); S.seen={};
+    showEvent(EVENTS.find(e=>e.id==='cb_r52_life'));
+    out.mtgShown = document.querySelector('#app').innerHTML.includes('以房養老');
+    startGame(); S.age=65; S.flags={haskid:true,r52_ret:true,homeowner:true}; ensureState(S); S.seen={};
+    showEvent(EVENTS.find(e=>e.id==='cb_r52_life'));
+    out.mtgKidHidden = !document.querySelector('#app').innerHTML.includes('以房養老');
+    startGame(); S.age=76; S.flags={r52_ret:true,r52_life:true,r52_health:true}; ensureState(S); S.seen={};
+    showEvent(EVENTS.find(e=>e.id==='cb_r52_final'));
+    h=document.querySelector('#app').innerHTML;
+    out.soloFinalOpts = h.includes('窗簾暗號') && !h.includes('預立遺囑');
+    /* ④ R50 職業膠囊回扣＋優離回扣 */
+    startGame(); S.age=58; S.flags={}; ensureState(S); S.seen={}; S.careerId='eng';
+    showEvent(EVENTS.find(e=>e.id==='r52_retire'));
+    out.engShown = document.querySelector('#app').innerHTML.includes('FIRE 計畫');
+    startGame(); S.age=58; S.flags={}; ensureState(S); S.seen={}; S.careerId='stall';
+    showEvent(EVENTS.find(e=>e.id==='r52_retire'));
+    h=document.querySelector('#app').innerHTML;
+    out.stallShown = h.includes('攤車推得動') && !h.includes('FIRE 計畫');
+    startGame(); S.age=58; S.flags={}; ensureState(S); S.seen={}; S.careerId=null;
+    showEvent(EVENTS.find(e=>e.id==='r52_retire'));
+    h=document.querySelector('#app').innerHTML;
+    out.careerHidden = !h.includes('FIRE 計畫') && !h.includes('攤車推得動');
+    startGame(); S.age=65; S.flags={r52_ret:true,r52_forced:true}; ensureState(S); S.seen={};
+    showEvent(EVENTS.find(e=>e.id==='cb_r52_life'));
+    out.forcedShown = document.querySelector('#app').innerHTML.includes('先環島再說');
+    startGame(); S.age=65; S.flags={r52_ret:true,r52_pension:true}; ensureState(S); S.seen={};
+    showEvent(EVENTS.find(e=>e.id==='cb_r52_life'));
+    out.forcedHidden = !document.querySelector('#app').innerHTML.includes('先環島再說');
+    /* ⑤ 屬性門檻膠囊 */
+    startGame(); S.age=71; S.flags={r52_ret:true,r52_life:true}; ensureState(S); S.seen={};
+    S.attr.mny=60; S.attr.hp=70;
+    showEvent(EVENTS.find(e=>e.id==='cb_r52_health'));
+    h=document.querySelector('#app').innerHTML;
+    out.gateShown = h.includes('直接請看護') && h.includes('公園單槓老鐵人');
+    startGame(); S.age=71; S.flags={r52_ret:true,r52_life:true}; ensureState(S); S.seen={};
+    S.attr.mny=40; S.attr.hp=50;
+    showEvent(EVENTS.find(e=>e.id==='cb_r52_health'));
+    h=document.querySelector('#app').innerHTML;
+    out.gateHidden = !h.includes('直接請看護') && !h.includes('公園單槓老鐵人');
+    /* ⑥ 死法確定性 */
+    delete SAVE.ach.r52_scamhero;
+    const fev=EVENTS.find(e=>e.id==='cb_r52_final'), fi=fev.choices.findIndex(c=>c.special==='r52_scam');
+    startGame(); S.age=76; S.flags={r52_ret:true,r52_life:true,r52_health:true}; ensureState(S); S.seen={};
+    S.attr.int=20;
+    showEvent(fev); choose(fi);
+    out.scamDie = S.flags.specialDeath==='scamfeast';
+    const oR2=rng; rng=()=>0.5; if(S.alive) die('choice'); rng=oR2;
+    out.scamCat = S.cat==='scamfeast' && S.deathId==='scamfeast' && !S.alive && !!SAVE.deaths.scamfeast;
+    startGame(); S.age=76; S.flags={r52_ret:true,r52_life:true,r52_health:true}; ensureState(S); S.seen={};
+    S.attr.int=60;
+    showEvent(fev); choose(fi);
+    out.scamLive = S.alive && !S.flags.specialDeath && S.flags.r52_scambuster===true && S.flags.r52_final===true;
+    const oR3=rng; rng=()=>0.5; die(); rng=oR3;
+    out.scamAch = SAVE.ach.r52_scamhero===true;
+    /* ⑦ 狀態 gating＋零殘留 */
+    startGame(); S.age=65; S.flags={}; ensureState(S); S.seen={};
+    out.noRetGated = !eligible().some(e=>e.id==='cb_r52_life');
+    startGame();
+    out.clean = Object.keys(S.flags||{}).every(k=>k.indexOf('r52')!==0)
+             && Object.keys(S.seen||{}).every(k=>k.indexOf('r52')!==0);
+    return JSON.stringify(out);
+  })()`, sandbox);
+  const r52 = JSON.parse(r52Raw);
+  r52OK = Object.values(r52).every(v => v === true);
+  console.log(`R52 晚年人生事件鏈: ${r52OK ? '✅ 全數通過' : '❌ ' + JSON.stringify(r52)}`);
+} catch (e) {
+  console.log('R52 晚年人生事件鏈: ❌ ' + e.message);
+}
+
 if (__errors.length) {
   console.log('\n--- 錯誤樣本(前5) ---');
   __errors.slice(0, 5).forEach(e => console.log('  ' + e));
@@ -1921,6 +2054,6 @@ if (__errors.length) {
 
 /* 退出碼 */
 const pass = __errors.length === 0 && chk.missingScenes.length === 0 && chk.eventVisible >= 126 && chk.eventTotal >= 126 && lsOK && achUnlocked > 0
-  && chk.deathbookMissing.length === 0 && chk.deathTotal >= 17 && deathsOK && rebirthOK && legacyOK && petOK && r13OK && r17OK && r20OK && r21OK && r22OK && r24OK && r25OK && r34OK && r38OK && r41OK && r42OK && r43OK && r44OK && r45OK && r46OK && r47OK && r48OK && r49OK && r51OK;
+  && chk.deathbookMissing.length === 0 && chk.deathTotal >= 17 && deathsOK && rebirthOK && legacyOK && petOK && r13OK && r17OK && r20OK && r21OK && r22OK && r24OK && r25OK && r34OK && r38OK && r41OK && r42OK && r43OK && r44OK && r45OK && r46OK && r47OK && r48OK && r49OK && r51OK && r52OK;
 console.log('\n結果: ' + (pass ? '✅ 全數通過' : '❌ 有項目未通過'));
 process.exit(pass ? 0 : 1);

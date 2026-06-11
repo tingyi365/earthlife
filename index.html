@@ -1847,6 +1847,10 @@ const ACHIEVEMENTS = [
   {id:"r51_fullnest", ic:"🏡", nm:"成家全餐・親戚集體失業", desc:"從年夜飯催婚一路走完婚禮、買房抉擇、生養下一代——三大魔王全通關，從此圍爐桌上再也沒有人敢問你問題。", check:c=>!!c.S.flags.r51_wed&&!!c.S.flags.r51_house&&!!c.S.flags.r51_kid&&!!c.S.flags.haskid, hint:"年夜飯那桌的催婚連續技，如果照單全收——婚禮、房事、生養三關一關不漏地走完…"},
   {id:"r51_cycle", ic:"🔄", nm:"世代輪迴・都是為你好 2.0", desc:"自己怎麼被養大的，就怎麼養下一代——補習地圖原封不動傳承，或把童年那陣自由的風留給孩子。輪迴的不是業障，是教養。", check:c=>!!c.S.flags.r51_cycle, hint:"小時候走過『都是為你好』那條路的人，當了爸媽站在同一個巷口時，會做出似曾相識的決定…"},
   {id:"r51_freebird", ic:"🕊️", nm:"不婚不生・自由終老", desc:"在年夜飯桌上宣布不婚，扛住三十年親戚火力，自由自在活過 70 歲——人生這題，你交了一份只有自己看得懂、但分數很高的答案卷。", check:c=>!!c.S.flags.r51_solo&&c.age>=70, hint:"圍爐桌上敢把『我不婚』說出口的人，如果把這份自由一路守到七十歲…"},
+  /* ---- R52 晚年鏈成就（旗標確定性判定，零裸 rng；未進鏈的局永不誤觸） ---- */
+  {id:"r52_sunset", ic:"🌇", nm:"下半場全勤・晚年模範生", desc:"從退休抉擇一路走完晚年生活、健康關卡與人生期末考——人生下半場打好打滿，謝幕時連裁判都起立鼓掌。", check:c=>!!c.S.flags.r52_ret&&!!c.S.flags.r52_life&&!!c.S.flags.r52_health&&!!c.S.flags.r52_final, hint:"55 歲之後人生還有四道關卡：退休、日子、健康、交代——一關不漏走到底…"},
+  {id:"r52_nanny", ic:"👶", nm:"金孫托育中心・全年無休", desc:"退休後光榮轉職全職顧孫——免費、不打烊、自帶副食品研發部門。兒女口中那句『你帶比較放心』，是你這輩子最貴的聘書。", check:c=>!!c.S.flags.r52_nanny, hint:"有子女的人退休那天，常會收到一份無給職聘書，蓋章的是金孫…"},
+  {id:"r52_scamhero", ic:"📞", nm:"反詐尖兵・戲精本精", desc:"跟『猜猜我是誰』周旋一整個月還全身而退——詐騙集團為你開了三次檢討會，最後把你列入拒絕往來戶。", check:c=>!!c.S.flags.r52_scambuster, hint:"晚年那通『猜猜我是誰』，腦袋夠清楚的人不掛電話，反而入戲開演…"},
 ];
 const ACH_MAP = {}; ACHIEVEMENTS.forEach(a=>ACH_MAP[a.id]=a);
 
@@ -6600,6 +6604,65 @@ function buildEvents(){ return [
       {label:"頂客到底：不生，先對得起自己", eff:{hap:5,mny:5}, flags:{r51_kid:true,r51_nokid:true,dink:true}, res:"你們認真討論了三個晚上，最後在便利商店的關東煮前達成共識：不生。把育兒基金改名叫『兩人環遊世界基金』，把兒童房改成電影房。親戚輪番上陣勸了三年，最後在你們的京都旅行限動底下留言：『……好啦看起來是真的很快樂。』少子化你們確實有貢獻——貢獻了一個想清楚的示範。"},
       {label:'<i class="gtag">🍢夜市攤販</i> 攤二代養成計畫：孩子在攤車邊長大', eff:{mny:-4,hap:7,hp:-2}, cond:s=>s.careerId==="stall", flags:{r51_kid:true,r51_stallkid:true,haskid:true}, inc:"kids", res:"別人的孩子在安親班寫評量，你的孩子在攤車邊收錢找零，心算速度海放同齡人三條街。常客阿姨們輪流當保母，整條夜市都是他的遊樂場。小學作文〈我的家〉他寫：『我家很大，從第一攤到最後一攤都是。』老師給了滿分，還偷偷來捧場了兩次。"},
     ]},
+
+  /* =====================================================================
+     R52 台味晚年事件鏈「人生下半場」：退休抉擇 → 晚年生活 → 健康關卡 → 人生期末考，
+     補完人生弧線（R34 求學 → R50 職業 → R51 成家 → R52 晚年），前面選擇一路回扣。
+     旗標推進：r52_ret（r52_pension 賭勞保月領／r52_worklate 延退／r52_forced 優離包裹／
+       r52_engfire 工程師 FIRE［R50 回扣］／r52_stallever 攤販做到倒［R50 回扣］）
+       → r52_life（r52_nanny 顧孫全年無休／r52_boomerang 啃老回流［以上 haskid 限定］／
+          r52_dance 長青大學廣場舞／r52_solofree 老友互助／r52_reversemtg 以房養老
+          ［以上兩項無子女限定］／r52_islandtrip 優退金環島［r52_forced 回扣］）
+       → r52_health（r52_nhi 健保集點／r52_ltc 長照排隊／r52_kidcare 子女輪值［haskid 限定］／
+          r52_carer 外籍看護［💰門檻］／r52_ironold 公園鐵人［❤️門檻］）
+       → r52_final（r52_will 遺產修羅場［haskid 限定］／r52_donate 裸捐／
+          r52_scambuster 反詐持久戰／r52_curtain 窗簾暗號獨居安全網［無子女限定］）
+     cb_ 前綴沿用既有因果鏈優先抽選；分歧全走旗標＋choice.cond＋門檻膠囊（零裸 rng 賭命），
+     R51 成家旗標（haskid／homeowner）與 R50 careerId 只做回扣分流，屬性門檻只用在本輪新增選項，
+     不動任何既有檢定數值。有子女線與無子女線互斥，各自只看得到自己分支的選項。
+     鏈內附 1 稀有死法 scamfeast（詐騙電話全餐，int<=20 確定性觸發，比照 R27 模式）。
+     文案走台味晚年自嘲（勞保倒數／長輩圖／長照排隊／猜猜我是誰／里長伯送米），不踩紅線。
+     ===================================================================== */
+  {id:"r52_retire", stage:[55,65], w:2.5, once:true, cond:s=>!s.flags.r52_ret,
+    title:"退休倒數計時器", text:"55 歲生日當天，勞保局寄來一封『請確認您的投保年資』，新聞跑馬燈剛好在播『勞保基金預估 N 年後用罄』——N 每年都會更新，方向只有一個。辦公室小你三十歲的同事叫了你一聲『老師』，你突然意識到：退休這一題，不能再用『以後再說』來交卷了。",
+    meme:{scene:"swerve", top:"勞保：撐住", bot:"我：你先撐住", tag:"晚年"},
+    choices:[
+      {label:"賭勞保不會倒，時間到就月領", eff:{hap:4,mny:2}, flags:{r52_ret:true,r52_pension:true}, res:"你選擇月領，正式加入全島八百萬勞工的世紀對賭：賭國家信用，籌碼是下半輩子。每月入帳那天你都會瞄一眼新聞確認基金還在，理專說你勇敢，你說：『這不是勇敢，是死忠。』"},
+      {label:"不敢退，延退繼續做", eff:{mny:5,hp:-4,hap:-2}, flags:{r52_ret:true,r52_worklate:true}, res:"你跟公司續約五年，工位默默從窗邊被挪到影印機旁。年輕同事叫你活字典，主管開會說『薑是老的辣』，人資的報表上你叫『人力成本優化空間』——三種稱呼，同一個你。"},
+      {label:"簽下『優離專案』：被資遣偽裝的優退", eff:{mny:6,hap:-3}, flags:{r52_ret:true,r52_forced:true}, res:"人資笑容可掬地遞上『優離方案』，簡報做得比你的退休金還漂亮。你簽完名走出會議室，聽見裡面在打內線：『下一位。』N+1 入袋，你決定把這場資遣對外統一口徑叫『提早享受人生』。"},
+      {label:'<i class="gtag">💻工程師</i> 打開試算表，FIRE 計畫啟動', eff:{int:3,mny:4,hap:3}, cond:s=>s.careerId==="eng", flags:{r52_ret:true,r52_engfire:true}, res:"你把二十年的股票、勞退自提和 ETF 攤進試算表，4% 法則跑了三遍，確認再扣 N 年程式碼就財務自由。同事問你退休要幹嘛，你說：『寫自己想寫的 code。』全辦公室都笑了，只有你是認真的。"},
+      {label:'<i class="gtag">🍢夜市攤販</i> 退休？攤車推得動就不算老', eff:{hap:5,hp:-2,mny:2}, cond:s=>s.careerId==="stall", flags:{r52_ret:true,r52_stallever:true}, res:"別人辦退休派對，你幫攤車輪子上了新油。常客問你要做到什麼時候，你夾起一份鹽酥雞：『做到倒——不是倒店的倒，是我倒下去的倒。』整條夜市都知道：你的攤位沒有公休，只有歷史。"},
+    ]},
+  {id:"cb_r52_life", stage:[62,72], w:2.5, once:true, cond:s=>!!s.flags.r52_ret&&!s.flags.r52_life,
+    title:"人生下半場開幕式", text:"不用打卡的第一個星期一，你七點自動醒來，盯著天花板不知道要幹嘛。LINE 跳出三則訊息：長青大學招生簡章、里長伯的共餐通知，還有一張寫著『早安 平安喜樂』的蓮花長輩圖——歡迎來到人生下半場，這裡的 KPI 叫日子。",
+    meme:{scene:"old", top:"退休第一週：自由", bot:"退休第二週：自由到發慌", tag:"晚年"},
+    choices:[
+      {label:"金孫駕到，開始全年無休顧孫人生", eff:{hap:5,hp:-5}, cond:s=>!!s.flags.haskid, flags:{r52_life:true,r52_nanny:true}, res:"你從週休二日變成全年無休：接送、副食品、半夜發燒掛急診全包。兒女說『你帶比較放心』，翻譯過來是『保母費比較省』。但金孫睡著抓住你手指的那一刻你承認——這間托嬰中心，虧本也開。"},
+      {label:"房門一開，三十幾歲的孩子帶著行李回來了", eff:{hap:-3,mny:-4}, cond:s=>!!s.flags.haskid, flags:{r52_life:true,r52_boomerang:true}, res:"『先住一陣子，等找到工作。』——『一陣子』這個單位，後來被證實約等於『無限期』。你重新學會煮全家份的飯，電費單回到二十年前的水準。鄰居問起，你只能笑：『養兒防老，先養老二十年。』"},
+      {label:"長青大學＋廣場舞雙主修", eff:{hap:7,hp:3,int:2}, flags:{r52_life:true,r52_dance:true}, res:"你早上在公園跟音響一起律動，下午在長青大學修手機攝影，晚上把作業傳到群組——配字『美好的一天』，橘色的，還會閃。年輕人笑長輩圖，你心想：等你們老了就懂，這叫產出，不叫轉發。"},
+      {label:"獨居自由人，老友互助群組正式上線", eff:{hap:6,int:2}, cond:s=>!s.flags.haskid, flags:{r52_life:true,r52_solofree:true}, res:"你跟幾個同樣不婚不生的老戰友組了『自由人互助會』：輪流當緊急聯絡人、約好誰先走誰的貓歸誰。群組公告寫著：『本會沒有會長，因為沒有人想負責。』自由到老，是你們共同的退休金。"},
+      {label:'<i class="gtag">🏠以房養老</i> 把房子抵押給銀行，月月領零用錢', eff:{mny:6,hap:3}, cond:s=>!s.flags.haskid&&!!s.flags.homeowner, gate:true, flags:{r52_life:true,r52_reversemtg:true}, res:"你簽下逆向抵押，從此這間房每個月發你薪水——三十年前你養房貸，三十年後房貸養你。行員問要不要先知會繼承人，你環顧四周：『有，就坐在你面前。』"},
+      {label:'<i class="gtag">📦優離包裹</i> 優退金還熱著，先環島再說', eff:{hap:8,mny:-5,hp:2}, cond:s=>!!s.flags.r52_forced, flags:{r52_life:true,r52_islandtrip:true}, res:"被資遣那天你發誓要把 N+1 花得有尊嚴。你騎著機車順時針環島，在每個觀光區寄明信片回前公司，收件人寫『人資部 親啟』，內容只有一句：『本期 OKR：看海，達成率 120%。』"},
+    ]},
+  {id:"cb_r52_health", stage:[68,78], w:2.5, once:true, cond:s=>!!s.flags.r52_life&&!s.flags.r52_health,
+    title:"健保卡的集點人生", text:"七十歲前後，你的行事曆被回診取代：週一心臟科、週三骨科、週五拿慢性處方箋。診間護理師都認得你，叫號螢幕比兒女的來電顯示還常出現你的名字。健保卡點數集好集滿——只是這種集點，沒有人想換贈品。",
+    meme:{scene:"hospital", top:"健保卡：本月使用 12 次", bot:"悠遊卡：本月使用 2 次", tag:"晚年"},
+    choices:[
+      {label:"醫院當里民活動中心，逛好逛滿", eff:{hp:3,hap:2,mny:-2}, flags:{r52_health:true,r52_nhi:true}, res:"你把回診排成社交行程：八點抽血、九點跟候診室戰友交換病情報告、十點順路看一下隔壁科。醫生說你控制得不錯，你說當然——健保是你這輩子繳得最甘願的會錢，不求回本，但要用好用滿。"},
+      {label:"申請長照 2.0，然後開始排隊", eff:{hap:-3,int:2}, flags:{r52_health:true,r52_ltc:true}, res:"照管專員人很好、評估很專業，只是排到服務那天遙遙領先你的想像。你學會一句晚年限定禪語：『排到了再說。』電話那頭永遠客氣：『阿伯，前面還有一些人喔。』你問多少人，對方說：『一些。』"},
+      {label:"召開家庭會議，排子女照顧輪值表", eff:{hap:3,hp:2}, cond:s=>!!s.flags.haskid, flags:{r52_health:true,r52_kidcare:true}, res:"子女們拉了一張 Excel 輪值表，認領平日晚上和週末。群組名稱從『相親相愛一家人』改成『爸媽照護排班表』，訊息量是過年的十倍。你假裝抱怨被當小孩管，其實偷偷把群組通知設成最大聲。"},
+      {label:'<i class="gtag">💰財富60+</i> 直接請看護，錢能解決的都是小事', eff:{mny:-8,hp:4,hap:3}, cond:s=>s.attr.mny>=60, gate:true, flags:{r52_health:true,r52_carer:true}, res:"你算完看護費深呼吸三次，然後簽約——一個月的費用抵你年輕時三個月薪水，難怪人家說長照是第二次房貸。但阿蒂手腳俐落、滷肉滷得比你好吃，你只好承認：這錢花得心服口服。"},
+      {label:'<i class="gtag">❤️健康70+</i> 公園單槓老鐵人，順便指導年輕人', eff:{hp:3,apr:2,hap:4}, cond:s=>s.attr.hp>=70, gate:true, flags:{r52_health:true,r52_ironold:true}, res:"七十歲的你在公園拉單槓，旁邊二十歲的年輕人拉三下就掛了。你淡淡放下保溫杯：『少年欸，呼吸要用丹田。』隔週你多了一排徒弟，有人喊你教練，有人偷拍上傳，標題：『我阿公級的對手』。"},
+    ]},
+  {id:"cb_r52_final", stage:[73,82], w:2.5, once:true, cond:s=>!!s.flags.r52_health&&!s.flags.r52_final,
+    title:"人生期末考題庫", text:"過了某個歲數，人生開始出現期末考考題：存摺要交代給誰、房子要過戶給誰、還有每天準時來電的『猜猜我是誰』。你翻著通訊錄，發現名單分成三種：會接的、不會接的，和已經不在服務區的。是時候把答案卷寫一寫了。",
+    meme:{scene:"scam", top:"詐騙：猜猜我是誰", bot:"我：你猜猜我接過幾通", tag:"晚年"},
+    choices:[
+      {label:"預立遺囑，家庭會議直接變八點檔", eff:{int:3,hap:-3}, cond:s=>!!s.flags.haskid, flags:{r52_final:true,r52_will:true}, res:"你找了代書、開了家庭會議，投影片第三頁還沒講完，客廳已上演完整八點檔：翻舊帳、比孝順、連二十年前誰多拿一顆肉粽都列入呈堂證供。你敲敲桌子宣布結論：『都別吵，我決定——再活二十年。』全場罕見達成共識：臉都綠了。"},
+      {label:"裸捐宣言：遺產全捐，功德自己賺", eff:{hap:7,mny:-3}, flags:{r52_final:true,r52_donate:true}, res:"你簽下捐贈意向書，把大半輩子的積蓄指定給育幼院和流浪動物之家。消息傳出去，平常沒聯絡的遠房親戚紛紛上線關心你的『身心狀況』。你一一已讀，然後發了一張自製長輩圖：蓮花配金句——『錢帶不走，但可以指定收件人。』"},
+      {label:"接起『猜猜我是誰』，展開反詐持久戰", eff:{}, special:"r52_scam", flags:{r52_final:true}},
+      {label:"跟里長伯約定窗簾暗號，獨居安全網上線", eff:{hap:5,int:2}, cond:s=>!s.flags.haskid, flags:{r52_final:true,r52_curtain:true}, res:"你跟里長伯約好：窗簾早上拉開、晚上拉上，連續一天沒動靜就上門。里長伯順手把你編進送米名單，每週多送一袋。你把暗號貼進自由人互助會群組，有人留言：『這是我們這輩子最浪漫的已讀功能。』"},
+    ]},
 ];}
 const EVENTS_BASE = buildEvents();   // 載入時建一份（行為與舊版 const EVENTS 完全一致）
 let EVENTS = EVENTS_BASE;            // 每日挑戰時暫時換成種子重建版，結束即還原
@@ -6635,6 +6698,7 @@ const R46_MILESTONE={
   cb_r34_senior:16, cb_r34_allnighter:17, cb_r34_final:18,
   cb_r39_mee_old:64, cb_r43_rv_old:62, cb_npiao_rent:24,
   r51_seed:29, cb_r51_wedding:33, cb_r51_house:37, cb_r51_kid:41,   // R51 成家鏈四段入口保底
+  r52_retire:58, cb_r52_life:65, cb_r52_health:71, cb_r52_final:76, // R52 晚年鏈四段入口保底
 };
 /* og_ 出身回收事件（全為 once＋出身限定）自動入里程碑表：進窗口 2 年後保底，
    確保每種出身的專屬橋段在那一世必定演出 */
@@ -7690,6 +7754,12 @@ function choose(i){
     else { eff={hap:6,apr:3,hp:-6,mny:6}; S.flags.r51_toastking=true; res="🥂 三十桌、三十輪、杯杯見底，你用鋼鐵肝撐完整場敬酒馬拉松，最後站著送完最後一位賓客——婚宴界的全勤獎。隔天你在床上躺了一整天，紅包數了三遍：扣掉場地菜錢，居然小賺。岳父從此逢人就誇：『阮囝婿，海量！』"; }
   }
 
+  /* ---- R52 晚年鏈 special：詐騙電話全餐（屬性門檻確定性觸發，比照 R27 零裸 rng）---- */
+  if(c.special==="r52_scam"){
+    if(S.attr.int<=20){ S.flags.specialDeath="scamfeast"; eff={hp:-100}; res="📞 你以為你在反詐，其實對方在養魚。三個月內，『阿明』『警官』『檢察官』輪番上陣，你的定存、保單、棺材本排隊轉進『安全帳戶』。發現那天，你拿著存摺在 ATM 前站了很久很久，心跳替你按下了登出鍵。里長伯說，你最後一句話是：『猜猜我是誰……』"; }
+    else { eff={int:3,hap:6,mny:2}; S.flags.r52_scambuster=true; res="📞 對方喊『阿姨阿伯，是我啦！』你立刻入戲：『喔～阿明喔！』然後開始飆戲：帳戶凍結你陪他急、出車禍你幫他哭，整整一個月，詐騙集團為你開了三次專案檢討會。最後對方掛電話前真情流露：『阿伯，你到底是誰？』——反詐戰果：他們的時薪，你的快樂。"; }
+  }
+
   // 旗標 / 計數（成就追蹤）
   if(c.flags) Object.assign(S.flags, c.flags);
   if(c.inc) S.flags[c.inc]=(S.flags[c.inc]||0)+1;
@@ -7919,6 +7989,9 @@ const SPECIAL_DEATHS = {
   /* ---- R51 成家鏈稀有死法（自辦流水席敬酒馬拉松，hp 見底還堅持三十桌全乾才會觸發）---- */
   toastdown:  {cat:"toastdown", scene:"wedding",   title:"在自己喜宴上先行下桌的最強新人",
     reason:"敬酒馬拉松——自辦三十桌流水席，你堅持桌桌都乾真的，第三十桌舉杯那刻，心跳搶先說了『我先乾為敬』。司儀專業救場：『新人去換第三套禮服囉』——你確實換了，白色的，有翅膀的那種"},
+  /* ---- R52 晚年鏈稀有死法（詐騙電話全餐，int 見底還想跟『猜猜我是誰』鬥智才會觸發）---- */
+  scamfeast:  {cat:"scamfeast", scene:"scam",      title:"把詐騙全餐吃到完食的傳奇長輩",
+    reason:"詐騙全餐——『猜猜我是誰』打來那天，你熱情地喊出『阿明』。三個月後，定存、保單、棺材本全數轉進『安全帳戶』，你在 ATM 前看著餘額，心跳替你按下登出。刑事局的統計表上多了一筆，里長伯的送米名單少了一戶"},
 };
 
 /* =========================================================================
@@ -7980,6 +8053,8 @@ const DEATHBOOK = [
   {id:"tangping",   ic:"🛌", rare:true,  nm:"躺平成仙",     hint:"看破一切宣布躺平的人…口袋見底還躺好躺滿，會躺出編制外的神職…", reason:SPECIAL_DEATHS.tangping.reason},
   /* ---- R51 成家鏈稀有死法 ---- */
   {id:"toastdown",  ic:"🥂", rare:true,  nm:"敬酒馬拉松",   hint:"走進成家鏈、選擇自辦三十桌流水席的人…身體快見底還堅持桌桌喝真的，最後一輪就是終點線…", reason:SPECIAL_DEATHS.toastdown.reason},
+  /* ---- R52 晚年鏈稀有死法 ---- */
+  {id:"scamfeast",  ic:"📞", rare:true,  nm:"詐騙全餐",     hint:"晚年那通『猜猜我是誰』…腦袋不夠清楚（智力見底）還想跟對方鬥智的話，棺材本會先一步畢業…", reason:SPECIAL_DEATHS.scamfeast.reason},
 ];
 function deathbookCount(){
   const d=(SAVE&&SAVE.deaths)||{};
