@@ -2270,7 +2270,7 @@ function buildEvents(){ return [
       {label:"冷靜識破，直接掛斷", eff:{int:6,hap:4}, res:"你穩穩識破騙局，還順手檢舉，守護了荷包。"},
       {label:'<i class="gtag">🧠智力65+</i> 將計就計，反釣詐騙集團', eff:{int:6,hap:8,mny:3}, cond:s=>s.attr.int>=65, gate:true, res:"你假裝快要上當，把詐騙集團溜了整整三小時，套出整套話術回報 165，還領了檢舉獎金。對方掛電話前嘆了口氣：『大哥，遇到同行就直說嘛。』"},
     ]},
-  {id:"networking", stage:[25,55], w:1, cond:isEmployed,
+  {id:"networking", stage:[25,55], w:2, cond:isEmployed,
     title:"職場應酬局", text:"下班後的飯局，主管舉杯：『來，這杯敬合作愉快！』酒一杯接一杯。",
     meme:{scene:"work", top:"乾了這杯敬前途", bot:"前途沒長 肝先壞了", tag:"工作"},
     choices:[
@@ -2482,21 +2482,21 @@ function buildEvents(){ return [
      效果刻意溫和（尤其 hp），不動壽命分布。
      ===================================================================== */
   /* ── 低數值懲罰（文案明講「因為你太…」）── */
-  {id:"lowint_scam2", stage:[22,72], w:2, cond:s=>s.attr.int<15,
+  {id:"lowint_scam2", stage:[22,72], w:2, cond:s=>s.attr.int<20,
     title:"盤子認證", text:"因為你太久沒動腦、判斷力見底，一個老掉牙的話術就把你唬得一愣一愣。",
     meme:{scene:"doubt", top:"這明明是詐騙", bot:"但智力太低 我信了", tag:"運氣"},
     choices:[
       {label:"半信半疑先查一下", eff:{int:5,hap:-2}, res:"你難得多想了一秒，上網一查才驚覺差點中招，撿回一條財路。"},
       {label:"全盤相信，掏錢就買", eff:{mny:-12,hap:-5,int:2}, res:"因為你智力太低，錢包先教了你做人，這堂課收費不便宜。", flags:{scammed:true}},
     ]},
-  {id:"lowint_clickbait", stage:[16,70], w:1, cond:s=>s.attr.int<15,
+  {id:"lowint_clickbait", stage:[16,70], w:1, cond:s=>s.attr.int<20,
     title:"標題殺人現場", text:"因為你疏於思考，看到聳動標題就轉發，結果整串都是假訊息。",
     meme:{scene:"blackq", top:"震驚！瘋傳！", bot:"轉發前 動腦了嗎(沒)", tag:"運氣"},
     choices:[
       {label:"被打臉後默默學乖", eff:{int:6,hap:-3}, res:"被親友公開糾正後，你終於學會先查證再嘴，智力小漲。"},
       {label:"惱羞繼續嘴", eff:{hap:-4,apr:-3}, res:"你死不認錯越描越黑，社會形象又掉了一截。"},
     ]},
-  {id:"lowapr_judged", stage:[18,55], w:2, cond:s=>s.attr.apr<15,
+  {id:"lowapr_judged", stage:[18,55], w:2, cond:s=>s.attr.apr<20,
     title:"以貌取人現形記", text:"因為你疏於打理外表，重要場合一身邋遢，還沒開口就先被貼了標籤。",
     meme:{scene:"snobcat", top:"還沒講話", bot:"就被外貌打了分數", tag:"運氣"},
     choices:[
@@ -2510,7 +2510,7 @@ function buildEvents(){ return [
       {label:"放下身段，兼差打工救急", eff:{mny:10,hp:-6,hap:-2}, res:"你硬著頭皮多接了幾份零工，靠勞力把這個月撐了過去。"},
       {label:"借錢拆東牆補西牆", eff:{mny:-4,hap:-6,int:2}, res:"因為你財務見底，只能舉債度日，債務的雪球開始往下滾。"},
     ]},
-  {id:"lowhap_isolated", stage:[18,75], w:1, cond:s=>s.attr.hap<15,
+  {id:"lowhap_isolated", stage:[18,75], w:1, cond:s=>s.attr.hap<20,
     title:"提不起勁的日子", text:"因為你快樂值長期見底，連最愛的事都索然無味，人也越來越孤僻。",
     meme:{scene:"sadcat", top:"什麼都不想做", bot:"連快樂 都需要力氣", tag:"健康"},
     choices:[
@@ -2584,21 +2584,21 @@ function buildEvents(){ return [
     ]},
 
   /* ── 低 INT（智力見底）── */
-  {id:"d2_lowint_contract", stage:[22,72], w:2, cond:s=>s.attr.int<15,
+  {id:"d2_lowint_contract", stage:[22,72], w:2, cond:s=>s.attr.int<20,
     title:"看不懂的合約", text:"因為你判斷力太低，對方塞來一份密密麻麻的合約，你連看都沒看就簽了名。",
     meme:{scene:"deal", top:"這合約我看不懂", bot:"但對方笑得很真誠 簽！", tag:"運氣"},
     choices:[
       {label:"簽完才覺得怪，趕快找人看", eff:{int:5,mny:-5,hap:-2}, res:"你事後拿給懂的人看，雖然小虧一筆，至少及時止血。"},
       {label:"簽了就忘，船到橋頭自然直", eff:{mny:-12,hap:-4,int:2}, flags:{scammed:true}, res:"因為你智力太低看不出陷阱，幾個月後帳單找上門，你才知道自己簽了什麼。"},
     ]},
-  {id:"d2_lowint_mlm", stage:[20,68], w:1, cond:s=>s.attr.int<15,
+  {id:"d2_lowint_mlm", stage:[20,68], w:1, cond:s=>s.attr.int<20,
     title:"改變人生的說明會", text:"因為你太好說服，朋友揪你去一場「財富自由說明會」，台上講得你熱血沸騰、頻頻點頭。",
     meme:{scene:"deal", top:"上線：這能財富自由", bot:"智力太低的你：聽起來好合理", tag:"財富"},
     choices:[
       {label:"冷靜一下，回家查資料", eff:{int:6,hap:-2}, res:"你難得保持理智，回家一查發現是老鼠會，慶幸自己沒衝動。"},
       {label:"當場進貨，我要翻身", eff:{mny:-14,hap:-3,int:2}, flags:{scammed:true}, res:"因為你智力太低，你把積蓄換成一屋子賣不掉的貨，上線早就數錢去了。"},
     ]},
-  {id:"d2_lowint_fake", stage:[18,75], w:1, cond:s=>s.attr.int<15,
+  {id:"d2_lowint_fake", stage:[18,75], w:1, cond:s=>s.attr.int<20,
     title:"長輩圖養生學", text:"因為你疏於查證，群組裡的養生長輩圖你全部當聖旨，還轉發勸親友照做。",
     meme:{scene:"huhcat", top:"圖上說這樣養生", bot:"沒查證的你：信了還推廣", tag:"運氣"},
     choices:[
@@ -2607,21 +2607,21 @@ function buildEvents(){ return [
     ]},
 
   /* ── 低 APR（顏值見底）── */
-  {id:"d2_lowapr_blinddate", stage:[22,55], w:2, cond:s=>s.attr.apr<15&&isSingle(s),
+  {id:"d2_lowapr_blinddate", stage:[22,55], w:2, cond:s=>s.attr.apr<20&&isSingle(s),
     title:"相親見光死", text:"因為你疏於打理外表，相親對方看到本人，臉上的笑容瞬間凝固，藉口去上廁所後就再也沒回來。",
     meme:{scene:"heartbreak", top:"照片是照騙", bot:"本人一出現 對方人間蒸發", tag:"感情"},
     choices:[
       {label:"回家痛定思痛改造自己", eff:{apr:12,mny:-6,hap:3}, res:"你發狠研究穿搭保養，下一次見面，對方的眼睛終於亮了起來。"},
       {label:"算了，緣分天注定", eff:{apr:-2,hap:-5}, res:"因為你顏值太低又不肯改，你把希望全寄託在「對的人不看臉」上。"},
     ]},
-  {id:"d2_lowapr_photo", stage:[18,60], w:1, cond:s=>s.attr.apr<15,
+  {id:"d2_lowapr_photo", stage:[18,60], w:1, cond:s=>s.attr.apr<20,
     title:"證件照風波", text:"因為你外表實在難整理，拍證件照時攝影師修了半天，最後委婉問你：「要不要……再多修一點？」",
     meme:{scene:"snobcat", top:"攝影師：修圖修到", bot:"電腦都快冒煙了", tag:"運氣"},
     choices:[
       {label:"認真學保養與儀容", eff:{apr:10,hap:2,mny:-4}, res:"你開始注重門面，幾個月後再拍照，連你自己都認不出來。"},
       {label:"修圖能解決就好", eff:{apr:-2,mny:-3,hap:-2}, res:"因為你不肯花心思在外表，你只能靠後製活在濾鏡裡。"},
     ]},
-  {id:"d2_lowapr_service", stage:[18,65], w:1, cond:s=>s.attr.apr<15,
+  {id:"d2_lowapr_service", stage:[18,65], w:1, cond:s=>s.attr.apr<20,
     title:"被服務的順位", text:"因為你外型不討喜，同樣在排隊，店員總是先笑著招呼別人，你永遠是最後一個被叫到號的。",
     meme:{scene:"grumpycat", top:"明明我先到", bot:"顏值太低 自動被跳過", tag:"運氣"},
     choices:[
@@ -2653,21 +2653,21 @@ function buildEvents(){ return [
     ]},
 
   /* ── 低 HAP（幸福見底）── */
-  {id:"d2_lowhap_smile", stage:[18,78], w:2, cond:s=>s.attr.hap<15,
+  {id:"d2_lowhap_smile", stage:[18,78], w:2, cond:s=>s.attr.hap<20,
     title:"忘了怎麼笑", text:"因為你快樂值長期見底，某天照鏡子練習微笑時，你赫然發現——已經想不起上次真心笑是什麼時候了。",
     meme:{scene:"sadcat", top:"上次真心笑", bot:"是什麼時候 想不起來了", tag:"健康"},
     choices:[
       {label:"鼓起勇氣尋求專業協助", eff:{hap:12,mny:-5}, res:"你終於跨出那一步去諮商，有人接住你的那一刻，肩上的重擔輕了一些。"},
       {label:"再撐撐看，會過去的", eff:{hap:-4,hp:-3}, res:"因為你快樂太低又不願求助，你又把自己埋進了那片無聲的灰。"},
     ]},
-  {id:"d2_lowhap_sunday", stage:[22,65], w:1, cond:s=>s.attr.hap<15,
+  {id:"d2_lowhap_sunday", stage:[22,65], w:1, cond:s=>s.attr.hap<20,
     title:"週日恐慌症", text:"因為你日子過得太苦，每到週日傍晚，那股對明天的恐懼就準時報到，胸口像壓了一塊石頭。",
     meme:{scene:"panik", top:"週日晚上六點", bot:"明天又要上班的窒息感", tag:"健康"},
     choices:[
       {label:"認真檢視，是不是該換條路", eff:{hap:8,int:4,mny:-3}, flags:{swerve:true}, res:"你開始正視這份痛苦，盤算著也許是時候給人生換個跑道了。"},
       {label:"灌幾杯酒麻痺自己", eff:{hap:2,hp:-5}, res:"因為你快樂見底，你選擇用酒精暫時逃避，醒來後恐慌依舊在原地等你。"},
     ]},
-  {id:"d2_lowhap_numb", stage:[18,75], w:1, cond:s=>s.attr.hap<15,
+  {id:"d2_lowhap_numb", stage:[18,75], w:1, cond:s=>s.attr.hap<20,
     title:"食之無味", text:"因為你快樂值太低，連你以前最愛的那攤宵夜，吃進嘴裡都像在嚼蠟，再也嚐不出當初的滋味。",
     meme:{scene:"sadthumbscat", top:"最愛的宵夜", bot:"吃起來 跟空氣一樣", tag:"健康"},
     choices:[
@@ -2815,7 +2815,7 @@ function buildEvents(){ return [
       {label:"寫成回憶錄出版", eff:{mny:rnd(0,15),hap:8,int:4}, res:"你把那段離奇經歷寫成書，信者恆信，竟也賣出了一票銷量。"},
       {label:"埋在心底，當作秘密", eff:{hap:5,int:3}, res:"你不再向任何人解釋，那段星際奇遇成了只屬於你的浪漫。"},
     ]},
-  {id:"cb_marathon", stage:[45,82], w:1, cond:s=>!!s.flags.marathoner,
+  {id:"cb_marathon", stage:[45,82], w:2, cond:s=>!!s.flags.marathoner,
     title:"舊跑鞋的召喚", text:"還記得當年咬牙跑完全馬、衝線落淚的你嗎？櫃子深處那雙舊跑鞋，又在對你招手。",
     meme:{scene:"shibarun", top:"當年跑完全馬", bot:"如今 膝蓋先投降", tag:"健康"},
     choices:[
@@ -3166,14 +3166,14 @@ function buildEvents(){ return [
       {label:"規律服藥、控制飲食", eff:{hp:6,hap:-2,mny:-3}, res:"你把病情穩穩控制住，日子照樣過得有滋有味。"},
       {label:"偷懶漏吃，憑感覺過", eff:{hp:-7,hap:2}, res:"你嫌麻煩三天捕魚兩天曬網，數值跟著上上下下。"},
     ]},
-  {id:"surgery", stage:[50,86], w:1, cond:s=>!!s.flags.chronic,
+  {id:"surgery", stage:[50,86], w:2, cond:s=>!!s.flags.chronic,
     title:"重大手術", text:"病情累積到需要動刀，你躺在手術室外的推床上，盯著慘白的天花板。",
     meme:{scene:"death", top:"躺上手術台那刻才頓悟", bot:"健康才是本體 其他都是課金", tag:"健康"},
     choices:[
       {label:"砸錢用最好的醫療", eff:{hp:14,mny:-18,hap:-3}, cond:s=>s.attr.mny>=20, res:"因為你付得起，你選了最好的醫師與病房，順利康復。"},
       {label:"用健保扛過去", eff:{hp:8,hap:-4}, res:"你靠著健保完成手術，慢慢養回了元氣。"},
     ]},
-  {id:"health_diet", stage:[46,82], w:1, cond:s=>!!s.flags.chronic,
+  {id:"health_diet", stage:[46,82], w:2, cond:s=>!!s.flags.chronic,
     title:"控糖控血壓飲食", text:"營養師遞來一張清單：少油少鹽少糖，你最愛的宵夜全在禁區。",
     meme:{scene:"cat16", top:"營養師的禁區清單", bot:"我愛的 剛好全中", tag:"健康"},
     choices:[
@@ -3235,7 +3235,7 @@ function buildEvents(){ return [
       {label:"趁高點換屋/獲利了結", eff:{mny:rnd(4,20),hap:6,hp:-3}, res:"你抓準時機操作了一波，帳面財富實實在在地落了袋。"},
       {label:"自住就好，漲跌隨它", eff:{hap:6,int:3}, res:"你把房子當家不當商品，市場再吵也與你無關。"},
     ]},
-  {id:"house_renovate", stage:[32,72], w:1, cond:s=>!!s.flags.homeowner,
+  {id:"house_renovate", stage:[32,72], w:2, cond:s=>!!s.flags.homeowner,
     title:"老屋翻修", text:"住了多年的房子開始漏水、管線老舊，是時候大整修一番了。",
     meme:{scene:"broke", top:"裝潢估價單", bot:"每個數字 都多一個零", tag:"財富"},
     choices:[
@@ -3816,7 +3816,7 @@ function buildEvents(){ return [
       {label:"扛起責任親自照顧", eff:{hap:rnd(-2,6),hp:-6,mny:-5}, flags:{filial:true}, res:"你親力親為陪伴父母，雖然身心俱疲，卻換來不留遺憾的安心。"},
       {label:"請看護分擔壓力", eff:{mny:-10,hp:3,hap:4}, res:"你請了專業看護，自己留點餘力，學會了照顧人也要先照顧自己。"},
     ]},
-  {id:"empty_nest", stage:[48,60], w:1, cond:s=>!!s.flags.haskid,
+  {id:"empty_nest", stage:[48,60], w:2, cond:s=>!!s.flags.haskid,
     title:"空巢期", text:"孩子離家去外地求學／工作，家裡突然安靜得不習慣，多出來的時間有點刺眼。",
     meme:{scene:"empty", top:"孩子離家後", bot:"安靜的房子 突然好大", tag:"中年"},
     choices:[
@@ -4180,7 +4180,7 @@ function buildEvents(){ return [
       {label:"捐給更實際的公益團體", eff:{hap:8,mny:-6,int:3}, flags:{kind:true}, res:"你把錢捐給做實事的慈善機構，看見受助者的笑容，這份福報你親眼看得到。"},
       {label:"心領了，量力而為", eff:{int:4,hap:1}, res:"你禮貌婉拒了大額勸募，只投了零錢隨喜，行善這件事你自有分寸。"},
     ]},
-  {id:"mortgage_clear", stage:[50,63], w:1, cond:s=>!!s.flags.homeowner,
+  {id:"mortgage_clear", stage:[50,63], w:2, cond:s=>!!s.flags.homeowner,
     title:"房貸繳清那一天", text:"銀行傳來最後一期房貸扣款成功的通知，背了二十年的房子，終於真正屬於你了。",
     meme:{scene:"grad", top:"房貸最後一期扣款成功", bot:"敬這 20 年 終於不是幫銀行打工", tag:"中年"},
     choices:[
@@ -6210,6 +6210,41 @@ let EVENTS = EVENTS_BASE;            // 每日挑戰時暫時換成種子重建�
 /* 拆兩池獨立控制：因果鏈（flag 整局有效、可累積觸發）天生比門檻
    （數值危險窗口短暫）容易遇到，故門檻給較高優先、因果鏈給較低優先，
    才能讓兩者都落在目標區間（門檻 ~70-85%、因果鏈 ~60-75%）。 */
+/* ---- R46 人生主幹保底（里程碑優先池）----
+   模擬發現：firstjob / rl_meet 等「內容樹入口」once 事件常因池子稀釋整局抽不到，
+   導致掛在 employed / haskid / rl 旗標後面的整串內容變死內容（220 局 83 事件 0 觸發）。
+   解法：id→保底年齡 對照表。年齡到了、事件仍 eligible（cond/once 全照舊把關）時，
+   進入最高優先池以 0.5 機率優先抽出。只收 once 事件 → 不會洗版；不繞過任何條件，
+   語意不變（公務員事件仍只給公務員、出身限定仍限出身），只是「該來的橋段別再錯過」。 */
+const R46_MILESTONE={
+  firstjob:24,                                   // 就業樹入口（gov/bigco/startupjob/斜槓全掛這裡）
+  rl_meet:22, rl_confess:25, rl_branch:28, rl_baby:31,   // 感情主線 → haskid 樹
+  marriage:32,                                   // 感情線沒走通的補位婚姻入口
+  buyhouse:34, retire:63,                        // homeowner / retired 樹入口
+  r42_shop:28, r42_diary:18,                     // 傳承物回呼
+  gov_exam:30, gov_pension:54, bigco_expat:36, kid_wedding:62, pension_abacus:56,
+  r45_dutyfree:28, r28_bonus:25, r25_midman:40, startup_ipo:40,
+  cb_npiao_pothole:30, cb_npiao_grind:30, cb_npiao_cross:32, r27_clawshop:28, r27_clawempire:30,
+  cb_r28_band:30, cb_r28_etf:50, cb_r28_yolo:45, cb_r28_dugout:35,
+  cb_r34_senior:16, cb_r34_allnighter:17, cb_r34_final:18,
+  cb_r39_mee_old:64, cb_r43_rv_old:62, cb_npiao_rent:24,
+};
+/* og_ 出身回收事件（全為 once＋出身限定）自動入里程碑表：進窗口 2 年後保底，
+   確保每種出身的專屬橋段在那一世必定演出 */
+EVENTS.forEach(e=>{
+  if(/^og_/.test(e.id) && e.once && e.stage && R46_MILESTONE[e.id]===undefined)
+    R46_MILESTONE[e.id]=Math.min(e.stage[0]+2, e.stage[1]);
+});
+/* R46 稀有旗標回呼擴充：這批可重複事件的 cond 都掛在「玩家某個選擇種下的稀有旗標」上
+   （慢性病/創業/被詐/養寵物/置產…），旗標成立的窗口本來就少，再被大池稀釋幾乎見不到。
+   顯式併入因果鏈優先池（沿用既有 0.25 優先抽選），讓種下的因看得到果。 */
+const R46_CHAIN_EXTRA=new Set([
+ "scam_again","bodybuilding","chronic_manage","surgery","health_diet","startup_acquired",
+ "empty_nest","retire_travel","house_renovate","mortgage_clear","couple_trip_fight",
+ "pet_cat_cup","pet_cat_kb","pet_cat_sick","pet_dog_chaos","pet_dog_walk","pet_dog_sick",
+ "kid_talent","kid_rebel","kid_career","kids_tuition","kid_phone","kid_allowance",
+ "gov_redtape","bigco_layoff","bigco_politics","startupjob_equity","startupjob_pivot",
+ "affair","inlaw_redpacket","pet_cat_run","freelance_try"]);
 const THRESHOLD_IDS=new Set(), CHAIN_IDS=new Set();
 (function(){
   EVENTS.forEach(e=>{
@@ -6220,6 +6255,7 @@ const THRESHOLD_IDS=new Set(), CHAIN_IDS=new Set();
     if((mm=s.match(/s\.attr\.\w+\s*<=?\s*(\d+)/)) && +mm[1]<=30){ THRESHOLD_IDS.add(e.id); return; }
     if((mm=s.match(/s\.attr\.\w+\s*>=?\s*(\d+)/)) && +mm[1]>=70){ THRESHOLD_IDS.add(e.id); return; }
   });
+  R46_CHAIN_EXTRA.forEach(id=>CHAIN_IDS.add(id));   // R46 稀有旗標回呼併入因果鏈優先池
 })();
 /* ---- R32 確定性隱藏彩蛋攔截器 ----
    r32trig 為純讀狀態的旗標/門檻判定（零裸 rng）。觸發即取代當年的隨機事件抽選，
@@ -6729,10 +6765,12 @@ function resolveYear(){
   if(pool.length && chance(0.78)){
     // 優先池：此刻成立的門檻事件 + 帶 flag 的因果鏈回呼。
     // 優先序：先試門檻事件(0.45)，再試因果鏈回呼(0.25)，否則全池隨機，保留樂趣。
+    const prioM=pool.filter(e=>R46_MILESTONE[e.id]!==undefined && S.age>=R46_MILESTONE[e.id]);
     const prioT=pool.filter(e=>THRESHOLD_IDS.has(e.id));
     const prioC=pool.filter(e=>CHAIN_IDS.has(e.id));
     let ev;
-    if(prioT.length && chance(0.45)) ev=weightedPick(prioT, effWeight);
+    if(prioM.length && chance(0.5)) ev=weightedPick(prioM, effWeight);
+    else if(prioT.length && chance(0.45)) ev=weightedPick(prioT, effWeight);
     else if(prioC.length && chance(0.25)) ev=weightedPick(prioC, effWeight);
     else ev=weightedPick(pool, effWeight);
     return showEvent(ev);

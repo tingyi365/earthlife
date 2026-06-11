@@ -185,6 +185,17 @@ const allVisible = vm.runInContext('EVENTS.filter(e=>!e.hidden).map(e=>e.id)', s
 const never = allVisible.filter(id => !__triggered.has(id));
 console.log(`從未觸發的可觸發事件(${never.length}): ${never.length ? never.join(', ') : '無 ✅'}`);
 
+/* ===== R46 事件觸達率探針 =====
+   目標：220 局「從未觸發」數從 R45 基準 83 壓到 ≤45。
+   豁免（不計入門檻，理由如下；仍照常列在上方清單供觀察）：
+   - se_*（節令限定）：activeSeasonKeys 由真實執行日決定，模擬日非當令時結構上不可能觸發，
+     實際玩家在節令期間可正常遇到，非死內容。 */
+const R46_EXEMPT = new Set(['se_cny_red','se_cny_dinner','se_tax','se_ghost','se_typhoon_bet',
+  'se_typhoon_mart','se_typhoon_wave','se_moon','se_xmas','se_nye']);
+const neverCounted = never.filter(id => !R46_EXEMPT.has(id));
+const r46OK = neverCounted.length <= 45;
+console.log(`R46 觸達率: 未觸發(計入門檻) ${neverCounted.length}/45 ｜ 節令豁免 ${never.filter(id=>R46_EXEMPT.has(id)).length} ｜ ${r46OK ? '✅' : '❌ 超標'}`);
+
 /* localStorage 存讀驗證（含 R3 死法圖鑑：舊存檔無 deaths 鍵 → 載入後應自動補空集合並正常收集） */
 const rawSave = localStorage.getItem('earthlife_save_v2');
 let lsOK = false, achUnlocked = 0, deathsOK = false, deathsGot = 0;
@@ -1610,6 +1621,6 @@ if (__errors.length) {
 
 /* 退出碼 */
 const pass = __errors.length === 0 && chk.missingScenes.length === 0 && chk.eventVisible >= 126 && chk.eventTotal >= 126 && lsOK && achUnlocked > 0
-  && chk.deathbookMissing.length === 0 && chk.deathTotal >= 17 && deathsOK && rebirthOK && legacyOK && petOK && r13OK && r17OK && r20OK && r21OK && r22OK && r24OK && r25OK && r34OK && r38OK && r41OK && r42OK && r43OK && r44OK && r45OK;
+  && chk.deathbookMissing.length === 0 && chk.deathTotal >= 17 && deathsOK && rebirthOK && legacyOK && petOK && r13OK && r17OK && r20OK && r21OK && r22OK && r24OK && r25OK && r34OK && r38OK && r41OK && r42OK && r43OK && r44OK && r45OK && r46OK;
 console.log('\n結果: ' + (pass ? '✅ 全數通過' : '❌ 有項目未通過'));
 process.exit(pass ? 0 : 1);
