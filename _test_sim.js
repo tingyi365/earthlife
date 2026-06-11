@@ -2047,6 +2047,135 @@ try {
   console.log('R52 晚年人生事件鏈: ❌ ' + e.message);
 }
 
+/* ---- R53 童年事件鏈探針（強制路徑，不靠隨機抽中）----
+   ① 結構：4 段童年事件＋1 成年回扣事件齊備（once＋stage＋場景存在＋選項數達標）、
+      3 成就有 hint、R46 保底表只收收尾段＋成年回扣 2 入口（童年年槽稀缺，入口/中段走因果鏈池，
+      避免擠死 r43 童年人物線）、4 個 cb_ 事件進因果鏈優先池、TL_ONESHOT 收記憶點
+   ② 安親班線全鏈：seed→toy→summer→family 逐段進池、旗標正確推進、後段未到不進池；
+      玩物段只見遊戲王（含被沒收）、暑假段只見暑輔、家族段可見才藝軍備；
+      走完四段＋被比較 → die() 解鎖 r53_golden＋r53_seized
+   ③ 分支互斥：柑仔店線只見神奇寶貝卡、野放線只見四驅車與孩子王、
+      野放/柑仔店線才見阿嬤家、安親班線看不到阿嬤家
+   ④ R50 職業回扣：r53_cards＋careerId 才進 cb_r53_cardsell；缺一不入池；
+      r53_confiscated 才見「回母校討卡」選項；變現 → r53_cardsold → 成就 r53_cardcash
+   ⑤ R51 回扣：r53_compared 才見 cb_r51_kid 尾端「不用跟任何人比」選項（index 6 附加，
+      不動既有選項順序），選了正確寫 r51_kid/r51_freerange/r53_nocompare/haskid
+   ⑥ 門檻膠囊只在新增選項（gate:true 標記齊備）
+   ⑦ 乾淨局零 r53 殘留 */
+let r53OK = false;
+try {
+  const r53Raw = vm.runInContext(`(function(){
+    const out={};
+    const IDS=['r53_seed','cb_r53_toy','cb_r53_summer','cb_r53_family'];
+    const evs=IDS.map(id=>EVENTS.find(e=>e.id===id));
+    const csEv=EVENTS.find(e=>e.id==='cb_r53_cardsell');
+    /* ① 結構 */
+    out.evDef = evs.every(e=>!!e && e.once===true && Array.isArray(e.stage) && e.title && e.text && (e.choices||[]).length>=4);
+    out.csDef = !!csEv && csEv.once===true && Array.isArray(csEv.stage) && (csEv.choices||[]).length>=3;
+    out.scenes = evs.concat([csEv]).every(e=>e.meme && e.meme.scene && !!SCENES[e.meme.scene] && e.meme.top && e.meme.bot);
+    out.achDef = ['r53_golden','r53_seized','r53_cardcash'].every(id=>ACH_MAP[id] && ACH_MAP[id].hint && String(ACH_MAP[id].hint).length>4);
+    out.milestone = R46_MILESTONE.cb_r53_family===12 && R46_MILESTONE.cb_r53_cardsell===32
+                 && R46_MILESTONE.r53_seed===undefined && R46_MILESTONE.cb_r53_toy===undefined && R46_MILESTONE.cb_r53_summer===undefined;
+    out.chainPool = ['cb_r53_toy','cb_r53_summer','cb_r53_family','cb_r53_cardsell'].every(id=>CHAIN_IDS.has(id));
+    out.tlDef = TL_ONESHOT.some(o=>o[0]==='r53_family');
+    /* ② 安親班線全鏈 */
+    delete SAVE.ach.r53_golden; delete SAVE.ach.r53_seized;
+    startGame(); S.age=5; S.flags={}; ensureState(S); S.seen={};
+    out.seedIn = eligible().some(e=>e.id==='r53_seed');
+    out.laterGated = !eligible().some(e=>['cb_r53_toy','cb_r53_summer','cb_r53_family','cb_r53_cardsell'].includes(e.id));
+    showEvent(EVENTS.find(e=>e.id==='r53_seed')); choose(1);
+    out.anqinFlag = S.flags.r53_start===true && S.flags.r53_anqin===true && !S.flags.r53_ganzai && !S.flags.r53_wild;
+    S.age=7;
+    out.toyIn = eligible().some(e=>e.id==='cb_r53_toy');
+    out.summerGated = !eligible().some(e=>e.id==='cb_r53_summer');
+    showEvent(EVENTS.find(e=>e.id==='cb_r53_toy'));
+    let h=document.querySelector('#app').innerHTML;
+    out.anqinToyOnly = h.includes('遊戲王卡地下決鬥') && !h.includes('神奇寶貝卡入坑') && !h.includes('四驅車魂點燃');
+    choose(1);
+    out.ygoFlag = S.flags.r53_toy===true && S.flags.r53_cards===true && S.flags.r53_ygo===true && S.flags.r53_confiscated===true;
+    S.age=9;
+    out.summerIn = eligible().some(e=>e.id==='cb_r53_summer');
+    out.familyGated = !eligible().some(e=>e.id==='cb_r53_family');
+    showEvent(EVENTS.find(e=>e.id==='cb_r53_summer'));
+    h=document.querySelector('#app').innerHTML;
+    out.anqinSummer = h.includes('暑期輔導全年無休') && !h.includes('阿嬤家放生一整月');
+    choose(3);
+    out.summerFlag = S.flags.r53_summer===true && S.flags.r53_summerclass===true;
+    S.age=11;
+    out.familyIn = eligible().some(e=>e.id==='cb_r53_family');
+    showEvent(EVENTS.find(e=>e.id==='cb_r53_family'));
+    h=document.querySelector('#app').innerHTML;
+    out.anqinFamily = h.includes('才藝班軍備競賽') && !h.includes('孩子王登基');
+    choose(0);
+    out.comparedFlag = S.flags.r53_family===true && S.flags.r53_compared===true;
+    const oR1=rng; rng=()=>0.5; die(); rng=oR1;
+    out.goldenAch = SAVE.ach.r53_golden===true && SAVE.ach.r53_seized===true;
+    /* ③ 分支互斥 */
+    startGame(); S.age=7; S.flags={r53_start:true,r53_ganzai:true}; ensureState(S); S.seen={};
+    showEvent(EVENTS.find(e=>e.id==='cb_r53_toy'));
+    h=document.querySelector('#app').innerHTML;
+    out.ganzaiToy = h.includes('神奇寶貝卡入坑') && !h.includes('遊戲王卡地下決鬥') && !h.includes('四驅車魂點燃');
+    startGame(); S.age=7; S.flags={r53_start:true,r53_wild:true}; ensureState(S); S.seen={};
+    showEvent(EVENTS.find(e=>e.id==='cb_r53_toy'));
+    h=document.querySelector('#app').innerHTML;
+    out.wildToy = h.includes('四驅車魂點燃') && !h.includes('神奇寶貝卡入坑') && !h.includes('遊戲王卡地下決鬥');
+    startGame(); S.age=9; S.flags={r53_start:true,r53_wild:true,r53_toy:true}; ensureState(S); S.seen={};
+    showEvent(EVENTS.find(e=>e.id==='cb_r53_summer'));
+    h=document.querySelector('#app').innerHTML;
+    out.wildSummer = h.includes('阿嬤家放生一整月') && !h.includes('暑期輔導全年無休');
+    startGame(); S.age=11; S.flags={r53_start:true,r53_wild:true,r53_toy:true,r53_summer:true}; ensureState(S); S.seen={};
+    showEvent(EVENTS.find(e=>e.id==='cb_r53_family'));
+    h=document.querySelector('#app').innerHTML;
+    out.wildFamily = h.includes('孩子王登基') && !h.includes('才藝班軍備競賽');
+    /* ④ R50 職業回扣 */
+    delete SAVE.ach.r53_cardcash;
+    startGame(); S.age=30; S.flags={r53_cards:true}; ensureState(S); S.seen={}; S.careerId='eng';
+    out.cardIn = eligible().some(e=>e.id==='cb_r53_cardsell');
+    showEvent(EVENTS.find(e=>e.id==='cb_r53_cardsell'));
+    h=document.querySelector('#app').innerHTML;
+    out.noSeizedOpt = !h.includes('討回畢業沒還的那一疊');
+    choose(0);
+    out.soldFlag = S.flags.r53_cardsold===true;
+    const oR2=rng; rng=()=>0.5; die(); rng=oR2;
+    out.cashAch = SAVE.ach.r53_cardcash===true;
+    startGame(); S.age=30; S.flags={r53_cards:true}; ensureState(S); S.seen={}; S.careerId=null;
+    out.noCareerGated = !eligible().some(e=>e.id==='cb_r53_cardsell');
+    startGame(); S.age=30; S.flags={}; ensureState(S); S.seen={}; S.careerId='eng';
+    out.noCardsGated = !eligible().some(e=>e.id==='cb_r53_cardsell');
+    startGame(); S.age=30; S.flags={r53_cards:true,r53_confiscated:true}; ensureState(S); S.seen={}; S.careerId='stall';
+    showEvent(EVENTS.find(e=>e.id==='cb_r53_cardsell'));
+    h=document.querySelector('#app').innerHTML;
+    out.seizedOpt = h.includes('討回畢業沒還的那一疊');
+    choose(2);
+    out.backFlag = S.flags.r53_cardback===true && !S.flags.r53_cardsold;
+    /* ⑤ R51 回扣 */
+    startGame(); S.age=36; S.flags={r51_wed:true,r51_house:true,r53_compared:true}; ensureState(S); S.seen={};
+    showEvent(EVENTS.find(e=>e.id==='cb_r51_kid'));
+    h=document.querySelector('#app').innerHTML;
+    out.nocmpShown = h.includes('不用跟任何人比');
+    choose(6);
+    out.nocmpFlag = S.flags.r51_kid===true && S.flags.r51_freerange===true && S.flags.r53_nocompare===true && S.flags.haskid===true && S.flags.kids===1;
+    startGame(); S.age=36; S.flags={r51_wed:true,r51_house:true}; ensureState(S); S.seen={};
+    showEvent(EVENTS.find(e=>e.id==='cb_r51_kid'));
+    out.nocmpHidden = !document.querySelector('#app').innerHTML.includes('不用跟任何人比');
+    /* ⑥ 門檻膠囊只在新增選項（gate:true 標記） */
+    out.gateDef = EVENTS.find(e=>e.id==='r53_seed').choices.some(c=>c.gate&&c.cond)
+               && EVENTS.find(e=>e.id==='cb_r53_toy').choices.some(c=>c.gate&&c.cond)
+               && EVENTS.find(e=>e.id==='cb_r53_summer').choices.some(c=>c.gate&&c.cond)
+               && EVENTS.find(e=>e.id==='cb_r53_family').choices.some(c=>c.gate&&c.cond);
+    /* ⑦ 零殘留 */
+    startGame();
+    out.clean = Object.keys(S.flags||{}).every(k=>k.indexOf('r53')!==0)
+             && Object.keys(S.seen||{}).every(k=>k.indexOf('r53')!==0);
+    return JSON.stringify(out);
+  })()`, sandbox);
+  const r53 = JSON.parse(r53Raw);
+  r53OK = Object.values(r53).every(v => v === true);
+  console.log(`R53 童年黃金歲月事件鏈: ${r53OK ? '✅ 全數通過' : '❌ ' + JSON.stringify(r53)}`);
+} catch (e) {
+  console.log('R53 童年黃金歲月事件鏈: ❌ ' + e.message);
+}
+
 if (__errors.length) {
   console.log('\n--- 錯誤樣本(前5) ---');
   __errors.slice(0, 5).forEach(e => console.log('  ' + e));
@@ -2054,6 +2183,6 @@ if (__errors.length) {
 
 /* 退出碼 */
 const pass = __errors.length === 0 && chk.missingScenes.length === 0 && chk.eventVisible >= 126 && chk.eventTotal >= 126 && lsOK && achUnlocked > 0
-  && chk.deathbookMissing.length === 0 && chk.deathTotal >= 17 && deathsOK && rebirthOK && legacyOK && petOK && r13OK && r17OK && r20OK && r21OK && r22OK && r24OK && r25OK && r34OK && r38OK && r41OK && r42OK && r43OK && r44OK && r45OK && r46OK && r47OK && r48OK && r49OK && r51OK && r52OK;
+  && chk.deathbookMissing.length === 0 && chk.deathTotal >= 17 && deathsOK && rebirthOK && legacyOK && petOK && r13OK && r17OK && r20OK && r21OK && r22OK && r24OK && r25OK && r34OK && r38OK && r41OK && r42OK && r43OK && r44OK && r45OK && r46OK && r47OK && r48OK && r49OK && r51OK && r52OK && r53OK;
 console.log('\n結果: ' + (pass ? '✅ 全數通過' : '❌ 有項目未通過'));
 process.exit(pass ? 0 : 1);
