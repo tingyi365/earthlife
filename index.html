@@ -1246,6 +1246,17 @@ function lgOwnedCount(){ return Object.keys(legacyData().perks).length; }
 /* 本局是否帶著某祖傳加成（挑戰/對戰局 S.lgk=[]；舊進行中存檔無 lgk 鍵 → 一律 false） */
 function lgActive(id){ return !!(S && S.lgk && S.lgk.indexOf(id)>=0); }
 
+/* R42 世代傳承存檔結構：缺鍵/壞值一律就地修補（舊存檔相容鐵律，與 rebirthData 同款）
+   pending = 結算時選定、待下一局一般局生效的傳承物 {id, gen}（用掉即清，不疊代）
+   lineage = 目前家族的歷代年表 [{g 世代, a 享年, t 稱號, d 死因}]（斷代開新家族即重寫） */
+function dynastyData(){
+  if(!SAVE.dynasty || typeof SAVE.dynasty!=="object") SAVE.dynasty={pending:null, lineage:[]};
+  const d=SAVE.dynasty;
+  if(!Array.isArray(d.lineage)) d.lineage=[];
+  if(d.pending && (typeof d.pending!=="object" || !d.pending.id)) d.pending=null;
+  return d;
+}
+
 /* =========================================================================
    遊戲狀態
    ========================================================================= */
@@ -1273,6 +1284,19 @@ function newLife(isChallenge){
   if(lgk.indexOf("lg_wis")>=0){ base.int=clamp(base.int+3); base.hap=clamp(base.hap+3); lgNotes.push("📜 老靈魂：智力 +3、快樂 +3"); }
   if(lgk.indexOf("lg_pick")>=0){ const pk=ATTR[lg.pickAttr]?lg.pickAttr:"hp"; base[pk]=clamp(base[pk]+5); lgNotes.push(`🏷️ 祖先開過光：${ATTR[pk].nm} +5`); }
   if(lgk.indexOf("lg_min")>=0){ let mk="hp"; for(const k in base){ if(base[k]<base[mk]) mk=k; } if(base[mk]<40){ lgNotes.push(`⛩️ 祖墳冒青煙：${ATTR[mk].nm} ${base[mk]} → 40`); base[mk]=40; } }
+  // R42 世代傳承：上一代結算時選定的傳承物在這一局開局生效（挑戰/對戰停用，全服公平）；
+  // 全程零 rng 不動種子序列、同時只生效 1 件、用掉即清不疊代；
+  // 沒接香火 → 開新家族（世代歸 1、家族年表重寫）；無 pending 時 base 與舊版完全一致
+  const dn42 = dynastyData();
+  let heirId42 = null, genNo42 = 1;
+  if(!isChallenge && dn42.pending && dn42.pending.id && R42_HMAP[dn42.pending.id]){
+    heirId42 = dn42.pending.id;
+    genNo42 = Math.max(2, dn42.pending.gen||2);
+    r42Apply(base, R42_HMAP[heirId42]);
+    dn42.pending = null;
+  } else if(!isChallenge){
+    if(dn42.lineage.length) dn42.lineage = [];
+  }
   // R35 天賦×出身化學反應：在 S 建立前套用到 base（巔峰/谷底/年史第一筆才一致）；
   // 純查表零 rng，沒命中組合 → base 與舊版完全一致
   const r35syn = R35_SYNERGY.find(x=>x.tal===talent.nm && x.org===origin.id) || null;
@@ -1288,6 +1312,16 @@ function newLife(isChallenge){
   // R29 出身專屬旗標：新出身出生即帶身分旗標（零 rng，挑戰/對戰同種子同出身同旗標，公平不破壞）；
   // 舊出身無 flags 鍵 → 完全無感，行為同舊版
   if(origin.flags) Object.assign(S.flags, origin.flags);
+  // R42 世代數與傳承旗標：挑戰/對戰局 gen=0（傳承停用＋不入家族年表），一般局第 1 代起跳；
+  // 傳承物旗標（heir_*）只解鎖對應特殊事件，挑戰/對戰永無此旗標 → 池子不變，公平不破
+  S.gen = isChallenge ? 0 : genNo42;
+  S.heir = heirId42;
+  if(heirId42){
+    const it42 = R42_HMAP[heirId42];
+    if(it42.flags) Object.assign(S.flags, it42.flags);
+    S.log.push(`<span class="yr">第 0 年</span> 🏠 家族第 ${genNo42} 代開機：上一代留下的【${it42.ic}${it42.nm}】已生效——${it42.gift}。`);
+    tlPush("🏠", `繼承【${it42.nm}】，家族香火傳到第 ${genNo42} 代`, 1);
+  }
   // 出身收集（跨局，供成就用）：舊存檔缺鍵自動補
   if(!SAVE.origins || typeof SAVE.origins!=="object") SAVE.origins={};
   S.newOrigin = !SAVE.origins[origin.id];   // R6 輪迴點：首次抽到的出身加權
@@ -1378,6 +1412,7 @@ function loadSave(){
     if(!SAVE.badges || typeof SAVE.badges!=="object") SAVE.badges={}; // R24 人生稱號收集（id→獲得次數）：缺鍵當空集合，舊存檔不炸
     rebirthData();   // R6 轉生：舊存檔缺鍵就地補上 {pts,total,talents,equipped}，不可炸
     legacyData();    // R23 祖產：舊存檔缺鍵就地補上 {yd,ydTotal,perks,roster,lastMny,pickAttr}，不可炸
+    dynastyData();   // R42 世代傳承：舊存檔缺鍵就地補上 {pending,lineage}，不可炸
   }catch(e){ /* 存檔毀損就用預設，不讓遊戲崩潰 */ }
   return SAVE;
 }
@@ -1585,6 +1620,10 @@ const ACHIEVEMENTS = [
   {id:"r41_brain",  ic:"🧠", nm:"智慧大師・畢業認證", desc:"立志成為智慧大師，最後智力衝破 90（或頂大畢業）——這顆腦袋，從志向欄一路長到天花板。", check:c=>!!(c.S.wishId==="brain"&&c.S.wishDone), hint:"立志靠腦袋活著的人，要嘛把智力練破 90，要嘛把頂大讀出來…"},
   {id:"r41_happy",  ic:"😄", nm:"快樂就好・真的做到", desc:"立志快樂就好，謝幕那刻快樂還穩穩 80+——全場都在捲，只有你笑著通關。", check:c=>!!(c.S.wishId==="happy"&&c.S.wishDone), hint:"志向寫快樂就好的人不少，謝幕那刻快樂還在 80 以上的…"},
   {id:"r41_boss",   ic:"🍵", nm:"頭家夢・開張大吉", desc:"立志自己做頭家，這輩子真的開了張——從此慣老闆是自己，全年無休也姓自己的姓。", check:c=>!!(c.S.wishId==="boss"&&c.S.wishDone), hint:"立志當頭家的，總得真的開過一次店（或創過一次業）…"},
+  /* ---- R42 世代傳承成就（gen 在 newLife 確定、年表在 die() 先記後評；挑戰/對戰局 gen=0 永不誤觸）---- */
+  {id:"r42_gen2", ic:"🏠", nm:"香火不斷・第二代開機", desc:"完成第一次傳承，以家族第 2 代的身分活完一生——上一代的遺願，成了你的開局裝備。", check:c=>(c.S.gen||0)>=2, hint:"人生結算時別急著開新檔——挑一樣東西留給下一代試試…"},
+  {id:"r42_gen5", ic:"🏯", nm:"五代同堂・百年事業", desc:"家族香火傳到第 5 代——人家是富不過三代，你家直接把人生玩成接力賽。", check:c=>(c.S.gen||0)>=5, hint:"傳承、傳承、再傳承——撐過『富不過三代』的魔咒再加碼兩代…"},
+  {id:"r42_fame", ic:"📜", nm:"家族留名・足以出族譜", desc:"同一家族跨代累計享年 300 歲以上——這本年表厚到可以自費出版《我家這一族》。", check:c=>{const L=(SAVE.dynasty&&SAVE.dynasty.lineage)||[]; return L.length>=2 && L.reduce((n,r)=>n+(r.a||0),0)>=300;}, hint:"讓同一條家族香火別斷，歷代加起來活好活滿三百歲…"},
 ];
 const ACH_MAP = {}; ACHIEVEMENTS.forEach(a=>ACH_MAP[a.id]=a);
 
@@ -5776,6 +5815,27 @@ function buildEvents(){ return [
     ]},
 
   /* =====================================================================
+     R42 傳承解鎖特殊事件 ×2：只有帶著對應傳承物出生（heir_* 旗標）才進池；
+     挑戰/對戰局永無此旗標 → 池子不變、種子公平不破；once 一局一次
+     ===================================================================== */
+  {id:"r42_shop", stage:[24,60], w:2.5, once:true, cond:s=>!!(s.flags&&s.flags.heir_shop),
+    title:"巷口老店的鐵捲門", text:"你站在上一代留下的老店前，鑰匙插進鐵捲門鎖孔的瞬間，隔壁阿姨探出頭：『少年仔，你阿公那時候喔，這條巷子排隊排到郵局……』鐵捲門拉開，灰塵裡有一整代人的味道。招牌還能用，就看你要寫什麼字。",
+    meme:{scene:"work", top:"繼承了一間巷口老店", bot:"鐵捲門後面是一個時代", tag:"傳承"},
+    choices:[
+      {label:"重開老店，賣跟上一代一模一樣的味道", eff:{mny:6,hap:6,hp:-2}, flags:{r42_reopen:true}, res:"你照著牆上泛黃的價目表重新開張，第一天就來了三個白頭髮的老客人，坐下來只說：『一樣。』你不知道「一樣」是什麼，但你學會了。三個月後，巷口又開始排隊——隊伍裡有人牽著小孩說：『我小時候也是這樣排的。』"},
+      {label:"租給連鎖手搖飲，當個快樂包租公", eff:{mny:8,hap:2}, res:"鐵捲門換成落地玻璃，老招牌進了倉庫。每月房租準時入帳，你過得很滋潤——只是路過的時候，偶爾會聽到老鄰居小聲說：『以前這間喔……』你假裝沒聽到，但腳步會慢半拍。"},
+      {label:"不開也不租，留著當家族的時光膠囊", eff:{hap:3,int:1}, res:"你每個月去開一次鐵捲門，掃掃灰、坐一下午。朋友說你浪費店面，你說：『有些資產的報酬率，不是用錢算的。』多年後都更說明會上，你是唯一投反對票的人。"},
+    ]},
+  {id:"r42_diary", stage:[14,45], w:2.5, once:true, cond:s=>!!(s.flags&&s.flags.heir_diary),
+    title:"祖先的日記", text:"整理舊物時，那本傳下來的手寫日記從紙箱滑出來。翻開第一頁，字跡力透紙背：『今日被倒會，記之，引以為戒。』再翻幾頁：『勿與人作保。勿信穩賺。勿在月底前花光。』這不是日記，這是一部用人生寫的避雷指南。",
+    meme:{scene:"school", top:"祖先的手寫日記", bot:"每一頁都是踩過的雷", tag:"傳承"},
+    choices:[
+      {label:"逐頁精讀，把雷區地圖背起來", eff:{int:6,hap:2,apr:-1}, flags:{r42_read:true}, res:"你花了一整個月讀完，眼睛快瞎掉，但腦袋裝進了一整代人的學費。日後每次有人找你投資「穩賺的」，你都會想起某一頁的字跡，然後微笑搖頭。祖先在天上比讚。"},
+      {label:"挑重點看，剩下的拍照存雲端", eff:{int:3,hap:3}, res:"你把金句拍照建檔，做成一份《祖傳避雷懶人包》，過年丟到家族群組。長輩們震驚地發現：原來阿祖早就寫過『勿信穩賺』——而他們每個人都至少中過一次。"},
+      {label:"原封不動供起來，儀式感大於實用", eff:{hap:4}, res:"你把日記裝進防潮箱，放在書架最顯眼的位置。內容你沒怎麼讀，但每次經過都覺得背後有人罩——心理學上叫安慰劑，民俗學上叫祖蔭，反正有效。"},
+    ]},
+
+  /* =====================================================================
      R41 志向抉擇 ×2：跨階段各一次「堅持 or 轉向」（cb_ 前綴走既有因果鏈
      優先池；cond 純讀 wishId/旗標零裸 rng；轉向 special:r41pivot 換
      候選池次一志向＝確定性，代價直接寫在 eff；舊存檔無 wishId 不進池）
@@ -6150,6 +6210,11 @@ function renderBirth(){
         <div class="muted">📈 ${S.quirk.up}<br>📉 ${S.quirk.down}</div>`:""}
         ${(S.rtal&&S.rtal.length)?`<div class="t" style="margin-top:8px">🔄 轉生天賦：${S.rtal.map(id=>RB_MAP[id].ic+" "+RB_MAP[id].nm).join("、")}</div>
         <div class="muted">前世的你打錢過來了，效果已計入開局屬性。</div>`:""}
+        ${(!ch && !bt && S.gen)?((S.gen>=2 && S.heir && R42_HMAP[S.heir])
+          ?`<div class="t" style="margin-top:8px">🏠 家族第 ${S.gen} 代</div>
+        <div class="muted">上一代留下的【${R42_HMAP[S.heir].ic} ${R42_HMAP[S.heir].nm}】已生效——${R42_HMAP[S.heir].gift}。香火在你手上，別讓族譜斷在這頁。</div>`
+          :`<div class="t" style="margin-top:8px">🏠 家族第 1 代</div>
+        <div class="muted">白手起家版本：沒祖產、沒家訓，只有一身膽。想開家族接力，先把這一生活出點東西再說。</div>`):""}
       </div>
       ${wishCard}
       <div class="choices" style="margin-top:12px">
@@ -7159,6 +7224,15 @@ function die(from){
   S.wishDone=false;
   if(w41){ try{ S.wishDone=!!w41.done(S); }catch(e){} }
   if(S.wishDone) tlPush("🎯", `人生志向【${w41.nm}】達成——主線任務結案`, 2);
+  // ---- R42 世代傳承：家族年表記錄（挑戰/對戰局不入表；成就評估前先記，r42_* 成就當局即可解鎖；
+  //      舊進行中存檔無 gen → 視為第 1 代；cap 8 防爆量，結算只展示近 5 代）----
+  const dn42 = dynastyData();
+  if(!S.challenge && !S.battle){
+    S.gen = S.gen || 1;
+    dn42.lineage.push({g:S.gen, a:S.age, t:stripTags(S.title||"").slice(0,24), d:stripTags(S.deathReason||"").slice(0,30)});
+    if(dn42.lineage.length>8) dn42.lineage = dn42.lineage.slice(-8);
+    if(S.gen>=2) tlPush("🏠", `家族第 ${S.gen} 代謝幕，故事寫進家族年表`, 1);
+  }
   S.newAch = evalAchievements(cat, sum, grade);
   // R9 時間軸：本局新解鎖成就補進終點（最多 3 條，避免洗版）
   (S.newAch||[]).slice(0,3).forEach(id=>{ const ax=ACH_MAP[id]; if(ax) tlPush("🏆", `解鎖成就【${ax.nm}】`, 1); });
@@ -7561,6 +7635,124 @@ function r41WishHTML(){
 }
 
 /* =========================================================================
+   R42 世代傳承（轉生繼承）：人生結算後依本局表現確定性生成 2~3 個傳承物候選
+   （遺產/家訓/傳家寶），選 1 件蔭下一代；世代數 +1、家族年表跨代連載。
+   平衡護欄（鐵律）：
+   ① 效果只做「開局資源/旗標/特殊事件解鎖」，單件總量 ≤6 點，遠小於單一事件級距；
+      同時只生效 1 件、用掉即清（不疊代、不堆屬性上限、無多代疊 buff）
+   ② 每日挑戰/種子對戰一律停用（newLife(true) → gen=0、不吃 pending、不入年表），全服公平
+   ③ 全程零 rng / 零 Math.random——候選由這一生的結局純門檻確定性決定，
+      同種子同選擇必同候選；不選傳承時開局與舊版完全一致，種子序列不變
+   ========================================================================= */
+const R42_HEIRS = [
+  /* 條件款在前（依結局門檻解鎖）、永真保底款墊底 → 候選=命中前 3，至少必有 2 */
+  {id:"h_estate", ic:"🧧", nm:"阿公的定存單", ty:"遺產",
+   pitch:"一輩子省出來的數字，臨走前全部過戶——下一代的頭期款有著落了",
+   gift:"下一代開局財富 +6", eff:{mny:6},
+   cond:s=>!!(s.attr&&s.attr.mny>=70)},
+  {id:"h_books", ic:"📚", nm:"滿牆的藏書", ty:"傳家寶",
+   pitch:"整面牆的書帶不走，但讀進腦袋的東西會跟著香火投胎",
+   gift:"下一代開局智力 +5", eff:{int:5},
+   cond:s=>!!(s.attr&&s.attr.int>=70)},
+  {id:"h_recipe", ic:"🥦", nm:"阿祖的長壽食譜", ty:"家訓",
+   pitch:"早睡、喝溫水、少吃炸的——聽起來像廢話，但你就是活到這歲數的證據",
+   gift:"下一代開局健康 +5", eff:{hp:5},
+   cond:s=>s.age>=85},
+  {id:"h_mirror", ic:"🪞", nm:"祖傳梳妝檯", ty:"傳家寶",
+   pitch:"這張臉是怎麼保養的？秘密全在抽屜那罐不外傳的面霜裡",
+   gift:"下一代開局外貌 +5", eff:{apr:5},
+   cond:s=>!!(s.attr&&s.attr.apr>=70)},
+  {id:"h_smile", ic:"😄", nm:"家訓「再爛也要笑」", ty:"家訓",
+   pitch:"人生爛成這樣都能笑著走完，這份心法不傳下去太可惜",
+   gift:"下一代開局快樂 +5", eff:{hap:5},
+   cond:s=>!!(s.attr&&s.attr.hap>=70)},
+  {id:"h_shopkey", ic:"🏪", nm:"巷口老店的鑰匙", ty:"遺產",
+   pitch:"店面小歸小，地點是真的香——鐵捲門後面鎖著一整代人的江湖",
+   gift:"下一代開局財富 +3，並解鎖特殊事件「巷口老店的鐵捲門」", eff:{mny:3}, flags:{heir_shop:true},
+   cond:s=>!!(s.flags&&(s.flags.startup||s.flags.ipo||s.flags.bigco))},
+  {id:"h_diary", ic:"📔", nm:"祖先的手寫日記", ty:"傳家寶",
+   pitch:"一生大小事全寫在裡面，比成功學好看一百倍——因為每一頁都是踩過的雷",
+   gift:"下一代開局智力 +2、快樂 +2，並解鎖特殊事件「祖先的日記」", eff:{int:2,hap:2}, flags:{heir_diary:true},
+   cond:s=>!!(s.seen&&Object.keys(s.seen).length>=18)},
+  {id:"h_amulet", ic:"🧿", nm:"開過光的平安符", ty:"傳家寶",
+   pitch:"你這一生的離奇程度連神明都蓋章認證——這塊符就是祂簽的到此一遊",
+   gift:"下一代開局健康 +3、快樂 +2", eff:{hp:3,hap:2},
+   cond:s=>!!((s.deathId&&SPECIAL_DEATHS[s.deathId])||(s.flags&&s.flags.luckywin))},
+  {id:"h_debtnote", ic:"🪧", nm:"家訓「不欠錢、不作保」", ty:"家訓",
+   pitch:"這條家訓是用真金白銀的學費換來的——你繳過的智商稅，後代全部免修",
+   gift:"下一代開局財富 +3、智力 +2", eff:{mny:3,int:2},
+   cond:s=>!!(s.flags&&(s.flags.bankrupt||s.flags.scammed||s.flags.startup_failed))},
+  {id:"h_photo", ic:"🖼️", nm:"全家福老相框", ty:"傳家寶",
+   pitch:"沒留下什麼值錢的，但相框裡每張臉都在笑——這就是傳家的底氣",
+   gift:"下一代開局快樂 +3", eff:{hap:3},
+   cond:()=>true},
+  {id:"h_plain", ic:"🍚", nm:"家訓「平安就好」", ty:"家訓",
+   pitch:"沒大富大貴，但一家人平平安安——在地球 Online 這已經是隱藏成就",
+   gift:"下一代開局最弱的那項屬性 +4",
+   apply:b=>{ let mk="hp"; for(const k in b){ if(b[k]<b[mk]) mk=k; } b[mk]+=4; },
+   cond:()=>true},
+];
+const R42_HMAP = {}; R42_HEIRS.forEach(it=>R42_HMAP[it.id]=it);
+/* 傳承效果套進開局 base（newLife 內、S 建立前呼叫）：eff 走 applyEff、動態款走 apply；零 rng */
+function r42Apply(base, it){
+  if(!it) return;
+  if(typeof it.apply==="function") it.apply(base);
+  else if(it.eff) applyEff(base, it.eff);
+  for(const k in base) base[k]=clamp(base[k]);
+}
+/* 候選：依剛謝幕的這一生（純門檻確定性、零 rng）取命中前 3；保底兩款永真 → 至少 2 個 */
+function r42Candidates(){
+  if(!S || S.alive || S.challenge || S.battle) return [];
+  return R42_HEIRS.filter(it=>{ try{ return !!it.cond(S); }catch(e){ return false; } }).slice(0,3);
+}
+function r42Pick(id){
+  const it = r42Candidates().find(x=>x.id===id);
+  if(!it) return;
+  dynastyData().pending = {id:it.id, gen:(S.gen||1)+1};
+  persist();
+  r42PickRefresh();
+  try{ sfxPlay("ach"); }catch(e){}
+}
+function r42Unpick(){ dynastyData().pending=null; persist(); r42PickRefresh(); }
+function r42PickRefresh(){
+  const el=(typeof document!=="undefined") && document.querySelector("#r42pickbox");
+  if(el) el.innerHTML = r42PickBoxHTML();
+}
+function r42PickBoxHTML(){
+  const dn=dynastyData(), cands=r42Candidates();
+  if(!cands.length) return "";
+  if(dn.pending && R42_HMAP[dn.pending.id]){
+    const it=R42_HMAP[dn.pending.id];
+    return `<div class="muted" style="margin-top:8px">✅ 已選定傳承【${it.ic} ${it.nm}】——下一局開新檔時，家族第 ${dn.pending.gen} 代會帶著它出生。<br>
+      <span style="font-size:11px">（每日挑戰／種子對戰不適用傳承，公平裸裝）</span></div>
+      <button class="btn sec" style="margin-top:8px;padding:8px 10px;font-size:12px" onclick="r42Unpick()">🔁 反悔重選（開新檔前都能改）</button>`;
+  }
+  return `<div class="muted" style="margin-top:8px;font-size:12px">⚱️ 依這一生的表現，你有 ${cands.length} 樣東西能留給下一代（只能選 1 樣、同時只生效 1 件）：</div>`
+    + cands.map(it=>`<button class="btn sec" style="margin-top:8px;text-align:left;padding:9px 12px" onclick="r42Pick('${it.id}')">
+        ${it.ic} 【${it.ty}】${it.nm}<br><span class="muted" style="font-size:11.5px;font-weight:400">${it.pitch}（${it.gift}）</span></button>`).join("")
+    + `<div class="muted" style="font-size:11px;margin-top:6px">不選也行——直接開新檔就是斷代重練，家族年表重寫第一章。</div>`;
+}
+/* 家族年表：歷代一行一代（第幾代/享年/稱號/死因），最多顯示近 5 代；純讀 SAVE 零 rng */
+function r42LineageHTML(){
+  const L=dynastyData().lineage||[];
+  if(!L.length) return "";
+  const rows=L.slice(-5).map(r=>`<div style="display:flex;gap:8px;align-items:baseline;font-size:12.5px;padding:3px 0;border-bottom:1px dashed var(--line,#3a3f55);text-align:left">
+    <b style="white-space:nowrap">第 ${r.g} 代</b><span class="muted" style="white-space:nowrap">享年 ${r.a} 歲</span>
+    <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.t||"地球路人"}</span>
+    <span class="muted" style="max-width:42%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.d||""}</span></div>`).join("");
+  return `<div style="margin-top:8px;text-align:left"><div class="muted" style="font-size:12px;margin-bottom:2px">📜 家族年表（近 5 代）</div>${rows}</div>`;
+}
+/* 結算頁傳承小塊：世代數＋年表＋候選按鈕；挑戰/對戰局整塊省略（不適用傳承） */
+function r42SummaryHTML(){
+  if(!S || S.challenge || S.battle) return "";
+  const gen=S.gen||1;
+  return `<div class="origin center" style="margin-top:10px">🏠 <b>世代傳承 · 家族第 ${gen} 代</b><br>
+    <span class="muted">${gen>=2?"香火沒斷，這條家族故事還在連載中":"家族故事第一章——要不要寫第二章，看你下面的選擇"}</span>
+    ${r42LineageHTML()}
+    <div id="r42pickbox">${r42PickBoxHTML()}</div></div>`;
+}
+
+/* =========================================================================
    R22 屬性軌跡回顧：從人生履歷（S.resume）挑出屬性大起大落的轉折點
    單筆主導屬性 |Δ|≥10 才入選，取絕對值前 6 名、按年齡排序呈現
    純資料決定、零 rng 消耗，同種子同軌跡 → 同回顧，挑戰/對戰復現性不受影響
@@ -7689,6 +7881,7 @@ function screenSummary(cat){
       <span class="muted">輪迴第 ${SAVE.plays} 世 · 轉生天賦 ${rbUnlockedCount()}/${REBIRTH_TALENTS.length}，到「轉生殿」把點數花掉</span></div>
       <div class="origin center" style="margin-top:10px">⛩️ <b>陰德 +${S.ydGain||0}</b>　<span class="muted">可用 ${legacyData().yd} · 歷史累計 ${legacyData().ydTotal}</span><br>
       <span class="muted">這輩子的壽命、財富與成就都折成了香火——到「祖祠」立契祖傳加成（${lgOwnedCount()}/${LEGACY_PERKS.length}），蔭下一世</span></div>
+      ${r42SummaryHTML()}
       ${newAchHTML()}
       <div class="choices" style="margin-top:14px">
         ${S.challenge?`<button class="btn" onclick="startChallenge()">📅 不服，再戰今日種子</button>`:""}
@@ -8967,6 +9160,7 @@ function buildShareText(){
     `⏳ 享年 ${S.age} 歲 · ${grade} 級（${sum}/500）`,
     `☠️ 死法：${stripTags(S.deathReason)}`,
   );
+  if((S.gen||0)>=2) lines.push(`🏠 家族第 ${S.gen} 代傳人（香火連載中）`);   // R42 分享文案帶世代數（第 1 代省略，零 rng）
   if(S.origin) lines.push(`🎴 出身：${S.origin.ic} ${S.origin.nm}`);   // R29 分享卡自然帶出身（舊局無 origin 自動省略，零 rng）
   const ta=topAch(1)[0];   // R24 最高成就（本局達標制，零 rng）
   if(ta) lines.push(`🏆 最高成就：${ta.ic} ${ta.nm}`);

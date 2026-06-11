@@ -1141,6 +1141,120 @@ try {
   console.log('R41 人生志向: ❌ ' + e.message);
 }
 
+/* ---- R42 世代傳承探針（強制路徑，不靠隨機抽中）----
+   ① 結構：傳承物 8~12 件、欄位完整（pitch/gift/cond/eff|apply）、id 唯一、永真保底 ≥2；3 成就有 hint
+   ② 候選確定性：好命人生命中對應款、爛命也有 ≥2 保底；候選/結算渲染零 rng、兩次一致
+   ③ 效果套用：eff 款與動態款（最弱屬性 +4）數值正確、clamp 不破
+   ④ 流程：選傳承 → pending；挑戰局不吃不消不入年表；下一局一般局第 2 代生效（旗標/開局卡/日誌）；
+      傳承事件 heir_* 旗標 gating；無傳承開新檔 → 斷代重練（gen=1、年表重寫）
+   ⑤ 成就：r42_gen2 / r42_gen5 / r42_fame 皆可達；年表 cap 8；結算顯示家族年表＋世代數
+   ⑥ 分享文案帶世代數；挑戰局結算整塊省略 */
+let r42OK = false;
+try {
+  const r42Raw = vm.runInContext(`(function(){
+    const out={};
+    /* ① 結構 */
+    out.count = R42_HEIRS.length>=8 && R42_HEIRS.length<=12;
+    out.fields = R42_HEIRS.every(it=>it.id&&it.ic&&it.nm&&it.ty&&it.pitch&&it.gift&&typeof it.cond==='function'&&(it.eff||typeof it.apply==='function'));
+    out.uniq = new Set(R42_HEIRS.map(it=>it.id)).size===R42_HEIRS.length;
+    out.fallback = R42_HEIRS.filter(it=>{ try{ return !!it.cond({attr:{},flags:{},seen:{},age:0}); }catch(e){ return false; } }).length>=2;
+    out.achDef = ['r42_gen2','r42_gen5','r42_fame'].every(id=>ACH_MAP[id]&&ACH_MAP[id].hint&&String(ACH_MAP[id].hint).length>4);
+    out.tyOK = R42_HEIRS.every(it=>['遺產','家訓','傳家寶'].includes(it.ty));
+    /* ② 候選確定性＋零 rng */
+    SAVE.dynasty={pending:null,lineage:[]};
+    startGame(); S.age=86; S.flags={}; ensureState(S);
+    for(const k in S.attr) S.attr[k]=75;
+    const oR1=rng; rng=()=>0.5; die(); rng=oR1;
+    let used=0,mused=0; const oR2=rng,oM=Math.random;
+    rng=function(){used++;return oR2();}; Math.random=function(){mused++;return oM();};
+    const c1=r42Candidates().map(x=>x.id).join(',');
+    const sh=r42SummaryHTML(); r42LineageHTML(); r42PickBoxHTML();
+    rng=oR2; Math.random=oM;
+    out.zeroRandom = used===0 && mused===0;
+    out.candStable = c1===r42Candidates().map(x=>x.id).join(',');
+    out.candRange = r42Candidates().length>=2 && r42Candidates().length<=3;
+    out.candRich = r42Candidates().some(x=>x.id==='h_estate');
+    out.sumShow = sh.includes('世代傳承') && sh.includes('家族年表') && sh.includes('第 1 代');
+    out.inSummary = document.querySelector('#app').innerHTML.includes('世代傳承');
+    /* 爛命保底 ≥2 */
+    startGame(); S.age=20; S.flags={}; ensureState(S); S.seen={};
+    for(const k in S.attr) S.attr[k]=30;
+    const oR3=rng; rng=()=>0.5; die(); rng=oR3;
+    out.candFloor = r42Candidates().length>=2 && r42Candidates().every(x=>['h_photo','h_plain'].includes(x.id));
+    /* ③ 效果套用 */
+    const b1={hp:50,int:50,apr:50,mny:50,hap:50};
+    r42Apply(b1, R42_HMAP.h_estate);
+    out.effApply = b1.mny===56 && b1.hp===50;
+    const b2={hp:50,int:50,apr:50,mny:50,hap:48};
+    r42Apply(b2, R42_HMAP.h_plain);
+    out.applyDyn = b2.hap===52 && b2.mny===50;
+    const b3={hp:99,int:50,apr:50,mny:50,hap:50};
+    r42Apply(b3, R42_HMAP.h_recipe);
+    out.applyClamp = b3.hp===100;
+    /* ④ 流程：選傳承 → pending → 反悔 → 再選 */
+    const cand=r42Candidates();
+    r42Pick(cand[0].id);
+    out.pendSet = !!(SAVE.dynasty.pending && SAVE.dynasty.pending.id===cand[0].id && SAVE.dynasty.pending.gen===2);
+    r42Unpick();
+    out.unpick = SAVE.dynasty.pending===null;
+    r42Pick('h_estate');   /* 非候選 id 不可選（爛命沒有定存單） */
+    out.pickGate = SAVE.dynasty.pending===null;
+    /* 挑戰局：不吃 pending、gen=0、不入年表 */
+    SAVE.dynasty.pending={id:'h_shopkey',gen:2};
+    SAVE.dynasty.lineage=[];
+    startChallenge('20260611');
+    out.chClean = S.gen===0 && !S.heir && !S.flags.heir_shop && !!SAVE.dynasty.pending;
+    const oR4=rng; rng=()=>0.5; die(); rng=oR4;
+    out.chNoLineage = SAVE.dynasty.lineage.length===0;
+    out.chSumClean = !document.querySelector('#app').innerHTML.includes('世代傳承');
+    /* 一般局吃下傳承：第 2 代生效、旗標/事件解鎖、年表保留、開局卡/日誌 */
+    SAVE.dynasty.pending={id:'h_shopkey',gen:2};
+    SAVE.dynasty.lineage=[{g:1,a:88,t:'測試先人',d:'壽終正寢'}];
+    startGame();
+    out.heirOn = S.gen===2 && S.heir==='h_shopkey' && SAVE.dynasty.pending===null;
+    out.heirFlag = S.flags.heir_shop===true;
+    out.lineKept = SAVE.dynasty.lineage.length===1;
+    out.birthCard = document.querySelector('#app').innerHTML.includes('家族第 2 代');
+    out.birthLog = S.log.some(l=>l.indexOf('巷口老店的鑰匙')>=0);
+    S.age=30; ensureState(S);
+    out.shopIn = eligible().some(e=>e.id==='r42_shop');
+    out.diaryGate = !eligible().some(e=>e.id==='r42_diary');
+    showEvent(EVENTS.find(e=>e.id==='r42_shop')); choose(0);
+    out.shopPlay = S.flags.r42_reopen===true && S.seen.r42_shop===true;
+    /* 無傳承開新檔 → 斷代重練 */
+    const oR5=rng; rng=()=>0.5; die(); rng=oR5;
+    out.gen2Rec = SAVE.dynasty.lineage.length===2 && SAVE.dynasty.lineage[1].g===2;
+    startGame();
+    out.genReset = S.gen===1 && !S.heir && SAVE.dynasty.lineage.length===0;
+    out.shopGate = !eligible().some(e=>e.id==='r42_shop');
+    /* ⑤ 成就：gen2（上面那局已解）/ gen5 / fame；年表 cap 8 */
+    out.achGen2 = SAVE.ach.r42_gen2===true;
+    delete SAVE.ach.r42_gen5; delete SAVE.ach.r42_fame;
+    SAVE.dynasty={pending:{id:'h_photo',gen:5},
+      lineage:[{g:1,a:80,t:'',d:'x'},{g:2,a:80,t:'',d:'x'},{g:3,a:80,t:'',d:'x'},{g:4,a:80,t:'',d:'x'}]};
+    startGame(); S.age=70; S.flags={}; ensureState(S);
+    out.gen5On = S.gen===5 && S.heir==='h_photo';
+    const oR6=rng; rng=()=>0.5; die(); rng=oR6;
+    out.achGen5 = SAVE.ach.r42_gen5===true;
+    out.achFame = SAVE.ach.r42_fame===true;
+    out.lineCap = SAVE.dynasty.lineage.length<=8;
+    const h5=document.querySelector('#app').innerHTML;
+    out.sumGen5 = h5.includes('家族第 5 代') && h5.includes('家族年表') && h5.includes('第 4 代');
+    /* ⑥ 分享文案帶世代數 */
+    out.shareGen = buildShareText().includes('家族第 5 代');
+    /* 舊進行中存檔（無 gen 鍵）die 不炸且視為第 1 代 */
+    startGame(); S.age=40; ensureState(S); delete S.gen; delete S.heir;
+    const oR7=rng; rng=()=>0.5; die(); rng=oR7;
+    out.compat = S.gen===1 && SAVE.dynasty.lineage[SAVE.dynasty.lineage.length-1].g===1;
+    return JSON.stringify(out);
+  })()`, sandbox);
+  const r42 = JSON.parse(r42Raw);
+  r42OK = Object.values(r42).every(v => v === true);
+  console.log(`R42 世代傳承: ${r42OK ? '✅ 全數通過' : '❌ ' + JSON.stringify(r42)}`);
+} catch (e) {
+  console.log('R42 世代傳承: ❌ ' + e.message);
+}
+
 if (__errors.length) {
   console.log('\n--- 錯誤樣本(前5) ---');
   __errors.slice(0, 5).forEach(e => console.log('  ' + e));
@@ -1148,6 +1262,6 @@ if (__errors.length) {
 
 /* 退出碼 */
 const pass = __errors.length === 0 && chk.missingScenes.length === 0 && chk.eventVisible >= 126 && chk.eventTotal >= 126 && lsOK && achUnlocked > 0
-  && chk.deathbookMissing.length === 0 && chk.deathTotal >= 17 && deathsOK && rebirthOK && legacyOK && petOK && r13OK && r17OK && r20OK && r21OK && r22OK && r24OK && r25OK && r34OK && r38OK && r41OK;
+  && chk.deathbookMissing.length === 0 && chk.deathTotal >= 17 && deathsOK && rebirthOK && legacyOK && petOK && r13OK && r17OK && r20OK && r21OK && r22OK && r24OK && r25OK && r34OK && r38OK && r41OK && r42OK;
 console.log('\n結果: ' + (pass ? '✅ 全數通過' : '❌ 有項目未通過'));
 process.exit(pass ? 0 : 1);
