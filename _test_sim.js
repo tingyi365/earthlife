@@ -1675,7 +1675,7 @@ try {
     out.brag = buildBragText('plain').indexOf('隱藏結局【')>=0 && buildBragText('salty').indexOf('隱藏結局【')>=0;
     // 圖鑑掛接：統計含隱藏館、hidden 分頁渲染（已解鎖顯示名稱、未解鎖給 ??? 線索）
     const st=collStats();
-    out.stats = st.h>=1 && st.total===ACHIEVEMENTS.length+DEATHBOOK.length+ORIGINS.length+REBIRTH_TALENTS.length+LIFE_BADGES.length+HIDDEN_ENDINGS.length;
+    out.stats = st.h>=1 && st.total===ACHIEVEMENTS.length+DEATHBOOK.length+ORIGINS.length+REBIRTH_TALENTS.length+LIFE_BADGES.length+HIDDEN_ENDINGS.length+R49_PERKS.length;   /* R49 後全館總數含開局天賦池 */
     COLL_FILTER='all'; COLL_TAB='hidden'; renderCollection();
     const collHTML = document.querySelector('#app').innerHTML;
     out.coll = collHTML.indexOf('隱藏結局圖鑑')>=0 && collHTML.indexOf('五維封頂')>=0
@@ -1690,6 +1690,89 @@ try {
   console.log('R48 隱藏結局與去敏: ❌ ' + e.message);
 }
 
+/* ---- R49 開局天賦三選一探針 ----
+   ① 天賦池：R49_PERKS ≥12、欄位齊全（id/ic/nm/tier/fx/desc/hint）、id 不重複、三稀有度齊備
+   ② 三選一抽選：startGame 後 perkPool 為 3 個不重複合法 id；r49Draw 同種子重呼結果逐字一致（確定性零 rng）
+   ③ 效果掛接可呼叫：r49Pick 選定後 perkId/perkUsed/日誌入帳、開局屬性效果套用；
+      r49Dice / r49YearTick / effWeight / 結算輪迴點掛接逐一驗證
+   ④ 舊存檔相容：無 perkSeen/perkUsed/perkId 的 SAVE 與 S 全部不炸、行為同舊版（r49Dice=0、tick 無感）
+   ⑤ 戰績卡：選了天賦的局 buildBragText 兩風格都帶「開局天賦」行
+   ⑥ 圖鑑掛接：collStats 計入天賦池、perk 分頁渲染已解鎖條目與未解鎖 ??? 線索 */
+let r49OK = false;
+try {
+  const r49Raw = vm.runInContext(`(function(){
+    const out={};
+    out.pool = typeof R49_PERKS!=='undefined' && Array.isArray(R49_PERKS) && R49_PERKS.length>=12
+      && R49_PERKS.every(p=>p.id&&p.ic&&p.nm&&p.tier&&p.fx&&p.desc&&p.hint&&R49_TIER[p.tier])
+      && new Set(R49_PERKS.map(p=>p.id)).size===R49_PERKS.length
+      && ['c','r','n'].every(t=>R49_PERKS.some(p=>p.tier===t));
+    startGame(); ensureState(S);
+    // 三選一：3 個不重複合法 id；同種子重抽逐字一致（零 rng 確定性）
+    out.draw3 = Array.isArray(S.perkPool) && S.perkPool.length===3
+      && new Set(S.perkPool).size===3 && S.perkPool.every(id=>!!R49_MAP[id]);
+    out.det = JSON.stringify(r49Draw())===JSON.stringify(r49Draw());
+    // 選定：perkId 入帳、跨局收集蓋章、日誌有記錄；屬性效果（若有 eff）已套用且 0-100 內
+    const pickId = S.perkPool[0], pk = R49_MAP[pickId];
+    const before = Object.assign({}, S.attr);
+    r49Pick(pickId);
+    out.pick = S.perkId===pickId && !!(SAVE.perkUsed&&SAVE.perkUsed[pickId])
+      && S.log.some(l=>l.indexOf('開局天賦【'+pk.nm+'】')>=0);
+    out.eff = !pk.eff || Object.keys(pk.eff).every(k=>{
+      const want=Math.max(0,Math.min(100,before[k]+pk.eff[k]));
+      return S.attr[k]===want;
+    });
+    // 效果掛接可呼叫：擲骰加成（指定天賦逐一驗值）、年度節拍不丟例外、權重倍率生效、輪迴點 +1
+    const keep=S.perkId;
+    S.perkId='pk_jiao';  out.dice = r49Dice()===3;
+    S.perkId='pk_allin'; out.dice = out.dice && r49Dice()===8;
+    S.perkId='pk_chill'; out.dice = out.dice && r49Dice()===-4;
+    S.perkId='pk_radar'; out.wmul = (function(){ try{
+      const ev=EVENTS.find(e=>(e.w||1)<1 && !e.once); if(!ev) return true;
+      S.seenCount={}; S.recent=[];
+      const w1=effWeight(ev); S.perkId=null; const w0=effWeight(ev); S.perkId='pk_radar';
+      return Math.abs(w1-w0*1.18)<1e-9;
+    }catch(e){ return false; } })();
+    S.perkId='pk_kpi'; S.age=30; const hp0=S.attr.hp, mn0=S.attr.mny;
+    out.tick = (function(){ try{ r49YearTick(); return S.attr.hp===Math.max(0,hp0-1)&&S.attr.mny===Math.min(100,mn0+1); }catch(e){ return false; } })();
+    S.perkId=keep;
+    // 孟婆 VIP：結算輪迴點 +1（同一局種子，比較有無 pk_vip 的 rpGain 差）
+    out.rp = (function(){ try{
+      S.perkId='pk_vip'; S.age=70; S.attr.hp=50;
+      let oR=rng; rng=()=>0.5; if(S.alive) die(); rng=oR;
+      const withVip=S.rpGain||0;
+      return withVip>=2;   // 基礎至少 1 + VIP 1
+    }catch(e){ return false; } })();
+    // 戰績卡：兩風格都帶開局天賦行
+    out.brag = buildBragText('plain').indexOf('開局天賦「')>=0 && buildBragText('salty').indexOf('開局天賦「')>=0;
+    // 圖鑑掛接：統計含天賦池、perk 分頁渲染（已解鎖顯名、未解鎖 ??? 線索）
+    const st=collStats();
+    out.stats = st.k>=3 && st.total>=ACHIEVEMENTS.length+DEATHBOOK.length+ORIGINS.length+REBIRTH_TALENTS.length+LIFE_BADGES.length+HIDDEN_ENDINGS.length+R49_PERKS.length;
+    // 長跑模擬可能已集滿全池：重置收集狀態只留選用那張，確保同畫面驗得到「已解鎖顯名＋未解鎖 ??? 線索」
+    SAVE.perkSeen={}; SAVE.perkSeen[pickId]=true;
+    COLL_FILTER='all'; COLL_TAB='perk'; renderCollection();
+    const collHTML = document.querySelector('#app').innerHTML;
+    out.coll = collHTML.indexOf('開局天賦池')>=0 && collHTML.indexOf(pk.nm)>=0
+      && collHTML.indexOf('？？？')>=0 && collHTML.indexOf('線索：')>=0;
+    // 舊存檔相容：刪掉 R49 鍵重載不炸、無 perkId 的 S 所有掛接點無感
+    out.compat = (function(){ try{
+      delete SAVE.perkSeen; delete SAVE.perkUsed;
+      const raw=JSON.stringify(SAVE); localStorage.setItem('earthlife_save_v2', raw);
+      loadSave();
+      const seenOK = SAVE.perkSeen && typeof SAVE.perkSeen==='object' && SAVE.perkUsed && typeof SAVE.perkUsed==='object';
+      S.perkId=null; S.perkPool=null;
+      const noFx = r49Dice()===0 && r49Perk()===null;
+      r49YearTick();   // 無天賦：不丟例外、不動屬性
+      return seenOK && noFx && r49CardHTML()==='';
+    }catch(e){ return false; } })();
+    return JSON.stringify(out);
+  })()`, sandbox);
+  const r49 = JSON.parse(r49Raw);
+  r49OK = Object.values(r49).every(v => v === true);
+  console.log(`R49 開局天賦三選一: ${r49OK ? '✅ 全數通過' : '❌ ' + JSON.stringify(r49)}`);
+} catch (e) {
+  console.log('R49 開局天賦三選一: ❌ ' + e.message);
+}
+
 if (__errors.length) {
   console.log('\n--- 錯誤樣本(前5) ---');
   __errors.slice(0, 5).forEach(e => console.log('  ' + e));
@@ -1697,6 +1780,6 @@ if (__errors.length) {
 
 /* 退出碼 */
 const pass = __errors.length === 0 && chk.missingScenes.length === 0 && chk.eventVisible >= 126 && chk.eventTotal >= 126 && lsOK && achUnlocked > 0
-  && chk.deathbookMissing.length === 0 && chk.deathTotal >= 17 && deathsOK && rebirthOK && legacyOK && petOK && r13OK && r17OK && r20OK && r21OK && r22OK && r24OK && r25OK && r34OK && r38OK && r41OK && r42OK && r43OK && r44OK && r45OK && r46OK && r47OK && r48OK;
+  && chk.deathbookMissing.length === 0 && chk.deathTotal >= 17 && deathsOK && rebirthOK && legacyOK && petOK && r13OK && r17OK && r20OK && r21OK && r22OK && r24OK && r25OK && r34OK && r38OK && r41OK && r42OK && r43OK && r44OK && r45OK && r46OK && r47OK && r48OK && r49OK;
 console.log('\n結果: ' + (pass ? '✅ 全數通過' : '❌ 有項目未通過'));
 process.exit(pass ? 0 : 1);

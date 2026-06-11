@@ -1259,6 +1259,150 @@ function dynastyData(){
 }
 
 /* =========================================================================
+   R49 開局天賦三選一（roguelike 起手）：開局從天賦池確定性抽 3 張供玩家選 1。
+   抽選走種子雜湊（同 r41Init 取源）——零 rng 消耗、不動事件序列，
+   同種子同候選（挑戰/對戰全服同三張，選哪張是玩家的事，公平不破壞）。
+   平衡護欄（鐵律）：
+   ① 疊加層不是改寫層——不動既有事件池基礎機率/權重/數值，效果只走
+      「開局屬性 / 稀有事件權重倍率 / 檢定擲骰 / 年度節拍 / 結算輪迴點」五種既有掛接
+   ② 單張開局屬性淨效果 ±8 內、權重倍率 ≤×1.35、不選天賦時行為與舊版完全一致
+   ③ 存檔只增不改：SAVE.perkSeen / SAVE.perkUsed / S.perkPool / S.perkId 全為新鍵，
+      舊檔缺鍵當空集合、舊進行中存檔無 perkPool → 無 UI 無效果，零殘留
+   ④ 轉生協同：輪迴世數越多，稀有/逆天天賦抽中率微升（挑戰/對戰固定 0 世，公平）
+   ========================================================================= */
+const R49_TIER = { c:{nm:"普通",col:"#cfd3e6"}, r:{nm:"稀有",col:"#ffd24a"}, n:{nm:"逆天",col:"#ff5d73"} };
+const R49_PERKS = [
+  /* ---- 普通：單項小加成，穩穩的幸福 ---- */
+  {id:"pk_granny", ic:"🍼", nm:"阿嬤親自養大", tier:"c", eff:{hp:4},
+   fx:"開局健康 +4", desc:"阿嬤的愛是用餵的：你出生就比別人多兩圈，底子紮實到嬰兒體檢表被護理師拿去當範本。",
+   hint:"有一種強運，叫『被阿嬤養大』…"},
+  {id:"pk_cram", ic:"📚", nm:"胎內先修班結業", tier:"c", eff:{int:4,hap:-1},
+   fx:"開局智力 +4、快樂 -1", desc:"還沒出生就被報名了胎教全科班，出廠自帶注音與九九乘法——只是笑容略為制式。",
+   hint:"還沒出生就在補習的卷王…"},
+  {id:"pk_filter", ic:"🪞", nm:"出廠自帶濾鏡", tier:"c", eff:{apr:4},
+   fx:"開局外貌 +4", desc:"投胎時多排了一輪捏臉隊，連接生的醫生都忍不住多看兩眼。",
+   hint:"在輪迴大廳的捏臉介面多排了一次隊…"},
+  {id:"pk_redbag", ic:"🐷", nm:"滿月紅包守住了", tier:"c", eff:{mny:4},
+   fx:"開局財富 +4", desc:"史詩級奇蹟：滿月收的紅包沒有被爸媽『先幫你存起來』。全台灣一年發生不到十次。",
+   hint:"全島最稀有的奇蹟：紅包真的還在你戶頭…"},
+  {id:"pk_sunny", ic:"🌞", nm:"天生樂天派", tier:"c", eff:{hap:4},
+   fx:"開局快樂 +4", desc:"出生那天醫院停電，全產房只有你在笑。",
+   hint:"醫院停電也笑得出來的體質…"},
+  {id:"pk_jiao", ic:"🎲", nm:"廟口見習筊手", tier:"c", dice:3,
+   fx:"屬性檢定擲骰永久 +3", desc:"胎裡就跟著阿公蹲廟口看人擲筊，出生自帶三分手氣。",
+   hint:"阿公蹲廟口的那些年，你其實也在場…"},
+  {id:"pk_cup", ic:"🍵", nm:"保溫杯本命", tier:"c", tick:true,
+   fx:"40 歲起每逢 5 的倍數歲，健康 +2", desc:"別人的本命是偶像，你的本命是 316 不鏽鋼——中年以後才知道誰才是真愛。",
+   hint:"中年以後的真愛，恆溫攝氏 55 度…"},
+  /* ---- 稀有：跨系統協同，輪迴世數越多越容易抽到 ---- */
+  {id:"pk_radar", ic:"🛸", nm:"彩蛋體質", tier:"r", rare:1.18,
+   fx:"稀有際遇／稀有死法出現權重 ×1.18", desc:"你對世界的 bug 有天生的吸引力，外星人的觀察名單上寫著你的小名。",
+   hint:"世界的 bug 會主動找上某種人…"},
+  {id:"pk_lucky", ic:"🀄", nm:"歐皇胚胎", tier:"r", dice:6,
+   fx:"屬性檢定擲骰永久 +6", desc:"投胎抽卡時就出了金色閃光，這隻手從子宮裡就注定比別人會搖。",
+   hint:"投胎那一抽就出金的傳說…"},
+  {id:"pk_vip", ic:"🧧", nm:"孟婆 VIP 會員", tier:"r", rp:true,
+   fx:"每局結算輪迴點 +1（可突破上限）", desc:"上輩子湯喝得乾脆，孟婆直接幫你辦了會員卡：『下次來，點數加倍。』",
+   hint:"孟婆的會員制度，聽說集點有優惠…"},
+  {id:"pk_penta", ic:"🌈", nm:"五邊形胚胎", tier:"r", eff:{hp:2,int:2,apr:2,mny:2,hap:2},
+   fx:"開局五屬性各 +2", desc:"出廠雷達圖就是一個標準五邊形，老天爺難得手沒抖。",
+   hint:"雷達圖出廠就是正五邊形的天選之人…"},
+  /* ---- 逆天：搞笑負面，高風險高報酬 ---- */
+  {id:"pk_ghost", ic:"👻", nm:"天煞孤星（自封）", tier:"n", rare:1.35, eff:{hap:-4},
+   fx:"稀有際遇／稀有死法權重 ×1.35，但開局快樂 -4", desc:"算命的看到你直接收攤。怪事特別愛找你，連你自己都麻了——但說真的，故事都發生在你身上。",
+   hint:"算命仙看到就收攤的那種命格…"},
+  {id:"pk_allin", ic:"🎰", nm:"梭哈仔轉世", tier:"n", dice:8, eff:{hp:-3,mny:-4},
+   fx:"檢定擲骰永久 +8，但開局健康 -3、財富 -4", desc:"上輩子的遺言只有兩個字：『梭哈』。這輩子手氣登峰造極，本錢卻先押給了輪迴櫃台。",
+   hint:"上輩子的遺言只有兩個字…"},
+  {id:"pk_kpi", ic:"⚡", nm:"爆肝預購方案", tier:"n", tick:true, eff:{mny:2},
+   fx:"開局財富 +2；22-50 歲每逢偶數歲財富 +1、健康 -1", desc:"投胎表格的『加班意願』欄位被人偷偷勾了『非常願意』。錢會來，肝會走。",
+   hint:"投胎表格上被偷勾的那一格…"},
+  {id:"pk_chill", ic:"🌚", nm:"反指標體質", tier:"n", dice:-4, eff:{mny:6,hap:3},
+   fx:"開局財富 +6、快樂 +3，但檢定擲骰永久 -4", desc:"天生帶財帶笑，但每逢關鍵時刻必出事——你買哪支股票，哪支就跌停，全村都看你下單。",
+   hint:"他一出手，全村跌停…"},
+];
+const R49_MAP = {}; R49_PERKS.forEach(p=>R49_MAP[p.id]=p);
+/* 跨局收集：抽到過（出現在三選一裡）即入冊，選用過另外蓋章；舊檔缺鍵當空集合 */
+function perkSeenMap(){ if(!SAVE.perkSeen||typeof SAVE.perkSeen!=="object") SAVE.perkSeen={}; return SAVE.perkSeen; }
+function perkUsedMap(){ if(!SAVE.perkUsed||typeof SAVE.perkUsed!=="object") SAVE.perkUsed={}; return SAVE.perkUsed; }
+/* 抽 3 張：種子雜湊排序取前三（零 rng、同種子同候選、必不重複）。
+   轉生協同：一般局依輪迴世數給稀有/逆天上浮（最多 +240/1000），挑戰/對戰固定 0 世全服公平 */
+function r49Draw(){
+  const seed = r41SeedStr();
+  const fair = !!(S && (S.challenge || S.battle));
+  const gen = fair ? 0 : Math.min(SAVE.plays||0, 40);
+  const scored = R49_PERKS.map(p=>{
+    let sc = r41Hash(seed+"|r49|"+p.id)%1000;
+    if(p.tier==="r"||p.tier==="n") sc += gen*6;
+    return {id:p.id, sc};
+  });
+  scored.sort((a,b)=>b.sc-a.sc || (a.id<b.id?-1:1));
+  return scored.slice(0,3).map(x=>x.id);
+}
+/* 開局鋪牌：只在第 0 年的新人生鋪一次；舊進行中存檔無 perkPool → 永不補鋪、零殘留 */
+function r49Init(){
+  if(!S || !S.alive || S.age!==0 || S.perkId || Array.isArray(S.perkPool)) return;
+  S.perkPool = r49Draw();
+  const seen = perkSeenMap();
+  S.perkPool.forEach(id=>{ if(!seen[id]){ seen[id]=true; recFound("k", id, {w:(SAVE.plays||0)+1}); } });
+}
+/* 玩家選定：套開局屬性並同步巔峰/谷底/年史第一筆（第 0 年即基準，與 R35 同邏輯）。
+   玩家選擇不吃種子序列；選定後整局生效、不可反悔 */
+function r49Pick(id){
+  if(!S || !S.alive || S.perkId || S.age!==0) return;
+  if(!Array.isArray(S.perkPool) || S.perkPool.indexOf(id)<0) return;
+  const p = R49_MAP[id]; if(!p) return;
+  S.perkId = id;
+  if(p.eff){
+    applyEff(S.attr, p.eff);
+    for(const k in S.attr) S.attr[k]=clamp(S.attr[k]);
+    S.peak=Object.assign({},S.attr); S.peakAge={hp:0,int:0,apr:0,mny:0,hap:0};
+    S.low =Object.assign({},S.attr); S.lowAge ={hp:0,int:0,apr:0,mny:0,hap:0};
+    S.attrHist=[[0,S.attr.hp,S.attr.int,S.attr.apr,S.attr.mny,S.attr.hap]];
+  }
+  perkUsedMap()[id]=true;
+  S.log.push(`<span class="yr">第 0 年</span> 🃏 開局天賦【${p.nm}】入手——${p.fx}。${p.tier==="n"?"高風險高報酬，輪迴櫃台已自動代簽切結書。":""}`);
+  tlPush(p.ic, `開局天賦【${p.nm}】上身——三選一起手，整局生效`, 1);
+  persist();
+  renderBirth();
+}
+/* 本局天賦（無天賦/舊存檔回 null，所有掛接點據此完全無感） */
+function r49Perk(){ return (S && S.perkId && R49_MAP[S.perkId]) || null; }
+/* 檢定擲骰加成（掛在既有 sr 檢定，與 rb_dice/qk_tie 同點疊加） */
+function r49Dice(){ const p=r49Perk(); return (p && p.dice) || 0; }
+/* 年度節拍：nextYear 每年一呼（與 quirkYearTick 同點）。純查狀態零 rng，無 tick 天賦直接 return */
+function r49YearTick(){
+  const p = r49Perk(); if(!p || !p.tick) return;
+  if(p.id==="pk_cup" && S.age>=40 && S.age%5===0){ S.attr.hp=clamp(S.attr.hp+2); }
+  if(p.id==="pk_kpi" && S.age>=22 && S.age<=50 && S.age%2===0){
+    S.attr.mny=clamp(S.attr.mny+1); S.attr.hp=clamp(S.attr.hp-1);
+  }
+}
+/* 開局卡 UI：未選 → 三選一牌列；已選 → 已入手卡；舊存檔無 perkPool → 整塊省略 */
+function r49CardHTML(){
+  if(!S) return "";
+  const p = r49Perk();
+  if(p){
+    return `<div class="wishcard">
+      <div class="t">🃏 開局天賦：${p.ic} ${p.nm}　<span style="font-size:11px;color:${R49_TIER[p.tier].col}">【${R49_TIER[p.tier].nm}】</span></div>
+      <div class="muted" style="margin-top:3px">${p.desc}</div>
+      <div class="muted" style="font-size:11.5px;margin-top:3px">📌 ${p.fx}（整局生效，效果已計入）</div></div>`;
+  }
+  if(Array.isArray(S.perkPool) && S.perkPool.length===3 && !S.perkId){
+    const btns = S.perkPool.map(id=>{
+      const q=R49_MAP[id]; if(!q) return "";
+      return `<button class="btn sec" style="text-align:left" onclick="r49Pick('${q.id}')">${q.ic} <b>${q.nm}</b>　<span style="font-size:11px;color:${R49_TIER[q.tier].col}">【${R49_TIER[q.tier].nm}】</span><br>
+        <span class="muted" style="font-size:12px">${q.fx}</span></button>`;
+    }).join("");
+    return `<div class="wishcard">
+      <div class="t">🃏 開局天賦三選一（roguelike 起手）</div>
+      <div class="muted" style="margin-top:3px;font-size:12px">投胎櫃台今天心情好，從天賦池抽了三張給你挑——選一張帶走，或一張都不拿，裸體開局最自由。選了不能反悔。</div>
+      <div class="choices" style="margin-top:8px">${btns}</div></div>`;
+  }
+  return "";
+}
+
+/* =========================================================================
    遊戲狀態
    ========================================================================= */
 let S = null;
@@ -1411,6 +1555,8 @@ function loadSave(){
     if(!SAVE.seedpb || typeof SAVE.seedpb!=="object") SAVE.seedpb={}; // R14 種子對戰戰績：缺鍵當空集合
     if(!SAVE.found || typeof SAVE.found!=="object") SAVE.found={}; // R19 收藏館首次解鎖小記錄：缺鍵當空集合
     if(!SAVE.badges || typeof SAVE.badges!=="object") SAVE.badges={}; // R24 人生稱號收集（id→獲得次數）：缺鍵當空集合，舊存檔不炸
+    if(!SAVE.perkSeen || typeof SAVE.perkSeen!=="object") SAVE.perkSeen={}; // R49 開局天賦收集（抽到過）：缺鍵當空集合
+    if(!SAVE.perkUsed || typeof SAVE.perkUsed!=="object") SAVE.perkUsed={}; // R49 開局天賦收集（選用過）：缺鍵當空集合
     rebirthData();   // R6 轉生：舊存檔缺鍵就地補上 {pts,total,talents,equipped}，不可炸
     legacyData();    // R23 祖產：舊存檔缺鍵就地補上 {yd,ydTotal,perks,roster,lastMny,pickAttr}，不可炸
     dynastyData();   // R42 世代傳承：舊存檔缺鍵就地補上 {pending,lineage}，不可炸
@@ -6303,6 +6449,8 @@ function effWeight(e){
   }
   // R6 彩蛋雷達：稀有彩蛋事件（基礎權重 <1）權重 +10%；未裝備或挑戰模式完全不變
   if((e.w||1)<1 && rtActive("rb_egg")) w*=1.1;
+  // R49 開局天賦：稀有事件權重倍率（疊加層，不動基礎 w；無天賦/舊存檔完全不變）
+  if((e.w||1)<1){ const p49=r49Perk(); if(p49 && p49.rare) w*=p49.rare; }
   return Math.max(w,0.04);
 }
 
@@ -6553,6 +6701,7 @@ function screenSeedBattle(){
 
 function renderBirth(){
   r41Init();   // R41 開局立志：種子就緒後確定性選志（零 rng；已有志向或舊存檔自動跳過）
+  r49Init();   // R49 開局天賦鋪牌：種子雜湊抽 3 張（零 rng；已鋪過或舊存檔自動跳過）
   const ch = S.challenge, bt = S.battle;
   const w41 = (S.wishId && R41_MAP[S.wishId]) || null;
   const wishCard = w41 ? `<div class="wishcard">
@@ -6594,6 +6743,7 @@ function renderBirth(){
         <div class="muted">白手起家版本：沒祖產、沒家訓，只有一身膽。想開家族接力，先把這一生活出點東西再說。</div>`):""}
       </div>
       ${wishCard}
+      ${r49CardHTML()}
       <div class="choices" style="margin-top:12px">
         <button class="btn" onclick="nextYear()">👶 帶著這套配裝出生 →</button>
       </div>
@@ -6729,6 +6879,7 @@ function nextYear(){
   if(rtActive("rb_zen") && S.attr.hap<15) S.attr.hap=clamp(S.attr.hap+2);
   // R26 權衡天賦年度節拍：純查狀態、零 rng；無 quirk（含舊進行中存檔）完全無感
   quirkYearTick();
+  r49YearTick();   // R49 開局天賦年度節拍：純查狀態零 rng，無天賦直接 return
   // R30 屬性年史：年度快照（平淡年也記，曲線不斷線）
   histTick();
 
@@ -7050,7 +7201,7 @@ function choose(i){
   if(c.sr){
     // R16 前世練過的手氣：擲骰 +5。rnd 照常先消耗（種子序列不變）；挑戰/對戰局 rtal=[] 永不觸發
     // R26 鐵齒第一名：擲骰 -5（與 rb_dice +5 同一掛點；rnd 照常先消耗，種子序列不變）
-    const roll = (S.attr[c.sr.k]||0) + rnd(0, c.sr.spread||40) + (rtActive("rb_dice")?5:0) + (S.quirk&&S.quirk.id==="qk_tie"?-5:0);
+    const roll = (S.attr[c.sr.k]||0) + rnd(0, c.sr.spread||40) + (rtActive("rb_dice")?5:0) + (S.quirk&&S.quirk.id==="qk_tie"?-5:0) + r49Dice();
     const out = roll >= c.sr.need ? c.sr.win : c.sr.lose;
     eff = Object.assign({}, out.eff||{});
     res = out.res||"";
@@ -7746,6 +7897,8 @@ function die(from){
   rp = Math.min(5, rp);
   // R16 孟婆的集點卡：結算 +1、可破 5 上限（挑戰/對戰局 rtal=[] 永不觸發，不影響全服公平）
   if(rtActive("rb_karma")) rp+=1;
+  // R49 孟婆 VIP 會員：同上再 +1、可破上限（疊加層；沒選此天賦完全不變）
+  const p49rp=r49Perk(); if(p49rp && p49rp.rp) rp+=1;
   S.rpGain = rp; rb.pts += rp; rb.total += rp;
   // R16 成就「孟婆的白金會員」：rpGain 在 evalAchievements 之後才定案，這裡補評（一次性解鎖）
   if(rp>=6 && ACH_MAP.karma6 && !SAVE.ach.karma6){ SAVE.ach.karma6=true; (S.newAch=S.newAch||[]).push("karma6"); }
@@ -8594,6 +8747,7 @@ function foundNote(kind,id){
   if(!r) return "📌 入手於開館前的某次輪迴——年代久遠，館長查無檔案";
   if(kind==="o") return `📌 第 ${r.w||"?"} 世開局抽中${r.t?` · 當局${r.t}`:""}`;
   if(kind==="r") return r.w?`📌 輪迴 ${r.w} 世後在轉生殿兌換入庫`:"📌 在轉生殿兌換入庫";
+  if(kind==="k") return `📌 第 ${r.w||"?"} 世的三選一首次抽到`;   /* R49 開局天賦 */
   return `📌 第 ${r.w||"?"} 世入手${typeof r.a==="number"?` · 享年 ${r.a} 歲`:""}${r.t?` · 當局稱號「${r.t}」`:""}`;
 }
 /* 未解鎖出身的模糊線索（吊胃口用，不破梗） */
@@ -8616,10 +8770,11 @@ const ORIGIN_HINTS = {
 function collStats(){
   const a=Object.keys(SAVE.ach||{}).length, d=deathbookCount(),
         o=Object.keys(SAVE.origins||{}).length, r=rbUnlockedCount(),
-        b=Object.keys(SAVE.badges||{}).length, h=hiddenEndCount();   /* R48 隱藏結局館 */
-  return {a, d, o, r, b, h,
-    got:a+d+o+r+b+h,
-    total:ACHIEVEMENTS.length+DEATHBOOK.length+ORIGINS.length+REBIRTH_TALENTS.length+LIFE_BADGES.length+HIDDEN_ENDINGS.length};
+        b=Object.keys(SAVE.badges||{}).length, h=hiddenEndCount(),   /* R48 隱藏結局館 */
+        k=Object.keys(perkSeenMap()).length;                          /* R49 開局天賦池 */
+  return {a, d, o, r, b, h, k,
+    got:a+d+o+r+b+h+k,
+    total:ACHIEVEMENTS.length+DEATHBOOK.length+ORIGINS.length+REBIRTH_TALENTS.length+LIFE_BADGES.length+HIDDEN_ENDINGS.length+R49_PERKS.length};
 }
 /* 收集進度條 + 「差 N 個就集滿」提示 */
 function collBarHTML(got,total){
@@ -8668,6 +8823,7 @@ function renderCollection(){
     ["talent","🔄","天賦",st.r,REBIRTH_TALENTS.length],
     ["badge","🏅","稱號",st.b,LIFE_BADGES.length],
     ["hidden","🌟","結局",st.h,HIDDEN_ENDINGS.length],
+    ["perk","🃏","起手",st.k,R49_PERKS.length],
   ];
   const tabBar = `<div class="colltabs">${tabs.map(([k,ic,nm,g,t])=>
     `<button class="ctab ${COLL_TAB===k?'on':''}" onclick="collTab('${k}')">
@@ -8714,6 +8870,18 @@ function renderCollection(){
         + (ok&&gb[b.id]>1?`　<span style="color:var(--good,#39ff88);font-size:11px">×${gb[b.id]}</span>`:"");
       const hint=BADGE_HINTS[b.id]||"多換幾種活法，總有一世會領到…";
       return {ok, html:collRow(ok, false, t.ic, b.nm, tag, ok?hint:hintTip(hint), "")};
+    });
+  } else if(COLL_TAB==="perk"){
+    /* R49 開局天賦池圖鑑：純讀 SAVE.perkSeen / SAVE.perkUsed 與 R49_PERKS，未解鎖只給模糊線索 */
+    title="🃏 開局天賦池"; sub="投胎櫃台的三選一牌庫。抽到過的入冊、選用過的蓋章，沒見過的只給一句線索。";
+    got=st.k; total=R49_PERKS.length;
+    const gp=perkSeenMap(), gu=perkUsedMap();
+    items = R49_PERKS.map(p=>{
+      const ok=!!gp[p.id];
+      const tag=`　<span style="color:${R49_TIER[p.tier].col};font-size:11px">【${R49_TIER[p.tier].nm}】</span>`
+        +(gu[p.id]?`　<span style="color:var(--good,#39ff88);font-size:11px">【用過】</span>`:"");
+      return {ok, html:collRow(ok, ok&&isNewFound("k",p.id), p.ic, p.nm, tag,
+        ok?`${p.desc}<br>📌 ${p.fx}`:hintTip(p.hint), foundNote("k",p.id))};
     });
   } else if(COLL_TAB==="hidden"){
     /* R48 隱藏結局圖鑑：純讀 SAVE.hiddenEnds 與 HIDDEN_ENDINGS，未解鎖只給模糊提示不破梗 */
@@ -9785,6 +9953,11 @@ function buildBragText(style){
   const ex=lifeExtremes();
   const lines=[ lifePick(R47_OPEN[salty?"salty":"plain"], "r47open") ];
   if(b) lines.push(`🏅 ${b.tier} 稱號「${b.nm}」`);
+  // R49 本局開局天賦：沒選天賦/舊局自動省略，零 rng
+  const pk49=(S.perkId&&R49_MAP[S.perkId])||null;
+  if(pk49) lines.push(salty
+    ? `🃏 開局天賦「${pk49.nm}」——起手就不演了`
+    : `🃏 開局天賦「${pk49.nm}」`);
   lines.push(salty
     ? `⏳ 撐了 ${S.age} 年才被踢下線 · 評級 ${grade}（${sum}/500）`
     : `⏳ 享年 ${S.age} 歲 · 評級 ${grade}（${sum}/500）`);
