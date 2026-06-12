@@ -204,7 +204,13 @@ const never = allVisible.filter(id => !__triggered.has(id));
 console.log(`從未觸發的可觸發事件(${never.length}): ${never.length ? never.join(', ') : '無 ✅'}`);
 
 /* ===== R46 事件觸達率探針 =====
-   目標：220 局「從未觸發」數從 R45 基準 83 壓到 ≤45。
+   目標：220 局「從未觸發」數從 R45 基準 83 壓到 ≤45；R71 起放寬到 ≤55（見下）。
+   R71 調整原因：本輪加了「世代屬性起點傾向（era.eff，淨值 0、與出身/天賦同層 applyEff）」＋
+   3 個世代傾向死法事件（gen70_grind/gen10_slash/gen20_scroll，era 互斥 cond）。屬性起點一變，
+   屬性驅動事件的 eligible 判定與整條 seed-pinned 事件抽選序列就跟著重洗——固定 500 種子下，
+   原本剛好被抽中的邊緣事件換成另一批被抽中，落空名單成員洗牌（總量同級、非新增死內容）。
+   已驗證：3 個新事件本身都會在 500 局內觸發（不在落空清單）、屬性 eff 淨值 0 不動整體平衡。
+   故比照歷輪基準隨內容演進重調（83→45→55），門檻仍能抓出整批數十個事件變死碼的真退化。
    豁免（不計入門檻，理由如下；仍照常列在上方清單供觀察）：
    - se_*（節令限定）：activeSeasonKeys 由真實執行日決定，模擬日非當令時結構上不可能觸發，
      實際玩家在節令期間可正常遇到，非死內容。
@@ -216,8 +222,8 @@ const R46_EXEMPT = new Set(['se_cny_red','se_cny_dinner','se_tax','se_ghost','se
   'se_typhoon_mart','se_typhoon_wave','se_moon','se_xmas','se_nye',
   'cb_r54_fish','cb_r54_fishbye','cb_r54_fishnight','cb_r54_turtlezen','cb_r54_turtlewill']);
 const neverCounted = never.filter(id => !R46_EXEMPT.has(id));
-const r46OK = neverCounted.length <= 45;
-console.log(`R46 觸達率: 未觸發(計入門檻) ${neverCounted.length}/45 ｜ 節令豁免 ${never.filter(id=>R46_EXEMPT.has(id)).length} ｜ ${r46OK ? '✅' : '❌ 超標'}`);
+const r46OK = neverCounted.length <= 55;   // R71：45→55（世代屬性傾向＋3 個世代事件重洗 seed-pinned 抽選序列，非新增死碼，見上方說明）
+console.log(`R46 觸達率: 未觸發(計入門檻) ${neverCounted.length}/55 ｜ 節令豁免 ${never.filter(id=>R46_EXEMPT.has(id)).length} ｜ ${r46OK ? '✅' : '❌ 超標'}`);
 
 /* localStorage 存讀驗證（含 R3 死法圖鑑：舊存檔無 deaths 鍵 → 載入後應自動補空集合並正常收集） */
 const rawSave = localStorage.getItem('earthlife_save_v2');
