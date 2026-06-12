@@ -1185,5 +1185,97 @@ ok(r58Compat.clean, 'R58 ⑧ 開局零汙染：S.flags 無任何 r58 鍵');
 ok(r58Compat.zero, 'R58 ⑧ 未服役局零汙染：兵役鏈全段不進池');
 ok(r58Compat.guard, 'R58 ⑧ 平衡護欄：全鏈一般選項（含 br 分流）|eff| ≤ 8');
 
+// ========================================================================
+// 27) R59 人生結算分享卡＋觸達率穩定化：模板覆蓋／挑選邏輯／死法×年代文案／
+//     canvas 介面／文字版去個資／舊存檔相容／零汙染／放寬事件平衡護欄
+// ========================================================================
+const r59 = JSON.parse(vm.runInContext(`(function(){
+  const out = {};
+  /* ① 分享卡資料組裝來源：墓誌銘模板全職業/全年代覆蓋、總數 >=12 */
+  out.carCover = R50_CAREERS.every(c=>typeof R59_EPITAPH_CAREER[c.id]==='string' && R59_EPITAPH_CAREER[c.id].length>4);
+  out.eraCover = R55_ERAS.every(e=>typeof R59_EPITAPH_ERA[e.id]==='string' && R59_EPITAPH_ERA[e.id].length>4);
+  out.tplCount = Object.keys(R59_EPITAPH_CAREER).length + Object.keys(R59_EPITAPH_ERA).length;
+  /* ② 模板挑選邏輯：確定性（同一局兩次逐字一致）＋ 職業×年代窮舉全部非空、
+        且 R59 模板真的可被 lifeHash 選中 */
+  startGame(); ensureState(S);
+  S.age=80; S.cat='old'; S.deathReason='自然老死'; S.deathId=null; S.origin=null; S.flags={};
+  S.attr={hp:50,int:50,apr:50,mny:50,hap:50};
+  S.careerId='eng'; S.era='e10';
+  const e1=epitaphText(), e2=epitaphText();
+  out.det = (e1===e2) && e1.length>0;
+  /* lifeHash 不吃 careerId/era → 逐組變動 age 去除 hash 相關性，避免全有全無 */
+  let hitR59=0, allNonEmpty=true, vi=0;
+  R50_CAREERS.forEach(c=>R55_ERAS.forEach(er=>{
+    S.careerId=c.id; S.era=er.id; S.age=40+(vi++);
+    const t=epitaphText();
+    if(!t) allNonEmpty=false;
+    if(t===R59_EPITAPH_CAREER[c.id] || t===R59_EPITAPH_ERA[er.id]) hitR59++;
+  }));
+  out.pickable = allNonEmpty && hitR59>0;
+  /* ③ 各死法×各年代皆有文案（含無職業局） */
+  let catEraOK=true;
+  ['hp','old','accident','peaceful'].forEach(cat=>R55_ERAS.forEach(er=>{
+    S.cat=cat; S.era=er.id; S.careerId=null;
+    if(!epitaphText()) catEraOK=false;
+  }));
+  out.catEra = catEraOK;
+  /* ④ canvas 函式存在且參數齊、已接上 R59 欄位與開源連結 */
+  out.cvFn = (typeof makeShareCard==='function') && makeShareCard.length===0
+          && (typeof wrapText==='function') && wrapText.length>=6;
+  const src=String(makeShareCard);
+  out.cvWired = src.indexOf('epitaphText')>=0 && src.indexOf('R55_MAP')>=0 && src.indexOf('R50_MAP')>=0
+             && src.indexOf('github.com/tingyi365/earthlife')>=0 && src.indexOf('SHARE_URL')>=0;
+  /* ⑤ 文字版：含官網連結＋墓誌銘，嚴禁個資 pattern（本機路徑/使用者名/email） */
+  S.cat='old'; S.era='e10'; S.careerId='eng'; S.title='測試人'; S.deathReason='壽終正寢';
+  const txt=buildShareText();
+  out.txtUrl = txt.indexOf('earthlife.pages.dev')>=0;
+  out.txtEpi = txt.indexOf('墓誌銘')>=0;
+  /* 白名單：公開 repo URL 允許出現（tingyi365 是公開帳號非本機使用者名），剝除後再驗個資 */
+  const scrub=s=>String(s).split('github.com/tingyi365/earthlife').join('');
+  const piRe=/(C:\\\\|Users\\\\|TingYi|@gmail|8252683|AIWORK|file:\\/\\/)/i;
+  out.txtClean = !piRe.test(scrub(txt)) && !piRe.test(scrub(String(makeShareCard)));
+  /* ⑥ 舊存檔相容：無 era/careerId 鍵不炸、自動省略 */
+  let compat=true;
+  try{
+    delete S.era; delete S.careerId; ensureState(S);
+    const t3=epitaphText(), b3=buildShareText();
+    compat = t3.length>0 && b3.indexOf('earthlife.pages.dev')>=0 && b3.indexOf('undefined')<0;
+  }catch(e){ compat=false; }
+  out.compat = compat;
+  /* ⑦ 零汙染：分享層純讀（S/SAVE 快照不變）、開局無 r59 旗標 */
+  startGame(); ensureState(S);
+  S.age=60; S.cat='hp'; S.deathReason='過勞登出';
+  const snapS=JSON.stringify(S), snapSave=JSON.stringify(SAVE);
+  epitaphText(); buildShareText();
+  out.pure = snapS===JSON.stringify(S) && snapSave===JSON.stringify(SAVE);
+  out.clean = Object.keys(S.flags||{}).every(k=>k.indexOf('r59')!==0);
+  /* ⑧ 觸達率放寬平衡護欄：4 個放寬事件 |eff|<=8、w<=3、once 或旗標自帶 once */
+  const relaxed=['ex_invitation','fitness_influencer','become_grandparent','r25_midman'];
+  let guard=true;
+  relaxed.forEach(id=>{
+    const ev=EVENTS.find(x=>x.id===id);
+    if(!ev){ guard=false; return; }
+    if((ev.w||1)>3) guard=false;
+    const selfOnce = id==='become_grandparent';   /* grandparent 旗標觸發後 cond 永假 */
+    if(!(ev.once||selfOnce)) guard=false;
+    (ev.choices||[]).forEach(c=>{
+      for(const k in (c.eff||{})){ if(Math.abs(c.eff[k])>8) guard=false; }
+    });
+  });
+  out.guard = guard;
+  return JSON.stringify(out);
+})()`, sandbox));
+ok(r59.carCover && r59.eraCover, 'R59 ① 墓誌銘模板全職業(8)/全年代(6)覆蓋');
+ok(r59.tplCount>=12, `R59 ① 模板總數 ${r59.tplCount} >= 12`);
+ok(r59.det, 'R59 ② 墓誌銘確定性：同一局重複呼叫逐字一致（零 rng）');
+ok(r59.pickable, 'R59 ② 模板挑選邏輯：職業×年代窮舉非空、R59 模板可被 lifeHash 選中');
+ok(r59.catEra, 'R59 ③ 各死法×各年代皆有對應文案');
+ok(r59.cvFn && r59.cvWired, 'R59 ④ canvas 分享卡函式存在參數齊、接上年代/職業/墓誌銘/開源連結');
+ok(r59.txtUrl && r59.txtEpi, 'R59 ⑤ 文字版含官網連結＋墓誌銘');
+ok(r59.txtClean, 'R59 ⑤ 分享內容無個資 pattern（路徑/使用者名/email）');
+ok(r59.compat, 'R59 ⑥ 舊存檔相容：無 era/careerId 鍵不炸、欄位自動省略');
+ok(r59.pure && r59.clean, 'R59 ⑦ 零汙染：分享層純讀不寫 S/SAVE、無 r59 旗標殘留');
+ok(r59.guard, 'R59 ⑧ 放寬冷門事件平衡護欄：|eff|<=8、w<=3、不重複觸發');
+
 console.log(fails ? `\n結果: ❌ ${fails} 項未通過` : '\n結果: ✅ 狀態機全數正確');
 process.exit(fails ? 1 : 0);

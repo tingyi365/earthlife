@@ -3499,11 +3499,11 @@ function buildEvents(){ return [
       {label:"上台亮相，秀出成果", eff:{apr:10,hap:8,hp:-3,mny:-3}, res:"鎂光燈下你擺出 pose，自信值直接爆表，台下掌聲不斷。"},
       {label:"健康練就好，不為比賽", eff:{hp:8,hap:4}, res:"你享受健身本身，不需要獎盃來定義努力。"},
     ]},
-  {id:"fitness_influencer", stage:[20,50], w:1, cond:s=>!!s.flags.fit,
+  {id:"fitness_influencer", stage:[20,58], w:2.5, once:true, cond:s=>!!s.flags.fit||s.attr.hp>=78,   /* R59 觸達放寬＋保底：健康 78+ 視同健身有成（敘事相容）；once 保證不重複 */
     title:"健身網紅之路", text:"你的訓練影片意外被瘋傳，廠商開始找你業配健身產品。",
     meme:{scene:"maxwellcat", top:"練到一半被瘋傳", bot:"演算法替我開外掛", tag:"運氣"},
     choices:[
-      {label:"經營帳號當健身 KOL", eff:{mny:rnd(0,18),apr:6,hap:rnd(-3,8)}, flags:{influencer:true}, res:"你從健身房紅到網路，流量與蛋白粉一起進帳。"},
+      {label:"經營帳號當健身 KOL", eff:{mny:rnd(0,8),apr:6,hap:rnd(-3,8)}, flags:{influencer:true}, res:"你從健身房紅到網路，流量與蛋白粉一起進帳。"},
       {label:"享受運動就好，不想紅", eff:{hap:6,hp:4}, res:"你把鏡頭收起來，繼續安靜地跟啞鈴談戀愛。"},
     ]},
 
@@ -4527,7 +4527,7 @@ function buildEvents(){ return [
       {label:"一見如故，火花四射", eff:{hap:14,apr:4}, flags:{marital:"married",married:true}, chain:"married", res:"❤️ 兩人聊到打烊都捨不得走，這場右滑直接滑出了一段姻緣，感情狀態：已婚。"},
       {label:"尬聊一小時，禮貌道別", eff:{hap:-4,int:4}, res:"現場安靜得能聽見冰塊融化，你們客氣地說『再聯絡』，然後再也沒聯絡。"},
     ]},
-  {id:"ex_invitation", stage:[25,45], w:1, cond:isSingle,
+  {id:"ex_invitation", stage:[22,50], w:2.4, once:true, cond:isSingle,   /* R59 觸達放寬：窗加寬＋權重升；once 保證不重複觸發 */
     title:"前任的喜帖", text:"信箱裡躺著一張燙金喜帖，新郎/新娘的名字，正是那個你曾經以為是一輩子的人。",
     meme:{scene:"heartbreak", top:"收到前任的喜帖", bot:"祝你幸福 (內心淌血)", tag:"感情"},
     choices:[
@@ -4688,11 +4688,11 @@ function buildEvents(){ return [
       {label:"相信孩子，掏錢支持", eff:{mny:rnd(-18,6),hap:6}, res:"你選擇當孩子最堅實的後盾，把養老金的一角押了下去，成敗都是一場修行。"},
       {label:"借可以，但要簽借據談清楚", eff:{int:6,mny:-5,hap:rnd(-2,4)}, res:"你公事公辦地立了字據，醜話講在前頭，親情歸親情，金錢的歸金錢。"},
     ]},
-  {id:"become_grandparent", stage:[55,72], w:2, cond:s=>!!s.flags.haskid && !s.flags.grandparent,
+  {id:"become_grandparent", stage:[50,78], w:3, cond:s=>!!s.flags.haskid && !s.flags.grandparent,   /* R59 觸達放寬：窗加寬＋權重升；grandparent 旗標自帶 once */
     title:"升格當阿公阿嬤", text:"孩子打電話來報喜：『要當阿公/阿嬤囉！』你愣了三秒，然後笑得合不攏嘴。",
     meme:{scene:"babynew", top:"恭喜升格阿公阿嬤", bot:"含飴弄孫 vs 免費保母", tag:"子女"},
     choices:[
-      {label:"熱情幫忙顧孫，享天倫", eff:{hap:10,hp:-4}, flags:{grandparent:true}, res:"你重操舊業當起免費保母，腰痠背痛卻甘之如飴，孫子的笑容是最強止痛藥。"},
+      {label:"熱情幫忙顧孫，享天倫", eff:{hap:8,hp:-4}, flags:{grandparent:true}, res:"你重操舊業當起免費保母，腰痠背痛卻甘之如飴，孫子的笑容是最強止痛藥。"},
       {label:"保持距離，當個優雅長輩", eff:{hap:6,hp:2}, flags:{grandparent:true}, res:"你選擇偶爾探望、把屎把尿留給年輕人，當個出現時發紅包的傳說級長輩。"},
     ]},
 
@@ -5950,7 +5950,7 @@ function buildEvents(){ return [
       {label:"接通告，老天賞飯就開吃", eff:{mny:12,apr:4,hap:4,hp:-4}, flags:{doublecrown:true}, inc:"r25ev", res:"你上節目金句連發、顏值還扛住了 4K 鏡頭，片段被剪成短影音瘋傳。留言區吵成一團：一半說『靠臉』、一半說『靠腦』——只有你知道，你是靠通告費。"},
       {label:"低調婉拒，美貌與智慧都不外流", eff:{int:4,hap:4}, inc:"r25ev", res:"你回了句『不方便露臉』繼續過日子。朋友罵你浪費天賦，你聳聳肩：『天賦又不會過期，但安靜的日子會。』"},
     ]},
-  {id:"r25_midman", stage:[30,60], w:2.5, once:true, cond:s=>["hp","int","apr","mny","hap"].every(k=>s.attr[k]>=45&&s.attr[k]<=60),
+  {id:"r25_midman", stage:[25,62], w:3, once:true, cond:s=>["hp","int","apr","mny","hap"].every(k=>s.attr[k]>=40&&s.attr[k]<=68),   /* R59 觸達放寬：中位帶 45-60→40-68、窗加寬（仍是「最中間的人」語意，70 不進池保 gating） */
     title:"全國最中間的人", text:"民調公司打來：經過大數據比對，你的五圍數值精準落在全國中位數，是官方認證『最具代表性的普通人』，想請你當年度民調樣本代言人。",
     meme:{scene:"huhcat", top:"全國最中間的人", bot:"普通到被官方認證", tag:"屬性際遇"},
     choices:[
@@ -9604,8 +9604,8 @@ function screenSummary(cat){
         <button class="btn" onclick="copyBragText(this,'plain')">⚡ 複製精華戰績（正經版 · 短到限動都放得下）</button>
         <button class="btn" onclick="copyBragText(this,'salty')">🌶️ 複製精華戰績（靠北版 · 貼群必引戰）</button>
         <button class="btn" onclick="copyRoastCard(this)">🃏 一鍵複製分享卡（台味嘲諷版，貼群比慘）</button>
-        <button class="btn" onclick="copyShareTextCard(this)">📇 一鍵分享文字卡（含墓誌銘＋種子碼）</button>
-        <button class="btn" onclick="makeShareCard()">📤 生成分享卡（存圖丟群）</button>
+        <button class="btn" onclick="makeShareCard()">📤 分享這個人生（人生回顧卡 PNG，存圖丟群）</button>
+        <button class="btn" onclick="copyShareTextCard(this)">📇 複製文字版（墓誌銘＋連結，貼社群嗆人）</button>
         <button class="btn" onclick="copyTextReport(this)">📣 複製人生戰報（稱號＋名場面，貼群組嗆人）</button>
         <button class="btn" onclick="copyShareLink()">🔗 複製比拼連結，嗆朋友</button>
         <button class="btn sec" onclick="screenTimeline()">📜 人生回顧（大事時間軸）</button>
@@ -10443,7 +10443,7 @@ function wrapText(ctx,text,x,y,maxW,lineH,max){
 function makeShareCard(){
   try{
     if(!S){ alert("沒有可分享的人生資料"); return; }
-    const W=540,H=960;
+    const W=540,H=1060;   /* R59：加高容納年代職業列＋墓誌銘 */
     const dpr=(typeof window!=="undefined"&&window.devicePixelRatio)||1;
     const cv=document.createElement('canvas');
     cv.width=W*dpr; cv.height=H*dpr; cv.style.width=W+"px"; cv.style.height=H+"px";
@@ -10471,11 +10471,26 @@ function makeShareCard(){
 
     // 享年 + 評級
     ctx.fillStyle='#ffd24a'; ctx.font='20px monospace';
-    ctx.fillText(`享年 ${S.age} 歲　·　${grade} 級（${sum}/500）`, W/2, y); y+=34;
+    ctx.fillText(`享年 ${S.age} 歲　·　${grade} 級（${sum}/500）`, W/2, y); y+=30;
+
+    // R59 年代 × 職業（缺鍵自動省略，舊存檔/早夭局不炸）
+    const r59era=(S.era&&R55_MAP[S.era])?(R55_MAP[S.era].ic+" "+R55_MAP[S.era].nm):"";
+    const r59car=(S.careerId&&R50_MAP[S.careerId])?(R50_MAP[S.careerId].ic+" "+R50_MAP[S.careerId].nm):"";
+    if(r59era||r59car){
+      ctx.fillStyle='#9fb4ff'; ctx.font='14px monospace';
+      ctx.fillText([r59era,r59car].filter(Boolean).join("　·　"), W/2, y); y+=26;
+    }
 
     // 死因
     ctx.fillStyle='#ff9aa8'; ctx.font='15px monospace';
-    y=wrapText(ctx, '☠ '+stripTags(S.deathReason||''), W/2, y, W-70, 21, 3)+10;
+    y=wrapText(ctx, '☠ '+stripTags(S.deathReason||''), W/2, y, W-70, 21, 3)+6;
+
+    // R59 墓誌銘（lifeHash 雜湊定選，同種子同句，零 rng）
+    const r59epi=epitaphText();
+    if(r59epi){
+      ctx.fillStyle='#ffe9a8'; ctx.font='italic 13.5px monospace';
+      y=wrapText(ctx, '🕯「'+r59epi+'」', W/2, y, W-76, 20, 3)+10;
+    }
 
     // 五屬性 bar
     ctx.textAlign='left';
@@ -10514,9 +10529,12 @@ function makeShareCard(){
     // 嘲諷標語 + 網址（底部固定）
     ctx.textAlign='center';
     ctx.fillStyle='#ffd24a'; ctx.font='bold 17px monospace';
-    ctx.fillText('你能活得比他慘嗎？', W/2, H-70);
+    ctx.fillText('你能活得比他慘嗎？', W/2, H-78);
     ctx.fillStyle='#7fffc4'; ctx.font='14px monospace';
-    ctx.fillText('▶ '+SHARE_URL, W/2, H-42);
+    ctx.fillText('▶ '+SHARE_URL, W/2, H-50);
+    /* R59 開源小字（公開 repo URL，非個資） */
+    ctx.fillStyle='rgba(207,211,230,0.7)'; ctx.font='11px monospace';
+    ctx.fillText('open source · github.com/tingyi365/earthlife', W/2, H-26);
 
     const url=cv.toDataURL('image/png');
     showShareOverlay(url);
@@ -10826,11 +10844,34 @@ const EPITAPH_GENERAL = [
   "這裡躺著一位地球 Online 玩家：上線、努力、登出，全勤。",
   "他不是離開了，只是換了一個不用繳房租的地方住。",
 ];
+/* ---- R59 墓誌銘擴充：依職業(R50)/年代(R55) 台味自嘲模板，全職業全年代覆蓋，
+   雜湊定選零 rng；舊存檔缺 careerId/era 鍵自動跳過不炸 ---- */
+const R59_EPITAPH_CAREER = {
+  eng:   "他這輩子修好了無數的 bug，最後把自己 deploy 上雲端，永不 rollback。",
+  gov:   "鐵飯碗端了一輩子，總算核准了人生最後一件公文——本案准予結案，免會辦。",
+  live:  "直播了一輩子，這是他第一次下播沒說『明天同一時間見』。記得開啟小鈴鐺。",
+  stall: "這一攤他擺了一輩子，最後一次收攤熄燈，整條巷子的宵夜替他默哀三分鐘。",
+  drama: "八點檔編劇長眠於此——他寫過一百種死法，輪到自己這一集，收視率最高。",
+  temple:"廟公功德圓滿，轉任地方仙界服務窗口——以後擲筊，他本人親自回覆。",
+  sales: "業務王人生最後一張保單是自己的——理賠秒速通關，服務真的做到家。",
+  coach: "健身教練長眠於此，核心依然穩定。教練說過：休息也是訓練，這次他練好練滿。",
+};
+const R59_EPITAPH_ERA = {
+  e70: "從客廳即工場一路拚到人生收工，他這代人連休息都要排產線——現在正式停機保養。",
+  e80: "生於解嚴前後，活在百無禁忌，最後在這裡學會人生最終極的自由：已讀不回。",
+  e90: "錢淹腳目他只趕上尾聲，泡沫破掉他全程在場——至少腳下這塊，再也不會跌停。",
+  e00: "撥接長大的孩子完成了最後一次斷線——這次沒有重連音，但訊號從此永遠滿格。",
+  e10: "22K 世代正式畢業。房子沒買成，但這個一坪不到的位置：永久產權，免頭期。",
+  e20: "與 AI 同梯的他先行登出——這是他這輩子唯一確定不會被 AI 取代的一件事。",
+};
 function epitaphText(){
   if(!S || !S.attr) return "";
   const a=S.attr, f=S.flags||{}, cat=S.cat||"", age=S.age||0;
   const oid=S.origin?S.origin.id:"";
   const pool=[];
+  /* R59 職業/年代向（缺鍵自動省略，零 rng；放最前讓冷門模板有曝光機會，仍由 lifeHash 定選） */
+  if(S.careerId && R59_EPITAPH_CAREER[S.careerId]) pool.push(R59_EPITAPH_CAREER[S.careerId]);
+  if(S.era && R59_EPITAPH_ERA[S.era]) pool.push(R59_EPITAPH_ERA[S.era]);
   /* 死法向 */
   if(cat==="hp") pool.push(
     "這裡躺著一位準時上班、過勞下班的好員工——終於請到一個永遠的長假。",

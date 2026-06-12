@@ -118,7 +118,7 @@ sandbox.__rec = function (id) {
 };
 
 /* ---- 模擬 N 局 ---- */
-const N = 220;
+const N = 300;   /* R59：220→300 降低觸達率統計抖動（僅此一項調整） */
 for (let life = 0; life < N; life++) {
   try {
     sandbox.__startGame();
