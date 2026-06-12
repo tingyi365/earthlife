@@ -1559,5 +1559,146 @@ const r61Clean = JSON.parse(vm.runInContext(`(function(){
 })()`, sandbox));
 ok(r61Clean.clean, 'R61 ⑨ 零汙染：開局 S.flags 無任何 r61 鍵');
 
+// ========================================================================
+// 30) R62 台味醫療健保人生事件鏈：結構護欄／諱疾忌醫計數／年代分流／理財與飲食回扣／
+//     死法收錄與確定性觸發／成就正反例／舊存檔相容／零汙染
+// ========================================================================
+// ① 結構護欄：8 事件齊備、全 once、stage 覆蓋童年到老年、|eff|<=8（含 br 分流）、w<=3、保底註冊
+const r62St = JSON.parse(vm.runInContext(`(function(){
+  const ids=['r62_vaccine','r62_clinic','r62_nhicard','r62_radio','r62_er','r62_checkup','r62_hospital','r62_eldercare'];
+  const evs=ids.map(id=>EVENTS.find(e=>e.id===id));
+  const out={};
+  out.all = evs.every(e=>e && e.once && (e.w||1)<=3 && e.stage && e.choices.length>=3);
+  out.span = evs[0].stage[0]<=8 && evs[7].stage[1]>=80;
+  out.guard = evs.every(e=>e.choices.every(c=>{
+    const effs=[c.eff||{}]; if(c.br){effs.push(c.br.hi.eff||{},c.br.lo.eff||{});}
+    return effs.every(o=>Object.values(o).every(v=>Math.abs(v)<=8));
+  }));
+  out.milestone = R46_MILESTONE.r62_checkup===48 && R46_MILESTONE.r62_eldercare===74;
+  return JSON.stringify(out);
+})()`, sandbox));
+ok(r62St.all && r62St.span, 'R62 ① 8 事件齊備全 once、stage 覆蓋童年到老年');
+ok(r62St.guard, 'R62 ① 平衡護欄：單選項 |eff|<=8（含 br 分流）、w<=3');
+ok(r62St.milestone, 'R62 ① 健檢/長照 R46 保底註冊（童年預防針/求學診所不配保底零擠壓）');
+// ② 諱疾忌醫隱性計數：inc 落地、急診/健檢升級選項門檻鎖定與解鎖、及早就醫安心旗標
+const r62Delay = JSON.parse(vm.runInContext(`(function(){
+  const out={};
+  startGame(); S.age=12; S.flags={}; ensureState(S);
+  showEvent(EVENTS.find(e=>e.id==='r62_clinic')); choose(1);
+  out.one = S.flags.r62_delay===1;
+  const er=EVENTS.find(e=>e.id==='r62_er');
+  out.erLocked = er.choices[1].cond({flags:{r62_delay:1}})===false;
+  out.erOpen = er.choices[1].cond({flags:{r62_delay:2}})===true;
+  const cu=EVENTS.find(e=>e.id==='r62_checkup');
+  out.dragLocked = cu.choices[4].cond({flags:{r62_delay:2}})===false;
+  out.dragOpen = cu.choices[4].cond({flags:{r62_delay:3}})===true;
+  startGame(); S.age=30; S.flags={}; ensureState(S);
+  showEvent(EVENTS.find(e=>e.id==='r62_nhicard')); choose(2);
+  out.early = S.flags.r62_early===true && !S.flags.r62_delay;
+  startGame(); S.age=40; S.flags={r62_early:true}; ensureState(S);
+  showEvent(EVENTS.find(e=>e.id==='r62_checkup')); choose(1);
+  out.green = S.flags.r62_allgreen===true;
+  return JSON.stringify(out);
+})()`, sandbox));
+ok(r62Delay.one, 'R62 ② 小病拖延 inc r62_delay 諱疾忌醫計數落地（診所烙跑）');
+ok(r62Delay.erLocked && r62Delay.erOpen && r62Delay.dragLocked && r62Delay.dragOpen, 'R62 ② 急診升級(>=2)/健檢終局(>=3) 計數門檻鎖定與解鎖');
+ok(r62Delay.early && r62Delay.green, 'R62 ② 及早就醫 r62_early 落地 → 健檢安心分支落 r62_allgreen');
+// ③ R55 年代分流：勸長輩買藥（早年電台賣藥 vs 近年長輩群組團購，互斥絕緣，舊存檔無 era 鍵不炸）
+const md70 = vm.runInContext(`__choiceHTML('r62_radio', s=>{s.era='e70';}, 50)`, sandbox);
+const md10 = vm.runInContext(`__choiceHTML('r62_radio', s=>{s.era='e10';}, 50)`, sandbox);
+const md90 = vm.runInContext(`__choiceHTML('r62_radio', s=>{s.era='e90';}, 50)`, sandbox);
+const mdOld = vm.runInContext(`__choiceHTML('r62_radio', s=>{delete s.era;}, 50)`, sandbox);
+ok(md70.includes('電台賣藥世代限定') && !md70.includes('長輩群組世代限定'), 'R62 ③ e70 顯示電台賣藥、長輩群組絕緣');
+ok(md10.includes('長輩群組世代限定') && !md10.includes('電台賣藥世代限定'), 'R62 ③ e10 顯示長輩群組、電台賣藥絕緣');
+ok(!md90.includes('世代限定') && !mdOld.includes('世代限定') && mdOld.includes('長輩開心就好'), 'R62 ③ e90/舊存檔無 era 鍵：年代選項皆絕緣、基本選項照常');
+// ④ R57 理財回扣：人情保單落 r57_inspolicy、住院醫療附約理賠分支現身與落地
+const r62Fin = JSON.parse(vm.runInContext(`(function(){
+  const out={};
+  out.src = EVENTS.find(e=>e.id==='r57_polins').choices[1].flags.r57_inspolicy===true;
+  const h0=__choiceHTML('r62_hospital', s=>{}, 60);
+  const h1=__choiceHTML('r62_hospital', s=>{s.flags.r57_inspolicy=true;}, 60);
+  out.hidden = !h0.includes('人情保單限定');
+  out.shown = h1.includes('人情保單限定');
+  startGame(); S.age=60; S.flags={r57_inspolicy:true}; ensureState(S);
+  showEvent(EVENTS.find(e=>e.id==='r62_hospital')); choose(2);
+  out.flag = S.flags.r62_payout===true;
+  return JSON.stringify(out);
+})()`, sandbox));
+ok(r62Fin.src && r62Fin.hidden && r62Fin.shown, 'R62 ④ 住院理賠分支：沒簽保單隱藏、R57 人情保單旗標現身');
+ok(r62Fin.flag, 'R62 ④ 醫療附約理賠落地 r62_payout（理財記憶回扣 R57）');
+// ⑤ R61 飲食回扣：手搖成癮計數高者健檢紅字加料文案（boba>=3 現身、<3 絕緣）
+const r62Boba = JSON.parse(vm.runInContext(`(function(){
+  const out={};
+  const h0=__choiceHTML('r62_checkup', s=>{s.flags.r61_boba=2;}, 40);
+  const h1=__choiceHTML('r62_checkup', s=>{s.flags.r61_boba=3;}, 40);
+  out.hidden = !h0.includes('糖分老饕限定');
+  out.shown = h1.includes('糖分老饕限定');
+  return JSON.stringify(out);
+})()`, sandbox));
+ok(r62Boba.hidden && r62Boba.shown, 'R62 ⑤ 健檢紅字加料：手搖成癮 2 杯絕緣、3 杯現身（飲食回扣 R61）');
+// ⑥ 死法圖鑑收錄＋屬性門檻確定性觸發＋活路零誤殺
+const r62Death = JSON.parse(vm.runInContext(`(function(){
+  const out={};
+  out.book = ['sickdrag','nhirun'].every(id=>DEATHBOOK.some(d=>d.id===id&&d.rare&&d.hint.length>4) && !!SPECIAL_DEATHS[id]);
+  const nh=EVENTS.find(e=>e.id==='r62_nhicard'), ri=nh.choices.findIndex(c=>c.special==='r62_run');
+  startGame(); S.age=35; S.flags={}; ensureState(S); S.attr.hp=9;
+  showEvent(nh); choose(ri);
+  out.rDying = S.flags.specialDeath==='nhirun';
+  die('choice');
+  out.rDead = !S.alive && S.deathId==='nhirun' && !!SAVE.deaths.nhirun;
+  startGame(); S.age=35; S.flags={}; ensureState(S); S.attr.hp=70;
+  showEvent(EVENTS.find(e=>e.id==='r62_nhicard')); choose(ri);
+  out.rAlive = S.alive===true && !S.flags.specialDeath && S.flags.r62_runking===true;
+  const cu=EVENTS.find(e=>e.id==='r62_checkup'), di=cu.choices.findIndex(c=>c.special==='r62_drag');
+  startGame(); S.age=45; S.flags={r62_delay:3}; ensureState(S); S.attr.hp=10;
+  showEvent(cu); choose(di);
+  out.dDying = S.flags.specialDeath==='sickdrag';
+  die('choice');
+  out.dDead = !S.alive && S.deathId==='sickdrag' && !!SAVE.deaths.sickdrag;
+  startGame(); S.age=45; S.flags={r62_delay:3}; ensureState(S); S.attr.hp=70;
+  showEvent(EVENTS.find(e=>e.id==='r62_checkup')); choose(di);
+  out.dAlive = S.alive===true && !S.flags.specialDeath && S.flags.r62_survivor===true;
+  return JSON.stringify(out);
+})()`, sandbox));
+ok(r62Death.book, 'R62 ⑥ sickdrag/nhirun 收錄進死法圖鑑（rare＋模糊提示）');
+ok(r62Death.rDying && r62Death.rDead, 'R62 ⑥ 體力見底健保卡逛三科 → 逛院過勞全流程＋跨局收集');
+ok(r62Death.rAlive, 'R62 ⑥ 體力正常逛三科：活路分支（r62_runking 落地、零誤殺）');
+ok(r62Death.dDying && r62Death.dDead, 'R62 ⑥ 諱疾忌醫拉滿＋體力見底不回診 → 諱疾忌醫全流程＋跨局收集');
+ok(r62Death.dAlive, 'R62 ⑥ 體力正常硬拖：活路分支（r62_survivor 落地、零誤殺）');
+// ⑦ 新成就 ×3：check 正反例＋獵人提示齊備
+const r62Ach = JSON.parse(vm.runInContext(`(function(){
+  const out={};
+  out.model = ACH_MAP.r62_model.check({S:{flags:{r62_early:true}}, age:60});
+  out.modelNeg = !ACH_MAP.r62_model.check({S:{flags:{r62_early:true,r62_delay:1}}, age:60}) && !ACH_MAP.r62_model.check({S:{flags:{}}, age:60});
+  out.iron = ACH_MAP.r62_irontooth.check({S:{flags:{r62_delay:3}}, age:70});
+  out.ironNeg = !ACH_MAP.r62_irontooth.check({S:{flags:{r62_delay:2}}, age:80}) && !ACH_MAP.r62_irontooth.check({S:{flags:{r62_delay:3}}, age:69});
+  out.green = ACH_MAP.r62_allgreen.check({S:{flags:{r62_allgreen:true}}, age:85});
+  out.greenNeg = !ACH_MAP.r62_allgreen.check({S:{flags:{r62_allgreen:true}}, age:80}) && !ACH_MAP.r62_allgreen.check({S:{flags:{}}, age:90});
+  out.hints = ['r62_model','r62_irontooth','r62_allgreen'].every(id=>ACH_MAP[id]&&ACH_MAP[id].hint&&ACH_MAP[id].hint.length>4);
+  return JSON.stringify(out);
+})()`, sandbox));
+ok(r62Ach.model && r62Ach.modelNeg, 'R62 ⑦ 成就「健保模範生」：及早就醫＋零拖延解鎖、有拖延或無旗標不解鎖');
+ok(r62Ach.iron && r62Ach.ironNeg, 'R62 ⑦ 成就「鐵齒人生」：拖滿 3 次＋活過 70 解鎖、計數或年齡不足不解鎖');
+ok(r62Ach.green && r62Ach.greenNeg, 'R62 ⑦ 成就「健檢全綠」：全綠旗標＋85 歲解鎖、年齡或旗標不足不解鎖');
+ok(r62Ach.hints, 'R62 ⑦ 三個新成就獵人提示齊備');
+// ⑧ 舊存檔相容：無 r62 鍵的舊存檔經 ensureState 補鍵後 cond/成就/門檻選項全不炸不誤觸
+const r62Compat = JSON.parse(vm.runInContext(`(function(){
+  const out={};
+  startGame(); S.age=40; S.flags={employed:true}; ensureState(S);
+  out.cond = EVENTS.find(e=>e.id==='r62_er').choices[1].cond(S)===false && EVENTS.find(e=>e.id==='r62_checkup').choices[4].cond(S)===false;
+  out.ach = !ACH_MAP.r62_model.check({S:S,age:80}) && !ACH_MAP.r62_irontooth.check({S:S,age:80}) && !ACH_MAP.r62_allgreen.check({S:S,age:90});
+  const h=__choiceHTML('r62_checkup', s=>{}, 40);
+  out.gateHidden = !h.includes('諱疾忌醫限定') && !h.includes('定檢模範限定') && !h.includes('糖分老饕限定');
+  return JSON.stringify(out);
+})()`, sandbox));
+ok(r62Compat.cond, 'R62 ⑧ 舊存檔相容：ensureState 後無計數鍵、升級/終局 cond 不開');
+ok(r62Compat.ach && r62Compat.gateHidden, 'R62 ⑧ 舊存檔無 r62 鍵：成就不誤觸、門檻選項全隱藏');
+// ⑨ 零汙染：開局無 r62 旗標、不選不沾
+const r62Clean = JSON.parse(vm.runInContext(`(function(){
+  startGame();
+  return JSON.stringify({clean:Object.keys(S.flags).every(k=>k.indexOf('r62')!==0)});
+})()`, sandbox));
+ok(r62Clean.clean, 'R62 ⑨ 零汙染：開局 S.flags 無任何 r62 鍵');
+
 console.log(fails ? `\n結果: ❌ ${fails} 項未通過` : '\n結果: ✅ 狀態機全數正確');
 process.exit(fails ? 1 : 0);

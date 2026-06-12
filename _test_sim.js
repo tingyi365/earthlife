@@ -1470,10 +1470,14 @@ try {
     out.arcNote = arc.length===1 && /巔峰 \\d+/.test(arc[0].txt) && /谷底 \\d+/.test(arc[0].txt);
     /* ⑥ 成就 */
     delete SAVE.ach.r44_fullgauge;
-    startGame(); S.age=40; S.flags={}; ensureState(S); S.attr.int=99;
+    /* R62 根治 flaky：startGame() 開局屬性未種子化，偶發開到 100 誤觸 r44_fullgauge 翻車反例——
+       開局後先把五圍全部釘死在固定中間值，再設受測屬性，反例判定零隨機 */
+    startGame(); S.age=40; S.flags={}; ensureState(S);
+    ['hp','int','apr','mny','hap'].forEach(k=>{ S.attr[k]=50; }); S.attr.int=99;
     const oR1=rng; rng=()=>0.5; die(); rng=oR1;
     out.fullNeg = !SAVE.ach.r44_fullgauge;
-    startGame(); S.age=40; S.flags={}; ensureState(S); S.attr.int=100;
+    startGame(); S.age=40; S.flags={}; ensureState(S);
+    ['hp','int','apr','mny','hap'].forEach(k=>{ S.attr[k]=50; }); S.attr.int=100;
     const oR2=rng; rng=()=>0.5; die(); rng=oR2;
     out.fullAch = SAVE.ach.r44_fullgauge===true;
     delete SAVE.ach.r44_evenkeel;
