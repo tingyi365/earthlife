@@ -2161,5 +2161,173 @@ const r65Clean = JSON.parse(vm.runInContext(`(function(){
 })()`, sandbox));
 ok(r65Clean.clean, 'R65 ⑩ 零汙染：開局 S.flags 無任何 r65 鍵');
 
+// ========================================================================
+// 34) R66 台味網路鄉民人生事件鏈：結構護欄／鍵盤vs現充互斥／隱性計數／
+//     年代分流／理財回扣／職業回扣／死法確定性與零誤殺／成就正反例／舊存檔相容／零汙染／獵人提示
+// ========================================================================
+// ① 結構護欄：9 事件齊備、全 once、|eff|<=8、w<=3、保底註冊（童年/寬窗口段不配保底）
+const r66St = JSON.parse(vm.runInContext(`(function(){
+  const ids=['r66_first','r66_cafe','r66_forum','r66_gacha','r66_shopfest','r66_war','r66_stream','r66_detox','r66_old'];
+  const evs=ids.map(id=>EVENTS.find(e=>e.id===id));
+  const out={};
+  out.all = evs.every(e=>e && e.once && (e.w||1)<=3 && e.stage && e.choices.length>=3);
+  out.span = evs[0].stage[0]<=10 && evs[8].stage[1]>=78;
+  out.guard = evs.every(e=>e.choices.every(c=>{
+    const effs=[c.eff||{}]; if(c.br){effs.push(c.br.hi.eff||{},c.br.lo.eff||{});}
+    return effs.every(o=>Object.values(o).every(v=>Math.abs(v)<=8));
+  }));
+  out.milestone = ids.every(id=>R46_MILESTONE[id]===undefined);
+  return JSON.stringify(out);
+})()`, sandbox));
+ok(r66St.all && r66St.span, 'R66 ① 9 事件齊備全 once、stage 覆蓋童年第一次上網到老年總清算');
+ok(r66St.guard, 'R66 ① 平衡護欄：單選項 |eff|<=8、w<=3');
+ok(r66St.milestone, 'R66 ① 全段走自然池零保底（中年年槽已緊、避免擠壓既有邊緣事件）');
+// ② 鍵盤人生 vs 現充線互斥：r66_net>=5 走鍵盤、<5 走現充（cond 互斥、旗標落地）
+const r66Br = JSON.parse(vm.runInContext(`(function(){
+  const out={};
+  const oc=EVENTS.find(e=>e.id==='r66_old');
+  const kb=oc.choices[0], rl=oc.choices[1];
+  out.kbOpen = kb.cond({flags:{r66_net:5}})===true && kb.cond({flags:{r66_net:7}})===true;
+  out.kbLock = kb.cond({flags:{r66_net:4}})===false && kb.cond({flags:{}})===false;
+  out.rlOpen = rl.cond({flags:{}})===true && rl.cond({flags:{r66_net:4}})===true;
+  out.rlLock = rl.cond({flags:{r66_net:5}})===false;
+  startGame(); S.age=70; S.flags={r66_net:5}; ensureState(S);
+  showEvent(oc); choose(0);
+  out.kbFlag = S.flags.r66_oldnet===true && !S.flags.r66_oldreal;
+  startGame(); S.age=70; S.flags={}; ensureState(S);
+  showEvent(oc); choose(1);
+  out.rlFlag = S.flags.r66_oldreal===true && !S.flags.r66_oldnet;
+  return JSON.stringify(out);
+})()`, sandbox));
+ok(r66Br.kbOpen && r66Br.kbLock && r66Br.rlOpen && r66Br.rlLock, 'R66 ② 老年分流 cond：沉迷 5+ 開鍵盤線、<5 開現充線、互斥絕緣');
+ok(r66Br.kbFlag && r66Br.rlFlag, 'R66 ② 鍵盤線落 r66_oldnet、現充線落 r66_oldreal（互斥落地）');
+// ③ 隱性計數：沉迷度 r66_net／聲量 r66_fame 跨事件獨立累積
+const r66Cnt = JSON.parse(vm.runInContext(`(function(){
+  const out={};
+  startGame(); S.age=20; S.flags={}; ensureState(S);
+  showEvent(EVENTS.find(e=>e.id==='r66_forum')); choose(0);
+  out.n1 = S.flags.r66_net===1 && !S.flags.r66_fame;
+  S.age=25; showEvent(EVENTS.find(e=>e.id==='r66_gacha')); choose(0);
+  out.n2 = S.flags.r66_net===2;
+  S.age=30; showEvent(EVENTS.find(e=>e.id==='r66_war')); choose(0);
+  out.n3 = S.flags.r66_net===3;
+  showEvent(EVENTS.find(e=>e.id==='r66_stream')); choose(1);
+  out.fame = S.flags.r66_fame===1 && S.flags.r66_net===3;
+  return JSON.stringify(out);
+})()`, sandbox));
+ok(r66Cnt.n1 && r66Cnt.n2 && r66Cnt.n3, 'R66 ③ 沉迷度 r66_net 跨事件（嘴砲/課金/筆戰）獨立累積');
+ok(r66Cnt.fame, 'R66 ③ 聲量 r66_fame 獨立計數、不污染沉迷度');
+// ④ R55 年代分流 ×2：第一次上網（e70/e80 撥接 BBS vs e10/e20 短影音）＋剁手節（電視購物 vs 直播帶貨）
+const nf70 = vm.runInContext(`__choiceHTML('r66_first', s=>{s.era='e70';}, 14)`, sandbox);
+const nf10 = vm.runInContext(`__choiceHTML('r66_first', s=>{s.era='e10';}, 14)`, sandbox);
+const nfOld = vm.runInContext(`__choiceHTML('r66_first', s=>{delete s.era;}, 14)`, sandbox);
+ok(nf70.includes('撥接世代限定') && !nf70.includes('短影音世代限定'), 'R66 ④ e70 顯示撥接 BBS、短影音絕緣');
+ok(nf10.includes('短影音世代限定') && !nf10.includes('撥接世代限定'), 'R66 ④ e10 顯示短影音、撥接絕緣');
+ok(!nfOld.includes('世代限定') && nfOld.includes('電腦課'), 'R66 ④ 舊存檔無 era 鍵：年代選項皆絕緣、基本選項照常');
+const sf80 = vm.runInContext(`__choiceHTML('r66_shopfest', s=>{s.era='e80';}, 30)`, sandbox);
+const sf20 = vm.runInContext(`__choiceHTML('r66_shopfest', s=>{s.era='e20';}, 30)`, sandbox);
+ok(sf80.includes('電視購物世代限定') && !sf80.includes('直播帶貨世代限定'), 'R66 ④ e80 剁手節顯示電視購物、直播帶貨絕緣');
+ok(sf20.includes('直播帶貨世代限定') && !sf20.includes('電視購物世代限定'), 'R66 ④ e20 剁手節顯示直播帶貨、電視購物絕緣');
+// ⑤ R57 理財回扣：股海老手（r57_leekwin）→ 課金 vs 零股資金排擠分支現身與落地
+const r66Fin = JSON.parse(vm.runInContext(`(function(){
+  const out={};
+  const h0=__choiceHTML('r66_gacha', null, 25);
+  const h1=__choiceHTML('r66_gacha', s=>{s.flags.r57_leekwin=true;}, 25);
+  out.hidden = !h0.includes('股海老手限定');
+  out.shown = h1.includes('股海老手限定');
+  const gc=EVENTS.find(e=>e.id==='r66_gacha');
+  const si=gc.choices.findIndex(c=>String(c.label).includes('股海老手限定'));
+  startGame(); S.age=25; S.flags={r57_leekwin:true}; ensureState(S);
+  showEvent(gc); choose(si);
+  out.flag = S.flags.r66_savewin===true && !S.flags.r66_whale && !S.flags.r66_net;
+  return JSON.stringify(out);
+})()`, sandbox));
+ok(r66Fin.hidden && r66Fin.shown, 'R66 ⑤ 零股分支：無股海戰果隱藏、r57_leekwin 現身（回扣 R57）');
+ok(r66Fin.flag, 'R66 ⑤ 課金預算轉零股落地 r66_savewin、不沾沉迷度');
+// ⑥ R50 職業回扣：工程師寫扣（careerId==='eng'）→ 查證機器人分支現身與落地
+const r66Job = JSON.parse(vm.runInContext(`(function(){
+  const out={};
+  const hEng=__choiceHTML('r66_war', s=>{s.careerId='eng';}, 30);
+  const hGov=__choiceHTML('r66_war', s=>{s.careerId='gov';}, 30);
+  out.shown = hEng.includes('工程師寫扣限定');
+  out.hidden = !hGov.includes('工程師寫扣限定');
+  const wc=EVENTS.find(e=>e.id==='r66_war');
+  const ei=wc.choices.findIndex(c=>String(c.label).includes('工程師寫扣限定'));
+  startGame(); S.age=30; S.flags={}; S.careerId='eng'; ensureState(S);
+  showEvent(wc); choose(ei);
+  out.flag = S.flags.r66_codewar===true && S.flags.r66_fame===1 && !S.flags.r66_net;
+  return JSON.stringify(out);
+})()`, sandbox));
+ok(r66Job.shown && r66Job.hidden, 'R66 ⑥ 工程師查證機器人：eng 現身、其他職業絕緣（回扣 R50）');
+ok(r66Job.flag, 'R66 ⑥ 寫扣打筆戰落地 r66_codewar＋聲量、不沾沉迷度');
+// ⑦ 死法圖鑑收錄＋屬性門檻確定性觸發＋活路零誤殺
+const r66Death = JSON.parse(vm.runInContext(`(function(){
+  const out={};
+  out.book = ['lanparty','donatedry'].every(id=>DEATHBOOK.some(d=>d.id===id&&d.rare&&d.hint.length>4) && !!SPECIAL_DEATHS[id]);
+  const cc=EVENTS.find(e=>e.id==='r66_cafe'), ci=cc.choices.findIndex(c=>c.special==='r66_allnight');
+  startGame(); S.age=20; S.flags={}; ensureState(S); S.attr.hp=10;
+  showEvent(cc); choose(ci);
+  out.cDying = S.flags.specialDeath==='lanparty';
+  die('choice');
+  out.cDead = !S.alive && S.deathId==='lanparty' && !!SAVE.deaths.lanparty;
+  startGame(); S.age=20; S.flags={}; ensureState(S); S.attr.hp=70;
+  showEvent(cc); choose(ci);
+  out.cAlive = S.alive===true && !S.flags.specialDeath && S.flags.r66_cafe===true && S.flags.r66_net===1;
+  const sc=EVENTS.find(e=>e.id==='r66_stream'), si=sc.choices.findIndex(c=>c.special==='r66_donate');
+  startGame(); S.age=30; S.flags={}; ensureState(S); S.attr.mny=12;
+  showEvent(sc); choose(si);
+  out.dDying = S.flags.specialDeath==='donatedry';
+  die('choice');
+  out.dDead = !S.alive && S.deathId==='donatedry' && !!SAVE.deaths.donatedry;
+  startGame(); S.age=30; S.flags={}; ensureState(S); S.attr.mny=70;
+  showEvent(sc); choose(si);
+  out.dAlive = S.alive===true && !S.flags.specialDeath && S.flags.r66_donor===true && S.flags.r66_net===1;
+  return JSON.stringify(out);
+})()`, sandbox));
+ok(r66Death.book, 'R66 ⑦ lanparty/donatedry 收錄進死法圖鑑（rare＋模糊提示）');
+ok(r66Death.cDying && r66Death.cDead, 'R66 ⑦ 體力見底包夜 → 網咖包夜猝死全流程＋跨局收集');
+ok(r66Death.cAlive, 'R66 ⑦ 體力正常包夜：活路分支（r66_cafe＋沉迷度落地、零誤殺）');
+ok(r66Death.dDying && r66Death.dDead, 'R66 ⑦ 財富見底抖內 → 抖內斷糧全流程＋跨局收集');
+ok(r66Death.dAlive, 'R66 ⑦ 財富正常抖內：活路分支（r66_donor 落地、零誤殺）');
+// ⑧ 新成就 ×3：check 正反例＋獵人提示齊備
+const r66Ach = JSON.parse(vm.runInContext(`(function(){
+  const out={};
+  out.diver = ACH_MAP.r66_diver.check({S:{flags:{r66_lurker:true}}, age:50});
+  out.diverNeg = !ACH_MAP.r66_diver.check({S:{flags:{r66_lurker:true}}, age:40})
+              && !ACH_MAP.r66_diver.check({S:{flags:{}}, age:80});
+  out.million = ACH_MAP.r66_million.check({S:{flags:{r66_viral:true}}, age:30});
+  out.millionNeg = !ACH_MAP.r66_million.check({S:{flags:{r66_streamer:true}}, age:80});
+  out.detox = ACH_MAP.r66_detoxgod.check({S:{flags:{r66_detox:true,r66_net:3}}, age:50});
+  out.detoxNeg = !ACH_MAP.r66_detoxgod.check({S:{flags:{r66_detox:true,r66_net:2}}, age:50})
+              && !ACH_MAP.r66_detoxgod.check({S:{flags:{r66_net:5}}, age:50});
+  out.hints = ['r66_diver','r66_million','r66_detoxgod'].every(id=>ACH_MAP[id]&&ACH_MAP[id].hint&&ACH_MAP[id].hint.length>4);
+  return JSON.stringify(out);
+})()`, sandbox));
+ok(r66Ach.diver && r66Ach.diverNeg, 'R66 ⑧ 成就「萬年潛水員」：潛水到 45 解鎖、年齡不足/沒潛水不誤觸');
+ok(r66Ach.million && r66Ach.millionNeg, 'R66 ⑧ 成就「百萬訂閱傳說」：爆紅旗標解鎖、一般開台不誤觸');
+ok(r66Ach.detox && r66Ach.detoxNeg, 'R66 ⑧ 成就「數位排毒成功」：沉迷 3+ 且真戒斷解鎖、單條件不解鎖');
+ok(r66Ach.hints, 'R66 ⑧ 三個新成就獵人提示齊備');
+// ⑨ 舊存檔相容：無 r66 鍵的舊存檔經 ensureState 補鍵後 cond/成就/門檻選項全不炸不誤觸
+const r66Compat = JSON.parse(vm.runInContext(`(function(){
+  const out={};
+  startGame(); S.age=70; S.flags={}; ensureState(S);
+  const oc=EVENTS.find(e=>e.id==='r66_old');
+  out.cond = oc.choices[0].cond(S)===false && oc.choices[1].cond(S)===true;
+  out.ach = !ACH_MAP.r66_diver.check({S:S,age:80}) && !ACH_MAP.r66_million.check({S:S,age:80}) && !ACH_MAP.r66_detoxgod.check({S:S,age:80});
+  const h1=__choiceHTML('r66_old', null, 70);
+  out.gate = !h1.includes('鍵盤人生限定') && h1.includes('現充人生限定') && h1.includes('跟孫子學');
+  const h2=__choiceHTML('r66_detox', null, 45);
+  out.detoxGate = !h2.includes('重度成癮者限定') && h2.includes('假排毒');
+  return JSON.stringify(out);
+})()`, sandbox));
+ok(r66Compat.cond && r66Compat.ach, 'R66 ⑨ 舊存檔相容：ensureState 後無 r66 鍵、cond 不炸、成就不誤觸');
+ok(r66Compat.gate && r66Compat.detoxGate, 'R66 ⑨ 舊存檔無 r66 鍵：門檻選項全隱藏、基本選項照常');
+// ⑩ 零汙染：開局無 r66 旗標、不選不沾
+const r66Clean = JSON.parse(vm.runInContext(`(function(){
+  startGame();
+  return JSON.stringify({clean:Object.keys(S.flags).every(k=>k.indexOf('r66')!==0)});
+})()`, sandbox));
+ok(r66Clean.clean, 'R66 ⑩ 零汙染：開局 S.flags 無任何 r66 鍵');
+
 console.log(fails ? `\n結果: ❌ ${fails} 項未通過` : '\n結果: ✅ 狀態機全數正確');
 process.exit(fails ? 1 : 0);
