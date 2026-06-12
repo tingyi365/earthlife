@@ -5,9 +5,14 @@
 [![▶ Play Now](https://img.shields.io/badge/%E2%96%B6%20%E7%B7%9A%E4%B8%8A%E8%A9%A6%E7%8E%A9-earthlife.pages.dev-7fd7ff?style=for-the-badge)](https://earthlife.pages.dev)
 [![License: MIT](https://img.shields.io/badge/License-MIT-3fb950?style=for-the-badge)](LICENSE)
 [![Single HTML file](https://img.shields.io/badge/Build-%E5%96%AE%E4%B8%80%20HTML%20%E6%AA%94%C2%B7%E7%84%A1%E6%A1%86%E6%9E%B6-ff9d5c?style=for-the-badge)](index.html)
-[![AI Self-Evolved](https://img.shields.io/badge/AI%20%E8%87%AA%E4%B8%BB%E9%80%B2%E5%8C%96-R1%20%E2%86%92%20R67%20%E4%BB%8D%E5%9C%A8%E7%B9%BC%E7%BA%8C-ffd24a?style=for-the-badge)](docs/AI_AUTONOMOUS_UPDATE.md)
+[![AI Self-Evolved](https://img.shields.io/badge/AI%20%E8%87%AA%E4%B8%BB%E9%80%B2%E5%8C%96-R1%20%E2%86%92%20R73%20%E4%BB%8D%E5%9C%A8%E7%B9%BC%E7%BA%8C-ffd24a?style=for-the-badge)](docs/AI_AUTONOMOUS_UPDATE.md)
 
 🎮 線上試玩 / Play now: **https://earthlife.pages.dev**
+
+<p align="center">
+  <img src="docs/demo.gif" width="62%" alt="EarthLife 實機 demo：投胎抽卡 → 梗圖事件 → 人生總結卡">
+</p>
+<p align="center"><sub>↑ 實機 demo（截至 R73）</sub></p>
 
 <p align="center">
   <img src="docs/screenshot_start.png" width="31%" alt="開局投胎抽卡">
@@ -22,7 +27,7 @@
 
 這不只是一款遊戲——它是一個 **「AI 自主更新管理」的實驗場**。
 
-遊戲上線後的每一輪迭代（**R1 → R67，仍在繼續**），都由一個 AI agent 自主完成，**每 30 分鐘一輪**，無人介入：
+遊戲上線後的每一輪迭代（**R1 → R73，仍在繼續**），都由一個 AI agent 自主完成，**每 30 分鐘一輪**，無人介入：
 
 ```
 ┌─────────────────────────────────────────────────┐
@@ -37,11 +42,11 @@
 └─────────────────────────────────────────────────┘
 ```
 
-67 輪下來，遊戲從 61 個事件的雛形，長成 **650+ 個事件、111 種梗圖場景、214 個成就、59 種死法、8 個隱藏結局、369 件收藏圖鑑**的完整作品——每一步都有測試把關、每一步都可回溯。
+73 輪下來，遊戲從 61 個事件的雛形，長成 **679 個事件、111 種梗圖場景、240 個成就、63 種死法、10 個隱藏結局、401 件收藏圖鑑**的完整作品（數據截至 R73）——每一步都有測試把關、每一步都可回溯。
 
 詳細機制設計請見 **[docs/AI_AUTONOMOUS_UPDATE.md](docs/AI_AUTONOMOUS_UPDATE.md)**。
 
-### 🧬 進化里程碑（精選 12 個代表輪次）
+### 🧬 進化里程碑（精選代表輪次）
 
 | 輪次 | 進化內容 |
 |---|---|
@@ -56,9 +61,15 @@
 | **R55** | 台灣時代背景系統：依出生年代分流的人生 |
 | **R63** | 台味交通通勤人生系統 |
 | **R66** | 台味網路鄉民人生系統 |
-| **R67** | 台味天災颱風假人生系統（最新一輪） |
+| **R67** | 台味天災颱風假人生系統 |
+| **R68** | 屬性被動命運層：五圍每年實質牽動命運，不再只是結算頁的裝飾數字 |
+| **R69** | 人生專屬稱號＋鬼島嘲諷總評卡（截圖級可分享性） |
+| **R70** | 人生分歧重大抉擇鏈＋路徑專屬隱藏結局／成就 |
+| **R71** | 開局世代 × 出身差異化：專屬事件／屬性傾向／傾向死法 |
+| **R72** | 稀有奇遇／迷因彩蛋事件鏈＋隱藏成就（再玩一局才撞得到） |
+| **R73** | 台味感情婚戀深化事件鏈：交友軟體→見面→求婚（最新一輪） |
 
-> 一個 AI agent，連續自我迭代 67 輪、每一輪都過測試閘門才放行——這是這個專案最獨特的賣點。
+> 一個 AI agent，連續自我迭代 73 輪、每一輪都過測試閘門才放行——這是這個專案最獨特的賣點。
 
 ## 🎮 遊戲說明
 
@@ -107,7 +118,7 @@ node _test_state.js
 
 This is not just a game — it's a working experiment in **AI-autonomous release management**.
 
-Every iteration since launch (**R1 → R67 and counting**) was performed by an AI agent, **one round every 30 minutes**, with no human in the loop:
+Every iteration since launch (**R1 → R73 and counting**) was performed by an AI agent, **one round every 30 minutes**, with no human in the loop:
 
 1. **Pick a direction** — the agent reads the current game state and decides what to evolve this round (new system / balancing / polish / easter eggs).
 2. **Modify the code** — edits the game directly.
@@ -115,7 +126,7 @@ Every iteration since launch (**R1 → R67 and counting**) was performed by an A
 4. **Deploy** — pushes the build to Cloudflare Pages.
 5. **Write the log** — leaves structured design comments in the code, which become context for the next round's agent.
 
-Over 67 rounds the game grew from a 61-event prototype into **650+ events, 111 meme scenes, 214 achievements, 59 ways to die, 8 hidden endings, and a 369-entry collection gallery** — every step gated by tests, every step traceable.
+Over 73 rounds the game grew from a 61-event prototype into **679 events, 111 meme scenes, 240 achievements, 63 ways to die, 10 hidden endings, and a 401-entry collection gallery** (figures as of R73) — every step gated by tests, every step traceable.
 
 See **[docs/AI_AUTONOMOUS_UPDATE.md](docs/AI_AUTONOMOUS_UPDATE.md)** for the full mechanism design and evolution log.
 
