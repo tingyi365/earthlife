@@ -2638,6 +2638,101 @@ try {
   console.log('R76 潤學海外移民分流鏈: ❌ ' + e.message);
 }
 
+/* ---- R77 鬼島升學×校園青春分流鏈探針（強制路徑，不靠隨機抽中）----
+   ① 結構：三段事件齊備(scene/choices)、cb_ 兩段入 CHAIN_IDS、兩段掛 R46 里程碑保底、
+      thesishell 進 SPECIAL_DEATHS+DEATHBOOK、TL_ONESHOT 里程碑、2 成就有獵人提示
+   ② r77_seed gating：補習💰門檻／繁星🧠門檻／預設＋裸考無門檻保底；與 R34 旗標完全錯開(r77_*)
+   ③ cb_r77_campus special r77_exam 智力主導確定性四分流(頂大/私立/技職/落榜)＋補習加成＋裸考懲罰
+      → 屬性真驅動：同一選項僅智力高低即翻轉 elite↔nostudy；落榜依財富分重考(r77_redo→private)/直接就業(nostudy)
+   ④ cb_r77_campus：社團/書卷獎(🧠)/延畢(❤️)/研究所 + special 報告週爆肝(hp≤14 確定性校園死法)
+   ⑤ cb_r77_grad：頂大/技職/流浪博士/22K 學歷變現分支(學歷層級 gating)；nostudy 跳過校園段
+   ⑥ 零汙染：乾淨開局無 r77 旗標、舊存檔 ensureState 不補 r77 鍵、無 examMod 走 ||0 不炸 */
+let r77OK = false;
+try {
+  const r77Raw = vm.runInContext(`(function(){
+    const out={}; const f=id=>EVENTS.find(e=>e.id===id);
+    /* ① 結構 */
+    const ids=['r77_seed','cb_r77_campus','cb_r77_grad'];
+    out.struct = ids.every(id=>{const e=f(id);return e&&e.once&&e.stage&&e.meme&&SCENES[e.meme.scene]&&(e.choices||[]).length>=3;});
+    out.chain = ['cb_r77_campus','cb_r77_grad'].every(id=>CHAIN_IDS.has(id));
+    out.milestone = ['cb_r77_campus','cb_r77_grad'].every(id=>typeof R46_MILESTONE[id]==='number') && R46_MILESTONE['r77_seed']===undefined;
+    out.death = !!SPECIAL_DEATHS.thesishell && !!SCENES[SPECIAL_DEATHS.thesishell.scene]
+      && DEATHBOOK.some(d=>d.id==='thesishell'&&d.reason&&d.hint);
+    out.tl = ['r77_elite','r77_superdelay'].every(k=>TL_ONESHOT.some(o=>o[0]===k));
+    out.achDef = ['r77_topgun','r77_supersenior'].every(id=>ACH_MAP[id]&&ACH_MAP[id].hint&&String(ACH_MAP[id].hint).length>4);
+    /* ② seed gating */
+    startGame(); let s=S; s.flags={}; ensureState(s);
+    s.attr.mny=55; out.gateCram = f('r77_seed').choices[1].cond(s)===true && (s.attr.mny=54, f('r77_seed').choices[1].cond(s)===false);
+    s.attr.int=82; out.gateStar = f('r77_seed').choices[2].cond(s)===true && (s.attr.int=81, f('r77_seed').choices[2].cond(s)===false);
+    out.gateBackup = !f('r77_seed').choices[0].cond && !f('r77_seed').choices[3].cond;
+    startGame(); s=S; s.flags={}; ensureState(s); s.seen={}; s.attr.int=90; s.attr.mny=60; s.attr.hp=60; s.attr.apr=60;
+    showEvent(f('r77_seed')); choose(0);
+    out.seedPush = s.flags.r77_chain&&s.flags.r77_examdone&&!!s.flags.r77_elite;
+    /* 繁星直攻頂大(無 special) */
+    startGame(); s=S; s.flags={}; ensureState(s); s.seen={}; s.attr.int=85;
+    showEvent(f('r77_seed')); choose(2);
+    out.starPush = s.flags.r77_chain&&s.flags.r77_examdone&&!!s.flags.r77_elite&&!!s.flags.r77_star;
+    /* ③ exam special 智力主導四分流 + 屬性真驅動 + 落榜分流 + 補習/裸考 mod */
+    function exam(idx,a){ startGame(); s=S; s.flags={}; ensureState(s); s.seen={}; Object.assign(s.attr,a); showEvent(f('r77_seed')); choose(idx); return s.flags; }
+    out.tierElite = !!exam(0,{int:95,mny:80,hp:80,apr:80}).r77_elite;
+    out.tierPrivate = !!exam(0,{int:75,mny:50,hp:50,apr:50}).r77_private;
+    out.tierVoc = (g=>!!g.r77_voc)(exam(0,{int:45,mny:30,hp:40,apr:40}));
+    out.tierRedo = (g=>!!g.r77_redo&&!!g.r77_private)(exam(0,{int:20,mny:50,hp:30,apr:30}));
+    out.tierNostudy = (g=>!!g.r77_nostudy&&!g.r77_redo)(exam(0,{int:15,mny:20,hp:25,apr:25}));
+    /* 屬性真驅動：同型態(預設選項)僅智力高低即翻轉 elite↔落榜 */
+    const exHi=!!exam(0,{int:95,mny:60,hp:60,apr:60}).r77_elite;
+    out.attrDriven = exHi && !exam(0,{int:18,mny:18,hp:25,apr:25}).r77_elite;
+    /* 補習加成：邊界分數靠 examMod 推過門檻（同屬性，補習者進私立、裸考者落榜） */
+    const cramG=exam(1,{int:58,mny:55,hp:45,apr:45}); // mny-8 後仍 47，+examMod11
+    const nakedG=exam(3,{int:58,mny:55,hp:45,apr:45});
+    out.cramHelps = (!!cramG.r77_private||!!cramG.r77_elite) && (!!nakedG.r77_voc||!!nakedG.r77_redo||!!nakedG.r77_nostudy);
+    /* ④ campus 分支 + 報告週爆肝死法 */
+    function campus(idx,a){ startGame(); s=S; s.flags={r77_examdone:true,r77_private:true}; ensureState(s); s.seen={}; Object.assign(s.attr,a||{int:60,hp:60}); showEvent(f('cb_r77_campus')); choose(idx); return s.flags; }
+    out.campusClub = !!campus(0).r77_clublife && !!campus(0).r77_campusdone;
+    startGame(); s=S; s.flags={r77_examdone:true,r77_private:true}; ensureState(s); s.attr.int=70;
+    out.scholarVisible = f('cb_r77_campus').choices[1].cond(s)===true && (s.attr.int=69, f('cb_r77_campus').choices[1].cond(s)===false);
+    out.campusScholar = !!campus(1,{int:75,hp:60}).r77_scholar;
+    startGame(); s=S; s.flags={r77_examdone:true,r77_private:true}; ensureState(s); s.attr.hp=45;
+    out.delayVisible = f('cb_r77_campus').choices[3].cond(s)===true && (s.attr.hp=44, f('cb_r77_campus').choices[3].cond(s)===false);
+    out.campusDelay = !!campus(3,{hp:60}).r77_superdelay;
+    out.campusGrad = !!campus(4).r77_gradschool;
+    out.thesisDeath = (g=>g.specialDeath==='thesishell')(campus(2,{hp:10}));
+    out.thesisSurvive = (g=>!g.specialDeath&&!!g.r77_campusdone&&!!g.r77_allnighter)(campus(2,{int:60,hp:60}));
+    /* campus gating：未 examdone 絕緣、落榜直接就業(nostudy)絕緣 */
+    startGame(); s=S; s.flags={}; ensureState(s); s.seen={};
+    out.campusGated = !eligible().some(e=>e.id==='cb_r77_campus');
+    startGame(); s=S; s.flags={r77_examdone:true,r77_nostudy:true}; ensureState(s); s.seen={};
+    out.nostudySkip = !eligible().some(e=>e.id==='cb_r77_campus');
+    /* ⑤ grad 學歷變現分支 gating */
+    function grad(idx,fl,a){ startGame(); s=S; s.flags=Object.assign({r77_campusdone:true},fl); ensureState(s); s.seen={}; Object.assign(s.attr,a||{int:60}); showEvent(f('cb_r77_grad')); choose(idx); return s.flags; }
+    out.gradElite = !!grad(0,{r77_elite:true}).r77_eliteJob;
+    out.gradVoc = !!grad(1,{r77_voc:true}).r77_skilledJob;
+    out.gradPhd = !!grad(2,{r77_gradschool:true},{int:80}).r77_phdwander;
+    out.grad22k = !!grad(3,{}).r77_k22ready;
+    startGame(); s=S; s.flags={r77_campusdone:true,r77_private:true}; ensureState(s); s.attr.int=60;
+    out.eliteHidden = f('cb_r77_grad').choices[0].cond(s)===false && f('cb_r77_grad').choices[1].cond(s)===false && f('cb_r77_grad').choices[3].cond===undefined;
+    startGame(); s=S; s.flags={}; ensureState(s); s.seen={};
+    out.gradGated = !eligible().some(e=>e.id==='cb_r77_grad');
+    /* 成就確定性 + 不誤觸 */
+    out.achPass = ACH_MAP.r77_topgun.check({S:{flags:{r77_elite:true}},age:18})
+      && ACH_MAP.r77_supersenior.check({S:{flags:{r77_superdelay:true}},age:23});
+    out.achClean = !ACH_MAP.r77_topgun.check({S:{flags:{}},age:30}) && !ACH_MAP.r77_supersenior.check({S:{flags:{}},age:30})
+      && !ACH_MAP.r77_topgun.check({S:{flags:{r77_voc:true}},age:20});
+    /* ⑥ 零汙染 + 舊存檔相容 + examMod 缺省不炸 */
+    startGame(); s=S; out.clean = Object.keys(s.flags||{}).every(k=>k.indexOf('r77')!==0);
+    const old={flags:{married:true},attr:{hp:50,int:50,apr:50,mny:50,hap:50},age:40,alive:true}; ensureState(old);
+    out.compat = Object.keys(old.flags).every(k=>k.indexOf('r77')!==0);
+    startGame(); s=S; s.flags={}; ensureState(s); s.seen={}; Object.assign(s.attr,{int:80,mny:60,hp:60,apr:60});
+    showEvent(f('r77_seed')); choose(0); out.noModOk = !!s.flags.r77_examdone; // 預設選項無 examMod 走 ||0
+    return JSON.stringify(out);
+  })()`, sandbox);
+  const r77 = JSON.parse(r77Raw);
+  r77OK = Object.values(r77).every(v => v === true);
+  console.log(`R77 鬼島升學校園青春分流鏈: ${r77OK ? '✅ 全數通過' : '❌ ' + JSON.stringify(r77)}`);
+} catch (e) {
+  console.log('R77 鬼島升學校園青春分流鏈: ❌ ' + e.message);
+}
+
 if (__errors.length) {
   console.log('\n--- 錯誤樣本(前5) ---');
   __errors.slice(0, 5).forEach(e => console.log('  ' + e));
@@ -2645,6 +2740,6 @@ if (__errors.length) {
 
 /* 退出碼 */
 const pass = __errors.length === 0 && chk.missingScenes.length === 0 && chk.eventVisible >= 126 && chk.eventTotal >= 126 && lsOK && achUnlocked > 0
-  && chk.deathbookMissing.length === 0 && chk.deathTotal >= 17 && deathsOK && rebirthOK && legacyOK && petOK && r13OK && r17OK && r20OK && r21OK && r22OK && r24OK && r25OK && r34OK && r38OK && r41OK && r42OK && r43OK && r44OK && r45OK && r46OK && r47OK && r48OK && r49OK && r51OK && r52OK && r53OK && r54OK && r55OK && r72OK && r76OK;
+  && chk.deathbookMissing.length === 0 && chk.deathTotal >= 17 && deathsOK && rebirthOK && legacyOK && petOK && r13OK && r17OK && r20OK && r21OK && r22OK && r24OK && r25OK && r34OK && r38OK && r41OK && r42OK && r43OK && r44OK && r45OK && r46OK && r47OK && r48OK && r49OK && r51OK && r52OK && r53OK && r54OK && r55OK && r72OK && r76OK && r77OK;
 console.log('\n結果: ' + (pass ? '✅ 全數通過' : '❌ 有項目未通過'));
 process.exit(pass ? 0 : 1);

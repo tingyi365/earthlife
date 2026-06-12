@@ -2541,5 +2541,88 @@ ok(r76Misc.hints && r76Misc.death, 'R76 ④ 兩成就提示齊備＋homesickaway
 ok(r76Misc.clean, 'R76 ④ 零汙染：開局 S.flags 無任何 r76 鍵');
 ok(r76Misc.compat && r76Misc.noTypeOk, 'R76 ④ 舊存檔相容：ensureState 不補 r76 鍵、無 r76_type 走 ||0 不炸');
 
+// ===== R77 鬼島升學×校園青春分流鏈：觸發/gating、智力主導學歷分流、零汙染、舊存檔相容 =====
+// ① 入口/gating
+const r77Gate = JSON.parse(vm.runInContext(`(function(){
+  const out={}; const f=id=>EVENTS.find(e=>e.id===id);
+  startGame(); let s=S; s.flags={}; ensureState(s); s.age=17;
+  out.seedIn = eligible().some(e=>e.id==='r77_seed');
+  s.flags.r77_chain=true; out.seedOnce = !eligible().some(e=>e.id==='r77_seed');
+  s.flags={}; s.attr.mny=55; out.cramGate = f('r77_seed').choices[1].cond(s)===true && (s.attr.mny=54,f('r77_seed').choices[1].cond(s)===false);
+  s.attr.int=82; out.starGate = f('r77_seed').choices[2].cond(s)===true && (s.attr.int=81,f('r77_seed').choices[2].cond(s)===false);
+  out.backup = !f('r77_seed').choices[0].cond && !f('r77_seed').choices[3].cond;
+  // 與 R34 旗標完全錯開：r77_seed 不讀任何 r34 旗標
+  out.r34Indep = String(f('r77_seed').cond).indexOf('r34')===-1;
+  return JSON.stringify(out);
+})()`, sandbox));
+ok(r77Gate.seedIn && r77Gate.seedOnce, 'R77 ① 入口 r77_seed：未入鏈進池、已入鏈 once 不重播');
+ok(r77Gate.cramGate && r77Gate.starGate && r77Gate.backup, 'R77 ① 三選 cond：補習💰/繁星🧠門檻正確、預設＋裸考無門檻保底');
+ok(r77Gate.r34Indep, 'R77 ① 與 R34 求學鏈嚴格錯開：旗標前綴 r77_ 獨立、cond 不讀 r34');
+
+// ② cb_ 兩段 gating + nostudy 跳過校園
+const r77Chain = JSON.parse(vm.runInContext(`(function(){
+  const out={};
+  startGame(); let s=S; s.flags={}; ensureState(s); s.seen={}; s.age=20;
+  out.campusGated = !eligible().some(e=>e.id==='cb_r77_campus');
+  s.flags={r77_examdone:true,r77_private:true}; out.campusIn = eligible().some(e=>e.id==='cb_r77_campus');
+  s.flags={r77_examdone:true,r77_nostudy:true}; out.nostudySkip = !eligible().some(e=>e.id==='cb_r77_campus');
+  s.flags={}; out.gradGated = !eligible().some(e=>e.id==='cb_r77_grad');
+  s.age=24; s.flags={r77_campusdone:true}; out.gradIn = eligible().some(e=>e.id==='cb_r77_grad');
+  return JSON.stringify(out);
+})()`, sandbox));
+ok(r77Chain.campusGated && r77Chain.campusIn, 'R77 ② cb_r77_campus gating：未分流絕緣、學測完成後進池');
+ok(r77Chain.nostudySkip, 'R77 ② 落榜直接就業(r77_nostudy)跳過校園段＝完整落榜弧線');
+ok(r77Chain.gradGated && r77Chain.gradIn, 'R77 ② cb_r77_grad gating：未讀完校園絕緣、校園後進池');
+
+// ③ 屬性真驅動：r77_exam special 智力主導確定性四分流；落榜依財富分重考/就業；報告週爆肝 hp≤14
+const r77Attr = JSON.parse(vm.runInContext(`(function(){
+  const out={}; const f=id=>EVENTS.find(e=>e.id===id);
+  function exam(idx,a){ startGame(); S.flags={}; ensureState(S); S.seen={}; Object.assign(S.attr,a); showEvent(f('r77_seed')); choose(idx); return S.flags; }
+  out.elite = !!exam(0,{int:95,mny:80,hp:80,apr:80}).r77_elite;
+  out.private = !!exam(0,{int:75,mny:50,hp:50,apr:50}).r77_private;
+  out.voc = !!exam(0,{int:45,mny:30,hp:40,apr:40}).r77_voc;
+  out.redo = (g=>!!g.r77_redo&&!!g.r77_private)(exam(0,{int:20,mny:50,hp:30,apr:30}));
+  out.nostudy = (g=>!!g.r77_nostudy&&!g.r77_redo)(exam(0,{int:15,mny:20,hp:25,apr:25}));
+  // 同一選項僅智力高低即翻轉 elite↔落榜
+  out.attrDriven = !!exam(0,{int:95,mny:60,hp:60,apr:60}).r77_elite && !exam(0,{int:18,mny:18,hp:25,apr:25}).r77_elite;
+  // 報告週爆肝
+  function campus(idx,a){ startGame(); S.flags={r77_examdone:true,r77_private:true}; ensureState(S); S.seen={}; Object.assign(S.attr,a); showEvent(f('cb_r77_campus')); choose(idx); return S.flags; }
+  out.thesisDeath = campus(2,{int:60,hp:10}).specialDeath==='thesishell';
+  out.thesisSurvive = (g=>!g.specialDeath&&!!g.r77_campusdone)(campus(2,{int:60,hp:60}));
+  return JSON.stringify(out);
+})()`, sandbox));
+ok(r77Attr.elite && r77Attr.private && r77Attr.voc, 'R77 ③ 智力主導四分流：頂大/私立/技職依分數確定性分層');
+ok(r77Attr.redo && r77Attr.nostudy, 'R77 ③ 落榜分流：財富夠→重考上岸(補設 private)、財富不足→直接就業(nostudy)');
+ok(r77Attr.attrDriven, 'R77 ③ 屬性真驅動：同一選項僅智力高低即翻轉頂大↔落榜');
+ok(r77Attr.thesisDeath && r77Attr.thesisSurvive, 'R77 ③ 報告週爆肝：健康見底(≤14)→校園限定死法、健康足夠→撐過存活');
+
+// ④ 學歷變現分支 + 成就 + 死法圖鑑 + 零汙染 + 舊存檔相容
+const r77Misc = JSON.parse(vm.runInContext(`(function(){
+  const out={}; const f=id=>EVENTS.find(e=>e.id===id);
+  function grad(idx,fl,a){ startGame(); S.flags=Object.assign({r77_campusdone:true},fl); ensureState(S); S.seen={}; Object.assign(S.attr,a||{int:60}); showEvent(f('cb_r77_grad')); choose(idx); return S.flags; }
+  out.gradElite = !!grad(0,{r77_elite:true}).r77_eliteJob;
+  out.gradVoc = !!grad(1,{r77_voc:true}).r77_skilledJob;
+  out.gradPhd = !!grad(2,{r77_gradschool:true},{int:80}).r77_phdwander;
+  out.grad22k = !!grad(3,{}).r77_k22ready;
+  out.achTop = ACH_MAP.r77_topgun.check({S:{flags:{r77_elite:true}},age:18});
+  out.achDelay = ACH_MAP.r77_supersenior.check({S:{flags:{r77_superdelay:true}},age:23});
+  out.achClean = !ACH_MAP.r77_topgun.check({S:{flags:{r77_voc:true}},age:20})
+    && !ACH_MAP.r77_topgun.check({S:{flags:{}},age:30}) && !ACH_MAP.r77_supersenior.check({S:{flags:{}},age:30});
+  out.hints = ['r77_topgun','r77_supersenior'].every(id=>ACH_MAP[id]&&ACH_MAP[id].hint&&ACH_MAP[id].hint.length>4);
+  out.death = !!SPECIAL_DEATHS.thesishell && DEATHBOOK.some(d=>d.id==='thesishell'&&d.reason&&d.hint);
+  startGame(); out.clean = Object.keys(S.flags).every(k=>k.indexOf('r77')!==0);
+  startGame(); S.age=22; S.flags={}; ensureState(S); out.compat = Object.keys(S.flags).every(k=>k.indexOf('r77')!==0);
+  // 預設選項無 examMod：走 ||0 不炸
+  startGame(); S.flags={}; ensureState(S); S.seen={}; Object.assign(S.attr,{int:80,mny:60,hp:60,apr:60});
+  showEvent(f('r77_seed')); choose(0); out.noModOk = !!S.flags.r77_examdone;
+  return JSON.stringify(out);
+})()`, sandbox));
+ok(r77Misc.gradElite && r77Misc.gradVoc && r77Misc.gradPhd && r77Misc.grad22k, 'R77 ④ 學歷變現：頂大光環/技職即戰力/流浪博士/22K預備軍依學歷層級分支');
+ok(r77Misc.achTop && r77Misc.achDelay, 'R77 ④ 成就「學測戰神/延畢釘子戶」確定性解鎖');
+ok(r77Misc.achClean, 'R77 ④ 成就不誤觸：技職/落榜局/舊存檔皆零誤觸');
+ok(r77Misc.hints && r77Misc.death, 'R77 ④ 兩成就提示齊備＋thesishell 進死法圖鑑(reason+hint)');
+ok(r77Misc.clean, 'R77 ④ 零汙染：開局 S.flags 無任何 r77 鍵');
+ok(r77Misc.compat && r77Misc.noModOk, 'R77 ④ 舊存檔相容：ensureState 不補 r77 鍵、無 examMod 走 ||0 不炸');
+
 console.log(fails ? `\n結果: ❌ ${fails} 項未通過` : '\n結果: ✅ 狀態機全數正確');
 process.exit(fails ? 1 : 0);
