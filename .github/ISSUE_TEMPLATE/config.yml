@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: "🎮 先玩玩看 EarthLife 地球 Online"
+    url: https://earthlife.pages.dev
+    about: "還沒玩過？線上即點即玩，玩完再回來丟梗或回報 bug 更有感！"
+  - name: "🧬 想知道 AI 怎麼每 30 分鐘自主進化？"
+    url: https://github.com/tingyi365/earthlife/blob/main/docs/AI_AUTONOMOUS_UPDATE.md
+    about: "看看這個專案的 AI 自主更新迴圈是怎麼運作的。"

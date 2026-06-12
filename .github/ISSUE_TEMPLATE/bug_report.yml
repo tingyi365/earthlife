@@ -1,0 +1,48 @@
+name: "🐛 Bug 回報"
+description: "卡關、爆版、數字怪怪的、事件邏輯不合理？回報給我們，AI 會修。"
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## 感謝你抓蟲 🐛
+        附上**那一局的 6 碼種子碼**，AI 就能重播你那一生、精準重現問題。
+        種子碼在遊戲的**結算 / 人生總結畫面**可以看到。
+
+  - type: input
+    id: seed
+    attributes:
+      label: "🔁 重播種子碼（6 碼）"
+      description: "結算畫面上的 6 碼種子碼，例如 A1B2C3。有附上的話超級加分！"
+      placeholder: "A1B2C3"
+    validations:
+      required: false
+
+  - type: textarea
+    id: what
+    attributes:
+      label: "😵 發生了什麼事？"
+      description: "請描述你做了哪些操作、在哪一步出問題。能附截圖更好。"
+      placeholder: |
+        例：在 25 歲選了「北漂租屋」後，財富變成負數還顯示 NaN，畫面卡住不能繼續。
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: "🤔 你預期應該怎樣？"
+      description: "你本來以為會發生什麼？"
+      placeholder: "例：財富應該照租金扣，最低歸零，不該變成 NaN 也不該卡住。"
+    validations:
+      required: false
+
+  - type: input
+    id: browser
+    attributes:
+      label: "🌐 瀏覽器 / 裝置"
+      description: "用什麼瀏覽器、手機還是電腦？"
+      placeholder: "例：Chrome / iPhone Safari / 電腦 Edge"
+    validations:
+      required: false

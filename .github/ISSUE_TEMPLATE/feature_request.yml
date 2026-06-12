@@ -1,0 +1,60 @@
+name: "💡 功能 / 事件 / 梗 建議"
+description: "丟一個人生情境、死法、成就、台味梗——AI 可能把它做進下一輪進化！"
+title: "[點子] "
+labels: ["enhancement", "社群梗"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## 你的點子會被 AI 讀到 🧬
+        這個遊戲由 AI 每 30 分鐘自主進化一輪。你在這裡丟的梗，有機會被實作進線上版本——
+        實作完成後我們會回到這則 issue 回覆並 close。**不用很正式，一句話的梗也歡迎！**
+
+        還沒玩過？先試玩 👉 https://earthlife.pages.dev
+
+  - type: textarea
+    id: idea
+    attributes:
+      label: "💡 你想到的點子"
+      description: "一個事件？一種死法？一個成就？一條人生路線？盡量具體一點，越具體越容易被做出來。"
+      placeholder: |
+        例：想要一個「手搖飲喝到糖尿病」的中年事件，
+        選項可以是「戒糖改喝無糖」或「全糖去冰繼續嗨」，後者中年機率爆血糖死。
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: "🎬 發生情境"
+      description: "在人生哪個階段發生？怎麼觸發？有沒有選項分支或後續連鎖？（想到多少寫多少）"
+      placeholder: |
+        例：30~45 歲之間、財富中等以上才會觸發；
+        選了「全糖」會埋一個旗標，到 50 歲有機率回來找你。
+    validations:
+      required: false
+
+  - type: textarea
+    id: why
+    attributes:
+      label: "😆 為什麼好玩 / 有共鳴？"
+      description: "是很有共鳴、很荒謬、很台、還是反差很大？講出梗的精髓，幫 AI 抓到笑點。"
+      placeholder: "例：每個台灣人都喝手搖，但沒人想面對糖分的反撲，超有共鳴又有點靠北。"
+    validations:
+      required: false
+
+  - type: dropdown
+    id: type
+    attributes:
+      label: "🏷 這比較像哪一類？"
+      description: "選一個最接近的就好（不確定也沒關係）。"
+      options:
+        - 新事件 / 人生情境
+        - 新死法
+        - 新成就
+        - 新系統 / 玩法
+        - 台味梗 / 彩蛋
+        - 玩法平衡回饋
+        - 其他
+    validations:
+      required: false
