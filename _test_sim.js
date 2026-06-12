@@ -118,7 +118,23 @@ sandbox.__rec = function (id) {
 };
 
 /* ---- 模擬 N 局 ---- */
-const N = 300;   /* R59：220→300 降低觸達率統計抖動（僅此一項調整） */
+const N = 500;   /* R59：220→300 降低觸達率統計抖動；R64：300→500 配合種子釘死，
+                    讓觸達率統計值穩定落在門檻內（種子化後完全復現，不再抖動） */
+/* ---- R64 根治 flaky：R46 觸達率探針全面種子化 ----
+   未觸發數在門檻邊緣抖動的根因有兩個未種子化來源：
+   ① startGame() → randomSeedCode() 用 Math.random 抽開局種子碼（每局事件序列隨機）
+   ② 下方 harness 選項亂選用 Math.random
+   兩者於 300 局模擬期間釘死成固定序列（跑幾次都同一組局），模擬結束立即還原
+   randomSeedCode，不影響後續各探針（它們各自用 mulberry32 顯式種子）。 */
+const __simRng = (function(seed){ let a=seed|0; return function(){ a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; })(20260612);
+vm.runInContext(`
+  globalThis.__rscOrig = randomSeedCode;
+  randomSeedCode = (function(){ let n=0; return function(){
+    let x=((++n)*2654435761+97)>>>0, c="";
+    for(let i=0;i<6;i++){ c+=SEED_CHARS[x%SEED_CHARS.length]; x=(x*1103515245+12345)>>>0; }
+    return c;
+  }; })();
+`, sandbox);
 for (let life = 0; life < N; life++) {
   try {
     sandbox.__startGame();
@@ -128,7 +144,7 @@ for (let life = 0; life < N; life++) {
       const chooseMatches = [...html.matchAll(/onclick="choose\((\d+)\)"/g)].map(x => Number(x[1]));
       const chainMatch = html.match(/showEvent\(EVENTS\.find\(e=>e\.id==='([^']+)'\)\)/);
       if (chooseMatches.length) {
-        const i = chooseMatches[Math.floor(Math.random() * chooseMatches.length)];
+        const i = chooseMatches[Math.floor(__simRng() * chooseMatches.length)];
         sandbox.__choose(i);
       } else if (/onclick="die\('choice'\)"/.test(html)) {
         sandbox.__die('choice');
@@ -157,6 +173,8 @@ for (let life = 0; life < N; life++) {
     __errors.push(`life ${life}: ${e.message}`);
   }
 }
+/* R64：300 局模擬結束，還原 randomSeedCode（後續探針不受種子釘死影響） */
+vm.runInContext('randomSeedCode = globalThis.__rscOrig;', sandbox);
 
 /* 結局/評級分布：逐局累計（__endings / __grades） */
 const save = sandbox.__SAVE();

@@ -1830,5 +1830,162 @@ const r63Clean = JSON.parse(vm.runInContext(`(function(){
 })()`, sandbox));
 ok(r63Clean.clean, 'R63 ⑨ 零汙染：開局 S.flags 無任何 r63 鍵');
 
+// ========================================================================
+// 32) R64 台味兵役當兵人生事件鏈：結構護欄／簽下去分支邏輯／學長學弟雙向計數／
+//     年代分流／理財回扣／死法確定性與零誤殺／成就正反例／舊存檔相容／零汙染／獵人提示
+// ========================================================================
+// ① 結構護欄：9 事件齊備、全 once、stage 覆蓋新訓到同學會、|eff|<=8（含 br）、w<=3、全段保底註冊
+const r64St = JSON.parse(vm.runInContext(`(function(){
+  const ids=['r64_mosquito','r64_march','r64_senior','r64_leave','r64_talk','r64_pay','r64_cert','r64_mantou','r64_reunion'];
+  const evs=ids.map(id=>EVENTS.find(e=>e.id===id));
+  const out={};
+  out.all = evs.every(e=>e && e.once && (e.w||1)<=3 && e.stage && e.choices.length>=3);
+  out.span = evs[0].stage[0]<=18 && evs[8].stage[1]>=40;
+  out.guard = evs.every(e=>e.choices.every(c=>{
+    const effs=[c.eff||{}]; if(c.br){effs.push(c.br.hi.eff||{},c.br.lo.eff||{});}
+    return effs.every(o=>Object.values(o).every(v=>Math.abs(v)<=8));
+  }));
+  out.cond = evs.every(e=>typeof e.cond==='function');
+  out.milestone = R46_MILESTONE.r64_talk===24 && R46_MILESTONE.r64_reunion===34 && R46_MILESTONE.r64_mosquito===20
+               && R46_MILESTONE.r64_pay===undefined && R46_MILESTONE.r64_cert===undefined;
+  return JSON.stringify(out);
+})()`, sandbox));
+ok(r64St.all && r64St.span, 'R64 ① 9 事件齊備全 once、stage 覆蓋新訓到退伍後同學會');
+ok(r64St.guard, 'R64 ① 平衡護欄：單選項 |eff|<=8、w<=3');
+ok(r64St.cond && r64St.milestone, 'R64 ① 全段 cond 掛兵役旗標＋R46 保底註冊（未進鏈零擠壓）');
+// ② 簽下去抉擇分支：cond 互斥（已簽/已退/已熬過不再觸發）、簽下去接上 r58_signup 志願役線、苦熬落 r64_endure
+const r64Sign = JSON.parse(vm.runInContext(`(function(){
+  const out={};
+  const tk=EVENTS.find(e=>e.id==='r64_talk');
+  out.open = tk.cond({flags:{r58_camp:true}})===true;
+  out.lockSigned = tk.cond({flags:{r58_camp:true,r58_signup:true}})===false;
+  out.lockVet = tk.cond({flags:{r58_camp:true,r58_vet:true}})===false;
+  out.lockEndure = tk.cond({flags:{r58_camp:true,r64_endure:true}})===false;
+  startGame(); S.age=22; S.flags={r58_camp:true}; ensureState(S);
+  showEvent(tk); choose(0);
+  out.signed = S.flags.r58_signup===true && S.flags.r64_signed===true;
+  startGame(); S.age=22; S.flags={r58_camp:true}; ensureState(S);
+  showEvent(tk); choose(1);
+  out.endure = S.flags.r64_endure===true && !S.flags.r58_signup;
+  /* 簽下去 → r64_pay 志願役月薪選項現身、義務役零頭選項退場（理財線文案分流） */
+  const hVol=__choiceHTML('r64_pay', s=>{s.flags.r58_signup=true;}, 22);
+  const hDraft=__choiceHTML('r64_pay', s=>{s.flags.r58_camp=true;}, 22);
+  out.payVol = hVol.includes('志願役限定') && !hVol.includes('零頭全梭福利社');
+  out.payDraft = !hDraft.includes('志願役限定') && hDraft.includes('零頭全梭福利社');
+  return JSON.stringify(out);
+})()`, sandbox));
+ok(r64Sign.open && r64Sign.lockSigned && r64Sign.lockVet && r64Sign.lockEndure, 'R64 ② 懇談 cond：在營未簽未退可觸發、已簽/已退/已苦熬絕緣');
+ok(r64Sign.signed && r64Sign.endure, 'R64 ② 簽下去接上 r58_signup 志願役線、苦熬落 r64_endure 義務役線');
+ok(r64Sign.payVol && r64Sign.payDraft, 'R64 ② 軍餉理財：志願役月薪/義務役零頭選項依簽約狀態互斥分流');
+// ③ 學長學弟制雙向隱性計數：挺 inc r64_ting／凹 inc r64_ao 各自累積、同學會敬酒門檻(>=2)鎖定與解鎖
+const r64Cnt = JSON.parse(vm.runInContext(`(function(){
+  const out={};
+  startGame(); S.age=22; S.flags={r58_camp:true}; ensureState(S);
+  showEvent(EVENTS.find(e=>e.id==='r64_senior')); choose(1);
+  out.ting1 = S.flags.r64_ting===1 && !S.flags.r64_ao;
+  showEvent(EVENTS.find(e=>e.id==='r64_leave')); choose(3);
+  out.ao1 = S.flags.r64_ao===1 && S.flags.r64_ting===1;
+  const rn=EVENTS.find(e=>e.id==='r64_reunion');
+  const li=rn.choices.findIndex(c=>String(c.label).includes('永遠的學長限定'));
+  out.lock = rn.choices[li].cond({flags:{r64_ting:1}})===false;
+  out.openC = rn.choices[li].cond({flags:{r64_ting:2}})===true;
+  startGame(); S.age=30; S.flags={army:true,r64_ting:2}; ensureState(S);
+  showEvent(rn); choose(li);
+  out.legacy = S.flags.r64_legacy===true;
+  return JSON.stringify(out);
+})()`, sandbox));
+ok(r64Cnt.ting1 && r64Cnt.ao1, 'R64 ③ 挺學弟/凹學弟雙向計數獨立累積（r64_ting／r64_ao）');
+ok(r64Cnt.lock && r64Cnt.openC && r64Cnt.legacy, 'R64 ③ 同學會敬酒門檻：挺滿 2 次解鎖、r64_legacy 退伍文案落地');
+// ④ R55 年代分流：同學會比兵（e70/e80 金馬獎開講 vs e10 四個月被圍剿，互斥絕緣，舊存檔無 era 鍵不炸）
+const rn70 = vm.runInContext(`__choiceHTML('r64_reunion', s=>{s.flags.army=true;s.era='e70';}, 30)`, sandbox);
+const rn10 = vm.runInContext(`__choiceHTML('r64_reunion', s=>{s.flags.army=true;s.era='e10';}, 30)`, sandbox);
+const rn90 = vm.runInContext(`__choiceHTML('r64_reunion', s=>{s.flags.army=true;s.era='e90';}, 30)`, sandbox);
+const rnOld = vm.runInContext(`__choiceHTML('r64_reunion', s=>{s.flags.army=true;delete s.era;}, 30)`, sandbox);
+ok(rn70.includes('金馬獎世代限定') && !rn70.includes('四個月世代限定'), 'R64 ④ e70 顯示金馬獎開講、四個月絕緣');
+ok(rn10.includes('四個月世代限定') && !rn10.includes('金馬獎世代限定'), 'R64 ④ e10 顯示四個月被圍剿、金馬獎絕緣');
+ok(!rn90.includes('世代限定') && !rnOld.includes('世代限定') && rnOld.includes('安靜吃飯'), 'R64 ④ e90/舊存檔無 era 鍵：年代選項皆絕緣、基本選項照常');
+// ⑤ R57 理財回扣：軍旅老本旗標（r64_rich/r64_saver）→ 定存事件退伍老本分支現身與落地
+const r64Fin = JSON.parse(vm.runInContext(`(function(){
+  const out={};
+  const h0=__choiceHTML('r57_fixdep', s=>{}, 40);
+  const h1=__choiceHTML('r57_fixdep', s=>{s.flags.r64_saver=true;}, 40);
+  const h2=__choiceHTML('r57_fixdep', s=>{s.flags.r64_rich=true;}, 40);
+  out.hidden = !h0.includes('退伍老本限定');
+  out.shown = h1.includes('退伍老本限定') && h2.includes('退伍老本限定');
+  const fd=EVENTS.find(e=>e.id==='r57_fixdep');
+  const fi=fd.choices.findIndex(c=>String(c.label).includes('退伍老本限定'));
+  startGame(); S.age=40; S.flags={r64_saver:true}; ensureState(S);
+  showEvent(fd); choose(fi);
+  out.flag = S.flags.r64_vetfund===true;
+  return JSON.stringify(out);
+})()`, sandbox));
+ok(r64Fin.hidden && r64Fin.shown, 'R64 ⑤ 定存退伍老本分支：沒當兵存款隱藏、志願役月薪/義務役小金庫旗標現身');
+ok(r64Fin.flag, 'R64 ⑤ 退伍老本滾定存落地 r64_vetfund（理財記憶回扣 R57）');
+// ⑥ 死法圖鑑收錄＋屬性門檻確定性觸發＋活路零誤殺
+const r64Death = JSON.parse(vm.runInContext(`(function(){
+  const out={};
+  out.book = ['marchheat','vetdrunk'].every(id=>DEATHBOOK.some(d=>d.id===id&&d.rare&&d.hint.length>4) && !!SPECIAL_DEATHS[id]);
+  const mc=EVENTS.find(e=>e.id==='r64_march'), mi=mc.choices.findIndex(c=>c.special==='r64_march');
+  startGame(); S.age=20; S.flags={r58_boot:true}; ensureState(S); S.attr.hp=12;
+  showEvent(mc); choose(mi);
+  out.mDying = S.flags.specialDeath==='marchheat';
+  die('choice');
+  out.mDead = !S.alive && S.deathId==='marchheat' && !!SAVE.deaths.marchheat;
+  startGame(); S.age=20; S.flags={r58_boot:true}; ensureState(S); S.attr.hp=70;
+  showEvent(mc); choose(mi);
+  out.mAlive = S.alive===true && !S.flags.specialDeath && S.flags.r64_ironman===true;
+  const rn=EVENTS.find(e=>e.id==='r64_reunion'), di=rn.choices.findIndex(c=>c.special==='r64_drink');
+  startGame(); S.age=35; S.flags={army:true}; ensureState(S); S.attr.hp=10;
+  showEvent(rn); choose(di);
+  out.dDying = S.flags.specialDeath==='vetdrunk';
+  die('choice');
+  out.dDead = !S.alive && S.deathId==='vetdrunk' && !!SAVE.deaths.vetdrunk;
+  startGame(); S.age=35; S.flags={army:true}; ensureState(S); S.attr.hp=70;
+  showEvent(rn); choose(di);
+  out.dAlive = S.alive===true && !S.flags.specialDeath && S.flags.r64_drinkout===true;
+  return JSON.stringify(out);
+})()`, sandbox));
+ok(r64Death.book, 'R64 ⑥ marchheat/vetdrunk 收錄進死法圖鑑（rare＋模糊提示）');
+ok(r64Death.mDying && r64Death.mDead, 'R64 ⑥ 體力見底硬漢行軍 → 行軍蒸發全流程＋跨局收集');
+ok(r64Death.mAlive, 'R64 ⑥ 體力正常硬漢行軍：活路分支（r64_ironman 落地、零誤殺）');
+ok(r64Death.dDying && r64Death.dDead, 'R64 ⑥ 體力見底同梯拚酒 → 同梯拚酒全流程＋跨局收集');
+ok(r64Death.dAlive, 'R64 ⑥ 體力正常拚酒：活路分支（r64_drinkout 落地、零誤殺）');
+// ⑦ 新成就 ×3：check 正反例＋獵人提示齊備
+const r64Ach = JSON.parse(vm.runInContext(`(function(){
+  const out={};
+  out.kinmen = ACH_MAP.r64_kinmen.check({S:{flags:{r64_jinma:true}}, age:40});
+  out.kinmenNeg = !ACH_MAP.r64_kinmen.check({S:{flags:{}}, age:80});
+  out.mantou = ACH_MAP.r64_mantoufin.check({S:{flags:{r64_mantou:true,r58_vet:true}}, age:30});
+  out.mantouNeg = !ACH_MAP.r64_mantoufin.check({S:{flags:{r64_mantou:true}}, age:30}) && !ACH_MAP.r64_mantoufin.check({S:{flags:{r58_vet:true}}, age:30});
+  out.forever = ACH_MAP.r64_forever.check({S:{flags:{r64_ting:3}}, age:30});
+  out.foreverNeg = !ACH_MAP.r64_forever.check({S:{flags:{r64_ting:2}}, age:80});
+  out.hints = ['r64_kinmen','r64_mantoufin','r64_forever'].every(id=>ACH_MAP[id]&&ACH_MAP[id].hint&&ACH_MAP[id].hint.length>4);
+  return JSON.stringify(out);
+})()`, sandbox));
+ok(r64Ach.kinmen && r64Ach.kinmenNeg, 'R64 ⑦ 成就「金馬獎得主」：外島開講旗標解鎖、無旗標不誤觸');
+ok(r64Ach.mantou && r64Ach.mantouNeg, 'R64 ⑦ 成就「饅頭數完了」：饅頭日曆＋退伍雙旗標解鎖、單旗標不解鎖');
+ok(r64Ach.forever && r64Ach.foreverNeg, 'R64 ⑦ 成就「永遠的學長」：挺學弟滿 3 解鎖、2 次不解鎖');
+ok(r64Ach.hints, 'R64 ⑦ 三個新成就獵人提示齊備');
+// ⑧ 舊存檔相容：無 r64 鍵的舊存檔經 ensureState 補鍵後 cond/成就/門檻選項全不炸不誤觸
+const r64Compat = JSON.parse(vm.runInContext(`(function(){
+  const out={};
+  startGame(); S.age=30; S.flags={army:true}; ensureState(S);
+  const rn=EVENTS.find(e=>e.id==='r64_reunion');
+  out.cond = rn.choices.find(c=>String(c.label).includes('永遠的學長限定')).cond(S)===false;
+  out.ach = !ACH_MAP.r64_kinmen.check({S:S,age:80}) && !ACH_MAP.r64_mantoufin.check({S:S,age:80}) && !ACH_MAP.r64_forever.check({S:S,age:80});
+  const h1=__choiceHTML('r64_reunion', s=>{s.flags.army=true;}, 30);
+  const h2=__choiceHTML('r57_fixdep', s=>{}, 40);
+  out.gateHidden = !h1.includes('永遠的學長限定') && !h1.includes('替代役限定') && !h2.includes('退伍老本限定') && h1.includes('安靜吃飯');
+  return JSON.stringify(out);
+})()`, sandbox));
+ok(r64Compat.cond && r64Compat.ach, 'R64 ⑧ 舊存檔相容：ensureState 後無 r64 鍵、cond 不開、成就不誤觸');
+ok(r64Compat.gateHidden, 'R64 ⑧ 舊存檔無 r64 鍵：門檻選項全隱藏、基本選項照常');
+// ⑨ 零汙染：開局無 r64 旗標、不選不沾
+const r64Clean = JSON.parse(vm.runInContext(`(function(){
+  startGame();
+  return JSON.stringify({clean:Object.keys(S.flags).every(k=>k.indexOf('r64')!==0)});
+})()`, sandbox));
+ok(r64Clean.clean, 'R64 ⑨ 零汙染：開局 S.flags 無任何 r64 鍵');
+
 console.log(fails ? `\n結果: ❌ ${fails} 項未通過` : '\n結果: ✅ 狀態機全數正確');
 process.exit(fails ? 1 : 0);
