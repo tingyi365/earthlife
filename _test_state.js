@@ -1412,5 +1412,152 @@ const r60Clean = JSON.parse(vm.runInContext(`(function(){
 })()`, sandbox));
 ok(r60Clean.clean, 'R60 ⑧ 零汙染：開局 S.flags 無任何 r60 鍵');
 
+// ========================================================================
+// 29) R61 台味飲食人生事件鏈：結構護欄／手搖成癮計數／年代分流／理財與寵物回扣／
+//     死法收錄與確定性觸發／成就正反例／舊存檔相容／零汙染
+// ========================================================================
+// ① 結構護欄：8 事件齊備、全 once、stage 覆蓋童年到老年、|eff|<=8（含 br 分流）、w<=3、保底註冊
+const r61St = JSON.parse(vm.runInContext(`(function(){
+  const ids=['r61_nightmkt','r61_boba','r61_bento','r61_groupbuy','r61_yexiao','r61_noodle','r61_quit','r61_oldfood'];
+  const evs=ids.map(id=>EVENTS.find(e=>e.id===id));
+  const out={};
+  out.all = evs.every(e=>e && e.once && (e.w||1)<=3 && e.stage && e.choices.length>=3);
+  out.span = evs[0].stage[0]<=8 && evs[7].stage[1]>=80;
+  out.guard = evs.every(e=>e.choices.every(c=>{
+    const effs=[c.eff||{}]; if(c.br){effs.push(c.br.hi.eff||{},c.br.lo.eff||{});}
+    return effs.every(o=>Object.values(o).every(v=>Math.abs(v)<=8));
+  }));
+  out.milestone = R46_MILESTONE.r61_quit===38 && R46_MILESTONE.r61_oldfood===68;
+  return JSON.stringify(out);
+})()`, sandbox));
+ok(r61St.all && r61St.span, 'R61 ① 8 事件齊備全 once、stage 覆蓋童年到老年');
+ok(r61St.guard, 'R61 ① 平衡護欄：單選項 |eff|<=8（含 br 分流）、w<=3');
+ok(r61St.milestone, 'R61 ① 戒糖/老年養生 R46 保底註冊（童年夜市/求學手搖不配保底零擠壓）');
+// ② 手搖成癮計數：inc 逐杯累積、>=2 解鎖泡麵升級選項與戒糖挑戰、破功 +1、硬戒落旗標
+const r61Boba = JSON.parse(vm.runInContext(`(function(){
+  const out={};
+  startGame(); S.age=16; S.flags={}; ensureState(S);
+  showEvent(EVENTS.find(e=>e.id==='r61_boba')); choose(0);
+  out.one = S.flags.r61_boba===1 && S.flags.r61_food===true;
+  const quit=EVENTS.find(e=>e.id==='r61_quit');
+  out.quitLocked = !quit.cond(S);
+  S.flags.r61_boba=2;
+  out.quitOpen = !!quit.cond(S);
+  showEvent(EVENTS.find(e=>e.id==='r61_noodle')); choose(1);
+  out.up = S.flags.r61_boba===3;
+  startGame(); S.age=35; S.flags={r61_boba:2}; ensureState(S);
+  showEvent(EVENTS.find(e=>e.id==='r61_quit')); choose(2);
+  out.relapse = S.flags.r61_boba===3 && !S.flags.r61_sugarfree;
+  startGame(); S.age=35; S.flags={r61_boba:2}; ensureState(S);
+  showEvent(EVENTS.find(e=>e.id==='r61_quit')); choose(0);
+  out.detox = S.flags.r61_sugarfree===true;
+  return JSON.stringify(out);
+})()`, sandbox));
+ok(r61Boba.one, 'R61 ② 手搖 inc r61_boba 成癮計數落地（全糖第一杯）');
+ok(r61Boba.quitLocked && r61Boba.quitOpen, 'R61 ② 戒糖挑戰 cond：1 杯鎖定、2 杯解鎖（隱性成癮門檻）');
+ok(r61Boba.up && r61Boba.relapse && r61Boba.detox, 'R61 ② 泡麵配手搖再累積／戒三天破功 +1／硬戒落 r61_sugarfree');
+// ③ 年代分流（回扣 R55）：手搖事件 e70/e80 泡沫紅茶店 vs e10/e20 排隊名店、其餘年代與舊存檔皆絕緣
+const bb70 = vm.runInContext(`__choiceHTML('r61_boba', s=>{s.era='e70';}, 16)`, sandbox);
+const bb10 = vm.runInContext(`__choiceHTML('r61_boba', s=>{s.era='e10';}, 16)`, sandbox);
+const bb90 = vm.runInContext(`__choiceHTML('r61_boba', s=>{s.era='e90';}, 16)`, sandbox);
+const bbOld = vm.runInContext(`__choiceHTML('r61_boba', s=>{delete s.era;}, 16)`, sandbox);
+ok(bb70.includes('泡沫紅茶店世代限定') && !bb70.includes('排隊名店世代限定'), 'R61 ③ e70 顯示泡沫紅茶店、排隊名店絕緣');
+ok(bb10.includes('排隊名店世代限定') && !bb10.includes('泡沫紅茶店世代限定'), 'R61 ③ e10 顯示排隊名店、泡沫紅茶店絕緣');
+ok(!bb90.includes('泡沫紅茶店世代限定') && !bb90.includes('排隊名店世代限定'), 'R61 ③ e90 兩個年代選項皆絕緣');
+ok(!bbOld.includes('世代限定') && bbOld.includes('全糖正常冰'), 'R61 ③ 舊存檔無 era 鍵：年代選項隱藏、基本選項照常');
+// ④ 理財回扣（R57）：被倒會過才看得到團購 PTSD 選項
+const r61Fin = JSON.parse(vm.runInContext(`(function(){
+  const out={};
+  const h0=__choiceHTML('r61_groupbuy', s=>{s.flags.employed=true;}, 35);
+  const h1=__choiceHTML('r61_groupbuy', s=>{s.flags.employed=true; s.flags.r57_huivictim=true;}, 35);
+  out.hidden=h0.indexOf('倒會倖存者限定')<0; out.shown=h1.indexOf('倒會倖存者限定')>=0;
+  startGame(); S.age=35; S.flags={employed:true, r57_huivictim:true}; ensureState(S);
+  showEvent(EVENTS.find(e=>e.id==='r61_groupbuy')); choose(2);
+  out.flag = S.flags.r61_nohui===true;
+  return JSON.stringify(out);
+})()`, sandbox));
+ok(r61Fin.hidden && r61Fin.shown, 'R61 ④ 團購倒會倖存者分支：沒被倒過會隱藏、R57 受害旗標現身');
+ok(r61Fin.flag, 'R61 ④ PTSD 選項落地 r61_nohui（理財記憶回扣 R57）');
+// ⑤ 寵物回扣（R54）：有在世毛孩才看得到宵夜分食選項
+const r61Pet = JSON.parse(vm.runInContext(`(function(){
+  const out={};
+  const h0=__choiceHTML('r61_yexiao', s=>{}, 30);
+  const h1=__choiceHTML('r61_yexiao', s=>{s.flags.r54_pet=true;}, 30);
+  const h2=__choiceHTML('r61_yexiao', s=>{s.flags.r54_pet=true; s.flags.r54_gone=true;}, 30);
+  out.hidden = h0.indexOf('毛孩家庭限定')<0 && h2.indexOf('毛孩家庭限定')<0;
+  out.shown = h1.indexOf('毛孩家庭限定')>=0;
+  startGame(); S.age=30; S.flags={r54_pet:true}; ensureState(S);
+  showEvent(EVENTS.find(e=>e.id==='r61_yexiao')); choose(2);
+  out.flag = S.flags.r61_petshare===true;
+  return JSON.stringify(out);
+})()`, sandbox));
+ok(r61Pet.hidden && r61Pet.shown, 'R61 ⑤ 宵夜毛孩分支：無寵物/寵物已別離隱藏、在世毛孩現身');
+ok(r61Pet.flag, 'R61 ⑤ 分食選項落地 r61_petshare（毛孩稅回扣 R54）');
+// ⑥ 新死法 ×2：圖鑑收錄＋屬性門檻確定性觸發（hp≤10 宵夜帝王／hp≤12 全糖人生）＋活路零誤殺
+const r61Death = JSON.parse(vm.runInContext(`(function(){
+  const out={};
+  out.book = ['yexiaoking','sugarcrash'].every(id=>DEATHBOOK.some(d=>d.id===id&&d.rare&&d.hint.length>4) && !!SPECIAL_DEATHS[id]);
+  const yx=EVENTS.find(e=>e.id==='r61_yexiao'), fi=yx.choices.findIndex(c=>c.special==='r61_feast');
+  startGame(); S.age=30; S.flags={}; ensureState(S); S.attr.hp=9;
+  showEvent(yx); choose(fi);
+  out.fDying = S.flags.specialDeath==='yexiaoking';
+  die('choice');
+  out.fDead = !S.alive && S.deathId==='yexiaoking' && !!SAVE.deaths.yexiaoking;
+  startGame(); S.age=30; S.flags={}; ensureState(S); S.attr.hp=70;
+  showEvent(EVENTS.find(e=>e.id==='r61_yexiao')); choose(fi);
+  out.fAlive = S.alive===true && !S.flags.specialDeath && S.flags.r61_yexiaoking===true;
+  const of=EVENTS.find(e=>e.id==='r61_oldfood'), si=of.choices.findIndex(c=>c.special==='r61_sugar');
+  startGame(); S.age=70; S.flags={r61_boba:4}; ensureState(S); S.attr.hp=10;
+  showEvent(of); choose(si);
+  out.sDying = S.flags.specialDeath==='sugarcrash';
+  die('choice');
+  out.sDead = !S.alive && S.deathId==='sugarcrash' && !!SAVE.deaths.sugarcrash;
+  startGame(); S.age=70; S.flags={r61_boba:4}; ensureState(S); S.attr.hp=70;
+  showEvent(EVENTS.find(e=>e.id==='r61_oldfood')); choose(si);
+  out.sAlive = S.alive===true && !S.flags.specialDeath && S.flags.r61_sugarelder===true;
+  return JSON.stringify(out);
+})()`, sandbox));
+ok(r61Death.book, 'R61 ⑥ yexiaoking/sugarcrash 收錄進死法圖鑑（rare＋模糊提示）');
+ok(r61Death.fDying && r61Death.fDead, 'R61 ⑥ 體力見底點帝王全餐 → 宵夜帝王全流程＋跨局收集');
+ok(r61Death.fAlive, 'R61 ⑥ 體力正常吃帝王全餐：活路分支（r61_yexiaoking 落地、零誤殺）');
+ok(r61Death.sDying && r61Death.sDead, 'R61 ⑥ 老年體力見底全糖到底 → 代謝崩潰全流程＋跨局收集');
+ok(r61Death.sAlive, 'R61 ⑥ 體力正常全糖到底：活路分支（r61_sugarelder 落地、零誤殺）');
+// ⑦ 新成就 ×3：check 正反例＋獵人提示齊備
+const r61Ach = JSON.parse(vm.runInContext(`(function(){
+  const out={};
+  out.half = ACH_MAP.r61_halfsugar.check({S:{flags:{r61_halfsugar:true,r61_boba:2}}, age:40});
+  out.halfNeg = !ACH_MAP.r61_halfsugar.check({S:{flags:{r61_halfsugar:true,r61_boba:1}}, age:40}) && !ACH_MAP.r61_halfsugar.check({S:{flags:{r61_boba:3}}, age:40});
+  out.mkt = ACH_MAP.r61_mktfull.check({S:{seen:{r61_nightmkt:1,r61_yexiao:1,r61_noodle:1},flags:{}}, age:50});
+  out.mktNeg = !ACH_MAP.r61_mktfull.check({S:{seen:{r61_nightmkt:1,r61_yexiao:1},flags:{}}, age:50});
+  out.noSeen = !ACH_MAP.r61_mktfull.check({S:{flags:{}}, age:50});
+  out.detox = ACH_MAP.r61_detox.check({S:{flags:{r61_sugarfree:true}}, age:40});
+  out.detoxNeg = !ACH_MAP.r61_detox.check({S:{flags:{}}, age:40});
+  out.hints = ['r61_halfsugar','r61_mktfull','r61_detox'].every(id=>ACH_MAP[id]&&ACH_MAP[id].hint&&ACH_MAP[id].hint.length>4);
+  return JSON.stringify(out);
+})()`, sandbox));
+ok(r61Ach.half && r61Ach.halfNeg, 'R61 ⑦ 成就「半糖人生」：半糖＋2 杯解鎖、1 杯或無半糖旗標不解鎖');
+ok(r61Ach.mkt && r61Ach.mktNeg && r61Ach.noSeen, 'R61 ⑦ 成就「夜市制霸」：三堂宵夜課解鎖、缺堂不解鎖、舊存檔無 seen 不炸');
+ok(r61Ach.detox && r61Ach.detoxNeg, 'R61 ⑦ 成就「戒糖成功」：r61_sugarfree 正反例');
+ok(r61Ach.hints, 'R61 ⑦ 三個新成就獵人提示齊備');
+// ⑧ 舊存檔相容：無 r61 鍵的舊存檔經 ensureState 補鍵後 cond/成就/門檻選項全不炸不誤觸
+const r61Compat = JSON.parse(vm.runInContext(`(function(){
+  const out={};
+  startGame(); S.age=40; S.flags={marital:'single'}; delete S.seen; ensureState(S);
+  out.keys = !!S.seen && Array.isArray(S.recent);
+  out.quitCond = EVENTS.find(e=>e.id==='r61_quit').cond(S)===false;
+  out.ach = !ACH_MAP.r61_halfsugar.check({S:S,age:40}) && !ACH_MAP.r61_mktfull.check({S:S,age:40}) && !ACH_MAP.r61_detox.check({S:S,age:40});
+  const h=__choiceHTML('r61_noodle', s=>{}, 30);
+  out.gateHidden = h.indexOf('糖分老饕限定')<0;
+  return JSON.stringify(out);
+})()`, sandbox));
+ok(r61Compat.keys && r61Compat.quitCond, 'R61 ⑧ 舊存檔相容：ensureState 補鍵、無成癮計數戒糖事件不開');
+ok(r61Compat.ach && r61Compat.gateHidden, 'R61 ⑧ 舊存檔無 r61 鍵：成就不誤觸、升級選項隱藏');
+// ⑨ 零汙染：開局無 r61 旗標、不選不沾
+const r61Clean = JSON.parse(vm.runInContext(`(function(){
+  startGame();
+  return JSON.stringify({clean:Object.keys(S.flags).every(k=>k.indexOf('r61')!==0)});
+})()`, sandbox));
+ok(r61Clean.clean, 'R61 ⑨ 零汙染：開局 S.flags 無任何 r61 鍵');
+
 console.log(fails ? `\n結果: ❌ ${fails} 項未通過` : '\n結果: ✅ 狀態機全數正確');
 process.exit(fails ? 1 : 0);
