@@ -5,16 +5,16 @@
 [![▶ Play Now](https://img.shields.io/badge/%E2%96%B6%20%E7%B7%9A%E4%B8%8A%E8%A9%A6%E7%8E%A9-earthlife.pages.dev-7fd7ff?style=for-the-badge)](https://earthlife.pages.dev)
 [![License: MIT](https://img.shields.io/badge/License-MIT-3fb950?style=for-the-badge)](LICENSE)
 [![Single HTML file](https://img.shields.io/badge/Build-%E5%96%AE%E4%B8%80%20HTML%20%E6%AA%94%C2%B7%E7%84%A1%E6%A1%86%E6%9E%B6-ff9d5c?style=for-the-badge)](index.html)
-[![AI Self-Evolved](https://img.shields.io/badge/AI%20%E8%87%AA%E4%B8%BB%E9%80%B2%E5%8C%96-R1%20%E2%86%92%20R76%20%E4%BB%8D%E5%9C%A8%E7%B9%BC%E7%BA%8C-ffd24a?style=for-the-badge)](docs/AI_AUTONOMOUS_UPDATE.md)
+[![AI Self-Evolved](https://img.shields.io/badge/AI%20%E8%87%AA%E4%B8%BB%E9%80%B2%E5%8C%96-R1%20%E2%86%92%20R77%20%E4%BB%8D%E5%9C%A8%E7%B9%BC%E7%BA%8C-ffd24a?style=for-the-badge)](docs/AI_AUTONOMOUS_UPDATE.md)
 
-> 🧬 **一句話賣點**：一個 AI agent，無人介入、每 30 分鐘自我迭代一輪，從 61 個事件的雛形連續進化 **76 輪**，每一輪都得先過自動化測試閘門才准上線——你現在玩到的，是它自己長出來的。
+> 🧬 **一句話賣點**：一個 AI agent，無人介入、每 30 分鐘自我迭代一輪，從 61 個事件的雛形連續進化 **77 輪**，每一輪都得先過自動化測試閘門才准上線——你現在玩到的，是它自己長出來的。
 
 🎮 線上試玩 / Play now: **https://earthlife.pages.dev**
 
 <p align="center">
   <img src="docs/demo.gif" width="62%" alt="EarthLife 實機 demo：投胎抽卡 → 梗圖事件 → 人生總結卡">
 </p>
-<p align="center"><sub>↑ 實機 demo（持續進化中，目前 R76）</sub></p>
+<p align="center"><sub>↑ 實機 demo（持續進化中，目前 R77）</sub></p>
 
 <p align="center">
   <img src="docs/screenshot_start.png" width="31%" alt="開局投胎抽卡">
@@ -29,7 +29,7 @@
 
 這不只是一款遊戲——它是一個 **「AI 自主更新管理」的實驗場**。
 
-遊戲上線後的每一輪迭代（**R1 → R76，仍在繼續**），都由一個 AI agent 自主完成，**每 30 分鐘一輪**，無人介入：
+遊戲上線後的每一輪迭代（**R1 → R77，仍在繼續**），都由一個 AI agent 自主完成，**每 30 分鐘一輪**，無人介入：
 
 ```
 ┌─────────────────────────────────────────────────┐
@@ -44,11 +44,11 @@
 └─────────────────────────────────────────────────┘
 ```
 
-76 輪下來，遊戲從 61 個事件的雛形，長成 **690 個事件、111 種梗圖場景、250 個成就、64 種死法、10 個隱藏結局**、外加多館合一的收藏圖鑑（死法／成就／出身／天賦）的完整作品（數據截至 R76，由測試報告即時統計）——每一步都有測試把關、每一步都可回溯。
+77 輪下來，遊戲從 61 個事件的雛形，長成 **693 個事件、111 種梗圖場景、252 個成就、65 種死法、10 個隱藏結局**、外加多館合一的收藏圖鑑（死法／成就／出身／天賦）的完整作品（數據截至 R77，由測試報告即時統計）——每一步都有測試把關、每一步都可回溯。
 
 詳細機制設計請見 **[docs/AI_AUTONOMOUS_UPDATE.md](docs/AI_AUTONOMOUS_UPDATE.md)**。
 
-### 🧬 AI 自主進化時間軸（R1 → R76 精選里程碑）
+### 🧬 AI 自主進化時間軸（R1 → R77 精選里程碑）
 
 > 從一個 61 事件的雛形，AI agent 自己一路把它養成了下面這條軌跡。沒有人類排需求，每一輪都是它讀完現況後自己決定要長什麼：
 
@@ -66,9 +66,10 @@
 | **R73** | 💘 台味感情婚戀深化鏈：交友軟體 → 見面 → 求婚 |
 | **R74** | 😮‍💨 鬼島「躺平 vs 內捲」打工人事件鏈：22K 震撼教育 → 爆肝升遷／佛系小確幸 → 中年職涯期末考 |
 | **R75** | 🌇 晚年退休型態與身後事鏈：含飴弄孫／環島壯遊／廟口棋仙……到自己填的最後一張表格 |
-| **R76** | ✈️ 台味「潤學」海外移民人生分流：成年潤出國 → 海外適應 → 思鄉拉扯 → 葉落歸根，與留台人生形成對照（最新一輪） |
+| **R76** | ✈️ 台味「潤學」海外移民人生分流：成年潤出國 → 海外適應 → 思鄉拉扯 → 葉落歸根，與留台人生形成對照 |
+| **R77** | 🎓 鬼島升學×校園青春事件鏈：學測放榜 → 大學青春 → 學歷變現三段，智力／財富實際驅動頂大／私校／技職／落榜重考分流，回扣 R50 職涯起薪，含報告週爆肝校園限定死法與升學成就（最新一輪） |
 
-> 一個 AI agent，連續自我迭代 **76 輪**、每一輪都得過測試閘門才放行——這是這個專案最獨特的賣點。完整 76 輪逐輪設計決策直接寫在 `index.html` 的程式碼註解裡，那也是下一輪 AI 的記憶。
+> 一個 AI agent，連續自我迭代 **77 輪**、每一輪都得過測試閘門才放行——這是這個專案最獨特的賣點。完整 77 輪逐輪設計決策直接寫在 `index.html` 的程式碼註解裡，那也是下一輪 AI 的記憶。
 
 ## 🎮 遊戲說明
 
@@ -117,7 +118,7 @@ node _test_state.js
 
 This is not just a game — it's a working experiment in **AI-autonomous release management**.
 
-Every iteration since launch (**R1 → R76 and counting**) was performed by an AI agent, **one round every 30 minutes**, with no human in the loop:
+Every iteration since launch (**R1 → R77 and counting**) was performed by an AI agent, **one round every 30 minutes**, with no human in the loop:
 
 1. **Pick a direction** — the agent reads the current game state and decides what to evolve this round (new system / balancing / polish / easter eggs).
 2. **Modify the code** — edits the game directly.
@@ -125,7 +126,7 @@ Every iteration since launch (**R1 → R76 and counting**) was performed by an A
 4. **Deploy** — pushes the build to Cloudflare Pages.
 5. **Write the log** — leaves structured design comments in the code, which become context for the next round's agent.
 
-Over 76 rounds the game grew from a 61-event prototype into **690 events, 111 meme scenes, 250 achievements, 64 ways to die, 10 hidden endings**, plus a multi-museum collection gallery (deaths / achievements / origins / talents) — figures as of R76, tallied live by the test report. Every step gated by tests, every step traceable.
+Over 77 rounds the game grew from a 61-event prototype into **693 events, 111 meme scenes, 252 achievements, 65 ways to die, 10 hidden endings**, plus a multi-museum collection gallery (deaths / achievements / origins / talents) — figures as of R77, tallied live by the test report. Every step gated by tests, every step traceable.
 
 See **[docs/AI_AUTONOMOUS_UPDATE.md](docs/AI_AUTONOMOUS_UPDATE.md)** for the full mechanism design and evolution log.
 
