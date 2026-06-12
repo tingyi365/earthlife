@@ -2624,5 +2624,114 @@ ok(r77Misc.hints && r77Misc.death, 'R77 ④ 兩成就提示齊備＋thesishell �
 ok(r77Misc.clean, 'R77 ④ 零汙染：開局 S.flags 無任何 r77 鍵');
 ok(r77Misc.compat && r77Misc.noModOk, 'R77 ④ 舊存檔相容：ensureState 不補 r77 鍵、無 examMod 走 ||0 不炸');
 
+// ===== R79 鬼島兵役人生支線：觸發/gating、體質/役別驅動體位分流、確定性、零汙染、舊存檔相容、與R58錯開 =====
+// ① 入口 r79_phys gating（役齡進池、已入鏈 once、與既有 R58 army 旗標互不干涉）
+const r79Gate = JSON.parse(vm.runInContext(`(function(){
+  const out={}; const f=id=>EVENTS.find(e=>e.id===id);
+  startGame(); let s=S; s.flags={}; ensureState(s); s.seen={}; s.age=21;
+  out.seedIn = eligible().some(e=>e.id==='r79_phys');
+  s.flags.r79_chain=true; out.seedOnce = !eligible().some(e=>e.id==='r79_phys');
+  // 與 R58 錯開：r79_phys cond 不讀 army/r58_，已當過 R58 兵的局照樣能跑 R79 體位層（並行不互斥）
+  s.flags={army:true,r58_draft:true}; out.r58Indep = f('r79_phys').cond(s)===true && f('r79_phys').cond.toString().indexOf('r58')===-1 && f('r79_phys').cond.toString().indexOf('army')===-1;
+  // 選項層 gate：智力→軍官、財富→喬體位、低健康→認命體檢
+  s.flags={}; s.attr.int=76; out.gateOfficer = f('r79_phys').choices[1].cond(s)===true && (s.attr.int=75, f('r79_phys').choices[1].cond(s)===false);
+  s.attr.mny=72; out.gateDodge = f('r79_phys').choices[2].cond(s)===true && (s.attr.mny=71, f('r79_phys').choices[2].cond(s)===false);
+  s.attr.hp=38; out.gateWeak = f('r79_phys').choices[3].cond(s)===true && (s.attr.hp=39, f('r79_phys').choices[3].cond(s)===false);
+  out.gateBackup = !f('r79_phys').choices[0].cond; // 選項0為唯一無條件保底
+  return JSON.stringify(out);
+})()`, sandbox));
+ok(r79Gate.seedIn && r79Gate.seedOnce, 'R79 ① 入口 r79_phys：役齡未入鏈進池、已入鏈 once 不重播');
+ok(r79Gate.r58Indep, 'R79 ① 與既有 R58 兵役鏈嚴格錯開：cond 不讀 army/r58_、並行不互斥、獨立 r79_ 旗標');
+ok(r79Gate.gateOfficer && r79Gate.gateDodge && r79Gate.gateWeak && r79Gate.gateBackup, 'R79 ① 選項 gate：智力76→軍官/財富72→喬體位/健康38↓→認命體檢，選項0唯一保底');
+
+// ② cb 兩段 gating（體檢完成才進軍旅、服役完才進退伍）+ 免役/喬體位不上戰場仍走完支線
+const r79Chain = JSON.parse(vm.runInContext(`(function(){
+  const out={};
+  startGame(); let s=S; s.flags={}; ensureState(s); s.seen={}; s.age=22;
+  out.serviceGated = !eligible().some(e=>e.id==='cb_r79_service');
+  s.flags={r79_examdone:true,r79_active:true}; out.serviceIn = eligible().some(e=>e.id==='cb_r79_service');
+  s.flags={}; out.dischGated = !eligible().some(e=>e.id==='cb_r79_discharge');
+  s.flags={r79_servedone:true}; out.dischIn = eligible().some(e=>e.id==='cb_r79_discharge');
+  // 免役者也走完軍旅段(免役社會眼光)→退伍段(沒當兵的成年禮)，弧線完整
+  s.flags={r79_examdone:true,r79_exempt:true}; out.exemptInService = eligible().some(e=>e.id==='cb_r79_service');
+  return JSON.stringify(out);
+})()`, sandbox));
+ok(r79Chain.serviceGated && r79Chain.serviceIn, 'R79 ② cb_r79_service gating：未體檢絕緣、體位判定完成後進池');
+ok(r79Chain.dischGated && r79Chain.dischIn, 'R79 ② cb_r79_discharge gating：未服役絕緣、軍旅走完後進池');
+ok(r79Chain.exemptInService, 'R79 ② 免役/喬體位者仍進軍旅段(社會眼光)→退伍段(沒當兵的成年禮)，弧線完整不斷鏈');
+
+// ③ 體質真驅動：r79_grade special 由 hp 確定性四分流（甲乙→常備/丙→替代/不合→免役），同 hp 必同體位
+const r79Attr = JSON.parse(vm.runInContext(`(function(){
+  const out={}; const f=id=>EVENTS.find(e=>e.id===id);
+  function grade(a){ startGame(); S.flags={}; ensureState(S); S.seen={}; Object.assign(S.attr,a); showEvent(f('r79_phys')); choose(0); return S.flags; }
+  out.gradeA = (g=>!!g.r79_active&&!!g.r79_gradeA)(grade({hp:80,int:50,mny:50,apr:50}));
+  out.gradeB = (g=>!!g.r79_active&&!g.r79_gradeA)(grade({hp:50,int:50,mny:50,apr:50}));
+  out.subst = !!grade({hp:33,int:50,mny:50,apr:50}).r79_subst;
+  out.exempt = !!grade({hp:18,int:50,mny:50,apr:50}).r79_exempt;
+  // 同屬性同結果（確定性、零裸 rng）：連跑兩次同 hp 必同役別
+  out.deterministic = JSON.stringify(grade({hp:80,int:50,mny:50,apr:50}).r79_active)===JSON.stringify(grade({hp:80,int:50,mny:50,apr:50}).r79_active)
+    && JSON.stringify(grade({hp:18,int:50,mny:50,apr:50}).r79_exempt)===JSON.stringify(grade({hp:18,int:50,mny:50,apr:50}).r79_exempt);
+  // 體質真驅動：同一選項僅健康高低即翻轉常備役↔免役
+  out.attrDriven = !!grade({hp:80,int:50,mny:50,apr:50}).r79_active && !!grade({hp:15,int:50,mny:50,apr:50}).r79_exempt;
+  // 軍官/喬體位由選項層確定性設旗標（智力/財富門檻已驗於①）
+  startGame(); S.flags={}; ensureState(S); S.seen={}; Object.assign(S.attr,{int:80,mny:50,hp:50,apr:50}); showEvent(f('r79_phys')); choose(1);
+  out.officer = !!S.flags.r79_officer && !!S.flags.employed;
+  startGame(); S.flags={}; ensureState(S); S.seen={}; Object.assign(S.attr,{int:50,mny:80,hp:50,apr:50}); showEvent(f('r79_phys')); choose(2);
+  out.dodge = !!S.flags.r79_dodge && !!S.flags.r79_exempt;
+  return JSON.stringify(out);
+})()`, sandbox));
+ok(r79Attr.gradeA && r79Attr.gradeB && r79Attr.subst && r79Attr.exempt, 'R79 ③ 體質確定性四分流：甲(hp65+)/乙(42+)→常備、丙(25+)→替代補充、不合→免役');
+ok(r79Attr.deterministic, 'R79 ③ 同 hp 必同體位（確定性、零裸 rng，挑戰/對戰復現性不破壞）');
+ok(r79Attr.attrDriven, 'R79 ③ 體質真驅動：同一選項僅健康高低即翻轉常備役↔免役');
+ok(r79Attr.officer && r79Attr.dodge, 'R79 ③ 軍官(設employed回扣R50)/喬體位(併免役)由選項層確定性分流');
+
+// ④ 軍旅分支 + 操演死法/榮譽假 + 退伍結算 + 成就/死法/TL + 零汙染 + 舊存檔相容 + 與R58死法錯開
+const r79Misc = JSON.parse(vm.runInContext(`(function(){
+  const out={}; const f=id=>EVENTS.find(e=>e.id===id);
+  // 體能操演 special：hp≤14→操演熱衰竭死法、hp≥70→榮譽假達人、中間→撐過服役
+  function drill(a){ startGame(); S.flags={r79_examdone:true,r79_active:true}; ensureState(S); S.seen={}; Object.assign(S.attr,a); showEvent(f('cb_r79_service')); choose(0); return S.flags; }
+  out.heatDeath = drill({hp:10}).specialDeath==='heatstroke';
+  out.honor = (g=>!g.specialDeath&&!!g.r79_honorroll&&!!g.r79_servedone)(drill({hp:80}));
+  out.drillSurvive = (g=>!g.specialDeath&&!g.r79_honorroll&&!!g.r79_servedone)(drill({hp:50}));
+  // 學長制帶兵 win → 班長(外貌門檻+常備/軍官)
+  startGame(); S.flags={r79_examdone:true,r79_active:true}; ensureState(S); S.attr.apr=60;
+  out.corpVisible = f('cb_r79_service').choices[1].cond(S)===true && (S.attr.apr=59, f('cb_r79_service').choices[1].cond(S)===false);
+  function corp(){ startGame(); S.flags={r79_examdone:true,r79_active:true}; ensureState(S); S.seen={}; S.attr.apr=65; showEvent(f('cb_r79_service')); choose(1); return S.flags; }
+  out.corporal = (g=>!!g.r79_corporal&&!!g.r79_servedone)(corp());
+  // 役別分支可見性：替代役/免役選項各自 gate
+  startGame(); S.flags={r79_examdone:true,r79_subst:true}; ensureState(S);
+  out.substVisible = f('cb_r79_service').choices[2].cond(S)===true && (S.flags.r79_subst=false, f('cb_r79_service').choices[2].cond(S)===false);
+  startGame(); S.flags={r79_examdone:true,r79_exempt:true}; ensureState(S);
+  out.exemptVisible = f('cb_r79_service').choices[3].cond(S)===true;
+  // 退伍結算依役別分支
+  function disch(idx,fl){ startGame(); S.flags=Object.assign({r79_servedone:true},fl); ensureState(S); S.seen={}; showEvent(f('cb_r79_discharge')); choose(idx); return S.flags; }
+  out.dischVet = !!disch(0,{r79_active:true}).r79_veteran79;
+  out.dischCareer = (g=>!!g.r79_career79&&!!g.employed)(disch(1,{r79_officer:true}));
+  out.dischExempt = !!disch(2,{r79_exempt:true}).r79_earlybird;
+  out.disch22k = !!disch(3,{}).r79_jobless79;
+  // 成就確定性 + 不誤觸（非該役別/舊存檔零誤觸）
+  out.achHonor = ACH_MAP.r79_honor.check({S:{flags:{r79_honorroll:true}},age:22});
+  out.achCorp = ACH_MAP.r79_corporal.check({S:{flags:{r79_corporal:true}},age:22});
+  out.achClean = !ACH_MAP.r79_honor.check({S:{flags:{}},age:30}) && !ACH_MAP.r79_corporal.check({S:{flags:{r79_exempt:true}},age:22});
+  out.hints = ['r79_honor','r79_corporal'].every(id=>ACH_MAP[id]&&ACH_MAP[id].hint&&ACH_MAP[id].hint.length>4);
+  // 軍中死法進圖鑑（reason+hint）＋與既有 R58 兵役鏈不共用死法 key（R58 本就無死法）
+  out.death = !!SPECIAL_DEATHS.heatstroke && DEATHBOOK.some(d=>d.id==='heatstroke'&&d.reason&&d.hint);
+  // TL 役別軌跡里程碑
+  out.tl = ['r79_officer','r79_exempt'].every(k=>TL_ONESHOT.some(o=>o[0]===k));
+  // 零汙染 + 舊存檔相容
+  startGame(); out.clean = Object.keys(S.flags).every(k=>k.indexOf('r79')!==0);
+  startGame(); S.age=22; S.flags={}; ensureState(S); out.compat = Object.keys(S.flags).every(k=>k.indexOf('r79')!==0);
+  const old={flags:{army:true,r58_vet:true},attr:{hp:50,int:50,apr:50,mny:50,hap:50},age:40,alive:true}; ensureState(old);
+  out.compatR58 = Object.keys(old.flags).every(k=>k.indexOf('r79')!==0); // 舊 R58 存檔不被補 r79 鍵
+  return JSON.stringify(out);
+})()`, sandbox));
+ok(r79Misc.heatDeath && r79Misc.honor && r79Misc.drillSurvive, 'R79 ④ 體能操演：健康見底(≤14)→軍中限定死法heatstroke、健康強(70+)→榮譽假、中間→撐過服役');
+ok(r79Misc.corpVisible && r79Misc.corporal, 'R79 ④ 學長制帶兵：外貌60+且常備/軍官→莒光司儀掛下士當班長');
+ok(r79Misc.substVisible && r79Misc.exemptVisible, 'R79 ④ 役別差異化選項：替代役偏鄉社福/免役社會眼光各自 gate');
+ok(r79Misc.dischVet && r79Misc.dischCareer && r79Misc.dischExempt && r79Misc.disch22k, 'R79 ④ 退伍結算依役別：常備役退伍/軍官續簽轉職回扣R50/免役早起跑/22K退伍即失業');
+ok(r79Misc.achHonor && r79Misc.achCorp && r79Misc.achClean && r79Misc.hints, 'R79 ④ 成就「榮譽假達人/菜逼八升班長」確定性解鎖、非該役別零誤觸、提示齊備');
+ok(r79Misc.death && r79Misc.tl, 'R79 ④ heatstroke 進死法圖鑑(reason+hint)＋役別軌跡 TL 里程碑(officer/exempt)');
+ok(r79Misc.clean && r79Misc.compat && r79Misc.compatR58, 'R79 ④ 零汙染：開局/舊存檔/舊R58存檔 S.flags 皆無任何 r79 鍵');
+
 console.log(fails ? `\n結果: ❌ ${fails} 項未通過` : '\n結果: ✅ 狀態機全數正確');
 process.exit(fails ? 1 : 0);

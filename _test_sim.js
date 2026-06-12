@@ -2733,6 +2733,81 @@ try {
   console.log('R77 鬼島升學校園青春分流鏈: ❌ ' + e.message);
 }
 
+/* ---- R79 鬼島兵役人生支線探針（強制路徑，不靠隨機抽中）----
+   ① 結構：r79_phys 入口＋cb_r79_service/cb_r79_discharge 兩段（once/stage/meme/scene/≥3 choices）、
+      cb_ 入因果鏈＋配保底；入口走自然池（無保底）；2 成就/1 死法/2 TL 里程碑齊備
+   ② 入口 gating：未入鏈進池、已入鏈 once；與 R58 嚴格錯開（cond 不讀 army/r58_）
+   ③ r79_grade special 體質hp確定性四分流（甲乙→常備active／丙→替代subst／不合→免役exempt）、同hp必同體位、
+      體質真驅動（僅hp高低即翻轉active↔exempt）；軍官(int gate設employed)/喬體位(mny gate併exempt)選項層分流
+   ④ cb_r79_service：體能操演 special r79_drill（hp≤14→軍中死法heatstroke／hp≥70→榮譽假honorroll／中間→撐過）、
+      學長制帶兵(apr門檻 win 班長corporal)、替代役/免役役別差異化選項；cb_r79_discharge 依役別四分支
+   ⑤ 零汙染：乾淨開局無 r79 旗標、舊存檔(含舊R58存檔)ensureState 不補 r79 鍵 */
+let r79OK = false;
+try {
+  const r79Raw = vm.runInContext(`(function(){
+    const out={}; const f=id=>EVENTS.find(e=>e.id===id);
+    /* ① 結構 */
+    const ids=['r79_phys','cb_r79_service','cb_r79_discharge'];
+    out.struct = ids.every(id=>{const e=f(id);return e&&e.once&&e.stage&&e.meme&&SCENES[e.meme.scene]&&(e.choices||[]).length>=3;});
+    out.chain = ['cb_r79_service','cb_r79_discharge'].every(id=>CHAIN_IDS.has(id));
+    out.milestone = ['cb_r79_service','cb_r79_discharge'].every(id=>typeof R46_MILESTONE[id]==='number') && R46_MILESTONE['r79_phys']===undefined;
+    out.death = !!SPECIAL_DEATHS.heatstroke && !!SCENES[SPECIAL_DEATHS.heatstroke.scene]
+      && DEATHBOOK.some(d=>d.id==='heatstroke'&&d.reason&&d.hint);
+    out.tl = ['r79_officer','r79_exempt'].every(k=>TL_ONESHOT.some(o=>o[0]===k));
+    out.achDef = ['r79_honor','r79_corporal'].every(id=>ACH_MAP[id]&&ACH_MAP[id].hint&&String(ACH_MAP[id].hint).length>4);
+    /* ② 入口 gating + 與 R58 錯開 */
+    startGame(); let s=S; s.flags={}; ensureState(s); s.seen={}; s.age=21;
+    out.seedIn = eligible().some(e=>e.id==='r79_phys');
+    s.flags.r79_chain=true; out.seedOnce = !eligible().some(e=>e.id==='r79_phys');
+    s.flags={army:true,r58_draft:true,r58_vet:true}; out.r58Indep = f('r79_phys').cond(s)===true
+      && f('r79_phys').cond.toString().indexOf('r58')===-1 && f('r79_phys').cond.toString().indexOf('army')===-1;
+    s.flags={}; s.attr.int=76; out.gateOfficer = f('r79_phys').choices[1].cond(s)===true && (s.attr.int=75, f('r79_phys').choices[1].cond(s)===false);
+    s.attr.mny=72; out.gateDodge = f('r79_phys').choices[2].cond(s)===true && (s.attr.mny=71, f('r79_phys').choices[2].cond(s)===false);
+    out.gateBackup = !f('r79_phys').choices[0].cond;
+    /* ③ 體位判定 special 體質確定性四分流 + 同hp同結果 + 體質真驅動 + 軍官/喬體位選項層分流 */
+    function grade(a){ startGame(); s=S; s.flags={}; ensureState(s); s.seen={}; Object.assign(s.attr,a); showEvent(f('r79_phys')); choose(0); return s.flags; }
+    out.gradeA = (g=>!!g.r79_active&&!!g.r79_gradeA)(grade({hp:80,int:50,mny:50,apr:50}));
+    out.gradeB = (g=>!!g.r79_active&&!g.r79_gradeA)(grade({hp:50,int:50,mny:50,apr:50}));
+    out.subst = !!grade({hp:33,int:50,mny:50,apr:50}).r79_subst;
+    out.exempt = !!grade({hp:18,int:50,mny:50,apr:50}).r79_exempt;
+    out.attrDriven = !!grade({hp:80,int:50,mny:50,apr:50}).r79_active && !!grade({hp:15,int:50,mny:50,apr:50}).r79_exempt;
+    startGame(); s=S; s.flags={}; ensureState(s); s.seen={}; Object.assign(s.attr,{int:80,mny:50,hp:50,apr:50}); showEvent(f('r79_phys')); choose(1);
+    out.officer = !!s.flags.r79_officer && !!s.flags.employed;
+    startGame(); s=S; s.flags={}; ensureState(s); s.seen={}; Object.assign(s.attr,{int:50,mny:80,hp:50,apr:50}); showEvent(f('r79_phys')); choose(2);
+    out.dodge = !!s.flags.r79_dodge && !!s.flags.r79_exempt;
+    /* ④ 軍旅分支 + 操演死法/榮譽假 + 退伍結算 */
+    function drill(a){ startGame(); s=S; s.flags={r79_examdone:true,r79_active:true}; ensureState(s); s.seen={}; Object.assign(s.attr,a); showEvent(f('cb_r79_service')); choose(0); return s.flags; }
+    out.heatDeath = drill({hp:10}).specialDeath==='heatstroke';
+    out.honor = (g=>!g.specialDeath&&!!g.r79_honorroll&&!!g.r79_servedone)(drill({hp:80}));
+    out.drillSurvive = (g=>!g.specialDeath&&!g.r79_honorroll&&!!g.r79_servedone)(drill({hp:50}));
+    function corp(){ startGame(); s=S; s.flags={r79_examdone:true,r79_active:true}; ensureState(s); s.seen={}; s.attr.apr=65; showEvent(f('cb_r79_service')); choose(1); return s.flags; }
+    out.corporal = (g=>!!g.r79_corporal&&!!g.r79_servedone)(corp());
+    startGame(); s=S; s.flags={r79_examdone:true,r79_subst:true}; ensureState(s);
+    out.substVisible = f('cb_r79_service').choices[2].cond(s)===true;
+    startGame(); s=S; s.flags={r79_examdone:true,r79_exempt:true}; ensureState(s);
+    out.exemptVisible = f('cb_r79_service').choices[3].cond(s)===true;
+    function disch(idx,fl){ startGame(); s=S; s.flags=Object.assign({r79_servedone:true},fl); ensureState(s); s.seen={}; showEvent(f('cb_r79_discharge')); choose(idx); return s.flags; }
+    out.dischVet = !!disch(0,{r79_active:true}).r79_veteran79;
+    out.dischCareer = (g=>!!g.r79_career79&&!!g.employed)(disch(1,{r79_officer:true}));
+    out.dischExempt = !!disch(2,{r79_exempt:true}).r79_earlybird;
+    out.disch22k = !!disch(3,{}).r79_jobless79;
+    /* 成就確定性 + 不誤觸 */
+    out.achPass = ACH_MAP.r79_honor.check({S:{flags:{r79_honorroll:true}},age:22})
+      && ACH_MAP.r79_corporal.check({S:{flags:{r79_corporal:true}},age:22});
+    out.achClean = !ACH_MAP.r79_honor.check({S:{flags:{}},age:30}) && !ACH_MAP.r79_corporal.check({S:{flags:{r79_exempt:true}},age:22});
+    /* ⑤ 零汙染 + 舊存檔相容（含舊 R58 存檔）*/
+    startGame(); s=S; out.clean = Object.keys(s.flags||{}).every(k=>k.indexOf('r79')!==0);
+    const old={flags:{army:true,r58_vet:true},attr:{hp:50,int:50,apr:50,mny:50,hap:50},age:40,alive:true}; ensureState(old);
+    out.compat = Object.keys(old.flags).every(k=>k.indexOf('r79')!==0);
+    return JSON.stringify(out);
+  })()`, sandbox);
+  const r79 = JSON.parse(r79Raw);
+  r79OK = Object.values(r79).every(v => v === true);
+  console.log(`R79 鬼島兵役人生支線: ${r79OK ? '✅ 全數通過' : '❌ ' + JSON.stringify(r79)}`);
+} catch (e) {
+  console.log('R79 鬼島兵役人生支線: ❌ ' + e.message);
+}
+
 if (__errors.length) {
   console.log('\n--- 錯誤樣本(前5) ---');
   __errors.slice(0, 5).forEach(e => console.log('  ' + e));
@@ -2740,6 +2815,6 @@ if (__errors.length) {
 
 /* 退出碼 */
 const pass = __errors.length === 0 && chk.missingScenes.length === 0 && chk.eventVisible >= 126 && chk.eventTotal >= 126 && lsOK && achUnlocked > 0
-  && chk.deathbookMissing.length === 0 && chk.deathTotal >= 17 && deathsOK && rebirthOK && legacyOK && petOK && r13OK && r17OK && r20OK && r21OK && r22OK && r24OK && r25OK && r34OK && r38OK && r41OK && r42OK && r43OK && r44OK && r45OK && r46OK && r47OK && r48OK && r49OK && r51OK && r52OK && r53OK && r54OK && r55OK && r72OK && r76OK && r77OK;
+  && chk.deathbookMissing.length === 0 && chk.deathTotal >= 17 && deathsOK && rebirthOK && legacyOK && petOK && r13OK && r17OK && r20OK && r21OK && r22OK && r24OK && r25OK && r34OK && r38OK && r41OK && r42OK && r43OK && r44OK && r45OK && r46OK && r47OK && r48OK && r49OK && r51OK && r52OK && r53OK && r54OK && r55OK && r72OK && r76OK && r77OK && r79OK;
 console.log('\n結果: ' + (pass ? '✅ 全數通過' : '❌ 有項目未通過'));
 process.exit(pass ? 0 : 1);
