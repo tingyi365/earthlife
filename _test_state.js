@@ -1022,5 +1022,168 @@ const r57Compat = JSON.parse(vm.runInContext(`(function(){
 ok(r57Compat.noSeen && r57Compat.healed, 'R57 舊存檔缺 seen/era 鍵：ensureState 補鍵、成就不誤觸不炸');
 ok(r57Compat.clean, 'R57 非觸發局零汙染：開局 S.flags 無任何 r57 鍵');
 
+// ========================================================================
+// 26) R58 台味兵役事件鏈：鏈段觸發順序／屬性分支／年代限定進池與絕緣／
+//     簽下去分支／替代役分支／成就／死法收錄與確定性觸發／舊存檔相容／零汙染／平衡護欄
+// ========================================================================
+// ① 鏈段觸發順序：army 入口 → 新訓 → 部隊 → 退伍，逐段解鎖、前段未過後段不進池
+const r58Chain = JSON.parse(vm.runInContext(`(function(){
+  const out = {};
+  startGame(); S.age=20; S.flags={}; ensureState(S); S.era='e90';
+  out.entryIn = eligible().some(e=>e.id==='army');
+  out.preClean = ['cb_r58_boot','cb_r58_camp','cb_r58_out','cb_r58_alt','cb_r58_sign'].every(id=>!eligible().some(e=>e.id===id));
+  showEvent(EVENTS.find(e=>e.id==='army')); choose(0);
+  out.draft = S.flags.army===true && S.flags.r58_draft===true;
+  out.bootIn = eligible().some(e=>e.id==='cb_r58_boot') && !eligible().some(e=>e.id==='cb_r58_camp');
+  showEvent(EVENTS.find(e=>e.id==='cb_r58_boot')); choose(3);
+  out.campIn = S.flags.r58_boot===true && eligible().some(e=>e.id==='cb_r58_camp') && !eligible().some(e=>e.id==='cb_r58_out');
+  showEvent(EVENTS.find(e=>e.id==='cb_r58_camp')); choose(2);
+  out.outIn = S.flags.r58_camp===true && eligible().some(e=>e.id==='cb_r58_out');
+  showEvent(EVENTS.find(e=>e.id==='cb_r58_out')); choose(0);
+  out.vet = S.flags.r58_vet===true && !eligible().some(e=>e.id==='cb_r58_out');
+  out.milestone = R46_MILESTONE.army===21 && R46_MILESTONE.cb_r58_boot===21 && R46_MILESTONE.r58_enlist===20;
+  return JSON.stringify(out);
+})()`, sandbox));
+ok(r58Chain.entryIn && r58Chain.preClean, 'R58 ① 入口進池、未進鏈前各段全不進池');
+ok(r58Chain.draft && r58Chain.bootIn, 'R58 ① 抽籤後 army/r58_draft 落地、新訓進池且部隊未解鎖');
+ok(r58Chain.campIn && r58Chain.outIn, 'R58 ① 新訓→部隊→退伍逐段解鎖（順序正確）');
+ok(r58Chain.vet && r58Chain.milestone, 'R58 ① 退伍收旗標、once 不重複；R46 各段保底註冊');
+// ② 屬性分支（回扣 R44）：抽籤 br 體質分流（68+ 海陸／低分爽單位）；天堂路 gate 海陸＋健康70 限定
+const r58Br = JSON.parse(vm.runInContext(`(function(){
+  const out = {};
+  startGame(); S.age=20; S.flags={}; ensureState(S); S.era='e90'; S.attr.hp=80;
+  showEvent(EVENTS.find(e=>e.id==='army')); choose(0);
+  out.marine = S.flags.r58_marine===true && !S.flags.r58_lucky;
+  startGame(); S.age=20; S.flags={}; ensureState(S); S.era='e90'; S.attr.hp=40;
+  showEvent(EVENTS.find(e=>e.id==='army')); choose(0);
+  out.lucky = S.flags.r58_lucky===true && !S.flags.r58_marine;
+  return JSON.stringify(out);
+})()`, sandbox));
+ok(r58Br.marine, 'R58 ② 體質 80 抽籤分流海陸（r58_marine）');
+ok(r58Br.lucky, 'R58 ② 體質 40 抽籤分流爽單位（r58_lucky、零誤掛海陸）');
+const r58Frog = vm.runInContext(`__choiceHTML('cb_r58_boot', s=>{s.flags.r58_draft=true;s.flags.r58_marine=true;s.attr.hp=80;}, 20)`, sandbox);
+const r58FrogNo = vm.runInContext(`__choiceHTML('cb_r58_boot', s=>{s.flags.r58_draft=true;s.attr.hp=80;}, 20)`, sandbox);
+ok(r58Frog.includes('海陸限定') && !r58FrogNo.includes('海陸限定'), 'R58 ② 天堂路選項海陸旗標限定（非海陸隱藏）');
+// ③ 年代限定（回扣 R55）：e20 募兵入口進池且義務役絕緣；其他年代相反；年代限定選項互斥
+const r58Era = JSON.parse(vm.runInContext(`(function(){
+  const out = {};
+  startGame(); S.age=20; S.flags={}; ensureState(S); S.era='e20';
+  out.e20 = !eligible().some(e=>e.id==='army') && eligible().some(e=>e.id==='r58_enlist');
+  startGame(); S.age=20; S.flags={}; ensureState(S); S.era='e90';
+  out.e90 = eligible().some(e=>e.id==='army') && !eligible().some(e=>e.id==='r58_enlist');
+  return JSON.stringify(out);
+})()`, sandbox));
+ok(r58Era.e20, 'R58 ③ e20 募兵制：r58_enlist 進池、義務役 army 絕緣');
+ok(r58Era.e90, 'R58 ③ 非 e20 年代：army 照常進池、募兵入口絕緣');
+const h70 = vm.runInContext(`__choiceHTML('army', s=>{s.era='e70';}, 20)`, sandbox);
+const h10 = vm.runInContext(`__choiceHTML('army', s=>{s.era='e10';}, 20)`, sandbox);
+const h90 = vm.runInContext(`__choiceHTML('army', s=>{s.era='e90';}, 20)`, sandbox);
+ok(h70.includes('兩年義務役世代限定') && !h70.includes('四個月世代限定'), 'R58 ③ e70 顯示兩年義務役選項、四個月絕緣');
+ok(h10.includes('四個月世代限定') && !h10.includes('兩年義務役世代限定'), 'R58 ③ e10 顯示四個月軍訓役選項、兩年絕緣');
+ok(!h90.includes('兩年義務役世代限定') && !h90.includes('四個月世代限定'), 'R58 ③ e90 兩個年代限定選項皆絕緣');
+// ④ 簽下去分支：入口簽下去→走完新訓部隊→跳過退伍事件→志願役事件；續簽 r58_lifer＋employed、約滿領回自由
+const r58Sign = JSON.parse(vm.runInContext(`(function(){
+  const out = {};
+  startGame(); S.age=20; S.flags={}; ensureState(S); S.era='e90';
+  showEvent(EVENTS.find(e=>e.id==='army')); choose(2);
+  out.signup = S.flags.r58_signup===true && S.flags.r58_draft===true;
+  showEvent(EVENTS.find(e=>e.id==='cb_r58_boot')); choose(3);
+  showEvent(EVENTS.find(e=>e.id==='cb_r58_camp')); choose(2);
+  out.route = !eligible().some(e=>e.id==='cb_r58_out') && eligible().some(e=>e.id==='cb_r58_sign');
+  showEvent(EVENTS.find(e=>e.id==='cb_r58_sign')); choose(0);
+  out.lifer = S.flags.r58_lifer===true && S.flags.employed===true && S.flags.r58_signlife===true;
+  startGame(); S.age=22; S.flags={r58_signup:true}; ensureState(S);
+  showEvent(EVENTS.find(e=>e.id==='cb_r58_sign')); choose(1);
+  out.quit = S.flags.r58_vet===true && !S.flags.r58_lifer;
+  return JSON.stringify(out);
+})()`, sandbox));
+ok(r58Sign.signup && r58Sign.route, 'R58 ④ 簽下去：跳過退伍事件、志願役事件進池');
+ok(r58Sign.lifer, 'R58 ④ 續簽：r58_lifer＋employed＋signlife 全落地（財富穩、自由扣）');
+ok(r58Sign.quit, 'R58 ④ 約滿不續：r58_vet 落地、不誤掛 lifer');
+// ⑤ 替代役分支：智力 72 門檻可見、選後走替代役事件（新訓絕緣）、服勤完可退伍
+const hAltHi = vm.runInContext(`__choiceHTML('army', s=>{s.era='e90';s.attr.int=80;}, 20)`, sandbox);
+const hAltLo = vm.runInContext(`__choiceHTML('army', s=>{s.era='e90';s.attr.int=50;}, 20)`, sandbox);
+ok(hAltHi.includes('🧠智力72+') && !hAltLo.includes('🧠智力72+'), 'R58 ⑤ 替代役選項智力 72 門檻（低智隱藏）');
+const r58Alt = JSON.parse(vm.runInContext(`(function(){
+  const out = {};
+  startGame(); S.age=20; S.flags={}; ensureState(S); S.era='e90'; S.attr.int=80;
+  showEvent(EVENTS.find(e=>e.id==='army')); choose(1);
+  out.alt = S.flags.r58_alt===true && !S.flags.r58_draft;
+  out.route = eligible().some(e=>e.id==='cb_r58_alt') && !eligible().some(e=>e.id==='cb_r58_boot');
+  showEvent(EVENTS.find(e=>e.id==='cb_r58_alt')); choose(0);
+  out.done = S.flags.r58_altdone===true && eligible().some(e=>e.id==='cb_r58_out');
+  return JSON.stringify(out);
+})()`, sandbox));
+ok(r58Alt.alt && r58Alt.route, 'R58 ⑤ 替代役：r58_alt 落地、走替代役線且新訓絕緣');
+ok(r58Alt.done, 'R58 ⑤ 替代役服勤完 → 退伍事件進池（鏈收攏）');
+// ⑥ 新死法 ×2：圖鑑收錄＋屬性門檻確定性觸發（hp≤14 刺槍自捅／hp≤12 站哨嚇死）＋活路零誤殺
+const r58Death = JSON.parse(vm.runInContext(`(function(){
+  const out = {};
+  out.book = ['bayonet','sentryscare'].every(id=>DEATHBOOK.some(d=>d.id===id&&d.rare&&d.hint.length>4) && !!SPECIAL_DEATHS[id]);
+  const boot=EVENTS.find(e=>e.id==='cb_r58_boot'), bi=boot.choices.findIndex(c=>c.special==='r58_bayonet');
+  startGame(); S.age=20; S.flags={r58_draft:true}; ensureState(S); S.attr.hp=10;
+  showEvent(boot); choose(bi);
+  out.bDying = S.flags.specialDeath==='bayonet';
+  die('choice');
+  out.bDead = !S.alive && S.deathId==='bayonet' && !!SAVE.deaths.bayonet;
+  startGame(); S.age=20; S.flags={r58_draft:true}; ensureState(S); S.attr.hp=70;
+  showEvent(EVENTS.find(e=>e.id==='cb_r58_boot')); choose(bi);
+  out.bAlive = S.alive===true && !S.flags.specialDeath && S.flags.r58_boot===true;
+  const camp=EVENTS.find(e=>e.id==='cb_r58_camp'), si=camp.choices.findIndex(c=>c.special==='r58_sentry');
+  startGame(); S.age=21; S.flags={r58_boot:true}; ensureState(S); S.attr.hp=10;
+  showEvent(camp); choose(si);
+  out.sDying = S.flags.specialDeath==='sentryscare';
+  die('choice');
+  out.sDead = !S.alive && S.deathId==='sentryscare' && !!SAVE.deaths.sentryscare;
+  startGame(); S.age=21; S.flags={r58_boot:true}; ensureState(S); S.attr.hp=70;
+  showEvent(EVENTS.find(e=>e.id==='cb_r58_camp')); choose(si);
+  out.sAlive = S.alive===true && !S.flags.specialDeath && S.flags.r58_camp===true;
+  return JSON.stringify(out);
+})()`, sandbox));
+ok(r58Death.book, 'R58 ⑥ bayonet/sentryscare 收錄進死法圖鑑（rare＋模糊提示）');
+ok(r58Death.bDying && r58Death.bDead, 'R58 ⑥ 體力見底硬撐刺槍示範班 → 刺槍自捅全流程＋跨局收集');
+ok(r58Death.bAlive, 'R58 ⑥ 體力正常刺槍：活路分支（教範君、零誤殺、鏈段照常推進）');
+ok(r58Death.sDying && r58Death.sDead, 'R58 ⑥ 體力見底夜哨偷瞇 → 站哨嚇死全流程＋跨局收集');
+ok(r58Death.sAlive, 'R58 ⑥ 體力正常偷瞇：活路分支（欠學長一罐蠻牛、零誤殺）');
+// ⑦ 新成就 ×3：check 正反例＋獵人提示齊備
+const r58Ach = JSON.parse(vm.runInContext(`(function(){
+  const out = {};
+  out.frog = ACH_MAP.r58_frogman.check({S:{flags:{r58_frog:true}}, age:20});
+  out.frogNeg = !ACH_MAP.r58_frogman.check({S:{flags:{r58_marine:true}}, age:20});
+  out.lifer = ACH_MAP.r58_lifer.check({S:{flags:{r58_lifer:true}}, age:25});
+  out.liferNeg = !ACH_MAP.r58_lifer.check({S:{flags:{r58_signup:true}}, age:25});
+  out.vet = ACH_MAP.r58_fullvet.check({S:{flags:{r58_camp:true,r58_vet:true}}, age:23});
+  out.vetNeg = !ACH_MAP.r58_fullvet.check({S:{flags:{r58_vet:true}}, age:23});
+  out.hints = ['r58_frogman','r58_lifer','r58_fullvet'].every(id=>ACH_MAP[id]&&ACH_MAP[id].hint&&ACH_MAP[id].hint.length>4);
+  return JSON.stringify(out);
+})()`, sandbox));
+ok(r58Ach.frog && r58Ach.frogNeg, 'R58 ⑦ 成就「海陸蛙人」：天堂路旗標解鎖、只抽中海陸不解鎖');
+ok(r58Ach.lifer && r58Ach.liferNeg, 'R58 ⑦ 成就「簽下去的男人」：續簽解鎖、只簽約未續不解鎖');
+ok(r58Ach.vet && r58Ach.vetNeg, 'R58 ⑦ 成就「數饅頭全勤獎」：完整走完解鎖、替代役捷徑不解鎖');
+ok(r58Ach.hints, 'R58 ⑦ 三個新成就獵人提示齊備');
+// ⑧ 舊存檔相容＋零汙染＋平衡護欄
+const r58Compat = JSON.parse(vm.runInContext(`(function(){
+  const out = {};
+  startGame(); S.age=20; S.flags={}; delete S.era; ensureState(S);
+  out.oldArmy = eligible().some(e=>e.id==='army') && !eligible().some(e=>e.id==='r58_enlist');
+  out.oldNoChain = ['cb_r58_boot','cb_r58_camp','cb_r58_out','cb_r58_alt','cb_r58_sign'].every(id=>!eligible().some(e=>e.id===id));
+  startGame();
+  out.clean = Object.keys(S.flags).every(k=>k.indexOf('r58')!==0);
+  startGame(); S.age=22; S.flags={employed:true}; ensureState(S);
+  out.zero = ['cb_r58_boot','cb_r58_camp','cb_r58_out','cb_r58_alt','cb_r58_sign'].every(id=>!eligible().some(e=>e.id===id));
+  out.guard = ['army','cb_r58_boot','cb_r58_camp','cb_r58_out','cb_r58_alt','cb_r58_sign','r58_enlist'].every(id=>{
+    const e=EVENTS.find(x=>x.id===id);
+    return e && e.choices.every(c=>{
+      const effs=[c.eff||{}]; if(c.br){effs.push(c.br.hi.eff||{},c.br.lo.eff||{});}
+      return effs.every(o=>Object.values(o).every(v=>Math.abs(v)<=8));
+    });
+  });
+  return JSON.stringify(out);
+})()`, sandbox));
+ok(r58Compat.oldArmy && r58Compat.oldNoChain, 'R58 ⑧ 舊存檔無 era 鍵：army 行為同舊版、募兵與鏈段全絕緣不炸');
+ok(r58Compat.clean, 'R58 ⑧ 開局零汙染：S.flags 無任何 r58 鍵');
+ok(r58Compat.zero, 'R58 ⑧ 未服役局零汙染：兵役鏈全段不進池');
+ok(r58Compat.guard, 'R58 ⑧ 平衡護欄：全鏈一般選項（含 br 分流）|eff| ≤ 8');
+
 console.log(fails ? `\n結果: ❌ ${fails} 項未通過` : '\n結果: ✅ 狀態機全數正確');
 process.exit(fails ? 1 : 0);
