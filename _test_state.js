@@ -1232,7 +1232,7 @@ const r59 = JSON.parse(vm.runInContext(`(function(){
   out.txtEpi = txt.indexOf('墓誌銘')>=0;
   /* 白名單：公開 repo URL 允許出現（tingyi365 是公開帳號非本機使用者名），剝除後再驗個資 */
   const scrub=s=>String(s).split('github.com/tingyi365/earthlife').join('');
-  const piRe=/(C:\\\\|Users\\\\|TingYi|@gmail|8252683|AIWORK|file:\\/\\/)/i;
+  const piRe=/([A-Za-z]:\\+Users|Users\\+\w|\d{7}@|@gmail|AIWORK|file:\\/\\/)/i;
   out.txtClean = !piRe.test(scrub(txt)) && !piRe.test(scrub(String(makeShareCard)));
   /* ⑥ 舊存檔相容：無 era/careerId 鍵不炸、自動省略 */
   let compat=true;
@@ -1276,6 +1276,141 @@ ok(r59.txtClean, 'R59 ⑤ 分享內容無個資 pattern（路徑/使用者名/em
 ok(r59.compat, 'R59 ⑥ 舊存檔相容：無 era/careerId 鍵不炸、欄位自動省略');
 ok(r59.pure && r59.clean, 'R59 ⑦ 零汙染：分享層純讀不寫 S/SAVE、無 r59 旗標殘留');
 ok(r59.guard, 'R59 ⑧ 放寬冷門事件平衡護欄：|eff|<=8、w<=3、不重複觸發');
+
+// ========================================================================
+// 28) R60 台味民俗信仰事件鏈：結構護欄／香火與鐵齒旗標／祖祠分支／年代分流／
+//     陰德結算掛勾／死法收錄與確定性觸發／成就／舊存檔相容／零汙染
+// ========================================================================
+// ① 結構護欄：7 事件齊備、全 once、stage 覆蓋童年到老年、|eff|<=8（含 br 分流）、w<=3、保底註冊
+const r60St = JSON.parse(vm.runInContext(`(function(){
+  const ids=['r60_shoujing','r60_bwa','r60_qiuqian','r60_taisui','r60_raojing','r60_zhongyuan','r60_templevol'];
+  const evs=ids.map(id=>EVENTS.find(e=>e.id===id));
+  const out={};
+  out.all = evs.every(e=>e && e.once && (e.w||1)<=3 && e.stage && e.choices.length>=3);
+  out.span = evs[0].stage[0]<=8 && evs[6].stage[1]>=80;
+  out.guard = evs.every(e=>e.choices.every(c=>{
+    const effs=[c.eff||{}]; if(c.br){effs.push(c.br.hi.eff||{},c.br.lo.eff||{});}
+    return effs.every(o=>Object.values(o).every(v=>Math.abs(v)<=8));
+  }));
+  out.milestone = R46_MILESTONE.r60_raojing===32 && R46_MILESTONE.r60_templevol===70;
+  return JSON.stringify(out);
+})()`, sandbox));
+ok(r60St.all && r60St.span, 'R60 ① 7 事件齊備全 once、stage 覆蓋童年到老年');
+ok(r60St.guard, 'R60 ① 平衡護欄：單選項 |eff|<=8（含 br 分流）、w<=3');
+ok(r60St.milestone, 'R60 ① 遶境/老年廟口 R46 保底註冊（童年段不配保底零擠壓）');
+// ② 香火 merit／鐵齒 tiechi 計數落地＋成就連動
+const r60Flag = JSON.parse(vm.runInContext(`(function(){
+  const out={};
+  startGame(); S.age=8; S.flags={}; ensureState(S);
+  showEvent(EVENTS.find(e=>e.id==='r60_shoujing')); choose(0);
+  out.merit1 = S.flags.r60_merit===1 && S.flags.r60_folk===true;
+  S.age=30; showEvent(EVENTS.find(e=>e.id==='r60_taisui')); choose(0);
+  showEvent(EVENTS.find(e=>e.id==='r60_zhongyuan')); choose(0);
+  out.merit3 = S.flags.r60_merit===3;
+  out.devout = ACH_MAP.r60_devout.check({S:S, age:S.age});
+  startGame(); S.age=30; S.flags={}; ensureState(S); S.attr.hp=70;
+  showEvent(EVENTS.find(e=>e.id==='r60_taisui')); choose(1);
+  showEvent(EVENTS.find(e=>e.id==='r60_zhongyuan')); choose(1);
+  out.tiechi = S.flags.r60_tiechi===2 && S.flags.r60_ghostproof===true && !S.flags.r60_merit;
+  out.tiechiAch = ACH_MAP.r60_tiechi.check({S:S, age:75}) && !ACH_MAP.r60_tiechi.check({S:S, age:60});
+  return JSON.stringify(out);
+})()`, sandbox));
+ok(r60Flag.merit1 && r60Flag.merit3, 'R60 ② 收驚/安太歲/普渡 inc r60_merit 香火逐次累積');
+ok(r60Flag.devout, 'R60 ② 香火滿三炷 → 成就「香火 VIP」解鎖');
+ok(r60Flag.tiechi, 'R60 ② 鐵齒線：tiechi 計數×2＋鬼月活路旗標、零誤掛香火');
+ok(r60Flag.tiechiAch, 'R60 ② 成就「鐵齒銅牙」：鐵齒×2＋70 歲門檻（60 歲不解鎖）');
+// ③ 祖祠分支（回扣 R23）：有祖傳加成才看得到求籤的蔭澤選項
+const r60Lg = JSON.parse(vm.runInContext(`(function(){
+  const g=legacyData(); const bak=g.perks;
+  g.perks={}; const h0=__choiceHTML('r60_qiuqian', s=>{}, 25);
+  g.perks={pk_probe:true}; const h1=__choiceHTML('r60_qiuqian', s=>{}, 25);
+  g.perks=bak;
+  const out={no:h0.indexOf('祖祠蔭澤限定')<0, yes:h1.indexOf('祖祠蔭澤限定')>=0};
+  startGame(); S.age=25; S.flags={}; ensureState(S);
+  const g2=legacyData(); const bak2=g2.perks; g2.perks={pk_probe:true};
+  showEvent(EVENTS.find(e=>e.id==='r60_qiuqian')); choose(1);
+  g2.perks=bak2;
+  out.flag = S.flags.r60_blessed===true && S.flags.r60_folk===true;
+  return JSON.stringify(out);
+})()`, sandbox));
+ok(r60Lg.no && r60Lg.yes, 'R60 ③ 求籤祖祠分支：無祖傳加成隱藏、有立契才現身');
+ok(r60Lg.flag, 'R60 ③ 蔭澤選項落地 r60_blessed（祖祠香火回扣 R23）');
+// ④ 年代分流（回扣 R55）：遶境 e70/e80 庄頭辦桌 vs e10/e20 文創進香、其餘年代與舊存檔皆絕緣
+const rj70 = vm.runInContext(`__choiceHTML('r60_raojing', s=>{s.era='e70';}, 30)`, sandbox);
+const rj10 = vm.runInContext(`__choiceHTML('r60_raojing', s=>{s.era='e10';}, 30)`, sandbox);
+const rj90 = vm.runInContext(`__choiceHTML('r60_raojing', s=>{s.era='e90';}, 30)`, sandbox);
+const rjOld = vm.runInContext(`__choiceHTML('r60_raojing', s=>{delete s.era;}, 30)`, sandbox);
+ok(rj70.includes('早年庄頭限定') && !rj70.includes('文創世代限定'), 'R60 ④ e70 顯示庄頭辦桌、文創絕緣');
+ok(rj10.includes('文創世代限定') && !rj10.includes('早年庄頭限定'), 'R60 ④ e10 顯示文創進香、庄頭絕緣');
+ok(!rj90.includes('早年庄頭限定') && !rj90.includes('文創世代限定'), 'R60 ④ e90 兩個年代選項皆絕緣');
+ok(!rjOld.includes('庄頭限定') && !rjOld.includes('文創世代限定') && rjOld.includes('跟好跟滿'), 'R60 ④ 舊存檔無 era 鍵：年代選項隱藏、基本選項照常');
+// ⑤ 陰德結算掛勾（回扣 R23）：merit 折小額陰德（+1/炷、上限 +3）、無 merit 局公式不變
+const r60Yd = JSON.parse(vm.runInContext(`(function(){
+  function deathRun(merit){
+    startGame(); S.age=50; S.attr={hp:50,int:50,apr:50,mny:50,hap:50}; S.flags={}; ensureState(S);
+    if(merit) S.flags.r60_merit=merit;
+    S.newOrigin=false; S.rtal=[]; S.lgk=[];
+    const old=rng; rng=()=>0; die(); rng=old;
+    const a=S.attr, sum=a.hp+a.int+a.apr+a.mny+a.hap;
+    const grade=sum>=380?'S':sum>=320?'A':sum>=240?'B':sum>=160?'C':'D';
+    const gb=(grade==='S'||grade==='A')?3:(grade==='B'?1:0);
+    const exp=Math.min(30, 1+Math.floor(S.age/10)+Math.floor(a.mny/20)+(S.newAch||[]).length*2+gb+Math.min(3,merit||0));
+    return {gain:S.ydGain, exp:exp};
+  }
+  const r0=deathRun(0), r2=deathRun(2), r5=deathRun(5);
+  return JSON.stringify({base:r0.gain===r0.exp, m2:r2.gain===r2.exp, cap:r5.gain===r5.exp});
+})()`, sandbox));
+ok(r60Yd.base, 'R60 ⑤ 無香火局：陰德公式不變（零汙染）');
+ok(r60Yd.m2 && r60Yd.cap, 'R60 ⑤ 香火折陰德：2 炷 +2、5 炷封頂 +3（上限護欄）');
+// ⑥ 新死法 ×2：圖鑑收錄＋屬性門檻確定性觸發（hp≤12 遶境脫水／hp≤10 中元鐵齒）＋活路零誤殺
+const r60Death = JSON.parse(vm.runInContext(`(function(){
+  const out={};
+  out.book = ['pilgrimdry','ghostdare'].every(id=>DEATHBOOK.some(d=>d.id===id&&d.rare&&d.hint.length>4) && !!SPECIAL_DEATHS[id]);
+  const rj=EVENTS.find(e=>e.id==='r60_raojing'), pi=rj.choices.findIndex(c=>c.special==='r60_pilgrim');
+  startGame(); S.age=30; S.flags={}; ensureState(S); S.attr.hp=10;
+  showEvent(rj); choose(pi);
+  out.pDying = S.flags.specialDeath==='pilgrimdry';
+  die('choice');
+  out.pDead = !S.alive && S.deathId==='pilgrimdry' && !!SAVE.deaths.pilgrimdry;
+  startGame(); S.age=30; S.flags={}; ensureState(S); S.attr.hp=70;
+  showEvent(EVENTS.find(e=>e.id==='r60_raojing')); choose(pi);
+  out.pAlive = S.alive===true && !S.flags.specialDeath && S.flags.r60_pilgrimdone===true && S.flags.r60_merit===1;
+  const zy=EVENTS.find(e=>e.id==='r60_zhongyuan'), gi=zy.choices.findIndex(c=>c.special==='r60_ghostdare');
+  startGame(); S.age=30; S.flags={}; ensureState(S); S.attr.hp=8;
+  showEvent(zy); choose(gi);
+  out.gDying = S.flags.specialDeath==='ghostdare';
+  die('choice');
+  out.gDead = !S.alive && S.deathId==='ghostdare' && !!SAVE.deaths.ghostdare;
+  startGame(); S.age=30; S.flags={}; ensureState(S); S.attr.hp=70;
+  showEvent(EVENTS.find(e=>e.id==='r60_zhongyuan')); choose(gi);
+  out.gAlive = S.alive===true && !S.flags.specialDeath && S.flags.r60_ghostproof===true;
+  return JSON.stringify(out);
+})()`, sandbox));
+ok(r60Death.book, 'R60 ⑥ pilgrimdry/ghostdare 收錄進死法圖鑑（rare＋模糊提示）');
+ok(r60Death.pDying && r60Death.pDead, 'R60 ⑥ 體力見底硬走全程 → 遶境脫水全流程＋跨局收集');
+ok(r60Death.pAlive, 'R60 ⑥ 體力正常徒步：活路分支（走完全程＋香火 +1、零誤殺）');
+ok(r60Death.gDying && r60Death.gDead, 'R60 ⑥ 體力見底挑戰禁忌 → 中元鐵齒全流程＋跨局收集');
+ok(r60Death.gAlive, 'R60 ⑥ 體力正常挑戰禁忌：活路分支（重感冒衛教課、零誤殺）');
+// ⑦ 新成就 ×3：check 正反例＋獵人提示齊備
+const r60Ach = JSON.parse(vm.runInContext(`(function(){
+  const out={};
+  out.devout = ACH_MAP.r60_devout.check({S:{flags:{r60_merit:3}}, age:40});
+  out.devoutNeg = !ACH_MAP.r60_devout.check({S:{flags:{r60_merit:2}}, age:40});
+  out.full = ACH_MAP.r60_folkfull.check({S:{seen:{r60_shoujing:1,r60_bwa:1,r60_taisui:1,r60_raojing:1},flags:{}}, age:50});
+  out.fullNeg = !ACH_MAP.r60_folkfull.check({S:{seen:{r60_shoujing:1,r60_bwa:1,r60_taisui:1},flags:{}}, age:50});
+  out.noSeen = !ACH_MAP.r60_folkfull.check({S:{flags:{}}, age:50});
+  out.hints = ['r60_devout','r60_tiechi','r60_folkfull'].every(id=>ACH_MAP[id]&&ACH_MAP[id].hint&&ACH_MAP[id].hint.length>4);
+  return JSON.stringify(out);
+})()`, sandbox));
+ok(r60Ach.devout && r60Ach.devoutNeg, 'R60 ⑦ 成就「香火 VIP」：3 炷解鎖、2 炷不解鎖');
+ok(r60Ach.full && r60Ach.fullNeg && r60Ach.noSeen, 'R60 ⑦ 成就「宮廟巡迴課」：4 堂解鎖、3 堂不解鎖、舊存檔無 seen 不炸');
+ok(r60Ach.hints, 'R60 ⑦ 三個新成就獵人提示齊備');
+// ⑧ 零汙染：開局無 r60 旗標、不選不沾
+const r60Clean = JSON.parse(vm.runInContext(`(function(){
+  startGame();
+  return JSON.stringify({clean:Object.keys(S.flags).every(k=>k.indexOf('r60')!==0)});
+})()`, sandbox));
+ok(r60Clean.clean, 'R60 ⑧ 零汙染：開局 S.flags 無任何 r60 鍵');
 
 console.log(fails ? `\n結果: ❌ ${fails} 項未通過` : '\n結果: ✅ 狀態機全數正確');
 process.exit(fails ? 1 : 0);
