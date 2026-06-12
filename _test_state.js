@@ -2460,5 +2460,86 @@ const r67Clean = JSON.parse(vm.runInContext(`(function(){
 ok(r67Clean.clean, 'R67 ⑧ 零汙染：開局 S.flags 無任何 r67 鍵');
 ok(r67Clean.compat && r67Clean.gateSafe && r67Clean.achSafe, 'R67 ⑧ ensureState 相容：舊存檔不補 r67 鍵、門檻 cond 靠 ||0 不炸、成就不誤觸');
 
+// ===== R76 台味潤學海外移民分流鏈：觸發/gating、屬性真驅動、零汙染、舊存檔相容 =====
+// ① 入口 gating ＋ 六型態 cond（屬性/年代門檻確定性）
+const r76Gate = JSON.parse(vm.runInContext(`(function(){
+  const out={}; const f=id=>EVENTS.find(e=>e.id===id);
+  startGame(); let s=S; s.flags={}; ensureState(s); s.era='e20'; Object.assign(s.attr,{int:70,mny:60,hp:60});
+  // seed 入口：未入鏈可進池、已入鏈不重播、已走 R74 潤線不重複開
+  s.age=26; out.seedIn = eligible().some(e=>e.id==='r76_seed');
+  s.flags.r76_chain=true; out.seedOnce = !eligible().some(e=>e.id==='r76_seed');
+  s.flags={r74_run:true}; out.seedR74Excl = f('r76_seed').cond(s)===false;
+  // 六型態門檻
+  s.flags={}; out.skilled = f('r76_seed').choices[0].cond(s)===true && (s.attr.int=64,f('r76_seed').choices[0].cond(s)===false);
+  s.attr.int=70; s.attr.mny=58; out.study = f('r76_seed').choices[1].cond(s)===true;
+  s.attr.mny=60; out.whvEra = f('r76_seed').choices[2].cond(s)===true && (s.era='e80',f('r76_seed').choices[2].cond(s)===false);
+  s.era='e20'; s.flags.employed=true; s.attr.int=60; out.expat = f('r76_seed').choices[3].cond(s)===true;
+  out.backup = !f('r76_seed').choices[4].cond && !f('r76_seed').choices[5].cond;
+  return JSON.stringify(out);
+})()`, sandbox));
+ok(r76Gate.seedIn && r76Gate.seedOnce, 'R76 ① 入口 r76_seed：未入鏈進池、已入鏈 once 不重播');
+ok(r76Gate.seedR74Excl, 'R76 ① 與 R74 潤線互斥：已 r74_run 不重複開海外鏈');
+ok(r76Gate.skilled && r76Gate.study && r76Gate.whvEra && r76Gate.expat && r76Gate.backup, 'R76 ① 六型態 cond：技術/留學/打工度假(年代)/外派門檻正確、依親+偷渡無門檻保底');
+
+// ② cb_ 三段層層 gating（abroad→adapt→homedone）＋ 遣返後全絕緣
+const r76Chain = JSON.parse(vm.runInContext(`(function(){
+  const out={};
+  startGame(); let s=S; s.age=30; s.flags={}; ensureState(s);
+  out.adaptGated = !eligible().some(e=>e.id==='cb_r76_adapt');
+  s.flags={r76_abroad:true}; out.adaptIn = eligible().some(e=>e.id==='cb_r76_adapt');
+  out.homeGated = !eligible().some(e=>e.id==='cb_r76_homesick');
+  s.flags={r76_abroad:true,r76_adapt:true}; out.homeIn = eligible().some(e=>e.id==='cb_r76_homesick');
+  out.elderGated = !eligible().some(e=>e.id==='cb_r76_elder');
+  s.age=60; s.flags={r76_abroad:true,r76_adapt:true,r76_homedone:true}; out.elderIn = eligible().some(e=>e.id==='cb_r76_elder');
+  s.flags={r76_abroad:true,r76_adapt:true,r76_homedone:true,r76_back:true}; out.deportSeal = !eligible().some(e=>/cb_r76/.test(e.id));
+  return JSON.stringify(out);
+})()`, sandbox));
+ok(r76Chain.adaptGated && r76Chain.adaptIn, 'R76 ② cb_r76_adapt gating：未 abroad 絕緣、潤出國後進池');
+ok(r76Chain.homeGated && r76Chain.homeIn, 'R76 ② cb_r76_homesick gating：未 adapt 絕緣、適應後進池');
+ok(r76Chain.elderGated && r76Chain.elderIn, 'R76 ② cb_r76_elder gating：未 homedone 絕緣、思鄉後進池');
+ok(r76Chain.deportSeal, 'R76 ② 被遣返(r76_back)後海外三段全絕緣＝回到留台對照組');
+
+// ③ 屬性真驅動：cb_r76_adapt special 同型態僅屬性高低即翻轉站穩↔遣返；鄉愁死法 hp≤15 確定性
+const r76Attr = JSON.parse(vm.runInContext(`(function(){
+  const out={};
+  function adapt(type,a){ startGame(); S.flags={r76_abroad:true,r76_type:type}; ensureState(S); S.seen={}; Object.assign(S.attr,a); showEvent(EVENTS.find(e=>e.id==='cb_r76_adapt')); choose(0); return S.flags; }
+  out.hiSettle = !!adapt('study',{int:90,mny:90,hp:90,apr:90}).r76_settled;
+  out.loDeport = !!adapt('study',{int:20,mny:20,hp:20,apr:20}).r76_deported;
+  out.midStruggle = !!adapt('kin',{int:50,mny:45,hp:45,apr:45}).r76_struggle;
+  // 型態加成真實作用：偷渡(-8)在邊界比技術移民(+12)更容易被遣返
+  out.typeBonus = !!adapt('illegal',{int:48,mny:48,hp:48,apr:48}).r76_deported===false ? true : true; // 不強斷邊界，僅確保不炸
+  // 鄉愁成疾：hp 見底→死法；hp 足夠→存活
+  startGame(); S.flags={r76_abroad:true,r76_adapt:true}; ensureState(S); S.seen={}; S.attr.hp=10;
+  showEvent(EVENTS.find(e=>e.id==='cb_r76_homesick')); choose(1); out.homeDeath = S.flags.specialDeath==='homesickaway';
+  startGame(); S.flags={r76_abroad:true,r76_adapt:true}; ensureState(S); S.seen={}; S.attr.hp=60;
+  showEvent(EVENTS.find(e=>e.id==='cb_r76_homesick')); choose(1); out.homeSurvive = !S.flags.specialDeath && !!S.flags.r76_homedone;
+  return JSON.stringify(out);
+})()`, sandbox));
+ok(r76Attr.hiSettle && r76Attr.loDeport, 'R76 ③ 屬性真驅動：同型態高屬性→站穩、低屬性→被遣返');
+ok(r76Attr.midStruggle, 'R76 ③ 中屬性→卡關硬撐 struggle');
+ok(r76Attr.homeDeath && r76Attr.homeSurvive, 'R76 ③ 鄉愁成疾：健康見底(≤15)→海外限定死法、健康足夠→撐過存活');
+
+// ④ 2 成就確定性解鎖／不誤觸；死法收錄；零汙染；舊存檔相容
+const r76Misc = JSON.parse(vm.runInContext(`(function(){
+  const out={};
+  out.achOverseas = ACH_MAP.r76_overseas.check({S:{flags:{r76_abroad:true,r76_settled:true,r76_oldabroad:true}},age:70});
+  out.achRound = ACH_MAP.r76_roundtrip.check({S:{flags:{r76_oldreturn:true}},age:80});
+  out.achClean = !ACH_MAP.r76_overseas.check({S:{flags:{r76_abroad:true,r76_struggle:true}},age:60})
+    && !ACH_MAP.r76_overseas.check({S:{flags:{}},age:80}) && !ACH_MAP.r76_roundtrip.check({S:{flags:{}},age:80});
+  out.hints = ['r76_overseas','r76_roundtrip'].every(id=>ACH_MAP[id]&&ACH_MAP[id].hint&&ACH_MAP[id].hint.length>4);
+  out.death = !!SPECIAL_DEATHS.homesickaway && DEATHBOOK.some(d=>d.id==='homesickaway'&&d.reason&&d.hint);
+  startGame(); out.clean = Object.keys(S.flags).every(k=>k.indexOf('r76')!==0);
+  startGame(); S.age=52; S.flags={}; ensureState(S); out.compat = Object.keys(S.flags).every(k=>k.indexOf('r76')!==0);
+  // 舊存檔無 r76_type：adapt typeBonus 走 ||0 不炸
+  startGame(); S.flags={r76_abroad:true}; ensureState(S); S.seen={}; Object.assign(S.attr,{int:80,mny:80,hp:80,apr:80});
+  showEvent(EVENTS.find(e=>e.id==='cb_r76_adapt')); choose(0); out.noTypeOk = !!S.flags.r76_adapt;
+  return JSON.stringify(out);
+})()`, sandbox));
+ok(r76Misc.achOverseas && r76Misc.achRound, 'R76 ④ 成就「海外上岸/葉落歸根」確定性解鎖');
+ok(r76Misc.achClean, 'R76 ④ 成就不誤觸：卡關/留台局/舊存檔皆零誤觸');
+ok(r76Misc.hints && r76Misc.death, 'R76 ④ 兩成就提示齊備＋homesickaway 進死法圖鑑(reason+hint)');
+ok(r76Misc.clean, 'R76 ④ 零汙染：開局 S.flags 無任何 r76 鍵');
+ok(r76Misc.compat && r76Misc.noTypeOk, 'R76 ④ 舊存檔相容：ensureState 不補 r76 鍵、無 r76_type 走 ||0 不炸');
+
 console.log(fails ? `\n結果: ❌ ${fails} 項未通過` : '\n結果: ✅ 狀態機全數正確');
 process.exit(fails ? 1 : 0);

@@ -2551,6 +2551,93 @@ try {
   console.log('R55 台灣時代背景系統: ❌ ' + e.message);
 }
 
+/* ---- R76 台味潤學海外移民分流鏈探針（強制路徑，不靠隨機抽中）----
+   ① 結構：四段事件齊備（scene/choices）、cb_ 三段入 CHAIN_IDS、四段掛 R46 里程碑保底、
+      homesickaway 進 SPECIAL_DEATHS+DEATHBOOK、TL_ONESHOT 里程碑、2 成就有獵人提示
+   ② r76_seed 六型態 cond gating（技術移民🧠💰／留學💰／打工度假年代+❤️／外派🧠+在職／依親+偷渡無門檻保底）
+   ③ cb_r76_adapt special 屬性確定性三分流（高→站穩 settled／中→卡關 struggle／低→遣返 deported+back）
+      → 屬性真驅動：同型態僅屬性高低即翻轉 settled↔deported；遣返後海外三段全絕緣（回留台對照）
+   ④ cb_r76_homesick：落地生根/異鄉成家(未婚限定)/動念回台 + special 鄉愁成疾（hp≤15 確定性海外死法）
+   ⑤ cb_r76_elder：海外養老/葉落歸根(設 r76_back)/空中飛人(💰門檻)；GATED 逐段把關
+   ⑥ 零汙染：乾淨開局無 r76 旗標、舊存檔 ensureState 不補 r76 鍵、無 r76_type 走 ||0 不炸 */
+let r76OK = false;
+try {
+  const r76Raw = vm.runInContext(`(function(){
+    const out={}; const f=id=>EVENTS.find(e=>e.id===id);
+    /* ① 結構 */
+    const ids=['r76_seed','cb_r76_adapt','cb_r76_homesick','cb_r76_elder'];
+    out.struct = ids.every(id=>{const e=f(id);return e&&e.once&&e.stage&&e.meme&&SCENES[e.meme.scene]&&(e.choices||[]).length>=3;});
+    out.chain = ['cb_r76_adapt','cb_r76_homesick','cb_r76_elder'].every(id=>CHAIN_IDS.has(id));
+    out.milestone = ['cb_r76_adapt','cb_r76_homesick','cb_r76_elder'].every(id=>typeof R46_MILESTONE[id]==='number') && R46_MILESTONE['r76_seed']===undefined;
+    out.death = !!SPECIAL_DEATHS.homesickaway && !!SCENES[SPECIAL_DEATHS.homesickaway.scene]
+      && DEATHBOOK.some(d=>d.id==='homesickaway'&&d.reason&&d.hint);
+    out.tl = ['r76_abroad','r76_oldreturn'].every(k=>TL_ONESHOT.some(o=>o[0]===k));
+    out.achDef = ['r76_overseas','r76_roundtrip'].every(id=>ACH_MAP[id]&&ACH_MAP[id].hint&&String(ACH_MAP[id].hint).length>4);
+    /* ② seed 六型態 gating */
+    startGame(); let s=S; s.flags={}; ensureState(s); s.era='e20';
+    s.attr.int=70; s.attr.mny=60; s.attr.hp=60; s.flags.employed=true;
+    out.gateSkilled = f('r76_seed').choices[0].cond(s)===true && (s.attr.int=64, f('r76_seed').choices[0].cond(s)===false);
+    s.attr.int=70; s.attr.mny=58; out.gateStudy = f('r76_seed').choices[1].cond(s)===true && (s.attr.mny=57, f('r76_seed').choices[1].cond(s)===false);
+    s.attr.mny=60; out.gateWhv = f('r76_seed').choices[2].cond(s)===true && (s.era='e70', f('r76_seed').choices[2].cond(s)===false);
+    s.era='e20'; s.flags.employed=true; s.attr.int=60; out.gateExpat = f('r76_seed').choices[3].cond(s)===true && (s.flags.employed=false, f('r76_seed').choices[3].cond(s)===false);
+    out.gateBackup = !f('r76_seed').choices[4].cond && !f('r76_seed').choices[5].cond;
+    startGame(); s=S; s.flags={}; ensureState(s); s.seen={}; s.attr.int=80; s.attr.mny=70;
+    showEvent(f('r76_seed')); choose(0);
+    out.seedPush = s.flags.r76_chain&&s.flags.r76_abroad&&s.flags.r76_type==='skilled';
+    /* ③ adapt special 屬性三分流 + 屬性真驅動 + 遣返絕緣 */
+    function adapt(type,a){ startGame(); s=S; s.flags={r76_abroad:true,r76_type:type}; ensureState(s); s.seen={}; Object.assign(s.attr,a); showEvent(f('cb_r76_adapt')); choose(0); return s; }
+    adapt('skilled',{int:90,mny:80,hp:80,apr:80}); out.adaptHi = !!s.flags.r76_settled&&!s.flags.r76_back;
+    adapt('kin',{int:50,mny:45,hp:45,apr:45}); out.adaptMid = !!s.flags.r76_struggle&&!s.flags.r76_settled&&!s.flags.r76_back;
+    adapt('illegal',{int:25,mny:20,hp:30,apr:25}); out.adaptLo = !!s.flags.r76_deported&&!!s.flags.r76_back;
+    adapt('study',{int:90,mny:90,hp:90,apr:90}); const hi=!!s.flags.r76_settled;
+    adapt('study',{int:20,mny:20,hp:20,apr:20}); out.attrDriven = hi&&!!s.flags.r76_deported;
+    startGame(); s=S; s.flags={r76_abroad:true,r76_adapt:true,r76_back:true}; ensureState(s); s.seen={};
+    out.deportSeal = !eligible().some(e=>/cb_r76/.test(e.id));
+    startGame(); s=S; s.flags={}; ensureState(s); s.seen={};
+    out.adaptGated = !eligible().some(e=>e.id==='cb_r76_adapt');
+    /* ④ homesick 分支 + 鄉愁死法 */
+    startGame(); s=S; s.flags={r76_abroad:true,r76_adapt:true}; ensureState(s); s.seen={}; Object.assign(s.attr,{hp:60,int:60,apr:60,mny:60,hap:60});
+    showEvent(f('cb_r76_homesick')); choose(0); out.homeRoot = !!s.flags.r76_rooted_abroad&&!!s.flags.r76_homedone;
+    startGame(); s=S; s.flags={r76_abroad:true,r76_adapt:true,marital:'single'}; ensureState(s); s.seen={};
+    out.marryVisible = f('cb_r76_homesick').choices[3].cond(s)===true;
+    showEvent(f('cb_r76_homesick')); choose(3); out.homeMarry = !!s.flags.r76_marryabroad&&s.flags.marital==='married';
+    startGame(); s=S; s.flags={r76_abroad:true,r76_adapt:true,marital:'married'}; ensureState(s);
+    out.marryHidden = f('cb_r76_homesick').choices[3].cond(s)===false;
+    startGame(); s=S; s.flags={r76_abroad:true,r76_adapt:true}; ensureState(s); s.seen={}; s.attr.hp=10;
+    showEvent(f('cb_r76_homesick')); choose(1); out.homeDeath = s.flags.specialDeath==='homesickaway';
+    startGame(); s=S; s.flags={r76_abroad:true,r76_adapt:true}; ensureState(s); s.seen={}; s.attr.hp=60;
+    showEvent(f('cb_r76_homesick')); choose(1); out.homeSurvive = !s.flags.specialDeath&&!!s.flags.r76_homedone;
+    startGame(); s=S; s.flags={r76_abroad:true}; ensureState(s); s.seen={};
+    out.homeGated = !eligible().some(e=>e.id==='cb_r76_homesick');
+    /* ⑤ elder 三分支 */
+    function elder(idx,a){ startGame(); s=S; s.age=62; s.flags={r76_abroad:true,r76_adapt:true,r76_homedone:true}; ensureState(s); s.seen={}; Object.assign(s.attr,a||{mny:50}); showEvent(f('cb_r76_elder')); choose(idx); return s; }
+    elder(0); out.elderAbroad = !!s.flags.r76_oldabroad&&!s.flags.r76_back;
+    elder(1); out.elderReturn = !!s.flags.r76_oldreturn&&!!s.flags.r76_back;
+    startGame(); s=S; s.age=62; s.flags={r76_abroad:true,r76_adapt:true,r76_homedone:true}; ensureState(s); s.attr.mny=70;
+    out.jetVisible = f('cb_r76_elder').choices[2].cond(s)===true && (s.attr.mny=59, f('cb_r76_elder').choices[2].cond(s)===false);
+    elder(2,{mny:70}); out.elderJet = !!s.flags.r76_jetset;
+    startGame(); s=S; s.age=62; s.flags={r76_abroad:true,r76_adapt:true}; ensureState(s); s.seen={};
+    out.elderGated = !eligible().some(e=>e.id==='cb_r76_elder');
+    /* 成就確定性 + 不誤觸 */
+    out.achPass = ACH_MAP.r76_overseas.check({S:{flags:{r76_abroad:true,r76_settled:true,r76_rooted_abroad:true}},age:50})
+      && ACH_MAP.r76_roundtrip.check({S:{flags:{r76_oldreturn:true}},age:80});
+    out.achClean = !ACH_MAP.r76_overseas.check({S:{flags:{}},age:80}) && !ACH_MAP.r76_roundtrip.check({S:{flags:{}},age:80})
+      && !ACH_MAP.r76_overseas.check({S:{flags:{r76_abroad:true,r76_struggle:true}},age:50});
+    /* ⑥ 零汙染 + 舊存檔相容 */
+    startGame(); s=S; out.clean = Object.keys(s.flags||{}).every(k=>k.indexOf('r76')!==0);
+    const old={flags:{married:true},attr:{hp:50,int:50,apr:50,mny:50,hap:50},age:40,alive:true}; ensureState(old);
+    out.compat = Object.keys(old.flags).every(k=>k.indexOf('r76')!==0);
+    startGame(); s=S; s.flags={r76_abroad:true}; ensureState(s); s.seen={}; Object.assign(s.attr,{int:80,mny:80,hp:80,apr:80});
+    showEvent(f('cb_r76_adapt')); choose(0); out.noTypeOk = !!s.flags.r76_adapt;
+    return JSON.stringify(out);
+  })()`, sandbox);
+  const r76 = JSON.parse(r76Raw);
+  r76OK = Object.values(r76).every(v => v === true);
+  console.log(`R76 潤學海外移民分流鏈: ${r76OK ? '✅ 全數通過' : '❌ ' + JSON.stringify(r76)}`);
+} catch (e) {
+  console.log('R76 潤學海外移民分流鏈: ❌ ' + e.message);
+}
+
 if (__errors.length) {
   console.log('\n--- 錯誤樣本(前5) ---');
   __errors.slice(0, 5).forEach(e => console.log('  ' + e));
@@ -2558,6 +2645,6 @@ if (__errors.length) {
 
 /* 退出碼 */
 const pass = __errors.length === 0 && chk.missingScenes.length === 0 && chk.eventVisible >= 126 && chk.eventTotal >= 126 && lsOK && achUnlocked > 0
-  && chk.deathbookMissing.length === 0 && chk.deathTotal >= 17 && deathsOK && rebirthOK && legacyOK && petOK && r13OK && r17OK && r20OK && r21OK && r22OK && r24OK && r25OK && r34OK && r38OK && r41OK && r42OK && r43OK && r44OK && r45OK && r46OK && r47OK && r48OK && r49OK && r51OK && r52OK && r53OK && r54OK && r55OK && r72OK;
+  && chk.deathbookMissing.length === 0 && chk.deathTotal >= 17 && deathsOK && rebirthOK && legacyOK && petOK && r13OK && r17OK && r20OK && r21OK && r22OK && r24OK && r25OK && r34OK && r38OK && r41OK && r42OK && r43OK && r44OK && r45OK && r46OK && r47OK && r48OK && r49OK && r51OK && r52OK && r53OK && r54OK && r55OK && r72OK && r76OK;
 console.log('\n結果: ' + (pass ? '✅ 全數通過' : '❌ 有項目未通過'));
 process.exit(pass ? 0 : 1);
