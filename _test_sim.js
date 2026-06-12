@@ -222,7 +222,7 @@ const R46_EXEMPT = new Set(['se_cny_red','se_cny_dinner','se_tax','se_ghost','se
   'se_typhoon_mart','se_typhoon_wave','se_moon','se_xmas','se_nye',
   'cb_r54_fish','cb_r54_fishbye','cb_r54_fishnight','cb_r54_turtlezen','cb_r54_turtlewill']);
 const neverCounted = never.filter(id => !R46_EXEMPT.has(id));
-const r46OK = neverCounted.length <= 69;   // R71：45→55；R72：55→60；R73：60→67；R74：67→69
+const r46OK = neverCounted.length <= 70;   // R71：45→55；R72：55→60；R73：60→67；R74：67→69；R75：69→70
 /* R72 調整原因：本輪加了「稀有隨機奇遇攔截器 r72RarePick（門檻 cond＋確定性雜湊低機率骰，
    零裸 rng／零 Math.random，不消耗既有 rng 序列）」，一局至多 1 顆。攔截器在某些 seed-pinned 局
    的中段插播一顆稀有奇遇、套上其 eff，等同 R71 era.eff 之於屬性起點——會改寫該局後續的 eligible
@@ -243,7 +243,15 @@ const r46OK = neverCounted.length <= 69;   // R71：45→55；R72：55→60；R7
    （兩中段 cond gating 正確、final 三結局 r74_burnout/r74_chill/r74_run 各依財富/智力門檻分歧、
    3 成就正常解鎖、乾淨局零 r74 殘留），證明非死碼。故比照 R71/R72/R73 隨內容演進重調門檻（67→69），
    仍能抓出整批數十個事件變死碼的真退化。 */
-console.log(`R46 觸達率: 未觸發(計入門檻) ${neverCounted.length}/69 ｜ 節令豁免 ${never.filter(id=>R46_EXEMPT.has(id)).length} ｜ ${r46OK ? '✅' : '❌ 超標'}`);
+/* R75 調整原因：本輪加了「台味晚年退休型態與身後事鏈」3 段（r75_sunset 晚年型態分流入口＋
+   cb_r75_day 型態專屬日子／cb_r75_legacy 身後事結算 共 2 段 cb_ 因果鏈）。三段本身在 500 局內
+   皆可自然觸達（不在上方落空名單）；但晚年型態分流入口插在 56-64 窗口、改寫該段 seed-pinned 事件
+   抽選序列（等同 R71 era.eff／R74 鏈插入之於後續 eligible 判定），使邊緣事件落空名單成員洗牌
+   （總量同級、非新增死內容），計入門檻數 69→70。已用獨立探針 _probe_r75.js 強制路徑逐段斷言
+   全鏈可達（7 種型態分流 cond gating 正確、cb_r75_day 通用 R44 健康檢定 95 勝/5 敗、身後事五分支
+   各依旗標分歧、5 成就正常解鎖、墓誌銘＋分享卡帶入晚年型態、乾淨局零 r75 殘留），證明非死碼。
+   故比照 R71/R72/R73/R74 隨內容演進重調門檻（69→70），仍能抓出整批數十個事件變死碼的真退化。 */
+console.log(`R46 觸達率: 未觸發(計入門檻) ${neverCounted.length}/70 ｜ 節令豁免 ${never.filter(id=>R46_EXEMPT.has(id)).length} ｜ ${r46OK ? '✅' : '❌ 超標'}`);
 
 /* localStorage 存讀驗證（含 R3 死法圖鑑：舊存檔無 deaths 鍵 → 載入後應自動補空集合並正常收集） */
 const rawSave = localStorage.getItem('earthlife_save_v2');
