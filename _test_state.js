@@ -2329,5 +2329,136 @@ const r66Clean = JSON.parse(vm.runInContext(`(function(){
 })()`, sandbox));
 ok(r66Clean.clean, 'R66 ⑩ 零汙染：開局 S.flags 無任何 r66 鍵');
 
+// ========================================================================
+// 35) R67 台味天災颱風假人生系統（精簡）：結構護欄／超前部署vs臨時抱佛腳互斥／
+//     隱性計數 r67_prep／年代分流文案差異／R63 交通回扣／死法確定性零誤殺／
+//     成就正反例／零汙染＋ensureState 相容
+// ========================================================================
+// ① 結構護欄：5 事件齊備、全 once、|eff|<=8、w<=3、stage 合法、choices>=3
+const r67St = JSON.parse(vm.runInContext(`(function(){
+  const ids=['r67_typhoon_prep','r67_quake','r67_floodbike','r67_coldsnap','r67_blackout'];
+  const evs=ids.map(id=>EVENTS.find(e=>e.id===id));
+  const out={};
+  out.all = evs.every(e=>e && e.once===true && (e.w||1)<=3 && Array.isArray(e.stage) && e.choices.length>=3);
+  out.guard = evs.every(e=>e.choices.every(c=>Object.values(c.eff||{}).every(v=>Math.abs(v)<=8)));
+  return JSON.stringify(out);
+})()`, sandbox));
+ok(r67St.all, 'R67 ① 5 事件齊備全 once、stage 合法、choices>=3、w<=3');
+ok(r67St.guard, 'R67 ① 平衡護欄：單選項 |eff|<=8');
+// ② 超前部署大師 vs 臨時抱佛腳互斥：防災力 3+ 開大師線、<3 鎖；同 once 事件二選一旗標互斥
+const r67Br = JSON.parse(vm.runInContext(`(function(){
+  const out={};
+  const bc=EVENTS.find(e=>e.id==='r67_blackout');
+  const master=bc.choices[0], last=bc.choices[1];
+  out.mOpen = master.cond({flags:{r67_prep:3}})===true && master.cond({flags:{r67_prep:5}})===true;
+  out.mLock = master.cond({flags:{r67_prep:2}})===false && master.cond({flags:{}})===false && master.cond({})===false;
+  out.lAlways = !last.cond;
+  startGame(); S.age=52; S.flags={r67_prep:3}; ensureState(S);
+  showEvent(bc); choose(0);
+  out.mFlag = S.flags.r67_master===true && !S.flags.r67_lastminute;
+  startGame(); S.age=52; S.flags={}; ensureState(S);
+  showEvent(bc); choose(1);
+  out.lFlag = S.flags.r67_lastminute===true && !S.flags.r67_master;
+  return JSON.stringify(out);
+})()`, sandbox));
+ok(r67Br.mOpen && r67Br.mLock && r67Br.lAlways, 'R67 ② 防災力門檻 cond：3+ 開超前部署大師線、<3 鎖、臨時抱佛腳線恆在');
+ok(r67Br.mFlag && r67Br.lFlag, 'R67 ② 大師線落 r67_master、抱佛腳線落 r67_lastminute（同 once 事件互斥落地）');
+// ③ 隱性計數 r67_prep：跨事件選「超前部署」獨立累積、累到 3 解鎖大師門檻
+const r67Cnt = JSON.parse(vm.runInContext(`(function(){
+  const out={};
+  startGame(); S.age=22; S.flags={}; ensureState(S);
+  out.zero = (S.flags.r67_prep||0)===0;
+  showEvent(EVENTS.find(e=>e.id==='r67_typhoon_prep')); choose(0);
+  out.n1 = S.flags.r67_prep===1 && S.flags.r67_ready===true;
+  S.age=14; showEvent(EVENTS.find(e=>e.id==='r67_quake')); choose(2);
+  out.n2 = S.flags.r67_prep===2;
+  S.age=30; showEvent(EVENTS.find(e=>e.id==='r67_floodbike')); choose(2);
+  out.n3 = S.flags.r67_prep===3;
+  const master=EVENTS.find(e=>e.id==='r67_blackout').choices[0];
+  out.unlock = master.cond(S)===true;
+  return JSON.stringify(out);
+})()`, sandbox));
+ok(r67Cnt.zero && r67Cnt.n1 && r67Cnt.n2 && r67Cnt.n3, 'R67 ③ 防災力 r67_prep 跨事件（颱風/地震/淹水超前部署）獨立累積 0→3');
+ok(r67Cnt.unlock, 'R67 ③ 防災力累到 3 → 停水停電大師門檻解鎖');
+// ④ R55 年代分流：地震警報（e10/e20 國家級警報+PTT vs e70/e80 收音機跑馬燈），文案差異
+const qk10 = vm.runInContext(`__choiceHTML('r67_quake', s=>{s.era='e10';}, 14)`, sandbox);
+const qk70 = vm.runInContext(`__choiceHTML('r67_quake', s=>{s.era='e70';}, 14)`, sandbox);
+const qkOld = vm.runInContext(`__choiceHTML('r67_quake', s=>{delete s.era;}, 14)`, sandbox);
+ok(qk10.includes('國家級警報世代限定') && !qk10.includes('收音機世代限定'), 'R67 ④ e10 顯示國家級警報+PTT、收音機絕緣');
+ok(qk70.includes('收音機世代限定') && !qk70.includes('國家級警報世代限定'), 'R67 ④ e70 顯示收音機跑馬燈、國家級警報絕緣');
+ok(!qkOld.includes('世代限定') && qkOld.includes('躲進桌下'), 'R67 ④ 舊存檔無 era 鍵：年代選項皆絕緣、基本選項照常');
+// ⑤ R63 交通回扣：淹水季機車泡水（無車族 r63_nobike/r63_buslife 淡定線）＋硬騎落地
+const r67Job = JSON.parse(vm.runInContext(`(function(){
+  const out={};
+  const hNo=__choiceHTML('r67_floodbike', s=>{s.flags.r63_nobike=true;}, 30);
+  const hBus=__choiceHTML('r67_floodbike', s=>{s.flags.r63_buslife=true;}, 30);
+  const hPlain=__choiceHTML('r67_floodbike', null, 30);
+  out.shown = hNo.includes('無車族限定') && hBus.includes('無車族限定');
+  out.hidden = !hPlain.includes('無車族限定');
+  startGame(); S.age=30; S.flags={}; ensureState(S);
+  showEvent(EVENTS.find(e=>e.id==='r67_floodbike')); choose(0);
+  out.flag = S.flags.r67_floodbike===true && S.flags.r67_attend===true;
+  return JSON.stringify(out);
+})()`, sandbox));
+ok(r67Job.shown && r67Job.hidden, 'R67 ⑤ 無車族淡定線：r63_nobike/r63_buslife 現身、有車/舊存檔絕緣（回扣 R63）');
+ok(r67Job.flag, 'R67 ⑤ 慣老闆不放假硬騎落地 r67_floodbike＋r67_attend（全勤背刺）');
+// ⑥ 稀有死法 r67_spa：屬性門檻確定性觸發＋活路零誤殺＋死法圖鑑收錄
+const r67Death = JSON.parse(vm.runInContext(`(function(){
+  const out={};
+  out.book = DEATHBOOK.some(d=>d.id==='r67_spa'&&d.rare&&d.hint.length>4) && !!SPECIAL_DEATHS.r67_spa && !!SCENES[SPECIAL_DEATHS.r67_spa.scene];
+  const hLow=__choiceHTML('r67_coldsnap', s=>{s.attr.hp=18;}, 50);
+  const hHigh=__choiceHTML('r67_coldsnap', s=>{s.attr.hp=70;}, 50);
+  const hYoung=__choiceHTML('r67_coldsnap', s=>{s.attr.hp=12;}, 30);
+  out.gateShow = hLow.includes('低溫硬撐限定');
+  out.gateHideHp = !hHigh.includes('低溫硬撐限定');
+  out.gateHideAge = !hYoung.includes('低溫硬撐限定');
+  const cc=EVENTS.find(e=>e.id==='r67_coldsnap'), ci=cc.choices.findIndex(c=>c.special==='r67_spa');
+  startGame(); S.age=50; S.flags={}; ensureState(S); S.attr.hp=12;
+  showEvent(cc); choose(ci);
+  out.dying = S.flags.specialDeath==='r67_spa';
+  die('choice');
+  out.dead = !S.alive && S.deathId==='r67_spa' && !!SAVE.deaths.r67_spa;
+  startGame(); S.age=50; S.flags={}; ensureState(S); S.attr.hp=18;
+  showEvent(cc); choose(ci);
+  out.alive = S.alive===true && !S.flags.specialDeath && S.flags.r67_spasurvive===true;
+  startGame(); S.age=50; S.flags={}; ensureState(S); S.attr.hp=12;
+  const cc2=EVENTS.find(e=>e.id==='r67_coldsnap');
+  showEvent(cc2); choose(0);
+  out.noKill = S.alive===true && !S.flags.specialDeath && S.flags.r67_tough===true;
+  return JSON.stringify(out);
+})()`, sandbox));
+ok(r67Death.book, 'R67 ⑥ r67_spa 收錄進死法圖鑑（rare＋模糊提示＋場景存在）');
+ok(r67Death.gateShow && r67Death.gateHideHp && r67Death.gateHideAge, 'R67 ⑥ 泡湯死法選項：hp<=20 且 age>=45 才現身（被逼到絕境才出現）');
+ok(r67Death.dying && r67Death.dead, 'R67 ⑥ 體力見底(hp<=14)硬泡 → 寒流泡湯確定性死＋跨局收集');
+ok(r67Death.alive, 'R67 ⑥ 體力 15~20 硬泡：活路分支（r67_spasurvive 落地、零誤殺）');
+ok(r67Death.noKill, 'R67 ⑥ 其他選項（穿短袖逞強）體力見底也零誤殺');
+// ⑦ 新成就 ×2：check 正反例＋獵人提示齊備
+const r67Ach = JSON.parse(vm.runInContext(`(function(){
+  const out={};
+  out.master = ACH_MAP.r67_master.check({S:{flags:{r67_master:true}}, age:60});
+  out.masterNeg = !ACH_MAP.r67_master.check({S:{flags:{r67_prep:3}}, age:60}) && !ACH_MAP.r67_master.check({S:{flags:{}}, age:60});
+  out.attend = ACH_MAP.r67_fullattend.check({S:{flags:{r67_attend:true}}, age:40});
+  out.attendNeg = !ACH_MAP.r67_fullattend.check({S:{flags:{r67_floodbike:true}}, age:40}) && !ACH_MAP.r67_fullattend.check({S:{flags:{}}, age:40});
+  out.hints = ['r67_master','r67_fullattend'].every(id=>ACH_MAP[id]&&ACH_MAP[id].hint&&ACH_MAP[id].hint.length>4);
+  return JSON.stringify(out);
+})()`, sandbox));
+ok(r67Ach.master && r67Ach.masterNeg, 'R67 ⑦ 成就「超前部署大師」：r67_master 旗標解鎖、只有防災力不誤觸');
+ok(r67Ach.attend && r67Ach.attendNeg, 'R67 ⑦ 成就「颱風假全勤獎」：r67_attend 旗標解鎖、僅泡水無打卡不誤觸');
+ok(r67Ach.hints, 'R67 ⑦ 兩個新成就獵人提示齊備');
+// ⑧ 零汙染＋ensureState 相容：開局無 r67 鍵、舊存檔經 ensureState 不補 r67 鍵、cond 靠 ||0 不炸、成就不誤觸
+const r67Clean = JSON.parse(vm.runInContext(`(function(){
+  const out={};
+  startGame();
+  out.clean = Object.keys(S.flags).every(k=>k.indexOf('r67')!==0);
+  startGame(); S.age=52; S.flags={}; ensureState(S);
+  out.compat = Object.keys(S.flags).every(k=>k.indexOf('r67')!==0);
+  const bc=EVENTS.find(e=>e.id==='r67_blackout');
+  out.gateSafe = bc.choices[0].cond(S)===false;
+  out.achSafe = !ACH_MAP.r67_master.check({S:S,age:80}) && !ACH_MAP.r67_fullattend.check({S:S,age:80});
+  return JSON.stringify(out);
+})()`, sandbox));
+ok(r67Clean.clean, 'R67 ⑧ 零汙染：開局 S.flags 無任何 r67 鍵');
+ok(r67Clean.compat && r67Clean.gateSafe && r67Clean.achSafe, 'R67 ⑧ ensureState 相容：舊存檔不補 r67 鍵、門檻 cond 靠 ||0 不炸、成就不誤觸');
+
 console.log(fails ? `\n結果: ❌ ${fails} 項未通過` : '\n結果: ✅ 狀態機全數正確');
 process.exit(fails ? 1 : 0);
