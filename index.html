@@ -2010,6 +2010,10 @@ const ACHIEVEMENTS = [
   {id:"r51_fullnest", ic:"🏡", nm:"成家全餐・親戚集體失業", desc:"從年夜飯催婚一路走完婚禮、買房抉擇、生養下一代——三大魔王全通關，從此圍爐桌上再也沒有人敢問你問題。", check:c=>!!c.S.flags.r51_wed&&!!c.S.flags.r51_house&&!!c.S.flags.r51_kid&&!!c.S.flags.haskid, hint:"年夜飯那桌的催婚連續技，如果照單全收——婚禮、房事、生養三關一關不漏地走完…"},
   {id:"r51_cycle", ic:"🔄", nm:"世代輪迴・都是為你好 2.0", desc:"自己怎麼被養大的，就怎麼養下一代——補習地圖原封不動傳承，或把童年那陣自由的風留給孩子。輪迴的不是業障，是教養。", check:c=>!!c.S.flags.r51_cycle, hint:"小時候走過『都是為你好』那條路的人，當了爸媽站在同一個巷口時，會做出似曾相識的決定…"},
   {id:"r51_freebird", ic:"🕊️", nm:"不婚不生・自由終老", desc:"在年夜飯桌上宣布不婚，扛住三十年親戚火力，自由自在活過 70 歲——人生這題，你交了一份只有自己看得懂、但分數很高的答案卷。", check:c=>!!c.S.flags.r51_solo&&c.age>=70, hint:"圍爐桌上敢把『我不婚』說出口的人，如果把這份自由一路守到七十歲…"},
+  /* ---- R73 台味感情婚戀鏈成就（旗標確定性判定，零裸 rng；未進鏈的局永不誤觸） ---- */
+  {id:"r73_truelove", ic:"💍", nm:"滑到對的人・愛情長跑上岸", desc:"從交友軟體或相親局一路認真經營，扛過關係地雷、遠距離與背叛的考驗，最後成功求婚（或被求婚）即將步入禮堂——這座島最難的不是買房，是在照騙與催婚之間，真的找到一個想牽手的人。", check:c=>!!(c.S.flags&&c.S.flags.r73_couple&&c.S.flags.r73_engaged), hint:"從交友軟體或相親開始認真談一場戀愛，走過交往的關卡，最後在求婚那關修成正果（求婚成功或被反求婚）…"},
+  {id:"r73_redflagpro", ic:"🚩", nm:"關係地雷・拆彈專家", desc:"在恐怖情人、控制狂、媽寶的關係地雷區，靠著清醒（或夠高的智力）及早識破、全身而退——愛情裡能保護自己的人，才有資格談下一段幸福。", check:c=>!!(c.S.flags&&c.S.flags.r73_escaped), hint:"交往後撞見查勤、情緒勒索、媽寶那種關係地雷時，選擇及早抽身或理性設界線全身而退…"},
+  {id:"r73_solofree", ic:"🕊️", nm:"單身貴族・自在一生", desc:"滑遍交友軟體、相親見盡，最後選擇與自己好好相處——把『孤獨終老』活成『自在獨善』，單身的日子過得有聲有色直到中年以後。一個人，也可以是一支完整的隊伍。", check:c=>!!(c.S.flags&&c.S.flags.r73_solofree)&&c.age>=55&&!c.S.flags.married, hint:"談感情一路單身到中年的人，在『一個人的人生課』選擇享受自由（或提早布局獨老），把單身過到 55 歲以後…"},
   /* ---- R52 晚年鏈成就（旗標確定性判定，零裸 rng；未進鏈的局永不誤觸） ---- */
   {id:"r52_sunset", ic:"🌇", nm:"下半場全勤・晚年模範生", desc:"從退休抉擇一路走完晚年生活、健康關卡與人生期末考——人生下半場打好打滿，謝幕時連裁判都起立鼓掌。", check:c=>!!c.S.flags.r52_ret&&!!c.S.flags.r52_life&&!!c.S.flags.r52_health&&!!c.S.flags.r52_final, hint:"55 歲之後人生還有四道關卡：退休、日子、健康、交代——一關不漏走到底…"},
   {id:"r52_nanny", ic:"👶", nm:"金孫托育中心・全年無休", desc:"退休後光榮轉職全職顧孫——免費、不打烊、自帶副食品研發部門。兒女口中那句『你帶比較放心』，是你這輩子最貴的聘書。", check:c=>!!c.S.flags.r52_nanny, hint:"有子女的人退休那天，常會收到一份無給職聘書，蓋章的是金孫…"},
@@ -7610,7 +7614,7 @@ function buildEvents(){ return [
      鏈內附 1 稀有死法 toastdown（喜宴敬酒馬拉松，hp<=14 確定性觸發，比照 R27 模式）。
      文案走台味成家自嘲（催婚親戚／紅包行情／頭期款天文數字／月子中心／少子化），不踩紅線。
      ===================================================================== */
-  {id:"r51_seed", stage:[26,32], w:2.5, once:true, cond:s=>s.flags.marital!=="married",
+  {id:"r51_seed", stage:[26,32], w:2.5, once:true, cond:s=>s.flags.marital!=="married"&&!s.flags.r73_engaged&&!s.flags.r73_couple,
     title:"年夜飯催婚總力戰", text:"年夜飯才上第二道菜，二姑就發動先制攻擊：『有對象沒？』三舅媽接技能連段：『隔壁阿芬的女兒小你兩歲，孩子都會叫阿嬤了。』最後大伯放出全桌靜止的大絕：『少年欸，不生，對得起國家嗎？』全場目光集中在你的碗上——這頓飯，你不表態是吃不完的。",
     meme:{scene:"bernie", top:"親戚：何時結婚？何時生？", bot:"我：先讓我把這隻雞腿吃完", tag:"成家"},
     choices:[
@@ -7653,6 +7657,101 @@ function buildEvents(){ return [
       {label:'<i class="gtag">🧒隔壁小明</i> 立誓：我的小孩不用跟任何人比', eff:{hap:7,mny:-4}, cond:s=>!!s.flags.r53_compared, flags:{r51_kid:true,r51_freerange:true,r53_nocompare:true,haskid:true}, inc:"kids", res:"親戚在月子中心就開始比較誰家金孫先會笑，你笑著打斷：『阮兜這隻，跟自己比就好。』你把『隔壁小明』四個字從家訓裡永久刪除，孩子的成績單你只看一個欄位：他今天開不開心。三十年前那個在年夜飯桌上低頭扒飯的小孩，在你身體裡終於抬起了頭。"},
       /* R54 寵物回扣（尾端附加，不動既有選項順序）：土狗還在世的人限定——小孩跟狗一起長大 */
       {label:'<i class="gtag">🐕土狗夥伴</i> 給孩子最好的禮物：小孩跟土狗一起長大', eff:{hap:7,mny:-5}, cond:s=>!!s.flags.r54_dog&&!s.flags.r54_gone, flags:{r51_kid:true,r51_freerange:true,r54_kidgrow:true,haskid:true}, inc:"kids", res:"月子中心的衛教單寫『寵物與新生兒需專業評估』，來福用三天推翻了專家：牠自動把巡邏路線改成嬰兒床外三步，哭聲一響比你先到。後來孩子的第一張爬行照裡有牠、第一步是扶著牠的背站起來的、第一個朋友不是人類。親戚問你怎麼帶小孩，你指指來福：『主要是牠在帶。』"},
+    ]},
+
+  /* =====================================================================
+     R73 台味感情婚戀深化事件鏈「成家之前的感情歷程」：交友軟體/相親入口 → 第一次見面（見光死/約砲變真愛）
+       → 關係地雷（恐怖情人/控制狂/媽寶）→ 遠距離/兵變 → 劈腿外遇 → 求婚（成功/被拒/同居）
+       → 聘金嫁妝婆媳前哨戰 → （單身線）一個人的人生課。
+     旗標推進：r73_chain（入鏈）＋ r73_app/r73_blind/r73_drift/r73_charm（入口分流）
+       → r73_couple（認真交往，date 成功）→ r73_redflagdone/r73_distdone/r73_cheatdone（關卡）
+       → r73_engaged（求婚成功，同時點 r51_love 銜接 R51 成家鏈的婚禮→買房→育兒，不重做婚後內容）
+       → r73_cohabit（同居不婚分支）／ r73_solofree（單身自在線）。
+     設計：與 R51 成家鏈「銜接而非平行重造」——本輪只做成家之前的感情歷程，求婚成功後交棒給 R51 cb_r51_wedding；
+       r51_seed（年夜飯催婚）已加 !r73_engaged&&!r73_couple 守門，兩條入口互斥不重複播放開場。
+     分支全走旗標＋choice.cond＋門檻膠囊（gate）＋ br/special（魅力/財富/智力驅動成功率，沿用 blinddate 模式，
+       種子化零裸 Math.random、不污染既有 seed-pinned 序列）。3 成就 r73_truelove/r73_redflagpro/r73_solofree（hint 配齊）。
+     文案走台味感情自嘲（照騙見光死/催婚/恐怖情人/兵變/聘金行情/婆媳/孤獨終老），不踩政治暴力仇恨紅線。
+     ===================================================================== */
+  {id:"r73_seed", stage:[22,30], w:2.4, once:true,
+    cond:s=>s.flags.marital!=="married"&&!s.flags.r51_match&&!s.flags.r51_love&&!s.flags.r51_solo&&!s.flags.r73_chain,
+    title:"滑不到的真愛", text:"出社會幾年，戀愛這欄始終空白。手機裡交友軟體紅點閃個不停，老家群組裡長輩的『有對象沒』也準時報到。你滑著一張張照騙，突然有點分不清自己到底在找伴，還是只是在找一個能堵住親戚嘴的答案。",
+    meme:{scene:"love", top:"左滑一百個", bot:"右滑的那個 已讀不回", tag:"感情"},
+    choices:[
+      {label:"交友軟體狂滑：總有一個對的人", eff:{hap:2,apr:1}, flags:{r73_chain:true,r73_app:true}, res:"你把自我介紹改了第八版，照片精選到只剩三張角度。配對通知響個不停，曖昧開了一打，能約出來的卻一隻手數得完——數位時代的緣分，供給過剩、成交困難。"},
+      {label:"接受親戚牌相親局：死馬當活馬醫", eff:{hap:-2,int:2,apr:2}, flags:{r73_chain:true,r73_blind:true}, res:"你投降了，讓三姑六婆的人脈網全面啟動。從咖啡廳到素食餐廳，每一場都有『剛好坐隔壁』的長輩監軍。你坐在對面，腦中只有一個念頭：這頓飯吃完，是不是就能換這個月的清靜？"},
+      {label:"佛系隨緣，不主動不勉強", eff:{hap:4,int:2}, flags:{r73_chain:true,r73_drift:true}, res:"你關掉所有交友軟體，宣布回歸自然放生狀態：『緣分到了自然會來。』這句話很有禪意，唯一的副作用是，緣分聽完也決定佛系，跟你一起放生彼此。"},
+      {label:'<i class="gtag">💅外貌70+</i> 根本不缺人追，慢慢挑', eff:{hap:6,apr:2}, cond:s=>s.attr.apr>=70, gate:true, flags:{r73_chain:true,r73_app:true,r73_picky:true}, res:"你的問題從來不是配對，是篩選。訊息匣永遠塞滿，曖昧對象可以排班表。你端著一杯咖啡慢慢挑，享受被選擇權握在手裡的奢侈——當然，挑久了會不會挑到剩自己，是後話。"},
+    ]},
+  {id:"cb_r73_date", stage:[22,33], w:2.5, once:true,
+    cond:s=>(!!s.flags.r73_app||!!s.flags.r73_blind)&&!s.flags.r73_couple&&s.flags.marital!=="married",
+    title:"見光死還是見光活", text:"聊了兩週終於約出來見面。你站在約定的巷口，手心冒汗——對方本人會跟大頭貼差多少？是買家秀對上賣家秀，還是難得一次貨真價實？",
+    meme:{scene:"huhcat", top:"大頭貼 vs 本人", bot:"差距大到 想申請退貨", tag:"感情"},
+    choices:[
+      {label:"放下手機，認真給這段一個機會", eff:{}, special:"r73_spark", res:"你決定不滑了，專心看眼前這個人……"},
+      {label:'<i class="gtag">🧠智力65+</i> 先聊三觀再決定，不被照片綁架', eff:{int:3,hap:4}, cond:s=>s.attr.int>=65, gate:true, flags:{r73_couple:true,inlove:true}, res:"你不急著評斷外貌，反而聊起價值觀、金錢觀、未來想過的日子。三小時過去，你發現對方有趣的靈魂遠勝那張照騙。能聊得來才是真的保鮮——這段，你想繼續。感情狀態：穩定交往中。"},
+      {label:"抱著約砲心態來，結果聊到天亮", eff:{hap:8,hp:-2}, flags:{r73_couple:true,inlove:true}, res:"你本來只想速食，沒想到兩人從宵夜聊到日出，從身體聊到了心事。一夜情養成正緣的機率比中發票還低，偏偏被你抽中。你笑說：『早知道第一句不該傳那種訊息。』"},
+      {label:"沒有來電的火花，回家繼續滑", eff:{hap:-3,int:2}, flags:{r73_dateflop:true}, res:"見面四十分鐘，話題乾到能起火。你禮貌吃完那頓飯，回家默默把對方從配對名單移除，順手又右滑了三十個人——緣分這種東西，下一個會更好（吧）。"},
+    ]},
+  {id:"cb_r73_redflag", stage:[23,37], w:2.4, once:true,
+    cond:s=>!!s.flags.r73_couple&&!s.flags.r73_redflagdone&&s.flags.marital!=="married",
+    title:"關係地雷探測器", text:"交往一陣子，對方的另一面慢慢浮現：查勤查到通聯紀錄、跟異性同事吃飯要報備、媽媽的話永遠是聖旨、生氣起來摔東西。你開始分不清這是『在乎』還是『地雷』——而地雷的特性，是踩到才知道。",
+    meme:{scene:"scaredcat", top:"他說這叫在乎", bot:"我覺得這叫監視", tag:"感情"},
+    choices:[
+      {label:"苗頭不對，及早抽身止損", eff:{hap:-6,int:6}, inc:"breakups", flags:{r73_redflagdone:true,r73_escaped:true}, res:"你認清『控制不是愛』，趁陷得還不深果斷分手。封鎖、退追蹤、刪對話一氣呵成。朋友說你太狠，你說：『對恐怖情人心軟，是拿自己的人生開玩笑。』止損出場，帳面難看，但保住了本金。"},
+      {label:'<i class="gtag">🧠智力68+</i> 攤開講清楚，設好界線再觀察', eff:{int:5,hap:3}, cond:s=>s.attr.int>=68, gate:true, flags:{r73_redflagdone:true,r73_escaped:true}, res:"你沒有急著逃，也沒有委屈吞下。你把每一條讓你不舒服的界線攤開來談，看對方是願意調整還是惱羞成怒——這一談，你既保住了識人之明，也沒辜負一段或許還有救的感情。看得懂紅旗的人，才不會在愛情裡裸奔。"},
+      {label:"戀愛腦上線：他只是太愛我了", eff:{hap:-4,hp:-4}, flags:{r73_redflagdone:true,r73_trapped:true}, res:"你替每一個警訊找理由：查勤是缺乏安全感、摔東西是真性情、媽寶是孝順。你把自己越縮越小，朋友一個個被你弄丟。愛情裡最危險的不是壞人，是替壞人寫好人傳記的自己。"},
+      {label:"以毒攻毒，比他更控制", eff:{hap:-2,apr:-2,int:1}, flags:{r73_redflagdone:true}, res:"你決定不當受害者，反手把查勤、情緒勒索全套學起來回敬。兩個控制狂的戰爭沒有贏家，只有越打越像的兩個人。這段關係最後在互相傷害中燒成灰——你們證明了地雷會傳染。"},
+    ]},
+  {id:"cb_r73_distance", stage:[22,35], w:2.2, once:true,
+    cond:s=>!!s.flags.r73_couple&&!s.flags.r73_distdone&&s.flags.marital!=="married",
+    title:"遠距離大魔王", text:"對方因為工作、當兵或出國，你們被迫遠距離。從每天黏在一起，變成隔著螢幕道晚安。時差、已讀不回、和一句『最近好忙』，慢慢在你們之間築起一道高鐵自由座都到不了的距離。",
+    meme:{scene:"heartbreak", top:"遠距離戀愛", bot:"輸給的不是距離 是已讀不回", tag:"感情"},
+    choices:[
+      {label:"每天視訊報備，硬撐這段感情", eff:{hap:2,hp:-3,mny:-2}, flags:{r73_distdone:true}, res:"你們約好每晚視訊、紀念日寄手寫卡、攢假就飛去見面。撐遠距離像在玩信任的鋼索，你咬牙走完——有人說遠距離是照妖鏡，照完還在一起的，是真的。"},
+      {label:'<i class="gtag">💰財富60+</i> 機票說飛就飛，用錢輾平距離', eff:{mny:-6,hap:8}, cond:s=>s.attr.mny>=60, gate:true, flags:{r73_distdone:true}, res:"距離的問題，有時候是錢的問題。你週週飛去陪對方，把廉航里程刷成白金。旁人羨慕你浪漫，只有你的帳戶知道，這份浪漫是刷卡分期換來的——但能用錢解決的感情難題，都算便宜。"},
+      {label:"終究敵不過兵變，和平分手", eff:{hap:-8,int:4}, inc:"breakups", flags:{r73_distdone:true}, res:"距離還是贏了。某個對方又『太忙』沒回訊的深夜，你們心照不宣地說了再見。兵變、職變、心變——分開的理由各有名字，結局都一樣。你刪掉合照，給這段遠距離畫上句點。"},
+      {label:"乾脆其中一人辭職搬過去", eff:{hap:6,mny:-8}, flags:{r73_distdone:true,r73_moved:true}, res:"你們算了一筆帳：與其耗在遠距離，不如一個人犧牲。你（或對方）辭掉工作、打包人生搬到同一座城市。為愛搬家是場豪賭，賭注是事業、籌碼是未來——但至少從此晚安是面對面說的。"},
+    ]},
+  {id:"cb_r73_cheat", stage:[24,40], w:2.2, once:true,
+    cond:s=>!!s.flags.r73_couple&&!s.flags.r73_cheatdone&&s.flags.marital!=="married",
+    title:"劈腿羅生門", text:"手機螢幕在深夜亮起一則曖昧訊息——不是你傳的，也不是傳給你的。又或者，動心的那個人是你。感情裡最痛的考題，不是愛不愛，是『要不要說破』。",
+    meme:{scene:"temptation", top:"手機亮起的那則訊息", bot:"拆開是炸彈 不拆是未爆彈", tag:"感情"},
+    choices:[
+      {label:"抓到對方劈腿，乾脆俐落了結", eff:{hap:-10,int:6}, inc:"breakups", flags:{r73_cheatdone:true,r73_betrayed:true}, res:"證據攤在眼前，對方的辯解蒼白得可笑。你沒有哭鬧，只是平靜地收拾自己的東西。被劈腿不丟臉，丟臉的是那個以為神不知鬼不覺的人。你把鑰匙還了，連同那段以為會走很遠的感情。"},
+      {label:'<i class="gtag">🧠智力70+</i> 冷靜蒐證，好聚好散不撕破臉', eff:{int:6,hap:-4,mny:2}, cond:s=>s.attr.int>=70, gate:true, inc:"breakups", flags:{r73_cheatdone:true,r73_betrayed:true}, res:"你沒有當場爆發，而是冷靜地把帳算清楚——共同的存款、買的傢俱、誰該搬走。你用最體面的方式結束最不體面的背叛，全身而退不留把柄。對付不忠的人，理智比情緒值錢。"},
+      {label:"自己一時鬼迷心竅，被抓包付代價", eff:{hap:-8,apr:-3}, inc:"breakups", flags:{r73_cheatdone:true,r73_cheater:true}, res:"動心的是你。紙終究包不住火，攤牌那天對方眼裡的失望比責罵更重。你失去的不只是一段感情，還有那個曾經很相信你的人。出來偷的，遲早要還——這筆債，利息很高。"},
+      {label:"選擇原諒，給彼此一次機會", eff:{hap:-2,hp:-2}, flags:{r73_cheatdone:true,r73_forgave:true}, res:"你決定相信『迷途知返』，把裂痕補起來繼續走。原諒是一種勇氣，但補過的碗心裡都知道哪裡有縫。從此你多了一個壞習慣：每次對方手機一響，你的心就跟著抖一下。"},
+    ]},
+  {id:"cb_r73_propose", stage:[26,42], w:2.6, once:true,
+    cond:s=>!!s.flags.r73_couple&&!s.flags.r73_engaged&&!s.flags.r73_cohabit&&s.flags.marital!=="married",
+    title:"終點線前的求婚", text:"交往這麼久，兩家長輩見過了、未來也聊過了，就差臨門一腳。你摸著口袋裡那個小盒子，心跳得比面試還快——這一跪下去，是修成正果，還是把人嚇跑？",
+    meme:{scene:"deal", top:"單膝跪下的瞬間", bot:"賭上的是 整段青春的沉沒成本", tag:"感情"},
+    choices:[
+      {label:"鼓起勇氣，誠意滿滿地求婚", eff:{}, special:"r73_propose", res:"你深吸一口氣，單膝跪下……"},
+      {label:'<i class="gtag">💰財富75+</i> 鑽戒＋海島包場，直接攻頂', eff:{mny:-12,hap:18,apr:3}, cond:s=>s.attr.mny>=75, gate:true, flags:{r73_engaged:true,r51_love:true,inlove:true}, res:"你把求婚辦成一場電影：海島包場、樂團現場、無人機拼出對方的名字、鑽戒亮到隔壁桌都來鼓掌。誠意可以無價，但有錢真的能買到一個無懈可擊的『我願意』。對方哭著點頭，這場仗你用銀彈贏得乾淨俐落。感情狀態：即將步入禮堂。"},
+      {label:"還沒準備好，先同居試試看", eff:{hap:4,mny:-2}, flags:{r73_cohabit:true}, res:"你說服自己『先住住看再說』，搬到一起分攤房租、共用一支牙膏。同居是婚姻的試用版，你們在水電帳單和誰倒垃圾之間，慢慢看清彼此最真實的樣子——有人因此更靠近，有人因此看破。婚，你決定再緩緩。"},
+      {label:"被對方搶先反求婚", eff:{hap:14,apr:2}, flags:{r73_engaged:true,r51_love:true,inlove:true,r73_reverse:true}, res:"你還在猶豫時機，對方先單膝跪下了。你愣了三秒，眼淚先一步答應。誰先開口不重要，重要的是兩個人都想把對方寫進往後的人生。感情狀態：即將步入禮堂——而且是對方先說的，這梗你能講一輩子。"},
+    ]},
+  {id:"cb_r73_betrothal", stage:[26,44], w:2.3, once:true,
+    cond:s=>!!s.flags.r73_engaged&&!s.flags.r51_wed&&!s.flags.r73_betrothdone&&s.flags.marital!=="married",
+    title:"聘金嫁妝喬不攏", text:"婚事一定，兩家長輩的甜蜜想像瞬間變成精算現場：聘金多少、金飾幾兩、嫁妝幾台、桌數怎麼分、婆婆的意見與丈母娘的堅持正面對決。你夾在中間才發現，原來結婚最難的不是相愛，是橋這些。",
+    meme:{scene:"gossip", top:"聘金行情表開戰", bot:"兩家長輩的角力 我是夾心餅乾", tag:"感情"},
+    choices:[
+      {label:"當和事佬，兩邊長輩各退一步", eff:{hap:4,int:3,hp:-2}, flags:{r73_betrothdone:true,r73_peacemaker:true}, res:"你拉著另一半連夜開協調會，把兩家的堅持一條條翻譯、緩衝、折衷。聘金象徵性收、金飾意思到、桌數抓中間。你發現婚前這場談判，根本是婚姻的入學考——而你們聯手及格了。"},
+      {label:'<i class="gtag">💰財富70+</i> 大方包下，要面子我給足', eff:{mny:-10,hap:8,apr:3}, cond:s=>s.attr.mny>=70, gate:true, flags:{r73_betrothdone:true}, res:"你大手一揮：『長輩要的面子，我來扛。』聘金加碼、金飾買滿、宴客升級五星飯店。錢花得心痛，但兩家長輩笑開了花，省下無數口角。有時候用錢買來的和諧，是 CP 值最高的孝親費。"},
+      {label:"堅持新人作主，長輩請靠邊", eff:{hap:2,apr:-3,int:2}, flags:{r73_betrothdone:true,r73_ourway:true}, res:"你們頂住兩邊『習俗不能省』的壓力，宣布婚事新人自己決定：聘金免、儀式簡化、想怎麼辦就怎麼辦。長輩氣到搬出『別人家都怎樣』的車輪戰，你們笑著扛下——這是我們的婚姻，不是親戚的 KPI。"},
+      {label:"婆媳已先開戰，提前見識火藥味", eff:{hap:-4,int:3}, flags:{r73_betrothdone:true,r73_inlaw:true}, res:"還沒過門，婆婆和丈母娘已經為了『誰家習俗為主』暗中較勁。你提前見識到那句『嫁進來就是我們家的人』的威力，也看清另一半在原生家庭面前到底護不護你。這場前哨戰，比婚禮本身更值得記筆記。"},
+    ]},
+  {id:"cb_r73_solo", stage:[38,60], w:2.2, once:true,
+    cond:s=>!!s.flags.r73_chain&&!s.flags.r73_engaged&&!s.flags.r73_couple&&!s.flags.r73_solodone&&s.flags.marital!=="married",
+    title:"一個人的人生課", text:"滑了這麼多年、相親見了這麼多面，你還是一個人。朋友陸續結婚生子，群組話題從夜衝變成尿布。某個加班的深夜回到空屋，你問自己：單身一輩子，到底是自在，還是孤獨終老？",
+    meme:{scene:"restcat", top:"一個人也能過很好", bot:"偶爾的孤單 是自由的稅金", tag:"感情"},
+    choices:[
+      {label:"享受單身自由：一個人就是一支隊伍", eff:{hap:10,mny:4,int:2}, flags:{r73_solodone:true,r73_solofree:true}, res:"你想通了：婚姻不是人生的及格線，幸福也不該外包給另一個人。你把錢花在自己身上、把時間給興趣和好友、半夜想吃鍋就吃鍋。一個人的人生過得有聲有色，親戚的『怎麼還不嫁／娶』終於從同情變成羨慕。"},
+      {label:'<i class="gtag">💰財富65+</i> 提早布局一個人的養老', eff:{mny:-4,hap:8,int:3}, cond:s=>s.attr.mny>=65, gate:true, flags:{r73_solodone:true,r73_solofree:true,r73_soloplan:true}, res:"你不靠另一半、也不指望養兒防老，而是提早把單身終老規劃成一門專業：醫療險、看護本、信託、好友互助網一條龍備齊。怕的從來不是一個人，是沒準備好的一個人。你把孤獨終老的劇本，改寫成有尊嚴的獨善其身。"},
+      {label:"開始害怕孤獨，重啟相親之路", eff:{hap:-2,int:2}, flags:{r73_solodone:true,r73_lateseek:true}, res:"看著父母老去、朋友成雙，你心底那點不安還是浮了上來。你重新打開塵封的交友軟體、答應了親戚口中『最後幫你介紹一次』。緣分這題你還沒放棄——只是這次，你更清楚自己要的是陪伴，不是交代。"},
+      {label:"認了，把孤單醃成一種習慣", eff:{hap:-4,hp:-2,int:3}, flags:{r73_solodone:true}, res:"你不再期待，也不再焦慮，只是默默把一個人的生活過成自動導航：一人份的飯、單人的電影票、設給自己看的已讀。談不上多快樂，但也不算太糟——有些人的人生答案，就是『習慣』兩個字。"},
     ]},
 
   /* =====================================================================
@@ -9285,6 +9384,18 @@ function choose(i){
     const charm=(S.attr.apr+S.attr.hap)/2;
     if(charm> rnd(35,72)){ eff={hap:14,apr:3}; res="因為你魅力十足，兩人一見如故、迅速來電，這場相親直接修成正果步入婚姻！感情狀態：已婚。"; S.flags.marital="married"; S.flags.married=true; S.flags.marriages=(S.flags.marriages||0)+1; }
     else { eff={hap:rnd(-4,6),int:2}; res="緣分就差那麼一點，這次沒能成，你依然瀟灑單身。"; }
+  }
+  /* ---- R73 台味感情婚戀鏈 special：交友軟體見面火花／求婚成敗（魅力/財富/快樂驅動，沿用 blinddate 模式，
+          rnd 走既有 rng（mulberry32）零裸 Math.random、同種子同選擇必同結果，挑戰/對戰復現性不破壞）---- */
+  if(c.special==="r73_spark"){
+    const charm=(S.attr.apr*0.6+S.attr.hap*0.4);
+    if(charm> rnd(28,66)){ eff={hap:12,apr:3}; S.flags.r73_couple=true; S.flags.inlove=true; res="❤️ 見面的瞬間就對上了頻率：本人比照片真實、聊天比訊息有趣。你們從下午聊到打烊，店員都翻三次桌了還不想走。照騙這次居然是減分濾鏡，你撿到寶了。感情狀態：穩定交往中。"; }
+    else { eff={hap:-5,int:3}; res="緣分差了那麼一點：不是對方不好，是兩個人就是聊不到一塊去。你禮貌地結束這頓飯，回家把交友軟體又打開——這座島的單身海，還有得游。"; }
+  }
+  if(c.special==="r73_propose"){
+    const score=(S.attr.apr+S.attr.mny+S.attr.hap)/3;
+    if(score> rnd(38,70)){ eff={hap:20,apr:4,mny:-6}; S.flags.r73_engaged=true; S.flags.r51_love=true; S.flags.inlove=true; res="💍 你單膝跪下，把練習一百遍的告白說完。對方摀著嘴，眼淚先點了頭。多年的滑、約、磨合與爭吵，全在這一刻兌現。誠意與條件你都備齊了，這場長跑漂亮衝線。感情狀態：即將步入禮堂。"; }
+    else { eff={hap:-14,int:6,mny:-4}; S.flags.breakups=(S.flags.breakups||0)+1; res="💔 你單膝跪下，對方卻別過了頭：『我們……是不是太急了。』空氣凝結，圍觀的路人尷尬到掌都鼓不下去。原來你以為的終點，是對方還沒準備好的岔路。這場戀愛長跑，在終點線前摔了一跤。"; }
   }
   if(c.special==="venture"){
     // 創業成敗由 智力+財富+快樂 綜合決定（有大公司資歷加成）→ 串接 上市/被收購/倒閉 三條後續線

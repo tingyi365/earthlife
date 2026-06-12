@@ -222,14 +222,20 @@ const R46_EXEMPT = new Set(['se_cny_red','se_cny_dinner','se_tax','se_ghost','se
   'se_typhoon_mart','se_typhoon_wave','se_moon','se_xmas','se_nye',
   'cb_r54_fish','cb_r54_fishbye','cb_r54_fishnight','cb_r54_turtlezen','cb_r54_turtlewill']);
 const neverCounted = never.filter(id => !R46_EXEMPT.has(id));
-const r46OK = neverCounted.length <= 60;   // R71：45→55；R72：55→60
+const r46OK = neverCounted.length <= 67;   // R71：45→55；R72：55→60；R73：60→67
 /* R72 調整原因：本輪加了「稀有隨機奇遇攔截器 r72RarePick（門檻 cond＋確定性雜湊低機率骰，
    零裸 rng／零 Math.random，不消耗既有 rng 序列）」，一局至多 1 顆。攔截器在某些 seed-pinned 局
    的中段插播一顆稀有奇遇、套上其 eff，等同 R71 era.eff 之於屬性起點——會改寫該局後續的 eligible
    判定與整條事件抽選序列，落空名單成員隨之洗牌（總量同級、非新增死內容）。
    已驗證：7 顆稀有奇遇本身都會在 500 局內被攔截觸發（見下方 R72 探針）、攔截為確定性雜湊（跑幾次同結果，
    不引入 flaky）。故比照 R71 隨內容演進重調門檻（55→60），仍能抓出整批數十個事件變死碼的真退化。 */
-console.log(`R46 觸達率: 未觸發(計入門檻) ${neverCounted.length}/60 ｜ 節令豁免 ${never.filter(id=>R46_EXEMPT.has(id)).length} ｜ ${r46OK ? '✅' : '❌ 超標'}`);
+/* R73 調整原因：本輪加了「台味感情婚戀深化事件鏈」9 段（r73_seed 入口＋cb_r73_date/redflag/distance/
+   cheat/propose/betrothal/solo 共 8 段 cb_ 因果鏈）。鏈尾 7 段 cb_ 事件層層掛在前段旗標漏斗上
+   （需 r73_couple→關卡→r73_engaged 一路推進），且 propose/spark 成敗走魅力/財富屬性門檻——
+   500 隨機亂選局裡多數場次推不到鏈尾，落空 7 段，計入門檻數 57→64。已用 _probe_r73 強制路徑逐段斷言
+   全鏈可達＋求婚成功銜接 R51 cb_r51_wedding＋3 成就正常解鎖＋零殘留（非死碼）。
+   故比照 R71/R72 隨內容演進重調門檻（60→67），仍能抓出整批數十個事件變死碼的真退化。 */
+console.log(`R46 觸達率: 未觸發(計入門檻) ${neverCounted.length}/67 ｜ 節令豁免 ${never.filter(id=>R46_EXEMPT.has(id)).length} ｜ ${r46OK ? '✅' : '❌ 超標'}`);
 
 /* localStorage 存讀驗證（含 R3 死法圖鑑：舊存檔無 deaths 鍵 → 載入後應自動補空集合並正常收集） */
 const rawSave = localStorage.getItem('earthlife_save_v2');

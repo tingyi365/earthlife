@@ -1,0 +1,46 @@
+===== EarthLife M2 模擬報告 =====
+事件總數: 679（可觸發 652 + 連鎖 27）
+場景數: 111 ｜ 成就數: 240
+缺失場景 key: 無 ✅
+模擬局數: 500 ｜ 正常結束: 500 ｜ runtime error: 0
+壽命  平均 75.3 / 中位 77 / 最短 37 / 最長 93 ｜ 活到60+: 473 (95%)
+各階段事件命中次數: {"童年":4498,"求學":3905,"工作":7295,"中年":7650,"老年":5753}
+結局分布(cat): {"old":304,"accident":100,"zenpoor":19,"peaceful":35,"mindburnout":22,"hp":13,"highnote":2,"clawburied":2,"housecrash":2,"pilgrimdry":1}
+評級分布: {"S":302,"A":181,"B":16,"C":1}
+累計觸發不同事件: 594 / 應約 652
+從未觸發的可觸發事件(79): r64_leave, r64_cert, r61_quit, depression, lowint_scam2, lowint_clickbait, lowapr_judged, lowhap_isolated, d2_lowint_contract, d2_lowint_mlm, d2_lowint_fake, d2_lowapr_blinddate, d2_lowapr_photo, d2_lowapr_service, d2_lowhap_smile, d2_lowhap_sunday, d2_lowhap_numb, cb_alien, cb_marathon, cb_jackpot, cb_gamer, surgery, health_diet, rl_tuition, driving_test, thesis_crunch, egg_viral, egg_meme, egg_gm, egg_godbill, egg_hundred, og_herbal, se_cny_red, se_cny_dinner, se_tax, se_ghost, se_typhoon_bet, se_typhoon_mart, se_typhoon_wave, se_moon, se_xmas, se_nye, free_nanny, r25_midman, r27_roadrage, cb_r28_cram, cb_r28_dugout, cb_r34_allnighter, cb_r39_mee_mid, cb_r39_mee_old, cb_r39_gtr_mid, r42_shop, r42_diary, cb_r43_cm_mid, cb_r43_cm_old, cb_r43_ft_old, r45_firstpay, r67_floodbike, r50_eng_offer, r50_gov_window, r50_gov_moonlight, r50_sales_claim, cb_r73_date, cb_r73_redflag, cb_r73_distance, cb_r73_cheat, cb_r73_propose, cb_r73_betrothal, cb_r73_solo, cb_r54_fish, cb_r54_fishbye, cb_r54_fishnight, cb_r54_turtlezen, cb_r54_turtlewill, r70a_seed, cb_r70a_mid, cb_r70a_end, cb_r70b_mid, cb_r70b_end
+R46 觸達率: 未觸發(計入門檻) 64/60 ｜ 節令豁免 15 ｜ ❌ 超標
+localStorage 寫入: 有資料 ｜ 結構正確: ✅ ｜ 累計解鎖成就: 146/240 ｜ plays: 503
+死法圖鑑: 總死法 63 ｜ 收錄缺漏: 無 ✅ ｜ 模擬累計收集: 16/63 ｜ 舊存檔相容: ✅
+R6 轉生: 舊存檔自動補 rebirth 結構且輪迴點入帳: ✅ ｜ 500 局累計 1572 點（pts=1572）
+R23 祖產: 舊存檔自動補 legacy 結構且陰德入帳: ✅ ｜ 500 局累計 7316 陰德 ｜ 名冊 10/10
+R13 生涯統計: lifelog 寫入: ✅ ｜ cap 200: ✅ (plays=503 → 留 200 筆) ｜ 欄位完整: ✅
+R13 成就提示: 缺提示成就: 無 ✅ ｜ 統計頁零 rng 消耗+渲染: ✅
+R11 寵物線路徑: ✅ 全數通過
+R17 結算記憶點: ✅ 全數通過
+  墓誌銘樣例:「直播了一輩子，這是他第一次下播沒說『明天同一時間見』。記得開啟小鈴鐺。」
+  軌跡總評樣例:「智力從巔峰 100 一路保值到謝幕 100，這條數值就是他的人生招牌。」
+R20 隱藏彩蛋路徑: ✅ 全數通過
+R21 感情主線路徑: ✅ 全數通過
+R22 數值驅動: ✅ 全數通過
+R24 人生稱號/分享戰績: ✅ 全數通過
+  稱號樣例: 【N】地球觀光客・到此一遊
+R25 屬性命運: ✅ 全數通過
+R34 求學鏈: ✅ 全數通過
+R38 隱藏彩蛋: ✅ 全數通過
+R72 稀有奇遇: ✅ 全數通過
+R41 人生志向: ✅ 全數通過
+R42 世代傳承: ✅ 全數通過
+R43 NPC 緣分: ✅ 全數通過
+R44 屬性驅動強化: ✅ 全數通過
+R45 鬼島嘲諷文案: ✅ 全數通過
+R47 精華戰績與開源導流: ✅ 全數通過
+R48 隱藏結局與去敏: ✅ 全數通過
+R49 開局天賦三選一: ✅ 全數通過
+R51 成家人生事件鏈: ✅ 全數通過
+R52 晚年人生事件鏈: ✅ 全數通過
+R53 童年黃金歲月事件鏈: ✅ 全數通過
+R54 台味寵物夥伴系統: ✅ 全數通過
+R55 台灣時代背景系統: ✅ 全數通過
+
+結果: ❌ 有項目未通過
