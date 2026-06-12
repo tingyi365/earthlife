@@ -1987,5 +1987,179 @@ const r64Clean = JSON.parse(vm.runInContext(`(function(){
 })()`, sandbox));
 ok(r64Clean.clean, 'R64 ⑨ 零汙染：開局 S.flags 無任何 r64 鍵');
 
+// ========================================================================
+// 33) R65 台味居住租屋買房人生事件鏈：結構護欄／買不買分支互斥／隱性計數／
+//     年代分流／理財回扣／職業回扣／死法確定性與零誤殺／成就正反例／舊存檔相容／零汙染／獵人提示
+// ========================================================================
+// ① 結構護欄：8 事件齊備、全 once、|eff|<=8、w<=3、cond 函式、保底註冊（cond 掛旗標者零擠壓）
+const r65St = JSON.parse(vm.runInContext(`(function(){
+  const ids=['r65_rent','r65_landlord','r65_viewing','r65_ghost','r65_decision','r65_mortgage','r65_renthike','r65_urban'];
+  const evs=ids.map(id=>EVENTS.find(e=>e.id===id));
+  const out={};
+  out.all = evs.every(e=>e && e.once && (e.w||1)<=3 && e.stage && e.choices.length>=3);
+  out.span = evs[0].stage[0]<=22 && evs[7].stage[1]>=60;
+  out.guard = evs.every(e=>e.choices.every(c=>{
+    const effs=[c.eff||{}]; if(c.br){effs.push(c.br.hi.eff||{},c.br.lo.eff||{});}
+    return effs.every(o=>Object.values(o).every(v=>Math.abs(v)<=8));
+  }));
+  out.cond = evs.every(e=>typeof e.cond==='function');
+  out.milestone = R46_MILESTONE.r65_rent===24 && R46_MILESTONE.r65_decision===36 && R46_MILESTONE.r65_urban===48
+               && R46_MILESTONE.r65_ghost===undefined && R46_MILESTONE.r65_mortgage===undefined;
+  return JSON.stringify(out);
+})()`, sandbox));
+ok(r65St.all && r65St.span, 'R65 ① 8 事件齊備全 once、stage 覆蓋出社會租屋到中老年都更');
+ok(r65St.guard, 'R65 ① 平衡護欄：單選項 |eff|<=8、w<=3');
+ok(r65St.cond && r65St.milestone, 'R65 ① 全段 cond 確定性＋R46 保底註冊（已購屋/未進鏈零擠壓）');
+// ② 買房 vs 不買人生抉擇分支：cond 互斥（已購屋/已選邊不再觸發）、買落房奴線、不買落租屋自由線
+const r65Br = JSON.parse(vm.runInContext(`(function(){
+  const out={};
+  const dc=EVENTS.find(e=>e.id==='r65_decision');
+  out.open = dc.cond({flags:{}})===true;
+  out.lockOwner = dc.cond({flags:{homeowner:true}})===false;
+  out.lockBuy = dc.cond({flags:{r65_buy:true}})===false;
+  out.lockNobuy = dc.cond({flags:{r65_nobuy:true}})===false;
+  startGame(); S.age=35; S.flags={}; ensureState(S);
+  showEvent(dc); choose(4);
+  out.buy = S.flags.r65_buy===true && S.flags.homeowner===true && S.flags.loan===true && S.flags.r65_parents===true && !S.flags.r65_nobuy;
+  startGame(); S.age=35; S.flags={}; ensureState(S);
+  showEvent(dc); choose(5);
+  out.nobuy = S.flags.r65_nobuy===true && !S.flags.homeowner && !S.flags.r65_buy;
+  return JSON.stringify(out);
+})()`, sandbox));
+ok(r65Br.open && r65Br.lockOwner && r65Br.lockBuy && r65Br.lockNobuy, 'R65 ② 人生單選題 cond：無殼未選邊可觸發、已購屋/已買/已不買互斥絕緣');
+ok(r65Br.buy && r65Br.nobuy, 'R65 ② 買落房奴線（homeowner+loan）、不買落 r65_nobuy 租屋自由線（互斥）');
+// ③ 隱性計數：看房 r65_view／被房東欺負 r65_bully 獨立累積、欺負滿 2 解鎖怒買分支
+const r65Cnt = JSON.parse(vm.runInContext(`(function(){
+  const out={};
+  startGame(); S.age=33; S.flags={r65_rent:true}; ensureState(S);
+  showEvent(EVENTS.find(e=>e.id==='r65_landlord')); choose(0);
+  out.bully1 = S.flags.r65_bully===1 && !S.flags.r65_view;
+  showEvent(EVENTS.find(e=>e.id==='r65_renthike')); choose(0);
+  out.bully2 = S.flags.r65_bully===2;
+  showEvent(EVENTS.find(e=>e.id==='r65_viewing')); choose(2);
+  out.view1 = S.flags.r65_view===1;
+  showEvent(EVENTS.find(e=>e.id==='r65_ghost')); choose(2);
+  out.view2 = S.flags.r65_view===2 && S.flags.r65_bully===2;
+  const dc=EVENTS.find(e=>e.id==='r65_decision');
+  const ri=dc.choices.findIndex(c=>String(c.label).includes('忍無可忍限定'));
+  out.lock = dc.choices[ri].cond({flags:{r65_bully:1},attr:{mny:60}})===false;
+  out.openC = dc.choices[ri].cond({flags:{r65_bully:2},attr:{mny:60}})===true;
+  out.lockPoor = dc.choices[ri].cond({flags:{r65_bully:2},attr:{mny:40}})===false;
+  S.attr.mny=60; showEvent(dc); choose(ri);
+  out.revenge = S.flags.r65_revenge===true && S.flags.homeowner===true && S.flags.r65_buy===true;
+  return JSON.stringify(out);
+})()`, sandbox));
+ok(r65Cnt.bully1 && r65Cnt.bully2 && r65Cnt.view1 && r65Cnt.view2, 'R65 ③ 看房/被欺負雙隱性計數獨立累積（r65_view／r65_bully）');
+ok(r65Cnt.lock && r65Cnt.openC && r65Cnt.lockPoor && r65Cnt.revenge, 'R65 ③ 怒買門檻：欺負滿 2＋財富 55 解鎖、r65_revenge 落地');
+// ④ R55 年代分流：看房之旅（e70/e80 一坪八萬咬牙買 vs e10/e20 天價蛋黃區看展，互斥絕緣，舊存檔無 era 鍵不炸）
+const vw70 = vm.runInContext(`__choiceHTML('r65_viewing', s=>{s.era='e70';}, 30)`, sandbox);
+const vw10 = vm.runInContext(`__choiceHTML('r65_viewing', s=>{s.era='e10';}, 30)`, sandbox);
+const vw90 = vm.runInContext(`__choiceHTML('r65_viewing', s=>{s.era='e90';}, 30)`, sandbox);
+const vwOld = vm.runInContext(`__choiceHTML('r65_viewing', s=>{delete s.era;}, 30)`, sandbox);
+ok(vw70.includes('早年世代限定') && !vw70.includes('天價世代限定'), 'R65 ④ e70 顯示一坪八萬咬牙買、天價蛋黃區絕緣');
+ok(vw10.includes('天價世代限定') && !vw10.includes('早年世代限定'), 'R65 ④ e10 顯示蛋黃區看展、早年隨便買絕緣');
+ok(!vw90.includes('世代限定') && !vwOld.includes('世代限定') && vwOld.includes('接待中心'), 'R65 ④ e90/舊存檔無 era 鍵：年代選項皆絕緣、基本選項照常');
+// ⑤ R57 理財回扣：股海戰果（r57_leekwin）→ 頭期款資金排擠分支現身與落地
+const r65Fin = JSON.parse(vm.runInContext(`(function(){
+  const out={};
+  const h0=__choiceHTML('r65_decision', s=>{s.attr.mny=40;}, 35);
+  const h1=__choiceHTML('r65_decision', s=>{s.flags.r57_leekwin=true;s.attr.mny=40;}, 35);
+  out.hidden = !h0.includes('股海戰果限定');
+  out.shown = h1.includes('股海戰果限定');
+  const dc=EVENTS.find(e=>e.id==='r65_decision');
+  const si=dc.choices.findIndex(c=>String(c.label).includes('股海戰果限定'));
+  startGame(); S.age=35; S.flags={r57_leekwin:true}; ensureState(S);
+  showEvent(dc); choose(si);
+  out.flag = S.flags.r65_stockhouse===true && S.flags.homeowner===true && S.flags.r65_buy===true;
+  return JSON.stringify(out);
+})()`, sandbox));
+ok(r65Fin.hidden && r65Fin.shown, 'R65 ⑤ 股海頭期款分支：沒有少年股神戰果隱藏、r57_leekwin 現身');
+ok(r65Fin.flag, 'R65 ⑤ 獲利了結全壓頭期款落地 r65_stockhouse（資金排擠回扣 R57）');
+// ⑥ R50 職業回扣：工程師信貸降門檻（careerId==='eng' 財富 50 即可，其他職業/低財富絕緣）
+const r65Job = JSON.parse(vm.runInContext(`(function(){
+  const out={};
+  const hEng=__choiceHTML('r65_decision', s=>{s.careerId='eng';s.attr.mny=55;}, 35);
+  const hPoor=__choiceHTML('r65_decision', s=>{s.careerId='eng';s.attr.mny=40;}, 35);
+  const hGov=__choiceHTML('r65_decision', s=>{s.careerId='gov';s.attr.mny=55;}, 35);
+  out.shown = hEng.includes('工程師信貸限定');
+  out.hidden = !hPoor.includes('工程師信貸限定') && !hGov.includes('工程師信貸限定');
+  const dc=EVENTS.find(e=>e.id==='r65_decision');
+  const ei=dc.choices.findIndex(c=>String(c.label).includes('工程師信貸限定'));
+  startGame(); S.age=35; S.flags={}; S.careerId='eng'; ensureState(S); S.attr.mny=55;
+  showEvent(dc); choose(ei);
+  out.flag = S.flags.r65_engloan===true && S.flags.homeowner===true && S.flags.loan===true;
+  return JSON.stringify(out);
+})()`, sandbox));
+ok(r65Job.shown && r65Job.hidden, 'R65 ⑥ 工程師信貸：高薪職業財富 50+ 現身、低財富/其他職業絕緣（回扣 R50）');
+ok(r65Job.flag, 'R65 ⑥ 信貸上車落地 r65_engloan＋homeowner＋loan');
+// ⑦ 死法圖鑑收錄＋屬性門檻確定性觸發＋活路零誤殺
+const r65Death = JSON.parse(vm.runInContext(`(function(){
+  const out={};
+  out.book = ['rooftopheat','loanburnout'].every(id=>DEATHBOOK.some(d=>d.id===id&&d.rare&&d.hint.length>4) && !!SPECIAL_DEATHS[id]);
+  const rc=EVENTS.find(e=>e.id==='r65_rent'), ri=rc.choices.findIndex(c=>c.special==='r65_rooftop');
+  startGame(); S.age=23; S.flags={}; ensureState(S); S.attr.hp=10;
+  showEvent(rc); choose(ri);
+  out.rDying = S.flags.specialDeath==='rooftopheat';
+  die('choice');
+  out.rDead = !S.alive && S.deathId==='rooftopheat' && !!SAVE.deaths.rooftopheat;
+  startGame(); S.age=23; S.flags={}; ensureState(S); S.attr.hp=70;
+  showEvent(rc); choose(ri);
+  out.rAlive = S.alive===true && !S.flags.specialDeath && S.flags.r65_rooftop===true && S.flags.r65_rent===true;
+  const mg=EVENTS.find(e=>e.id==='r65_mortgage'), mi=mg.choices.findIndex(c=>c.special==='r65_grind');
+  startGame(); S.age=40; S.flags={r65_buy:true,loan:true}; ensureState(S); S.attr.hp=12;
+  showEvent(mg); choose(mi);
+  out.lDying = S.flags.specialDeath==='loanburnout';
+  die('choice');
+  out.lDead = !S.alive && S.deathId==='loanburnout' && !!SAVE.deaths.loanburnout;
+  startGame(); S.age=40; S.flags={r65_buy:true,loan:true}; ensureState(S); S.attr.hp=70;
+  showEvent(mg); choose(mi);
+  out.lAlive = S.alive===true && !S.flags.specialDeath && S.flags.r65_payoff===true;
+  return JSON.stringify(out);
+})()`, sandbox));
+ok(r65Death.book, 'R65 ⑦ rooftopheat/loanburnout 收錄進死法圖鑑（rare＋模糊提示）');
+ok(r65Death.rDying && r65Death.rDead, 'R65 ⑦ 體力見底住頂加 → 頂加違建之夏全流程＋跨局收集');
+ok(r65Death.rAlive, 'R65 ⑦ 體力正常住頂加：活路分支（r65_rooftop 落地、零誤殺）');
+ok(r65Death.lDying && r65Death.lDead, 'R65 ⑦ 體力見底激進還款 → 房貸過勞全流程＋跨局收集');
+ok(r65Death.lAlive, 'R65 ⑦ 體力正常激進還款：活路分支（r65_payoff 落地、零誤殺）');
+// ⑧ 新成就 ×3：check 正反例＋獵人提示齊備
+const r65Ach = JSON.parse(vm.runInContext(`(function(){
+  const out={};
+  out.snail = ACH_MAP.r65_snail30.check({S:{flags:{r65_nobuy:true}}, age:58});
+  out.snailNeg = !ACH_MAP.r65_snail30.check({S:{flags:{r65_nobuy:true}}, age:50})
+              && !ACH_MAP.r65_snail30.check({S:{flags:{r65_nobuy:true,homeowner:true}}, age:70});
+  out.yolk = ACH_MAP.r65_eggyolk.check({S:{flags:{r65_cheapbuy:true}}, age:60});
+  out.yolkNeg = !ACH_MAP.r65_eggyolk.check({S:{flags:{r65_cheapbuy:true}}, age:50}) && !ACH_MAP.r65_eggyolk.check({S:{flags:{}}, age:80});
+  out.nail = ACH_MAP.r65_nailking.check({S:{flags:{r65_nail:true}}, age:50});
+  out.nailNeg = !ACH_MAP.r65_nailking.check({S:{flags:{}}, age:80});
+  out.hints = ['r65_snail30','r65_eggyolk','r65_nailking'].every(id=>ACH_MAP[id]&&ACH_MAP[id].hint&&ACH_MAP[id].hint.length>4);
+  return JSON.stringify(out);
+})()`, sandbox));
+ok(r65Ach.snail && r65Ach.snailNeg, 'R65 ⑧ 成就「無殼蝸牛三十年」：不買守到 58 解鎖、年齡不足/後來買房不誤觸');
+ok(r65Ach.yolk && r65Ach.yolkNeg, 'R65 ⑧ 成就「蛋黃區傳說」：早年低價買＋抱到 60 解鎖、單條件不解鎖');
+ok(r65Ach.nail && r65Ach.nailNeg, 'R65 ⑧ 成就「都更釘子戶」：釘子旗標解鎖、無旗標不誤觸');
+ok(r65Ach.hints, 'R65 ⑧ 三個新成就獵人提示齊備');
+// ⑨ 舊存檔相容：無 r65 鍵的舊存檔經 ensureState 補鍵後 cond/成就/門檻選項全不炸不誤觸
+const r65Compat = JSON.parse(vm.runInContext(`(function(){
+  const out={};
+  startGame(); S.age=35; S.flags={}; ensureState(S);
+  const dc=EVENTS.find(e=>e.id==='r65_decision');
+  out.cond = dc.choices.find(c=>String(c.label).includes('忍無可忍限定')).cond(S)===false
+          && dc.choices.find(c=>String(c.label).includes('股海戰果限定')).cond(S)===false
+          && dc.choices.find(c=>String(c.label).includes('工程師信貸限定')).cond(S)===false;
+  out.ach = !ACH_MAP.r65_snail30.check({S:S,age:80}) && !ACH_MAP.r65_eggyolk.check({S:S,age:80}) && !ACH_MAP.r65_nailking.check({S:S,age:80});
+  const h1=__choiceHTML('r65_decision', s=>{s.attr.mny=40;}, 35);
+  out.gateHidden = !h1.includes('忍無可忍限定') && !h1.includes('股海戰果限定') && !h1.includes('工程師信貸限定')
+                && !h1.includes('財富65+') && h1.includes('不買了');
+  return JSON.stringify(out);
+})()`, sandbox));
+ok(r65Compat.cond && r65Compat.ach, 'R65 ⑨ 舊存檔相容：ensureState 後無 r65 鍵、cond 不開、成就不誤觸');
+ok(r65Compat.gateHidden, 'R65 ⑨ 舊存檔無 r65 鍵：門檻選項全隱藏、基本選項照常');
+// ⑩ 零汙染：開局無 r65 旗標、不選不沾
+const r65Clean = JSON.parse(vm.runInContext(`(function(){
+  startGame();
+  return JSON.stringify({clean:Object.keys(S.flags).every(k=>k.indexOf('r65')!==0)});
+})()`, sandbox));
+ok(r65Clean.clean, 'R65 ⑩ 零汙染：開局 S.flags 無任何 r65 鍵');
+
 console.log(fails ? `\n結果: ❌ ${fails} 項未通過` : '\n結果: ✅ 狀態機全數正確');
 process.exit(fails ? 1 : 0);
