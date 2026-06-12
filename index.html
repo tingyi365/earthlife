@@ -468,6 +468,28 @@
   .lbR{border-color:#6fc3ff; color:#6fc3ff; background:rgba(111,195,255,.07);}
   .lbN{border-color:#9aa3b2; color:#9aa3b2; background:rgba(154,163,178,.07);}
 
+  /* ---------- R69 人生總評卡：截圖級稱號＋鬼島嘲諷一句＋關鍵數字（純 CSS，依稀有度描邊） ---------- */
+  .r69card{margin:12px 0; padding:14px 14px 11px; border-radius:16px; border:1.5px solid var(--line);
+    background:linear-gradient(160deg,rgba(255,210,74,.06),var(--panel2) 60%); text-align:center; position:relative; overflow:hidden;}
+  .r69hd{font-size:11px; letter-spacing:3px; font-weight:800; opacity:.88; color:var(--accent,#ffd24a);}
+  .r69title{font-size:21px; font-weight:900; letter-spacing:.5px; margin:5px 0 7px; line-height:1.34;}
+  .r69roast{font-size:13.5px; line-height:1.62; color:var(--ink); background:rgba(255,255,255,.04);
+    border-radius:10px; padding:8px 11px; margin:0 auto 10px; max-width:96%;}
+  .r69nums{display:flex; justify-content:center; gap:4px; flex-wrap:wrap; margin-bottom:9px;}
+  .r69n{flex:1 1 0; min-width:52px; display:flex; flex-direction:column; gap:1px; padding:6px 2px;
+    background:rgba(0,0,0,.18); border:1px solid var(--line); border-radius:10px;}
+  .r69n .v{font-size:18px; font-weight:900; color:var(--accent,#ffd24a); line-height:1.1;}
+  .r69n .k{font-size:10px; color:var(--sub); letter-spacing:.5px;}
+  .r69foot{font-size:11px; color:var(--sub); letter-spacing:.5px; opacity:.85;}
+  .r69SSR{border-color:#ffd24a; box-shadow:0 0 18px rgba(255,210,74,.32), inset 0 0 14px rgba(255,210,74,.07);}
+  .r69SSR .r69title{color:#ffd24a; text-shadow:0 0 12px rgba(255,210,74,.45);}
+  .r69SR{border-color:#c98bff; box-shadow:0 0 13px rgba(201,139,255,.26);}
+  .r69SR .r69title{color:#c98bff;}
+  .r69R{border-color:#6fc3ff;}
+  .r69R .r69title{color:#6fc3ff;}
+  .r69N{border-color:#9aa3b2;}
+  .r69N .r69title{color:#e7ebf3;}
+
   /* ---------- R19 收藏館：分頁 / 進度條 / 剪影 / 新入手閃光（純 CSS，零外部資源） ---------- */
   .colltabs{display:flex; gap:6px; margin:10px 0;}
   .ctab{flex:1 1 0; min-width:0; display:flex; flex-direction:column; align-items:center; gap:1px;
@@ -10475,6 +10497,151 @@ function r68FateHTML(){
   </div>`;
 }
 
+/* =========================================================================
+   R69 人生專屬稱號＋鬼島嘲諷總評卡（提升可分享性）
+   一致性鐵律：全部只讀 S（屬性/旗標/結局/年齡/既有 S.badge），用 lifeHash/lifePick
+   雜湊定選，零裸 rng / 零 Math.random —— 同一生兩次呼叫逐字一致，仿 r68FateHTML 做法。
+   稱號採「死法前綴 × 地域世代修飾 × 核心身分名詞」三軸組合，重玩即組出不同稱號。
+   稀有度沿用 die() 已頒的 S.badge.tier，不新增任何存檔狀態。
+   ========================================================================= */
+function r69TitleParts(){
+  if(!S || !S.attr) return null;
+  const a=S.attr, f=S.flags||{}, cat=S.cat||"", age=S.age||0;
+  const sum=a.hp+a.int+a.apr+a.mny+a.hap;
+  const married=f.marital==="married";
+  const lazy=f.lazy||0;
+  const ks=Object.keys(ATTR);
+  let hiK=ks[0], loK=ks[0];
+  ks.forEach(k=>{ if(a[k]>a[hiK]) hiK=k; if(a[k]<a[loK]) loK=k; });
+  /* 軸 A：死法/結局前綴（皆以「的」收尾，方便直接黏地域＋名詞） */
+  const A=[];
+  if(cat==="hp") A.push("過勞死的","爆肝倒下的","替老闆燃燒殆盡的");
+  else if(cat==="old"||cat==="peaceful") A.push("壽終正寢的","笑著登出的","活到系統當機的");
+  else if(cat==="accident") A.push("被亂數選中的","措手不及登出的");
+  else if(S.deathId && SPECIAL_DEATHS[S.deathId]) A.push("用稀有死法謝幕的","死法上熱搜的");
+  A.push(age<30?"英年早逝的":age>=80?"高壽退場的":"準時下線的");
+  /* 軸 B：地域／世代修飾（有強訊號用強訊號，否則城市池雜湊定選——讓每條命都帶地名） */
+  let B=[];
+  if(f.npiao) B.push("北漂");
+  if(S.origin&&S.origin.id==="landlord") B.push("天龍國");
+  if(f.whgold) B.push("澳洲鍍金");
+  if(S.era==="e10") B.push("22K世代");
+  if(S.era==="e70"||S.era==="e80") B.push("經濟起飛年代");
+  if(!B.length) B=["台北","新北","桃園","台中","台南","高雄","新竹","彰化","宜蘭","花蓮"];
+  /* 軸 C：核心身分名詞（依最高屬性／人生選擇傾向；多訊號疊池後雜湊定選） */
+  const C=[];
+  if(a.mny>=80) C.push("包租公","富豪榜常客","金庫本庫");
+  if(a.mny<=20) C.push("蝸居王","月光仙人","韭菜王");
+  if(lazy>=3 || (a.hap>=75 && a.mny<50)) C.push("躺平仙人","耍廢之神","沙發釘子戶");
+  if(a.int>=80) C.push("人間智庫","卷王","解題機器");
+  if(a.apr>=80) C.push("顏值擔當","凍齡精","行走打光板");
+  if(a.hp>=80) C.push("鐵人","養生大師","保溫杯之王");
+  if(f.homeowner&&f.loan) C.push("房奴頭目","三十年貸王");
+  if(!married && age>=60) C.push("母胎solo王","單身貴族");
+  if(f.scammed||f.whale) C.push("被割韭菜王","課金鯨魚");
+  if(!C.length){
+    const NM={hp:["硬骨頭勞工","鐵血上班族"],int:["小聰明路人","人間清醒哥"],
+      apr:["門面擔當","顏值股"],mny:["小資存錢魔","精算月光族"],hap:["快樂小廢物","佛系玩家"]};
+    C.push(...(NM[hiK]||["地球路人"]));
+  }
+  const prefix=lifePick(A,"r69A"), region=lifePick(B,"r69B"), noun=lifePick(C,"r69C");
+  return {prefix, region, noun, full:prefix+region+noun, hiK, loK};
+}
+/* 鬼島嘲諷式一句總評：依該局數據組池後雜湊定選，自嘲幽默、零政治／仇恨紅線 */
+function r69Roast(){
+  if(!S || !S.attr) return "";
+  const a=S.attr, f=S.flags||{}, cat=S.cat||"", age=S.age||0;
+  const sum=a.hp+a.int+a.apr+a.mny+a.hap;
+  const pool=[];
+  if(cat==="hp"||a.hp<=30) pool.push(
+    "肝是你的，功勞是老闆的，連加班費都是別人的。",
+    "你把命賣給了公司，公司連一句已讀都沒回你。");
+  if(a.mny<=40 && !f.homeowner) pool.push(
+    "拚了一輩子買不起房，但靈骨塔這一格，總算寫你的名字了。",
+    "房價漲、薪水不漲，最後你唯一漲起來的是這塊墓碑的高度。");
+  if(a.mny<=25) pool.push(
+    "戶頭數字一輩子卡在 22K，連通膨都懶得繞過來看你。",
+    "你不是窮，你只是錢包提早實現了極簡主義。");
+  if((f.lazy||0)>=3) pool.push(
+    "躺平躺到變專業，這是你這輩子唯一全勤的項目。",
+    "你不是沒夢想，只是把夢想外包給下輩子的自己。");
+  if(f.homeowner&&f.loan) pool.push(
+    "繳完三十年房貸那一年，你也順手把人生一起繳清了。",
+    "房子終於是你的了，可惜你的時間早就抵押給銀行。");
+  if(age>=80) pool.push(
+    "你活得比勞保基金還久，國家真的該頒個獎給你。",
+    "撐到能領年金已是鬼島傳說，你還多領好幾年，賺爛了。");
+  if(sum>=380) pool.push(
+    "活成人生勝利組，可惜這款遊戲沒有第二輪讓你炫耀。",
+    "你贏麻了——只是這場比賽，從頭到尾沒半個觀眾。");
+  if(f.scammed||f.whale) pool.push(
+    "你的錢沒有不見，它只是去了別人的口袋過更好的生活。");
+  pool.push(
+    "認真活了一輩子，系統給的結論是：『嗯，還行啦。』",
+    "你的一生平凡到，連 AI 都得想三秒才擠得出一句評語。",
+    "地球 Online 體驗良好，可惜不能退費，也不能重來。");
+  return lifePick(pool, "r69roast");
+}
+/* 截圖級人生總評卡：稱號＋嘲諷一句＋關鍵數字（壽命/財富/成就數/評級/稀有度），依稀有度描邊 */
+function r69VerdictCardHTML(){
+  const tp=r69TitleParts();
+  if(!tp) return "";
+  const a=S.attr, sum=a.hp+a.int+a.apr+a.mny+a.hap;
+  const grade=sum>=380?"S":sum>=320?"A":sum>=240?"B":sum>=160?"C":"D";
+  const tier=(S.badge&&S.badge.tier)||"N";
+  const tinfo=BADGE_TIERS[tier]||BADGE_TIERS.N;
+  const achN=qualifiedAch().length;
+  return `<div class="r69card r69${tier}">
+    <div class="r69hd">🪪 人生專屬稱號</div>
+    <div class="r69title">「${tp.full}」</div>
+    <div class="r69roast">💬 ${r69Roast()}</div>
+    <div class="r69nums">
+      <div class="r69n"><span class="v">${S.age}</span><span class="k">享年</span></div>
+      <div class="r69n"><span class="v">${a.mny}</span><span class="k">財富</span></div>
+      <div class="r69n"><span class="v">${achN}</span><span class="k">成就</span></div>
+      <div class="r69n"><span class="v">${grade}</span><span class="k">評級</span></div>
+      <div class="r69n"><span class="v">${tinfo.ic}</span><span class="k">${tier} 稀有</span></div>
+    </div>
+    <div class="r69foot">🌍 地球 Online · ${SHARE_URL}</div>
+  </div>`;
+}
+/* 一鍵複製文字版總評卡（貼 Threads/Dcard/IG 限動），與其他分享按鈕共用分享計數 */
+function buildVerdictCard(){
+  const tp=r69TitleParts();
+  const a=S.attr, sum=a.hp+a.int+a.apr+a.mny+a.hap, grade=curGrade();
+  const tier=(S.badge&&S.badge.tier)||"N";
+  const achN=qualifiedAch().length;
+  return [
+    "🪪【地球Online 人生總評卡】",
+    `稱號：「${tp?tp.full:stripTags(S.title||"地球路人")}」`,
+    `💬 ${r69Roast()}`,
+    `⏳ 享年 ${S.age} · 💰 財富 ${a.mny} · 🏆 成就 ${achN} · 🏅 ${grade} 級 · ✨ ${tier} 稀有`,
+    `👉 不服？自己來活一條 → https://${SHARE_URL}`,
+  ].join("\n");
+}
+function copyVerdictCard(btn){
+  let txt; try{ txt=buildVerdictCard(); }catch(e){ alert("總評卡生成失敗："+(e&&e.message||e)); return; }
+  try{
+    SAVE.sharecards=(SAVE.sharecards||0)+1;
+    if(!SAVE.ach.sharecard){ SAVE.ach.sharecard=true; recFound("a","sharecard",{w:SAVE.plays||0}); try{ sfxLater("ach",200); }catch(e){} }
+    persist();
+  }catch(e){}
+  const done=()=>{
+    if(!btn) return;
+    if(!btn.dataset.orig) btn.dataset.orig=btn.innerHTML;
+    btn.innerHTML="✅ 總評卡已複製，貼去限動嗆爆同溫層！";
+    setTimeout(()=>{ if(btn.dataset.orig) btn.innerHTML=btn.dataset.orig; },2600);
+  };
+  const fallback=()=>{ let ok=false; try{ ok=legacyCopy(txt); }catch(e){} if(ok) done(); else { try{ textReportOverlay(txt); }catch(e){} } };
+  try{
+    if(typeof navigator!=="undefined"&&navigator.clipboard&&navigator.clipboard.writeText){
+      navigator.clipboard.writeText(txt).then(done, fallback);
+      return;
+    }
+  }catch(e){}
+  fallback();
+}
+
 const GRADE_TALK = {
   S:"地球 Online 頂級玩家，這隻號建議掛拍賣場",
   A:"課金大佬等級，下輩子記得綁定這組帳號",
@@ -10511,6 +10678,7 @@ function screenSummary(cat){
     <div class="panel center">
       <h2 class="etitle${rareDeath?' raretitle':''}">🪦 角色已登出 · 本局結算${rareSpk}</h2>
       ${badgeBannerHTML()}
+      ${r69VerdictCardHTML()}
       ${r48HiddenHTML()}
       <p class="epitaph">「${S.deathReason}。」</p>
       <p class="muted" style="margin-top:-4px">💀 死法圖鑑 ${deathbookCount()}/${DEATHBOOK.length} 種${S.newDeath?`　<b style="color:var(--good,#39ff88)">🆕 新死法入手！</b>`:""}</p>
@@ -10555,6 +10723,7 @@ function screenSummary(cat){
         ${S.battle?`<button class="btn" onclick="startSeedBattle('${S.battle.code}')">⚔️ 不服，再戰這條種子</button>`:""}
         ${(S.script&&R56_MAP[S.script])?`<button class="btn" onclick="startScriptGame('${S.script}')">🎭 ${S.scriptDone?"再演一次":"不服，重演"}劇本【${R56_MAP[S.script].nm}】</button>`:""}
         ${(S.seed&&!S.battle&&!S.challenge&&!S.script)?`<button class="btn sec" onclick="startSeedBattle('${S.seed}')">⚔️ 拿這條種子開對戰（裸裝重打）</button>`:""}
+        <button class="btn" onclick="copyVerdictCard(this)">🪪 複製人生總評卡（稱號＋金句＋數字 · 截圖貼限動）</button>
         <button class="btn" onclick="copyBragText(this,'plain')">⚡ 複製精華戰績（正經版 · 短到限動都放得下）</button>
         <button class="btn" onclick="copyBragText(this,'salty')">🌶️ 複製精華戰績（靠北版 · 貼群必引戰）</button>
         <button class="btn" onclick="copyRoastCard(this)">🃏 一鍵複製分享卡（台味嘲諷版，貼群比慘）</button>
