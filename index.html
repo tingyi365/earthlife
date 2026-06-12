@@ -690,7 +690,7 @@ function mulberry32(seed){
 const SEED_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 function randomSeedCode(){
   let c = "";
-  for(let i=0;i<6;i++) c += SEED_CHARS[Math.floor(Math.random()*SEED_CHARS.length)];
+  for(let i=0;i<6;i++) c += SEED_CHARS[Math.floor(rng()*SEED_CHARS.length)];
   return c;
 }
 function normSeedCode(raw){
@@ -1869,6 +1869,11 @@ const ACHIEVEMENTS = [
   {id:"hexagon", ic:"⬡", nm:"六邊形戰士", desc:"五圍同時站上 80——第六個邊是運氣，而你連運氣都點滿了。", check:c=>!!c.S.flags.hexagon},
   {id:"poorlong", ic:"🍚", nm:"一窮二白活到老", desc:"75 歲後謝幕時財富不到 20。沒錢，但就是活得久，氣不氣？", check:c=>c.age>=75 && c.S.attr.mny<=20},
   {id:"dicehater", ic:"🎲", nm:"骰子恨我・檢定路滑", desc:"單局屬性檢定翻車 3 次。數值不夠硬還想擲骰，地球都替你尷尬。", check:c=>(c.S.flags.srLose||0)>=3},
+  /* ---- R68 屬性軌跡成就（五圍長期高低如何驅動命運；皆純查屬性/peak/low/被動命運計數，零 rng） ---- */
+  {id:"r68_balance", ic:"🪣", nm:"水桶型人格・五圍無死角", desc:"謝幕時五圍全部 ≥ 50，且最高最低差距 ≤ 22——沒有特長，但也找不到破口，活成一只裝滿的水桶。", check:c=>{const v=Object.values(c.S.attr); return v.length===5 && Math.min(...v)>=50 && (Math.max(...v)-Math.min(...v))<=22;}},
+  {id:"r68_glasscannon", ic:"🎯", nm:"玻璃大砲・偏科到底", desc:"一生中某項屬性曾衝上 92，另一項卻曾跌到 8 以下——把所有點數壓在一條線上，賭它一輩子。", check:c=>{const pk=c.S.peak?Object.values(c.S.peak):[],lo=c.S.low?Object.values(c.S.low):[]; return pk.length>0 && lo.length>0 && Math.max(...pk)>=92 && Math.min(...lo)<=8;}},
+  {id:"r68_fateboon", ic:"🍀", nm:"天選好底子・躺著被加成", desc:"單局屬性被動命運紅利觸發 14 次以上——長期維持高數值的人，連時間都站在你這邊。", check:c=>(c.S.flags.r68Boon||0)>=14},
+  {id:"r68_fatebane", ic:"🪨", nm:"短板拖累一生・地心引力認證", desc:"單局屬性被動命運短板觸發 14 次以上——某條數值常年躺底，整副牌都被它拖著走。", check:c=>(c.S.flags.r68Bane||0)>=14},
   /* ---- R23 祖產與輪迴成就（跨局 meta 傳承） ---- */
   {id:"oldsoul10", ic:"🕰️", nm:"轉生十次的老靈魂", desc:"累計輪迴 10 世。孟婆看到你直接問：『老位子？老配方？』", check:c=>SAVE.plays>=10},
   {id:"legacy_broke", ic:"🪙", nm:"祖產敗光光", desc:"在祖祠一口氣把陰德花到一毛不剩——敗家，原來也是一種世襲的天賦。", check:c=>!!(SAVE.legacy&&SAVE.legacy.broke)},
@@ -2145,6 +2150,11 @@ const ACH_HINTS = {
   hexagon:"把五條數值『同時』全部養上 80，缺一個角都不算六邊形…",
   poorlong:"錢包扁到老天爺都看不下去，但你就是賴著不走…多活幾年試試…",
   dicehater:"那些標著⚖️檢定的選項，數值不夠硬也硬按，一局翻車個幾次就懂了…",
+  /* R68 屬性軌跡 */
+  r68_balance:"不必有特長，但五條數值要全部站上 50、而且彼此別差太多——把人生活成一只裝滿、卻沒有缺口的水桶…",
+  r68_glasscannon:"把同一局的某條數值衝到 92 以上、另一條卻摔到 8 以下——極端偏科到地球都看傻…",
+  r68_fateboon:"讓五圍長期維持在高檔，被動命運的紅利會一年年默默替你加成，累積到十幾次就懂了…",
+  r68_fatebane:"放任某條數值常年躺在谷底，被動命運的短板會年年扣你的帳，扣到十幾次自然有感…",
   /* R23 祖產與輪迴 */
   oldsoul10:"輪迴的次數累積到兩位數，孟婆自然會幫你留湯…",
   legacy_broke:"祠堂裡攢的陰德，試著一次花到一毛不剩…",
@@ -8546,6 +8556,53 @@ function deathProbability(){
 const STAGE_NAMES=["童年","求學","工作","中年","老年"];
 function stageIndex(age){ return age<=12?0 : age<=22?1 : age<=40?2 : age<=60?3 : 4; }
 
+/* =========================================================================
+   R68 屬性被動命運層：讓五圍「每一年」實質驅動人生，不再只是結算頁的裝飾數字。
+   純查 S.age / S.attr，零 rng（與 quirkYearTick 同構，挑戰/對戰/種子復現性完全不破壞）。
+   設計哲學：高屬性有紅利、但多半附帶代價（顧此失彼）；短板會持續放血甚至惡性循環。
+   單筆效果克制（多為逢特定歲數 ±1），靠長期累積把「養成」與「擺爛」的人生拉開差距；
+   首次觸發某條才寫一次 log＋時間軸（台味自嘲梗），之後靜默累計，避免洗版。
+   ========================================================================= */
+const R68_FATE = [
+  // dom=主導屬性（結算統計用）；test=(a,age)=>bool 觸發條件；eff=屬性增減；kind=boon/bane
+  {key:"hp_hi",  kind:"boon", dom:"hp",  test:(a,age)=>a.hp>=80 && age%5===0,
+   eff:{hp:1}, first:"💪 鐵打的底子開始回本——你逢五就自動回血，同齡人在診所抽號碼牌，你在公園拉單槓。"},
+  {key:"hp_lo",  kind:"bane", dom:"hp",  test:(a,age)=>a.hp<22,
+   eff:{hp:-1,hap:-1}, first:"🤒 身體開始討債——三天兩頭跑診所，健保卡刷得比悠遊卡還勤，心情也跟著一起陰天。"},
+  {key:"int_hi", kind:"boon", dom:"int", test:(a,age)=>a.int>=82 && age%2===0,
+   eff:{mny:1,hap:-1}, first:"🧠 腦袋太清醒也是一種病——你看得懂財報、也看穿了人情世故，錢包鼓了一點、笑容少了一截。"},
+  {key:"int_lo", kind:"bane", dom:"int", test:(a,age)=>a.int<20 && age%7===0,
+   eff:{mny:-1}, first:"📉 看不懂合約的代價陸續到帳——你簽下的每張單，後來都成了別人退休金的一小塊。"},
+  {key:"mny_hi", kind:"boon", dom:"mny", test:(a,age)=>a.mny>=85 && age%3===0 && age<70,
+   eff:{mny:1,hp:-1}, first:"💰 錢開始自己生錢——利息躺著入帳；但為了顧住這座金山，你的肝也被迫跟著輪班（拚到退休前都不得閒）。"},
+  {key:"mny_lo", kind:"bane", dom:"mny", test:(a,age)=>a.mny<15 && age>=25 && age%4===0,
+   eff:{hap:-1}, first:"🫠 月底又是一場數學考——錢包扁到能當書籤，快樂被房租跟物價一刀一刀削薄。"},
+  {key:"apr_hi", kind:"boon", dom:"apr", test:(a,age)=>a.apr>=80 && age%2===0,
+   eff:{hap:1}, first:"💅 顏值就是行走的 VIP 卡——走到哪都被多讓三分，心情自然好上加好（世界很膚淺，但這次你是受益的一方）。"},
+  {key:"apr_lo", kind:"bane", dom:"apr", test:(a,age)=>a.apr<20 && age%5===0,
+   eff:{hap:-1}, first:"🪞 鏡子最近很不給面子——外貌焦慮像關不掉的背景音樂，循環播放整個年度。"},
+  {key:"hap_hi", kind:"boon", dom:"hap", test:(a,age)=>a.hap>=85 && age%2===0,
+   eff:{hp:1}, first:"😄 心寬真的會體胖（健康那種）——你笑點低、煩惱更低，連免疫力都自願加班。"},
+  {key:"hap_lo", kind:"bane", dom:"hap", test:(a,age)=>a.hap<18 && age%3===0,
+   eff:{hp:-1}, first:"🌧️ 心裡的雨下太久，身體開始淹水——鬱結傷身不是迷信，是你的健康數字在替你抗議。"},
+];
+function r68StatTick(){
+  if(!S || !S.attr || !S.alive) return;
+  if(!S.flags) S.flags={};
+  const a=S.attr, age=S.age;
+  for(const r of R68_FATE){
+    if(!r.test(a, age)) continue;
+    for(const k in r.eff){ a[k]=clamp((a[k]||0)+r.eff[k]); }   // 套效果，clamp 不越界，零 rng
+    if(r.kind==="boon"){ S.flags.r68Boon=(S.flags.r68Boon||0)+1; S.flags["r68b_"+r.dom]=(S.flags["r68b_"+r.dom]||0)+1; }
+    else { S.flags.r68Bane=(S.flags.r68Bane||0)+1; S.flags["r68n_"+r.dom]=(S.flags["r68n_"+r.dom]||0)+1; }
+    if(!S.flags["r68seen_"+r.key]){   // 首次觸發某條 → 寫一次 log＋時間軸，之後靜默累計
+      S.flags["r68seen_"+r.key]=true;
+      S.log.push(`<span class="yr">第 ${age} 年</span> ${r.first}`);
+      tlPush(r.kind==="boon"?"📈":"📉", `屬性命運：${ATTR[r.dom].nm}${r.kind==="boon"?"紅利":"短板"}開始生效（${ATTR[r.dom].ic}）`, 1);
+    }
+  }
+}
+
 function nextYear(){
   if(!S.alive) return;
   // 階段回顧卡按「繼續」回來：不再加齡，直接跑當年事件
@@ -8561,6 +8618,7 @@ function nextYear(){
   quirkYearTick();
   r49YearTick();   // R49 開局天賦年度節拍：純查狀態零 rng，無天賦直接 return
   r50CareerTick(); // R50 職業分流：25 歲依屬性/旗標確定性入行（零裸 rng；已入行/超齡直接 return）
+  r68StatTick();   // R68 屬性被動命運：五圍高低每年實質牽動數值（純查狀態零 rng，顧此失彼）
   // R30 屬性年史：年度快照（平淡年也記，曲線不斷線）
   histTick();
 
@@ -10374,6 +10432,49 @@ function attrCurveHTML(){
   </div>`;
 }
 
+/* =========================================================================
+   R68 屬性命運回顧：總結這一生五圍如何「主動驅動」命運——
+   讀 S.flags 裡被動命運層累積的紅利/短板計數＋各屬性貢獻＋年史走勢，給一段總評。
+   純讀狀態、零 rng，同種子同軌跡 → 同回顧；無觸發（極短命/全中庸）整塊省略不報錯。
+   ========================================================================= */
+function r68FateHTML(){
+  if(!S || !S.flags) return "";
+  const boon=S.flags.r68Boon||0, bane=S.flags.r68Bane||0;
+  if(boon===0 && bane===0) return "";
+  let topBoon=null, tbv=0, topBane=null, tnv=0;
+  for(const k in ATTR){
+    const bv=S.flags["r68b_"+k]||0, nv=S.flags["r68n_"+k]||0;
+    if(bv>tbv){ tbv=bv; topBoon=k; }
+    if(nv>tnv){ tnv=nv; topBane=k; }
+  }
+  let trend="";
+  if(Array.isArray(S.attrHist) && S.attrHist.length>=2){
+    const f=S.attrHist[0], l=S.attrHist[S.attrHist.length-1];
+    const d=(l[1]+l[2]+l[3]+l[4]+l[5])-(f[1]+f[2]+f[3]+f[4]+f[5]);
+    trend = d>=30 ? "整體往上爬——五圍越活越壯，是越陳越香的那種劇本。"
+          : d<=-30 ? "整體往下走——開局的本錢被歲月一點一點收回，標準的高開低走。"
+          : "起伏不大——五圍在中段拉鋸，平穩得像一條橫盤的線。";
+  }
+  const boonLine = boon
+    ? `本局共領了 <b style="color:var(--good,#39ff88)">${boon}</b> 次屬性紅利${topBoon?`，最受惠的是 ${ATTR[topBoon].ic}${ATTR[topBoon].nm}（${tbv} 次）`:""}。`
+    : "本局沒享到任何屬性紅利——數值始終沒高到讓命運主動幫你加碼。";
+  const baneLine = bane
+    ? `也吃了 <b style="color:var(--bad,#ff6b6b)">${bane}</b> 次短板的悶虧${topBane?`，最常扯後腿的是 ${ATTR[topBane].ic}${ATTR[topBane].nm}（${tnv} 次）`:""}。`
+    : "短板一次都沒踩到——沒有哪條數值低到拖累你，這點已經贏過一堆人。";
+  const verdict = boon>bane
+    ? "結論：你是被屬性『推著走』的人生——把牌養好，命運就順手替你抬轎。"
+    : bane>boon
+    ? "結論：你是被短板『拖著走』的人生——有條數值常年躺平，整局都在替它擦屁股。"
+    : "結論：紅利與短板剛好打平——這一生，屬性給你的糖和藥一樣多。";
+  return `<div class="panel" style="margin-top:12px;background:var(--panel2)">
+    <h2 class="sec">⚖️ 屬性命運回顧</h2>
+    <div class="muted" style="font-size:13px;text-align:left;line-height:1.7">
+      ${boonLine}<br>${baneLine}${trend?`<br>📊 五圍走勢：${trend}`:""}
+    </div>
+    <div style="margin-top:6px;font-size:12.5px;text-align:center;color:var(--accent,#ffd24a)">「${verdict}」</div>
+  </div>`;
+}
+
 const GRADE_TALK = {
   S:"地球 Online 頂級玩家，這隻號建議掛拍賣場",
   A:"課金大佬等級，下輩子記得綁定這組帳號",
@@ -10426,6 +10527,7 @@ function screenSummary(cat){
       ${attrReviewHTML()}
       ${attrCurveHTML()}
       ${attrTurnsHTML()}
+      ${r68FateHTML()}
       ${highlightsHTML()}
       ${extremesHTML()}
       ${epitaphHTML()}
