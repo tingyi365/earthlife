@@ -1700,5 +1700,135 @@ const r62Clean = JSON.parse(vm.runInContext(`(function(){
 })()`, sandbox));
 ok(r62Clean.clean, 'R62 ⑨ 零汙染：開局 S.flags 無任何 r62 鍵');
 
+// ========================================================================
+// 31) R63 台味交通通勤人生事件鏈：結構護欄／馬路三寶計數／年代分流／理財回扣／
+//     死法收錄與確定性觸發／成就正反例／舊存檔相容／零汙染
+// ========================================================================
+// ① 結構護欄：9 事件齊備、全 once、stage 覆蓋童年到老年、|eff|<=8（含 br 分流）、w<=3、保底註冊
+const r63St = JSON.parse(vm.runInContext(`(function(){
+  const ids=['r63_sandwich','r63_license','r63_oldbike','r63_rushhour','r63_tow','r63_parkbuy','r63_highway','r63_jaywalk','r63_oldride'];
+  const evs=ids.map(id=>EVENTS.find(e=>e.id===id));
+  const out={};
+  out.all = evs.every(e=>e && e.once && (e.w||1)<=3 && e.stage && e.choices.length>=3);
+  out.span = evs[0].stage[0]<=8 && evs[8].stage[1]>=80;
+  out.guard = evs.every(e=>e.choices.every(c=>{
+    const effs=[c.eff||{}]; if(c.br){effs.push(c.br.hi.eff||{},c.br.lo.eff||{});}
+    return effs.every(o=>Object.values(o).every(v=>Math.abs(v)<=8));
+  }));
+  out.milestone = R46_MILESTONE.r63_parkbuy===42 && R46_MILESTONE.r63_oldride===78;
+  return JSON.stringify(out);
+})()`, sandbox));
+ok(r63St.all && r63St.span, 'R63 ① 9 事件齊備全 once、stage 覆蓋童年到老年');
+ok(r63St.guard, 'R63 ① 平衡護欄：單選項 |eff|<=8（含 br 分流）、w<=3');
+ok(r63St.milestone, 'R63 ① 停車位/老騎士終局 R46 保底註冊（童年三貼/駕照筆試不配保底零擠壓）');
+// ② 馬路三寶隱性計數：inc 落地、行人地獄升級(>=2)/老年終局(>=3) 計數門檻鎖定與解鎖
+const r63Sanbao = JSON.parse(vm.runInContext(`(function(){
+  const out={};
+  startGame(); S.age=20; S.flags={}; ensureState(S);
+  showEvent(EVENTS.find(e=>e.id==='r63_license')); choose(2);
+  out.one = S.flags.r63_sanbao===1;
+  const jw=EVENTS.find(e=>e.id==='r63_jaywalk');
+  out.jwLocked = jw.choices[2].cond({flags:{r63_sanbao:1}})===false;
+  out.jwOpen = jw.choices[2].cond({flags:{r63_sanbao:2}})===true;
+  const or_=EVENTS.find(e=>e.id==='r63_oldride');
+  out.finLocked = or_.choices[1].cond({flags:{r63_sanbao:2}})===false;
+  out.finOpen = or_.choices[1].cond({flags:{r63_sanbao:3}})===true;
+  startGame(); S.age=25; S.flags={}; ensureState(S);
+  showEvent(EVENTS.find(e=>e.id==='r63_oldbike')); choose(2);
+  out.nobike = S.flags.r63_nobike===true && !S.flags.r63_sanbao;
+  return JSON.stringify(out);
+})()`, sandbox));
+ok(r63Sanbao.one, 'R63 ② 危險駕駛 inc r63_sanbao 馬路三寶計數落地（不戴帽兜風）');
+ok(r63Sanbao.jwLocked && r63Sanbao.jwOpen && r63Sanbao.finLocked && r63Sanbao.finOpen, 'R63 ② 行人地獄升級(>=2)/老年終局(>=3) 計數門檻鎖定與解鎖');
+ok(r63Sanbao.nobike, 'R63 ② 無車路線 r63_nobike 落地、不沾三寶計數');
+// ③ R55 年代分流：國道連假（早年野雞遊覽車 vs 近年高鐵共享機車，互斥絕緣，舊存檔無 era 鍵不炸）
+const hw70 = vm.runInContext(`__choiceHTML('r63_highway', s=>{s.era='e70';}, 40)`, sandbox);
+const hw10 = vm.runInContext(`__choiceHTML('r63_highway', s=>{s.era='e10';}, 40)`, sandbox);
+const hw90 = vm.runInContext(`__choiceHTML('r63_highway', s=>{s.era='e90';}, 40)`, sandbox);
+const hwOld = vm.runInContext(`__choiceHTML('r63_highway', s=>{delete s.era;}, 40)`, sandbox);
+ok(hw70.includes('野雞車世代限定') && !hw70.includes('高鐵世代限定'), 'R63 ③ e70 顯示野雞遊覽車、高鐵絕緣');
+ok(hw10.includes('高鐵世代限定') && !hw10.includes('野雞車世代限定'), 'R63 ③ e10 顯示高鐵共享機車、野雞車絕緣');
+ok(!hw90.includes('世代限定') && !hwOld.includes('世代限定') && hwOld.includes('車上開演唱會'), 'R63 ③ e90/舊存檔無 era 鍵：年代選項皆絕緣、基本選項照常');
+// ④ R57 理財回扣：少年股神 r57_leekwin 旗標 → 現金買車位分支現身與落地
+const r63Fin = JSON.parse(vm.runInContext(`(function(){
+  const out={};
+  out.src = EVENTS.find(e=>e.id==='r57_leek').choices[1].sr.win.flags.r57_leekwin===true;
+  const h0=__choiceHTML('r63_parkbuy', s=>{}, 40);
+  const h1=__choiceHTML('r63_parkbuy', s=>{s.flags.r57_leekwin=true;}, 40);
+  out.hidden = !h0.includes('少年股神限定');
+  out.shown = h1.includes('少年股神限定');
+  startGame(); S.age=40; S.flags={r57_leekwin:true}; ensureState(S);
+  showEvent(EVENTS.find(e=>e.id==='r63_parkbuy')); choose(2);
+  out.flag = S.flags.r63_parkown===true && S.flags.r63_car===true;
+  return JSON.stringify(out);
+})()`, sandbox));
+ok(r63Fin.src && r63Fin.hidden && r63Fin.shown, 'R63 ④ 現金買車位分支：沒贏過股海隱藏、R57 少年股神旗標現身');
+ok(r63Fin.flag, 'R63 ④ 車位產權落地 r63_parkown（理財記憶回扣 R57）');
+// ⑤⑥ 死法圖鑑收錄＋屬性門檻確定性觸發＋活路零誤殺
+const r63Death = JSON.parse(vm.runInContext(`(function(){
+  const out={};
+  out.book = ['walkhell','sanbaogod'].every(id=>DEATHBOOK.some(d=>d.id===id&&d.rare&&d.hint.length>4) && !!SPECIAL_DEATHS[id]);
+  const jw=EVENTS.find(e=>e.id==='r63_jaywalk'), wi=jw.choices.findIndex(c=>c.special==='r63_walk');
+  startGame(); S.age=50; S.flags={}; ensureState(S); S.attr.hp=9;
+  showEvent(jw); choose(wi);
+  out.wDying = S.flags.specialDeath==='walkhell';
+  die('choice');
+  out.wDead = !S.alive && S.deathId==='walkhell' && !!SAVE.deaths.walkhell;
+  startGame(); S.age=50; S.flags={}; ensureState(S); S.attr.hp=70;
+  showEvent(EVENTS.find(e=>e.id==='r63_jaywalk')); choose(wi);
+  out.wAlive = S.alive===true && !S.flags.specialDeath && S.flags.r63_sanbao===1;
+  const or_=EVENTS.find(e=>e.id==='r63_oldride'), fi=or_.choices.findIndex(c=>c.special==='r63_final');
+  startGame(); S.age=75; S.flags={r63_sanbao:3}; ensureState(S); S.attr.hp=10;
+  showEvent(or_); choose(fi);
+  out.fDying = S.flags.specialDeath==='sanbaogod';
+  die('choice');
+  out.fDead = !S.alive && S.deathId==='sanbaogod' && !!SAVE.deaths.sanbaogod;
+  startGame(); S.age=75; S.flags={r63_sanbao:3}; ensureState(S); S.attr.hp=70;
+  showEvent(EVENTS.find(e=>e.id==='r63_oldride')); choose(fi);
+  out.fAlive = S.alive===true && !S.flags.specialDeath && S.flags.r63_legendlive===true;
+  return JSON.stringify(out);
+})()`, sandbox));
+ok(r63Death.book, 'R63 ⑤ walkhell/sanbaogod 收錄進死法圖鑑（rare＋模糊提示）');
+ok(r63Death.wDying && r63Death.wDead, 'R63 ⑥ 體力見底滑手機過馬路 → 行人地獄全流程＋跨局收集');
+ok(r63Death.wAlive, 'R63 ⑥ 體力正常滑手機：活路分支（嚇出冷汗＋三寶計數+1、零誤殺）');
+ok(r63Death.fDying && r63Death.fDead, 'R63 ⑥ 三寶拉滿＋體力見底硬騎 → 三寶昇華全流程＋跨局收集');
+ok(r63Death.fAlive, 'R63 ⑥ 體力正常硬騎：活路分支（r63_legendlive 落地、零誤殺）');
+// ⑦ 新成就 ×3：check 正反例＋獵人提示齊備
+const r63Ach = JSON.parse(vm.runInContext(`(function(){
+  const out={};
+  out.model = ACH_MAP.r63_model.check({S:{flags:{r63_road:true}}, age:60});
+  out.modelNeg = !ACH_MAP.r63_model.check({S:{flags:{r63_road:true,r63_sanbao:1}}, age:60}) && !ACH_MAP.r63_model.check({S:{flags:{r63_road:true}}, age:59}) && !ACH_MAP.r63_model.check({S:{flags:{}}, age:80});
+  out.legend = ACH_MAP.r63_legend.check({S:{flags:{r63_sanbao:3}}, age:75});
+  out.legendNeg = !ACH_MAP.r63_legend.check({S:{flags:{r63_sanbao:2}}, age:80}) && !ACH_MAP.r63_legend.check({S:{flags:{r63_sanbao:3}}, age:74});
+  out.nocar = ACH_MAP.r63_nocar.check({S:{flags:{r63_nobike:true,r63_buslife:true}}, age:80});
+  out.nocarNeg = !ACH_MAP.r63_nocar.check({S:{flags:{r63_nobike:true}}, age:80}) && !ACH_MAP.r63_nocar.check({S:{flags:{r63_buslife:true}}, age:80});
+  out.hints = ['r63_model','r63_legend','r63_nocar'].every(id=>ACH_MAP[id]&&ACH_MAP[id].hint&&ACH_MAP[id].hint.length>4);
+  return JSON.stringify(out);
+})()`, sandbox));
+ok(r63Ach.model && r63Ach.modelNeg, 'R63 ⑦ 成就「模範用路人」：進鏈＋零三寶＋活到 60 解鎖、有計數或年齡不足不解鎖');
+ok(r63Ach.legend && r63Ach.legendNeg, 'R63 ⑦ 成就「三寶傳奇」：計數滿 3＋活過 75 解鎖、計數或年齡不足不解鎖');
+ok(r63Ach.nocar && r63Ach.nocarNeg, 'R63 ⑦ 成就「無車人生」：無車＋老年公車雙旗標解鎖、單旗標不解鎖');
+ok(r63Ach.hints, 'R63 ⑦ 三個新成就獵人提示齊備');
+// ⑧ 舊存檔相容：無 r63 鍵的舊存檔經 ensureState 補鍵後 cond/成就/門檻選項全不炸不誤觸
+const r63Compat = JSON.parse(vm.runInContext(`(function(){
+  const out={};
+  startGame(); S.age=50; S.flags={employed:true}; ensureState(S);
+  out.cond = EVENTS.find(e=>e.id==='r63_jaywalk').choices[2].cond(S)===false && EVENTS.find(e=>e.id==='r63_oldride').choices[1].cond(S)===false;
+  out.ach = !ACH_MAP.r63_model.check({S:S,age:80}) && !ACH_MAP.r63_legend.check({S:S,age:80}) && !ACH_MAP.r63_nocar.check({S:S,age:80});
+  const h1=__choiceHTML('r63_jaywalk', s=>{}, 50);
+  const h2=__choiceHTML('r63_parkbuy', s=>{}, 40);
+  const h3=__choiceHTML('r63_oldride', s=>{}, 75);
+  out.gateHidden = !h1.includes('馬路三寶限定') && !h2.includes('少年股神限定') && !h3.includes('三寶終局限定') && !h3.includes('無車一族限定') && h3.includes('折衷');
+  return JSON.stringify(out);
+})()`, sandbox));
+ok(r63Compat.cond, 'R63 ⑧ 舊存檔相容：ensureState 後無計數鍵、升級/終局 cond 不開');
+ok(r63Compat.ach && r63Compat.gateHidden, 'R63 ⑧ 舊存檔無 r63 鍵：成就不誤觸、門檻選項全隱藏');
+// ⑨ 零汙染：開局無 r63 旗標、不選不沾
+const r63Clean = JSON.parse(vm.runInContext(`(function(){
+  startGame();
+  return JSON.stringify({clean:Object.keys(S.flags).every(k=>k.indexOf('r63')!==0)});
+})()`, sandbox));
+ok(r63Clean.clean, 'R63 ⑨ 零汙染：開局 S.flags 無任何 r63 鍵');
+
 console.log(fails ? `\n結果: ❌ ${fails} 項未通過` : '\n結果: ✅ 狀態機全數正確');
 process.exit(fails ? 1 : 0);
