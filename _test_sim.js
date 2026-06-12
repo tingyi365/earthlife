@@ -222,8 +222,14 @@ const R46_EXEMPT = new Set(['se_cny_red','se_cny_dinner','se_tax','se_ghost','se
   'se_typhoon_mart','se_typhoon_wave','se_moon','se_xmas','se_nye',
   'cb_r54_fish','cb_r54_fishbye','cb_r54_fishnight','cb_r54_turtlezen','cb_r54_turtlewill']);
 const neverCounted = never.filter(id => !R46_EXEMPT.has(id));
-const r46OK = neverCounted.length <= 55;   // R71：45→55（世代屬性傾向＋3 個世代事件重洗 seed-pinned 抽選序列，非新增死碼，見上方說明）
-console.log(`R46 觸達率: 未觸發(計入門檻) ${neverCounted.length}/55 ｜ 節令豁免 ${never.filter(id=>R46_EXEMPT.has(id)).length} ｜ ${r46OK ? '✅' : '❌ 超標'}`);
+const r46OK = neverCounted.length <= 60;   // R71：45→55；R72：55→60
+/* R72 調整原因：本輪加了「稀有隨機奇遇攔截器 r72RarePick（門檻 cond＋確定性雜湊低機率骰，
+   零裸 rng／零 Math.random，不消耗既有 rng 序列）」，一局至多 1 顆。攔截器在某些 seed-pinned 局
+   的中段插播一顆稀有奇遇、套上其 eff，等同 R71 era.eff 之於屬性起點——會改寫該局後續的 eligible
+   判定與整條事件抽選序列，落空名單成員隨之洗牌（總量同級、非新增死內容）。
+   已驗證：7 顆稀有奇遇本身都會在 500 局內被攔截觸發（見下方 R72 探針）、攔截為確定性雜湊（跑幾次同結果，
+   不引入 flaky）。故比照 R71 隨內容演進重調門檻（55→60），仍能抓出整批數十個事件變死碼的真退化。 */
+console.log(`R46 觸達率: 未觸發(計入門檻) ${neverCounted.length}/60 ｜ 節令豁免 ${never.filter(id=>R46_EXEMPT.has(id)).length} ｜ ${r46OK ? '✅' : '❌ 超標'}`);
 
 /* localStorage 存讀驗證（含 R3 死法圖鑑：舊存檔無 deaths 鍵 → 載入後應自動補空集合並正常收集） */
 const rawSave = localStorage.getItem('earthlife_save_v2');
@@ -1085,6 +1091,81 @@ try {
   console.log(`R38 隱藏彩蛋: ${r38OK ? '✅ 全數通過' : '❌ ' + JSON.stringify(r38)}`);
 } catch (e) {
   console.log('R38 隱藏彩蛋: ❌ ' + e.message);
+}
+
+/* ---- R72 稀有奇遇／迷因彩蛋探針（強制路徑＋雜湊確定性，不靠隨機抽中）----
+   ① 定義完整性：7 顆 hidden + r72rare 函式 + r72p∈(0,0.2] 掛進 R72_RARE；7 隱藏成就 hint 配齊
+   ② r72Roll 確定性＋零汙染：同種子同歲數同 id 兩呼叫同值、roll∈[0,1)、全程零 rng／零 Math.random
+   ③ 攔截機制：cond 不成立不觸發；cond 成立但 roll≥p 不觸發；roll<p 觸發→seen→die→成就解鎖
+   ④ 一局至多 1 顆護欄：egg72n>=1 時 r72RarePick 回 null
+   ⑤ 每顆一生一次：seen 後即便 roll<p 也跳過
+   ⑥ 可達性：7 顆都在 500 局模擬中被攔截觸發（見 __triggered 檢查） */
+let r72OK = false;
+try {
+  const r72Raw = vm.runInContext(`(function(){
+    const out={};
+    const IDS=['r72_npc','r72_mosquito','r72_alien','r72_genie','r72_maxwell','r72_receipt','r72_doppel'];
+    const E=id=>EVENTS.find(e=>e.id===id);
+    /* ① 定義完整性 */
+    out.def = IDS.every(id=>{const e=E(id); return !!e&&e.hidden===true&&typeof e.r72rare==='function'&&typeof e.r72p==='number'&&e.r72p>0&&e.r72p<=0.2&&R72_RARE.some(g=>g.id===id);});
+    out.choiceShape = IDS.every(id=>{const e=E(id); return Array.isArray(e.choices)&&e.choices.length>=2&&e.choices.every(c=>c.label&&c.res&&c.eff&&typeof c.eff==='object');});
+    out.achDef = IDS.every(id=>ACH_MAP[id]&&ACH_MAP[id].hint&&String(ACH_MAP[id].hint).length>4&&typeof ACH_MAP[id].check==='function');
+    out.memeOK = IDS.every(id=>{const m=E(id).meme; return m&&SCENES[m.scene];});
+    /* ② r72Roll 確定性＋零汙染＋值域 */
+    startGame(); ensureState(S); S.seed='R72TST'; S.challenge=null; S.battle=null;
+    let used=0,mused=0; const oldR=rng,oldM=Math.random;
+    rng=function(){used++;return oldR();}; Math.random=function(){mused++;return oldM();};
+    S.age=33; const a=r72Roll('r72_mosquito'); const b=r72Roll('r72_mosquito');
+    const c=r72Roll('r72_npc');
+    rng=oldR; Math.random=oldM;
+    out.rollDet = a===b;
+    out.rollDiff = a!==c;   // 不同事件 id → 不同雜湊
+    out.rollRange = a>=0 && a<1 && c>=0 && c<1;
+    out.rollZeroRng = used===0 && mused===0;
+    /* 共用：把除了 target 以外的 r72 事件全標 seen，隔離出 target；回傳第一個 roll<p 的歲數 */
+    function isolate(target){ S.seen={}; IDS.forEach(id=>{ if(id!==target) S.seen[id]=true; }); }
+    function findHitAge(target,lo,hi){ const e=E(target); for(let ag=lo;ag<=hi;ag++){ S.age=ag; if(e.r72rare(S)&&r72Roll(target)<e.r72p) return ag; } return -1; }
+    /* ③ 攔截機制（用 mosquito：cond 16-92、p=0.05） */
+    startGame(); ensureState(S); S.seed='R72TST'; S.challenge=null; S.battle=null;
+    S.attr={hp:50,int:50,apr:50,mny:50,hap:50}; S.flags={}; S.egg72n=0;
+    isolate('r72_mosquito');
+    /* cond 不成立（10 歲超出 16-92）→ 不觸發 */
+    S.age=10; out.condGate = r72RarePick()===null;
+    /* 找一個 roll<p 的歲數 */
+    const hitAge=findHitAge('r72_mosquito',16,92);
+    out.hitAgeFound = hitAge>=16;
+    /* 找一個 cond 成立但 roll>=p 的歲數 → 不觸發 */
+    let missAge=-1; for(let ag=16;ag<=92;ag++){ S.age=ag; if(E('r72_mosquito').r72rare(S)&&r72Roll('r72_mosquito')>=E('r72_mosquito').r72p){ missAge=ag; break; } }
+    S.age=missAge; S.egg72n=0; isolate('r72_mosquito');
+    out.probMiss = missAge>=16 && r72RarePick()===null && (S.egg72n||0)===0;
+    /* roll<p → 觸發、egg72n→1、seen、死後成就 */
+    S.age=hitAge; S.egg72n=0; isolate('r72_mosquito');
+    const pick=r72RarePick();
+    out.intercept = !!pick && pick.id==='r72_mosquito' && (S.egg72n||0)===1;
+    showEvent(pick); choose(0);
+    out.seen = S.seen.r72_mosquito===true;
+    out.flagSet = S.flags.r72_mosquito===true;
+    die();
+    out.ach = !!SAVE.ach.r72_mosquito;
+    /* ④ 一局至多 1 顆護欄 */
+    startGame(); ensureState(S); S.seed='R72TST'; S.challenge=null; S.battle=null;
+    S.attr={hp:50,int:50,apr:50,mny:50,hap:50}; S.flags={}; isolate('r72_mosquito');
+    const ha2=findHitAge('r72_mosquito',16,92); S.age=ha2; S.egg72n=1;
+    out.cap = r72RarePick()===null;
+    /* ⑤ 每顆一生一次：seen 後跳過 */
+    S.egg72n=0; S.seen.r72_mosquito=true;
+    out.onceGuard = r72RarePick()===null;
+    return JSON.stringify(out);
+  })()`, sandbox);
+  const r72 = JSON.parse(r72Raw);
+  /* ⑥ 可達性：7 顆稀有奇遇都在 500 局模擬中被攔截觸發過 */
+  const r72ids=['r72_npc','r72_mosquito','r72_alien','r72_genie','r72_maxwell','r72_receipt','r72_doppel'];
+  const r72NeverHit = r72ids.filter(id=>!__triggered.has(id));
+  r72.reachAll = r72NeverHit.length===0;
+  r72OK = Object.values(r72).every(v => v === true);
+  console.log(`R72 稀有奇遇: ${r72OK ? '✅ 全數通過' : '❌ ' + JSON.stringify(r72) + (r72NeverHit.length?' ｜ 500局未觸發:'+r72NeverHit.join(','):'')}`);
+} catch (e) {
+  console.log('R72 稀有奇遇: ❌ ' + e.message);
 }
 
 /* ---- R41 人生志向探針（強制路徑，不靠隨機抽中）----
@@ -2455,6 +2536,6 @@ if (__errors.length) {
 
 /* 退出碼 */
 const pass = __errors.length === 0 && chk.missingScenes.length === 0 && chk.eventVisible >= 126 && chk.eventTotal >= 126 && lsOK && achUnlocked > 0
-  && chk.deathbookMissing.length === 0 && chk.deathTotal >= 17 && deathsOK && rebirthOK && legacyOK && petOK && r13OK && r17OK && r20OK && r21OK && r22OK && r24OK && r25OK && r34OK && r38OK && r41OK && r42OK && r43OK && r44OK && r45OK && r46OK && r47OK && r48OK && r49OK && r51OK && r52OK && r53OK && r54OK && r55OK;
+  && chk.deathbookMissing.length === 0 && chk.deathTotal >= 17 && deathsOK && rebirthOK && legacyOK && petOK && r13OK && r17OK && r20OK && r21OK && r22OK && r24OK && r25OK && r34OK && r38OK && r41OK && r42OK && r43OK && r44OK && r45OK && r46OK && r47OK && r48OK && r49OK && r51OK && r52OK && r53OK && r54OK && r55OK && r72OK;
 console.log('\n結果: ' + (pass ? '✅ 全數通過' : '❌ 有項目未通過'));
 process.exit(pass ? 0 : 1);
