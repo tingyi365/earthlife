@@ -222,7 +222,7 @@ const R46_EXEMPT = new Set(['se_cny_red','se_cny_dinner','se_tax','se_ghost','se
   'se_typhoon_mart','se_typhoon_wave','se_moon','se_xmas','se_nye',
   'cb_r54_fish','cb_r54_fishbye','cb_r54_fishnight','cb_r54_turtlezen','cb_r54_turtlewill']);
 const neverCounted = never.filter(id => !R46_EXEMPT.has(id));
-const r46OK = neverCounted.length <= 67;   // R71：45→55；R72：55→60；R73：60→67
+const r46OK = neverCounted.length <= 69;   // R71：45→55；R72：55→60；R73：60→67；R74：67→69
 /* R72 調整原因：本輪加了「稀有隨機奇遇攔截器 r72RarePick（門檻 cond＋確定性雜湊低機率骰，
    零裸 rng／零 Math.random，不消耗既有 rng 序列）」，一局至多 1 顆。攔截器在某些 seed-pinned 局
    的中段插播一顆稀有奇遇、套上其 eff，等同 R71 era.eff 之於屬性起點——會改寫該局後續的 eligible
@@ -235,7 +235,15 @@ const r46OK = neverCounted.length <= 67;   // R71：45→55；R72：55→60；R7
    500 隨機亂選局裡多數場次推不到鏈尾，落空 7 段，計入門檻數 57→64。已用 _probe_r73 強制路徑逐段斷言
    全鏈可達＋求婚成功銜接 R51 cb_r51_wedding＋3 成就正常解鎖＋零殘留（非死碼）。
    故比照 R71/R72 隨內容演進重調門檻（60→67），仍能抓出整批數十個事件變死碼的真退化。 */
-console.log(`R46 觸達率: 未觸發(計入門檻) ${neverCounted.length}/67 ｜ 節令豁免 ${never.filter(id=>R46_EXEMPT.has(id)).length} ｜ ${r46OK ? '✅' : '❌ 超標'}`);
+/* R74 調整原因：本輪加了「台味鬼島打工人事件鏈・躺平 vs 內捲」4 段（r74_seed 入口＋
+   cb_r74_grind 內捲血汗線／cb_r74_lie 躺平佛系線／cb_r74_final 中年職涯期末考 共 3 段 cb_ 因果鏈）。
+   入口 r74_seed 走自然池（500 局穩定觸發），但鏈尾 cb_r74_grind（內捲線中段，需先抽中 r74_juan 分流選項）
+   與 cb_r74_final（需先走完任一中段點 r74_mid，且在 40-58 窗口被抽中）在 500 隨機亂選局裡多數場次推不到，
+   落空 2 段，計入門檻數 67→69。已用獨立探針 _probe_r74.js 強制路徑逐段斷言全鏈可達
+   （兩中段 cond gating 正確、final 三結局 r74_burnout/r74_chill/r74_run 各依財富/智力門檻分歧、
+   3 成就正常解鎖、乾淨局零 r74 殘留），證明非死碼。故比照 R71/R72/R73 隨內容演進重調門檻（67→69），
+   仍能抓出整批數十個事件變死碼的真退化。 */
+console.log(`R46 觸達率: 未觸發(計入門檻) ${neverCounted.length}/69 ｜ 節令豁免 ${never.filter(id=>R46_EXEMPT.has(id)).length} ｜ ${r46OK ? '✅' : '❌ 超標'}`);
 
 /* localStorage 存讀驗證（含 R3 死法圖鑑：舊存檔無 deaths 鍵 → 載入後應自動補空集合並正常收集） */
 const rawSave = localStorage.getItem('earthlife_save_v2');
