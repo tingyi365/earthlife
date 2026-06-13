@@ -1488,6 +1488,29 @@ function r81EraReviewHTML(){
     <div class="muted" style="font-size:11.5px;margin-top:5px">歷史課本是別人寫的，這一行是你親身走過的。</div></div>`;
 }
 
+/* R83 結算回顧：你的創業戰績（無觸發/舊存檔自動省略，純讀 S.flags 零 rng） */
+const R83_BIZNM = {yeshi:"🌃 夜市攤販", drink:"🧋 手搖飲", chicken:"🍗 雞排鹽酥雞", breakfast:"🍳 早餐店", franchise:"🏬 加盟連鎖"};
+const R83_ENDNM = {r83_end_bust:"📉 慘賠收攤", r83_end_cozy:"☕ 小確幸穩定", r83_end_ipo:"🔔 上市上櫃・連鎖帝國", r83_end_franchtrap:"🪤 被加盟總部坑", r83_end_legend:"🏆 在地傳奇老店"};
+function r83BizReviewHTML(){
+  const f=(S&&S.flags)||{};
+  if(!f.r83biz && !f.r83_quit && !f.r83_slash) return "";   // 從沒起念創業 → 整段省略
+  const rows=[];
+  rows.push(`<div style="display:flex;gap:6px;align-items:baseline;padding:2px 0;font-size:13px"><span>🚪</span><span class="muted" style="min-width:84px">創業姿態</span><span>${f.r83_slash?"斜槓副業試水溫":(f.r83_quit?"裸辭 All in 當頭家":"動了念頭")}</span></div>`);
+  if(f.r83biz) rows.push(`<div style="display:flex;gap:6px;align-items:baseline;padding:2px 0;font-size:13px"><span>🏪</span><span class="muted" style="min-width:84px">選的業態</span><span>${R83_BIZNM[f.r83biz]||"自己的小生意"}</span></div>`);
+  const decs=[];
+  if(f.r83_loan) decs.push("借貸標會拚規模"); else if(f.r83_selffund) decs.push("自有資金慢慢滾");
+  if(f.r83_expand) decs.push("展店做連鎖"); else if(f.r83_keep) decs.push("守成顧一家");
+  if(f.r83_cut) decs.push("偷工減料壓成本"); else if(f.r83_cp) decs.push("拚 CP 值用好料");
+  if(decs.length) rows.push(`<div style="display:flex;gap:6px;align-items:baseline;padding:2px 0;font-size:13px"><span>🧭</span><span class="muted" style="min-width:84px">經營路線</span><span>${decs.join("、")}</span></div>`);
+  const wins=(f.r83w_money?1:0)+(f.r83w_grow?1:0)+(f.r83w_quality?1:0);
+  rows.push(`<div style="display:flex;gap:6px;align-items:baseline;padding:2px 0;font-size:13px"><span>🎲</span><span class="muted" style="min-width:84px">關鍵檢定</span><span>過關 ${wins}/3 關</span></div>`);
+  if(f.r83_endtype && R83_ENDNM[f.r83_endtype]) rows.push(`<div style="display:flex;gap:6px;align-items:baseline;padding:2px 0;font-size:13px"><span>🏁</span><span class="muted" style="min-width:84px">頭家結局</span><span><b>${R83_ENDNM[f.r83_endtype]}</b></span></div>`);
+  return `<div class="origin" style="margin-top:10px;text-align:left">
+    🏪 <b>你的創業戰績</b>　<span class="muted">台味頭家人生</span>
+    <div style="margin-top:5px">${rows.join("")}</div>
+    <div class="muted" style="font-size:11.5px;margin-top:5px">十個頭家九個倒，敢開過的人，都有資格說一句「我當過老闆」。</div></div>`;
+}
+
 /* =========================================================================
    R55 台灣時代背景系統：投胎時 roll 出生年代（走 rng() → 同種子同年代，挑戰/對戰公平）。
    年代解鎖各年代 2 個專屬事件（cond 掛 S.era）。
@@ -2132,6 +2155,12 @@ const ACHIEVEMENTS = [
   {id:"r81_quaketurn", ic:"🌋", nm:"天搖地動又改朝換代", desc:"同一局同時見證『世紀大地震』與『首次和平變天』——這座島最劇烈的一次地動與一次政權翻頁，都被你親眼撞上。", check:c=>{const h=c.S.r81hit||{};return !!(h.era_t_quake&&h.era_t_turn);}, hint:"世紀末那場大地震、和緊接著那次和平的改朝換代，要剛好都活在現場才湊得成一對…"},
   {id:"r81_curfew2free", ic:"✊", nm:"從髮禁活到嘴巴開放", desc:"同一局見證『全島統一髮型令』與『嘴巴開放紀念日』——你親身走過從什麼都管、到什麼都能說的那段路，連瀏海主權都拿回來了。", check:c=>{const h=c.S.r81hit||{};return !!(h.era_t_curfew&&h.era_t_freedom);}, hint:"連頭髮都被國家管的童年、和報禁解除嘴巴大開放那年，得是夠早出生的世代才能一次活過兩頭…"},
   {id:"r81_aimaster", ic:"🤖", nm:"收編 AI 的指揮官", desc:"在 AI 取代潮裡靠智力檢定過關——你沒跟 AI 比手速，而是把它收編成下屬大軍，自己升級當指揮。被取代的是別人，發落 AI 幹活的是你。", check:c=>!!(c.S.flags&&c.S.flags.r81_aisurvive), hint:"AI 來搶飯碗那關，智力夠硬（過得了檢定）的人不會被收割，反而能把 AI 收編成免費實習生大軍…"},
+  /* ---- R83 台味創業開店人生支線成就（純讀 S.flags 確定性判定，零 rng；沒創業/舊存檔永不誤觸）---- */
+  {id:"r83_open", ic:"🎊", nm:"開張大吉・頭家上任", desc:"動了念頭、選了業態、真的把店開起來——夜市攤、手搖飲、雞排店、早餐店還是加盟，你終於從替人賣肝的螺絲釘，變成那個掛自己招牌的頭家。開店那一刻，天花板是自己拆的。", check:c=>!!(c.S.flags&&c.S.flags.r83biz), hint:"起了創業的念頭後，別只是想想——真的選一門業態把店開起來（夜市／手搖／雞排／早餐／加盟皆可）…"},
+  {id:"r83_boss", ic:"🛠️", nm:"黑手變頭家", desc:"從起心動念一路撐到創業人生收尾——不管結局是賺是賠，你把當頭家這場仗完整打完了一輪。這座島上十個頭家九個倒，光是走到最後沒中途落跑，就已經是一種本事。", check:c=>!!(c.S.flags&&c.S.flags.r83_endhit), hint:"把創業鏈從起心動念、選業態、資金、展店、用料一路走到出現「頭家結局」那一關，完整跑完一輪…"},
+  {id:"r83_empire", ic:"🏰", nm:"連鎖帝國・敲響上市鐘", desc:"從一間寒酸小店，靠展店與檢定一路做成全島插旗的連鎖品牌，最後站上交易所敲響上市鐘。台灣囡仔靠一門小生意翻身的傳奇，這次主角是你。", check:c=>!!(c.S.flags&&c.S.flags.r83_endtype==="r83_end_ipo"), hint:"創業時選擇展店做連鎖、又把資金與規模的關鍵檢定多數過關，才能把小店一路做到上市上櫃…"},
+  {id:"r83_bust", ic:"💸", nm:"慘賠收攤・學費繳好繳滿", desc:"食安出包、債務雪球、或人潮退散——你終究把鐵門拉了下來，扛著一身債和教訓收場。但你敢開過，這句話有些人一輩子都說不出口。", check:c=>!!(c.S.flags&&c.S.flags.r83_endtype==="r83_end_bust"), hint:"創業路上偷工減料壓成本、或一路檢定翻車又背了一身貸款，多半會把店做到慘賠收攤…"},
+  {id:"r83_legend", ic:"🏵️", nm:"在地傳奇老店", desc:"沒上市、沒連鎖，你卻把一家小店熬成在地人從小吃到大的傳奇——觀光客按圖朝聖、老主顧帶下一代回味。財富不是最頂的，但口碑這東西，千金難買。", check:c=>!!(c.S.flags&&c.S.flags.r83_endtype==="r83_end_legend"), hint:"守成顧好一家店、堅持拚 CP 值用好料、又把關鍵檢定多數過關，才能把小店做成在地名店…"},
 ];
 const ACH_MAP = {}; ACHIEVEMENTS.forEach(a=>ACH_MAP[a.id]=a);
 
@@ -8561,6 +8590,103 @@ function buildEvents(){ return [
     ]},
 
   /* =====================================================================
+     R83 台味創業開店人生支線（階梯式分流，由確定性攔截器 r83BizPick 驅動）：
+     起心動念 → 選業態(夜市攤販/手搖飲/雞排鹽酥雞/早餐店/加盟連鎖)
+       → 經營抉擇①資金(找錢借貸 vs 自有) → ②規模(展店 vs 守成) → ③用料(CP值 vs 偷工)
+       → 結局(倒店負債/小確幸穩定/上市上櫃/被加盟總部坑/做成在地名店)。
+     掛接鐵律（沿用 R50 確定性節拍／R81 攔截器精神，零裸 rng／零 Math.random）：
+     ① 全 hidden:true（不進隨機池、不計入 R46 觸達率落空名單）＋ once:true，只由 r83BizPick 插播。
+     ② 階梯靠 S.flags.r83step 推進（每個選項都帶 flags:{r83step:N+1} → 不論模擬亂選都會前進，鏈必走完）；
+        入口 r83_spark 由確定性雜湊閘（r41Hash 種子化）低機率攔截，舊存檔無旗標整套無感（R50/R81 相容性精神）。
+     ③ 每個「經營抉擇」節點 1 個 sr 屬性檢定（吃 R44 公式 {k,need,spread:40,win,lose}，win 必帶代價負值、
+        效果 ±12 內）＋ 1 個平選項；選業態為純分流（無檢定）。
+     ④ 回扣既有系統：R44 屬性驅動（財富/智力/魅力 sr）、R50 職業路線（裸辭 vs 斜槓）、R57 理財（標會/借貸/被倒會）。
+     ⑤ 結局由 r83BizPick 依累積旗標確定性計分選一（5 選 1），picker 落地 r83_endtype 供成就/回顧/戰績卡。
+     ⑥ 台味自嘲基調（房東漲租、員工難請、外送抽成、網紅打卡、食安、人潮退散），守政治/仇恨紅線走幽默自嘲。
+     ===================================================================== */
+  {id:"r83_spark", hidden:true, once:true, ic:"💡", nm:"想自己當頭家", r83node:"spark",
+    title:"那個「不如自己開一間」的念頭", text:"你又一次在打烊的店門口排隊買宵夜，看著老闆熟練地翻鍋、收錢、跟熟客哈拉，心裡那個聲音又冒出來了：『這我也會啊，何必替人賣肝？』台灣人骨子裡都住著一個頭家魂——薪水的天花板看得見，但自己當老闆，天花板是自己拆的。",
+    meme:{scene:"deal", top:"替人賣肝月領死薪水", bot:"不如自己當頭家賣肝", tag:"創業"},
+    choices:[
+      {label:"想想就好，明天還要打卡上班", eff:{hap:2,mny:1}, flags:{r83step:99}, res:"你把那個念頭按回肚子裡——創業聽起來很爽，但房租、押金、進貨、被倒帳……光想就累。你默默把宵夜吃完，明天還是乖乖去當那顆螺絲釘。安穩有安穩的好，至少不會半夜醒來煩惱明天的食材錢。"},
+      {label:"不幹了，老子要自己開一間！", eff:{hap:3,mny:-2,hp:-1}, flags:{r83step:1, r83_quit:true}, res:"你遞出辭呈那天，主管問你想清楚沒，你說：『我想清楚我不想再幫別人想清楚了。』走出公司大門那一刻，海闊天空——雖然口袋裡只剩存款和一身膽量。頭家人生，正式開機。"},
+      {label:'<i class="gtag">💼在職限定</i> 不裸辭，先斜槓副業試水溫', cond:s=>s.flags.employed, gate:true, eff:{hp:-2,int:2,mny:1}, flags:{r83step:1, r83_slash:true}, res:"你沒衝動裸辭，而是白天上班、晚上擺攤，用斜槓當創業的試膽考。蠟燭兩頭燒、睡眠剩一半，但至少有底薪墊著，賠了也不會見骨。這是這代人最務實的創業姿勢：一隻腳先踩穩，另一隻才敢往外跨。"},
+    ]},
+  {id:"r83_biztype", hidden:true, once:true, ic:"🏪", nm:"挑一門生意做", r83node:"biztype",
+    title:"頭家魂發動：要賣什麼？", text:"決定當頭家是一回事，賣什麼又是另一場修行。你攤開這座島最熱血也最殘酷的創業地圖——每一格都有人發財，也都有人收攤。你深吸一口氣，把手指落在其中一格上。選業態就像選人生難度，沒有最好的，只有最不後悔的。",
+    meme:{scene:"food", top:"創業地圖選一格", bot:"格格有人賺 格格有人倒", tag:"創業"},
+    choices:[
+      {label:"🌃 夜市擺攤：低成本、現金流、看天吃飯", eff:{hp:-1,mny:1}, flags:{r83step:2, r83biz:"yeshi"}, res:"你租了個攤位、添了台推車，正式加入夜市游擊隊。本小、利薄、收現金，最怕的不是賠錢，是下雨——一場西北雨，整晚的食材就跟著泡湯。但人潮一旺，那種一手收錢一手出餐的節奏感，比上班打卡爽快太多了。"},
+      {label:"🧋 手搖飲：飽和紅海、品牌迷思、開在你家樓下", eff:{mny:1,apr:1}, flags:{r83step:2, r83biz:"drink"}, res:"你押寶這座島的國民飲料。手搖店三步一間、五步一家，紅海到不能再紅，但只要選對點、調對甜度，照樣有人天天來報到。你開始研究珍珠 Q 度、糖冰客製、外送上架——賣的是飲料，拚的是這條街的人氣戰。"},
+      {label:"🍗 雞排鹽酥雞：香味就是廣告、油溫就是命脈", eff:{hp:-1,hap:1}, flags:{r83step:2, r83biz:"chicken"}, res:"你支起一口大油鍋，整條街都聞得到你的事業。雞排鹽酥雞是這座島的深夜療癒系，景氣再差，總有人想靠一份炸物續命。你的成本表跟著黃豆油、雞胸肉的批發價心驚膽跳，但那聲『老闆，雞排辣不切！』就是最美的業績鈴。"},
+      {label:"🍳 早餐店：起得比雞早、賺得比鄰居穩", eff:{hp:-2,mny:1}, flags:{r83step:2, r83biz:"breakfast"}, res:"你盤下巷口一間早餐店，從此凌晨四點半的鬧鐘成了你的事業夥伴。鐵板滋滋、奶茶嘩嘩，熟客一進門你就知道他要『大冰奶、蛋餅加辣』。利潤不驚人但細水長流，最大的敵人不是同行，是你那快撐不住的生理時鐘。"},
+      {label:"🏬 加盟連鎖：交加盟金、靠總部、當個半自由頭家", eff:{mny:-3,hap:1}, flags:{r83step:2, r83biz:"franchise"}, res:"你不想從零摸索，索性繳了一筆加盟金，掛上知名招牌開店。SOP、物料、教育訓練總部全包，看似輕鬆上手——但合約裡那些抽成、保證進貨量、裝潢指定廠商的條款，你簽的時候沒細看，將來會慢慢還。當頭家，原來也有『半自由』這種規格。"},
+    ]},
+  {id:"r83_money", hidden:true, once:true, ic:"💰", nm:"開店的第一桶金", r83node:"money",
+    title:"錢從哪裡來？", text:"創業最現實的一關來了：押金、裝潢、設備、第一批進貨——還沒開張，鈔票就先飛走一疊。你盯著試算表上那個缺口，面前兩條路：穩穩用自己的老本慢慢做，還是借一筆、標個會，把規模一次拉滿？這座島的頭家，多半都在這一步賭過一把。",
+    meme:{scene:"deal", top:"還沒開張", bot:"錢就先飛走一疊", tag:"創業"},
+    choices:[
+      {label:'<i class="gtag">⚖️財富檢定・骰0~40需70</i> 跟銀行貸款＋標會調頭寸，一次把規模拉滿', sr:{k:"mny", need:70, spread:40,
+        win:{eff:{mny:10,hp:-5,hap:-2}, flags:{r83w_money:true}, res:"💰 你信用夠、財報漂亮，銀行願意放款，巷口的會你也標到了——銀彈到位，設備一次添足、店面裝潢到位，開幕氣勢輸人不輸陣。代價是每個月的還款日像一把懸在頭上的刀，你從此睡前都在心算現金流，肝先抵押給了利息。"},
+        lose:{eff:{mny:-11,hap:-3,int:3}, res:"💸 你高估了自己的調度能力，貸款利息加上會錢，每月固定失血。更慘的是跟的那個會中途被會頭倒了，本金有去無回。你學到創業第一堂硬課：借來的膽，是要還利息的；別人的錢，從來不是免費的勇氣。"}}, flags:{r83step:3, r83_loan:true}},
+      {label:"有多少錢做多少事，自有資金慢慢滾", eff:{mny:2,hp:1,hap:1}, flags:{r83step:3, r83_selffund:true}, res:"你決定不借不標，用自己存的老本起步。規模小、設備二手、裝潢自己刷油漆，開得寒酸了點，但沒有任何人能來催你還錢。生意做得慢，心臟卻很穩——你信奉的是阿嬤那套：『有一塊做一塊，毋通寅吃卯糧。』"},
+    ]},
+  {id:"r83_grow", hidden:true, once:true, ic:"📈", nm:"要不要展店", r83node:"grow",
+    title:"生意上軌道之後：展店還是守成？", text:"撐過開幕的兵荒馬亂，你的店總算站穩了腳跟，熟客越來越多。這時候誘惑來了：要不要趁勢插旗第二家、第三家，把招牌做成連鎖？還是守好這一家、把日子過穩？展店是放大器，會放大你的營收，也會放大你的麻煩。",
+    meme:{scene:"work", top:"展店放大營收", bot:"也放大你的災難", tag:"創業"},
+    choices:[
+      {label:'<i class="gtag">⚖️魅力檢定・骰0~40需68</i> 展店！趁勢插旗，把招牌做成連鎖', sr:{k:"apr", need:68, spread:40,
+        win:{eff:{mny:9,hp:-6,hap:2}, flags:{r83w_grow:true}, res:"📈 你的人格魅力鎮得住場面，找股東、談店面、帶店長都有你的一套，第二家、第三家順利開出，招牌開始在這座島上複製貼上。帝國的雛形成形了——代價是你從一個顧店的頭家，變成一個天天救火的管理者，分身乏術、頭髮一把把掉，規模越大，能睡的覺越少。"},
+        lose:{eff:{mny:-10,hap:-4,hp:-2}, res:"📉 你展店展得太急，新店的人潮沒料想中旺，員工難請、店長難找，幾家分店同時失血，把原本那家賺的也一起拖下水。你痛悟一個道理：一家店會賺，不代表十家店會賺——複製成功，從來比創造成功更難。"}}, flags:{r83step:4, r83_expand:true}},
+      {label:"一家顧好就好，守成也是一種本事", eff:{mny:2,hap:2,hp:1}, flags:{r83step:4, r83_keep:true}, res:"你選擇守好手上這一家，把每個熟客的名字、每樣餐點的細節都顧到極致。朋友笑你沒野心，你回：『開十家店天天失眠，不如一家店天天睡飽。』你要的不是帝國，是一個能安穩做到老、養得起一家人的小店。守成，其實是另一種看得很開的勇敢。"},
+    ]},
+  {id:"r83_quality", hidden:true, once:true, ic:"🍢", nm:"用料的良心拉鋸", r83node:"quality",
+    title:"成本壓力下的良心拉鋸", text:"房東又漲租、外送平台抽三成、食材成本一路飆，利潤被夾得越來越薄。這天供應商給你兩個報價：好料貴一截、次料便宜一半。客人吃得出來嗎？也許吃不出來。但你心裡那把尺知道，這一刀切下去，切的是成本，也是你這塊招牌的命。",
+    meme:{scene:"doubt", top:"好料貴一截", bot:"客人吃得出來嗎", tag:"創業"},
+    choices:[
+      {label:'<i class="gtag">⚖️智力檢定・骰0~40需66</i> 拚 CP 值用好料，靠口碑長線經營', sr:{k:"int", need:66, spread:40,
+        win:{eff:{mny:8,apr:4,hp:-4}, flags:{r83w_quality:true}, res:"🍢 你算準了一筆帳：好料雖貴，但回頭客與口碑是會利滾利的。你把用料透明化、份量給好給滿，網友自發打卡推爆，排隊人龍繞過街角。代價是毛利薄、你得靠走量硬撐，整天泡在店裡累到脫形——但你賺的是別人偷不走的東西：信任。"},
+        lose:{eff:{mny:-9,hap:-3,int:3}, res:"😮‍💨 你堅持用好料，成本卻怎麼都壓不下來，定價拉高一點客人就跑去隔壁更便宜的那家。你撐著良心做生意，月底結算卻常常白忙一場。你開始懷疑：在一個比價比到骨子裡的市場，堅持品質到底是美德，還是不會算數？"}}, flags:{r83step:5, r83_cp:true}},
+      {label:"偷工減料壓成本，能多賺一天是一天", eff:{mny:5,hap:-3,apr:-2}, flags:{r83step:5, r83_cut:true}, res:"你咬牙換了便宜貨：油回鍋多撐幾次、用料默默縮水、份量悄悄變小。短期內成本壓下來、帳面好看了不少，你說服自己『大家都馬這樣』。只是夜深人靜時，你會想起當初開店那股『做好吃的東西給人』的傻勁——它好像，被你親手收進了冷凍庫最底層。"},
+    ]},
+  /* ---- R83 結局 ×5（由 r83BizPick 依累積旗標確定性計分擇一插播；picker 已落地 r83_endtype/r83_end_* 旗標）---- */
+  {id:"r83_end_bust", hidden:true, once:true, ic:"📉", nm:"慘賠收攤", r83node:"end",
+    title:"鐵門拉下的那一天", text:"撐到最後，你還是把鐵門拉了下來。可能是食安出了包上了地方新聞、可能是借的錢滾成了還不完的雪球、也可能單純是人潮退了、撐不住了。你站在清空的店裡，看著牆上那塊用過的招牌，心裡五味雜陳——創業這場仗，你交了一筆很貴的學費。",
+    meme:{scene:"midlife", top:"開店夢想", bot:"變成一身負債", tag:"創業"},
+    choices:[
+      {label:"認賠收場，把這身債和教訓一起扛起來", eff:{mny:-6,hap:-3,int:4}, flags:{r83step:99, bankrupt:true}, res:"你把設備賤賣、把債務分期，回頭去找了份工作慢慢還。夜深時你不是不後悔，但更多的是認了——這座島上，十個頭家九個倒，你只是親身把那句俗話走了一遍。至少你敢開過：有些人連夢都不敢做，你做了，還賠得起。下次，你會更聰明。"},
+      {label:"擦乾眼淚，告訴自己『至少我敢開過』", eff:{hap:2,hp:-2,int:2}, flags:{r83step:99, bankrupt:true}, res:"你沒讓自己沉在懊悔裡太久。收攤那晚你請倒店前最後幾個熟客吃了頓飯，笑著說：『多謝你們捧場這麼久。』創業教會你的，是把一手爛牌打完的勇氣。負債會還完，但那段當頭家、決定自己人生的日子，誰也拿不走。"},
+    ]},
+  {id:"r83_end_cozy", hidden:true, once:true, ic:"☕", nm:"小確幸穩定", r83node:"end",
+    title:"一間養得起日子的小店", text:"你的店沒有大紅大紫，但也從沒倒過。日復一日地開門、備料、招呼那些叫得出名字的老主顧，月底結算剛好夠付房租、養家、偶爾犒賞自己一頓好的。這不是什麼勵志故事，卻是這座島上最難得的一種成功：穩穩地，活下來了。",
+    meme:{scene:"luck", top:"沒有大紅大紫", bot:"但也穩穩活下來了", tag:"創業"},
+    choices:[
+      {label:"知足常樂，把小店做成生活的一部分", eff:{hap:5,mny:2,hp:-1}, flags:{r83step:99, r83_cozyowner:true}, res:"你想通了：不是每個頭家都要當帝國的王，能靠自己一雙手養活一家人、過得有滋有味，已經贏過太多人。熟客的一句『老闆今天氣色不錯喔』，比上市鐘聲更讓你踏實。你的店，最終成了你和這條街最溫柔的牽絆。"},
+      {label:"守著穩定，偶爾還是會想『如果當初衝一波』", eff:{hap:3,int:2}, flags:{r83step:99, r83_cozyowner:true}, res:"你過得安穩，但偶爾打烊後一個人收店時，還是會想像那條沒走的路——如果當初膽子大一點、借錢展店，現在會不會是另一番光景？想歸想，你最終還是笑著鎖上門：穩穩的幸福不刺激，但它最大的好處是，它真的留得住。"},
+    ]},
+  {id:"r83_end_ipo", hidden:true, once:true, ic:"🔔", nm:"上市上櫃・連鎖帝國", r83node:"end",
+    title:"從一家小店到敲響上市鐘", text:"誰能想到，當年那間寒酸的小店，會一路展成全島插旗的連鎖品牌，最後站上交易所敲響上市鐘。鎂光燈下，你握著那支槌，想起凌晨備料、被房東漲租、被員工放鳥的那些日子。台灣囡仔靠一門小生意翻身的傳奇，這次主角是你。",
+    meme:{scene:"luck", top:"當年寒酸的小店", bot:"今天敲上市鐘", tag:"創業"},
+    choices:[
+      {label:"敲鐘上市，把當年的賭注兌現成傳奇", eff:{mny:12,hap:8,hp:-5}, flags:{r83step:99, ipo:true, r83_empireboss:true}, res:"🔔 鐘聲響起，股票代號跳上看板，你的身家翻了好幾翻。從夜市推車到上市公司，這條路你走了大半輩子，磨掉的頭髮和肝換來了財富自由。台下記者問你成功祕訣，你笑說：『沒有祕訣，就是倒過很多次都還站得起來。』這座島，終究是有夢的人玩得起的。"},
+      {label:"功成名就，卻有點懷念顧小店的單純", eff:{mny:10,hap:4,int:3}, flags:{r83step:99, ipo:true, r83_empireboss:true}, res:"🔔 你成了人人稱羨的連鎖帝國老闆，財報漂亮、版圖遼闊。但夜深人靜，你偶爾會懷念當年那間只有你一個人顧的小店——那時候煩惱很小，快樂很真。規模給了你財富與名聲，卻也讓你離鍋鏟與人情味越來越遠。成功是甜的，只是後勁有點苦。"},
+    ]},
+  {id:"r83_end_franchtrap", hidden:true, once:true, ic:"🪤", nm:"被加盟總部坑", r83node:"end",
+    title:"加盟合約裡的隱形枷鎖", text:"你以為掛上知名招牌就能躺著賺，沒想到當年沒細看的合約，一條條都長出了牙。指定廠商進貨價比市場貴三成、保證採購量壓得你喘不過氣、總部一聲令下就要你花錢重新裝潢，連隔壁巷口都能再開一家『自己人』來分你的客。你這才看懂：你不是頭家，你是總部的長期提款機。",
+    meme:{scene:"doubt", top:"以為掛招牌躺著賺", bot:"原來是總部的提款機", tag:"創業"},
+    choices:[
+      {label:"認清現實，咬牙把加盟約熬到期再說", eff:{mny:-5,hap:-3,int:4}, flags:{r83step:99, r83_franchvictim:true}, res:"你算過違約金，發現提前解約比繼續被剝皮更痛，只好咬牙把合約熬到底。這幾年你替總部打了一場漂亮的江山，自己卻沒存下幾個錢。你把這段經歷講給想加盟的後輩聽：『加盟金只是入場券，真正的賭注，藏在你沒空看的那幾頁附約裡。』"},
+      {label:"壯士斷腕，賠違約金也要脫離總部自立", eff:{mny:-6,hap:1,int:3}, flags:{r83step:99, r83_franchvictim:true}, res:"你受夠了當提款機，咬牙付了違約金、拆下招牌，改掛自己的名字重新出發。短期大失血，但至少從今以後，賺多賺少都是自己的。脫離總部那天你反而睡得特別香——原來最貴的成本，從來不是違約金，是替別人作嫁卻喊不出自己名字的那種窩囊。"},
+    ]},
+  {id:"r83_end_legend", hidden:true, once:true, ic:"🏆", nm:"做成在地名店", r83node:"end",
+    title:"巷口那間人人都知道的老店", text:"你沒有上市、沒有連鎖，但你把這一家店，做成了在地人從小吃到大的傳奇。觀光客按著美食地圖來朝聖，老主顧帶著下一代來回味，媒體三不五時來採訪，你那塊被油煙燻黑的招牌，成了這條街的地標。財富不是最頂的，但口碑這東西，千金難買。",
+    meme:{scene:"food", top:"沒上市沒連鎖", bot:"卻成了在地傳奇", tag:"創業"},
+    choices:[
+      {label:"守著這塊招牌，把好味道一代代傳下去", eff:{hap:7,apr:5,mny:3}, flags:{r83step:99, r83_localhero:true}, res:"🏆 你把店當成作品在顧，用料實在、味道幾十年如一日，硬是把一間小店熬成了在地名店。你不是最有錢的頭家，卻是最被記得的那個。有人想出高價買你的品牌、把你連鎖化，你都笑著拒絕：『有些味道，一量產就走味了。』這塊招牌的價值，從來不在財報上。"},
+      {label:"把店交給接班的孩子，自己功成身退", eff:{hap:6,mny:2,hp:1}, flags:{r83step:99, r83_localhero:true}, res:"🏆 你的店做成了傳家寶，孩子願意接手，老味道有了下一棒。你退到後場當顧問，看著熟客的孫子也來排隊，恍如隔世。你這輩子沒做成什麼大事業，卻把一間小店，活成了一條街的共同記憶——這種成功，交易所掛不了牌，但比任何股價都長久。"},
+    ]},
+
+  /* =====================================================================
      R57 台味理財人生橫向事件線：
      ① 一般理財事件 ×6（跟會/儲蓄險親戚/樂透刮刮樂/股市韭菜/定存vs通膨/頭期款），
         主要落在工作期/中年期；屬性驅動回扣 R44——智力 sr 檢定投資判斷、
@@ -8926,6 +9052,51 @@ function r81EraPick(){
     return ev;
   }
   return null;
+}
+/* ---- R83 台味創業開店人生支線攔截器：階梯式狀態機（純查 S.flags.r83step／旗標，零裸 rng／零 Math.random）----
+   入口 r83_spark 由種子化雜湊閘低機率攔截；進鏈後每節點選項都帶 flags:{r83step:N+1}，故不論模擬亂選都會推進、
+   鏈必走完。結局依累積旗標確定性計分擇一（5 選 1），picker 落地 r83_endtype/r83_end_* 供成就/回顧/戰績卡。
+   置於 r81EraPick 之後、一般池之前；hidden:true → 永不進 eligible 隨機池、不計入 R46 觸達率落空名單；
+   舊存檔無 r83step → 入口閘照常評估，未命中即完全無感（不寫任何旗標）。 */
+const R83_NODE = {}; EVENTS.forEach(e=>{ if(e.r83node) R83_NODE[e.r83node]=R83_NODE[e.r83node]||{}; if(e.r83node) (R83_NODE[e.r83node][e.id]=e); });
+function r83BizById(id){ return EVENTS.find(e=>e.id===id)||null; }
+function r83Roll(id){ return r41Hash(r41SeedStr()+"|r83|"+id)/4294967296; }
+/* 依累積旗標確定性計算結局 id（零 rng；偷工＞加盟坑＞展店帝國＞在地名店＞借貸壓垮＞小確幸） */
+function r83EndingId(f){
+  const wins=(f.r83w_money?1:0)+(f.r83w_grow?1:0)+(f.r83w_quality?1:0);
+  if(f.r83_cut) return "r83_end_bust";                              // 偷工減料 → 食安/口碑崩盤收攤
+  if(f.r83biz==="franchise" && wins<=1) return "r83_end_franchtrap";// 加盟業態又經營不順 → 被總部坑
+  if(f.r83_expand && wins>=2) return "r83_end_ipo";                 // 展店且檢定多過 → 連鎖帝國上市
+  if(f.r83_cp && !f.r83_expand && wins>=2) return "r83_end_legend"; // 守成＋拚好料＋過關 → 在地名店
+  if(wins===0 && f.r83_loan) return "r83_end_bust";                // 全程翻車又背債 → 慘賠收攤
+  return "r83_end_cozy";                                            // 其餘 → 小確幸穩定
+}
+function r83BizPick(){
+  if(!S || !S.alive || !S.attr || !S.flags) return null;
+  if(!S.seen) S.seen={};
+  const step=S.flags.r83step||0;
+  if(step>=99) return null;                                        // 已收尾（含放棄/結局）→ 永不再插播
+  // 入口：尚未起念。年齡窗口＋未退休＋種子化雜湊低機率閘（舊存檔無旗標時此分支唯一觸點，未命中零殘留）
+  if(step===0){
+    if(S.flags.retired) return null;
+    if(S.age<25 || S.age>48) return null;
+    if(r83Roll("spark")>=0.42) return null;                        // 確定性閘：約 42% 合格生命才起念創業
+    return r83BizById("r83_spark");
+  }
+  // 進鏈後：依 step 確定性返回對應節點（已 seen 防重觸；年齡只設寬鬆上限護欄，確保模擬內走得完）
+  let id=null;
+  if(step===1) id="r83_biztype";
+  else if(step===2) id="r83_money";
+  else if(step===3) id="r83_grow";
+  else if(step===4) id="r83_quality";
+  else if(step===5){
+    id=r83EndingId(S.flags);
+    if(id && !S.seen[id]){ S.flags.r83_endtype=id; S.flags["r83_endhit"]=true; }  // picker 落地結局型別供成就/回顧
+  }
+  if(!id) return null;
+  const ev=r83BizById(id);
+  if(!ev || S.seen[ev.id]) return null;
+  return ev;
 }
 function eligible(){
   const __sk = activeSeasonKeys();   // R10 節令池：只由日期決定（挑戰=挑戰日、一般=今天），不消耗 rng
@@ -9481,6 +9652,9 @@ function resolveYear(){
   // R81 鬼島時代大事記：日曆年命中時代窗口即確定性插播（零裸 rng；置於彩蛋之後、一般池之前）
   const era81=r81EraPick();
   if(era81) return showEvent(era81);
+  // R83 台味創業開店人生支線：階梯式狀態機，命中即確定性插播（零裸 rng；置於 R81 之後、一般池之前）
+  const biz83=r83BizPick();
+  if(biz83) return showEvent(biz83);
   const pool=eligible();
   if(pool.length && chance(0.78)){
     // 優先池：此刻成立的門檻事件 + 帶 flag 的因果鏈回呼。
@@ -11635,6 +11809,7 @@ function screenSummary(cat){
       ${(S.era&&R55_MAP[S.era])?`<p class="etext">${R55_MAP[S.era].ic} 你生於【${R55_MAP[S.era].nm}】——${R55_MAP[S.era].sum}</p>`:""}
       ${r50SummaryHTML()}
       ${r81EraReviewHTML()}
+      ${r83BizReviewHTML()}
       <div class="stats" style="margin:12px 0">${attrRows}</div>
       ${attrPersonaHTML()}
       ${r41WishHTML()}
@@ -13161,6 +13336,13 @@ function buildBragText(style){
   if(Array.isArray(S.r81log) && S.r81log.length) lines.push(salty
     ? `📜 親身見證 ${S.r81log.length} 個鬼島時代——歷史課本我是活著的那一本`
     : `📜 見證時代 ${S.r81log.length} 個：${S.r81log.map(e=>e.tag).filter(Boolean).join("、")}`);
+  // R83 台味創業戰績：沒創業/舊局自動省略，零 rng
+  if(S.flags && S.flags.r83_endtype && R83_ENDNM[S.flags.r83_endtype]){
+    const en=R83_ENDNM[S.flags.r83_endtype], bn=R83_BIZNM[S.flags.r83biz]||"自己的小店";
+    lines.push(salty
+      ? `🏪 開過${bn.replace(/^\S+\s/,"")}當頭家，結局「${en.replace(/^\S+\s/,"")}」——十個頭家九個倒，我至少敢開`
+      : `🏪 創業戰績：${bn} → ${en}`);
+  }
   // R56 劇本局標記：非劇本局/舊存檔自動省略，零 rng
   const sc47=r56Script();
   if(sc47) lines.push(`🎭 劇本「${sc47.nm}」${S.scriptDone?"通關":"未通關"}${salty?(S.scriptDone?"——命題作文照樣寫出滿級分":"——是劇本太難，不是我不會演"):""}`);
