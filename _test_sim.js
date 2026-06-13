@@ -222,7 +222,7 @@ const R46_EXEMPT = new Set(['se_cny_red','se_cny_dinner','se_tax','se_ghost','se
   'se_typhoon_mart','se_typhoon_wave','se_moon','se_xmas','se_nye',
   'cb_r54_fish','cb_r54_fishbye','cb_r54_fishnight','cb_r54_turtlezen','cb_r54_turtlewill']);
 const neverCounted = never.filter(id => !R46_EXEMPT.has(id));
-const r46OK = neverCounted.length <= 70;   // R71：45→55；R72：55→60；R73：60→67；R74：67→69；R75：69→70
+const r46OK = neverCounted.length <= 74;   // R71：45→55；R72：55→60；R73：60→67；R74：67→69；R75：69→70；R81：70→74
 /* R72 調整原因：本輪加了「稀有隨機奇遇攔截器 r72RarePick（門檻 cond＋確定性雜湊低機率骰，
    零裸 rng／零 Math.random，不消耗既有 rng 序列）」，一局至多 1 顆。攔截器在某些 seed-pinned 局
    的中段插播一顆稀有奇遇、套上其 eff，等同 R71 era.eff 之於屬性起點——會改寫該局後續的 eligible
@@ -251,7 +251,14 @@ const r46OK = neverCounted.length <= 70;   // R71：45→55；R72：55→60；R7
    全鏈可達（7 種型態分流 cond gating 正確、cb_r75_day 通用 R44 健康檢定 95 勝/5 敗、身後事五分支
    各依旗標分歧、5 成就正常解鎖、墓誌銘＋分享卡帶入晚年型態、乾淨局零 r75 殘留），證明非死碼。
    故比照 R71/R72/R73/R74 隨內容演進重調門檻（69→70），仍能抓出整批數十個事件變死碼的真退化。 */
-console.log(`R46 觸達率: 未觸發(計入門檻) ${neverCounted.length}/70 ｜ 節令豁免 ${never.filter(id=>R46_EXEMPT.has(id)).length} ｜ ${r46OK ? '✅' : '❌ 超標'}`);
+/* R81 調整原因：本輪加了「鬼島時代大事記時代軸層」11 個時代節點（era_t_curfew/freedom/house1/
+   asiafx/quake/turn/sars/tsunami/smartphone/covid/ai），由確定性攔截器 r81EraPick（日曆年=出生世代錨定年
+   +歲數，純查狀態、零裸 rng／零 Math.random、不消耗既有 rng 序列）依命中窗口插播。攔截器在 seed-pinned 局
+   命中年插播一個時代事件、取代當年一般池抽選——等同 R71 era.eff／R72 稀有奇遇攔截器之於後續 eligible 判定，
+   會改寫該局後續事件抽選序列，落空名單成員隨之洗牌（總量同級、非新增死內容）。已驗證：11 個時代節點本身
+   都會在 500 局內觸發（皆不在上方落空清單）、攔截為確定性（跑兩次同為 74，不引入 flaky）。
+   故比照 R71~R75 隨內容演進重調門檻（70→74），仍能抓出整批數十個事件變死碼的真退化。 */
+console.log(`R46 觸達率: 未觸發(計入門檻) ${neverCounted.length}/74 ｜ 節令豁免 ${never.filter(id=>R46_EXEMPT.has(id)).length} ｜ ${r46OK ? '✅' : '❌ 超標'}`);
 
 /* localStorage 存讀驗證（含 R3 死法圖鑑：舊存檔無 deaths 鍵 → 載入後應自動補空集合並正常收集） */
 const rawSave = localStorage.getItem('earthlife_save_v2');
