@@ -12482,63 +12482,88 @@ function deathbookCount(){
    chk(s,sv) 收 (S, SAVE)，全程 try 包覆，舊存檔缺鍵一律當未命中不炸。
    ========================================================================= */
 const HIDDEN_ENDINGS = [
-  {id:"he_pentagod", ic:"🌈", nm:"五維封頂・人類豪華版",
+  {id:"he_pentagod", ic:"🌈", nm:"五維封頂・人類豪華版", rar:2,
    cond:"謝幕時五項屬性全部 90 以上",
    hint:"把健康、智力、顏值、財富、快樂全部練到 90 以上再謝幕——對，全部，一項都不能漏…",
    text:"健康、智力、顏值、財富、快樂全部 90 起跳——系統懷疑你開掛，人工審核三次後只能蓋章放行：這隻角色是出廠就該直送博物館的人類豪華版。別人玩地球 Online，你玩的是創意工坊。",
    chk:(s)=>{ const a=s.attr; return a.hp>=90&&a.int>=90&&a.apr>=90&&a.mny>=90&&a.hap>=90; }},
-  {id:"he_bond3", ic:"🏘️", nm:"整條街都是你的人",
+  {id:"he_bond3", ic:"🏘️", nm:"整條街都是你的人", rar:1,
    cond:"同一局走完阿珠、阿標、半仙伯三條跨階段人物線",
    hint:"人生路上遇到的那三個老面孔——鄰居、死對頭、廟口的半仙，每一條線都陪到最後…",
    text:"鄰居阿珠、死對頭阿標、廟口半仙伯——三條人生伏線你一條都沒漏接，五個階段場場全勤。別人的人生是單人主線，你的人生是整個社區的群像劇，里長都該頒你一面終身成就獎牌。",
    chk:(s)=>{ const f=s.flags||{}; return !!(f.r43_cmfin&&f.r43_rvfin&&f.r43_ftfin); }},
-  {id:"he_gen5", ic:"🏯", nm:"百年家業・第五棒交棒成功",
+  {id:"he_gen5", ic:"🏯", nm:"百年家業・第五棒交棒成功", rar:2,
    cond:"以家族第 5 代（含以上）身分活過 60 歲",
    hint:"傳承、再傳承、再再傳承——讓家族年表一路寫到第五代，而且這一代要活得夠久…",
    text:"家族第五代，還活過一甲子——祖譜翻開全是你們家的接力劇本。第一代打地基、第二代蓋房子，到你這代連祖傳的吐槽都背得滾瓜爛熟。孟婆看到你直接續杯不驗身分：老客戶，老位子。",
    chk:(s)=>(s.gen||0)>=5 && s.age>=60},
-  {id:"he_rarecol", ic:"🗝️", nm:"稀有死法收藏家・最終章",
+  {id:"he_rarecol", ic:"🗝️", nm:"稀有死法收藏家・最終章", rar:2,
    cond:"跨局集滿 6 種稀有死法，且本局以稀有死法謝幕",
    hint:"死法圖鑑的稀有區集到第 6 種的那一局，死神會親自出來迎接…",
    text:"第六種稀有死法入手的瞬間，死神親自出來帶位：「收藏家，老位子。」別人收集郵票、收集公仔，你收集登出方式——死法圖鑑的稀有區快被你逛成自家倉庫，連印刷廠都認得你的香油錢。",
    chk:(s,sv)=>{ if(!s.deathId||!SPECIAL_DEATHS[s.deathId]) return false;
      const d=(sv&&sv.deaths)||{}; return Object.keys(SPECIAL_DEATHS).filter(k=>d[k]).length>=6; }},
-  {id:"he_nothing", ic:"🍂", nm:"兩袖清風・還是活成了傳奇",
+  {id:"he_nothing", ic:"🍂", nm:"兩袖清風・還是活成了傳奇", rar:1,
    cond:"總分 120 以下卻活到 80 歲以上",
    hint:"什麼都沒有，但就是不登出——把「窮到只剩歲數」活成一種境界…",
    text:"總分不到 120，你卻硬是活過 80 歲——沒健康、沒存款、沒顏值，連快樂都像借來的，但你就是不登出。系統盤點再三找不到你活著的理由，最後只好把「活著本身」列為傳奇收錄。",
    chk:(s)=>(s.sum||0)<=120 && s.age>=80},
-  {id:"he_wishS", ic:"🚩", nm:"立旗不倒・嘴上人生全達成",
+  {id:"he_wishS", ic:"🚩", nm:"立旗不倒・嘴上人生全達成", rar:1,
    cond:"開局立的志向達成，且總分衝破 380（S 級）",
    hint:"開局先立一個志向，然後用一條 S 級人生把它原地兌現…",
    text:"開局立的志向不但達成，總分還衝破 380——你是那種尾牙喊「明年業績翻倍」結果真的翻倍的狠人。全公司最怕的就是你：立 flag 不是為了倒，是立給全世界看的。",
    chk:(s)=>!!s.wishDone && (s.sum||0)>=380},
-  {id:"he_ghost", ic:"🎓", nm:"鬼島生存學・榮譽博士",
+  {id:"he_ghost", ic:"🎓", nm:"鬼島生存學・榮譽博士", rar:1,
    cond:"北漂打怪鏈全通關，還活到 65 歲領敬老卡",
    hint:"從北漂新手村一路通關鬼島日常，最難的不是通關，是活著畢業…",
    text:"北漂、租屋、慣老闆、低薪——鬼島新手村的每一關你都用肉身通關，還活到領敬老卡。教科書沒收錄你的事蹟是教育界的損失：你是行走的《鬼島生存學》，校方決定直接授予榮譽博士，論文免交。",
    chk:(s)=>{ const f=s.flags||{}; return !!(f.npiao&&f.ghostchain_done) && s.age>=65; }},
-  {id:"he_egg", ic:"🪺", nm:"程式碼縫隙的旅人",
+  {id:"he_egg", ic:"🪺", nm:"程式碼縫隙的旅人", rar:1,
    cond:"同一局摸滿 2 顆地球 Online 隱藏彩蛋",
    hint:"傳說每局人生最多藏著兩顆彩蛋，全摸到的人，看得見牆後面的世界…",
    text:"一局摸滿兩顆隱藏彩蛋——你不是在玩遊戲，你是在驗收。工程師埋彩蛋時想著「應該沒人找得到」，你找到時想著「就這？」。地球 Online 的程式碼縫隙裡，從此多了一枚你的腳印。",
    chk:(s)=>{ if(typeof R32_EGGS==="undefined"||!s.seen) return false;
      return R32_EGGS.filter(e=>s.seen[e.id]).length>=2; }},
   /* ---- R70 人生分歧鏈專屬隱藏結局（純讀旗標＋年齡確定性，零 rng；未走特定路徑/早逝不觸發）---- */
-  {id:"he_r70a_legacy", ic:"🏯", nm:"百年老店・第三代不熄燈",
+  {id:"he_r70a_legacy", ic:"🏯", nm:"百年老店・第三代不熄燈", rar:2,
    cond:"接家業並把老店做成上市連鎖，還活到 75 歲交棒完成",
    hint:"老家的店要收那年選擇接手、再用腦袋把它做成掛牌連鎖的人，如果還能活到 75 歲親眼看招牌傳下去…",
    text:"你接過一塊快熄燈的招牌，把它做成了交易所裡的代號，又活到看著它穩穩傳給下一代——三代人的香火，在你手上不但沒斷，還燒得比誰都旺。商學院把你寫進案例、老主顧把你當傳奇，孟婆翻名冊時都多看一眼：『這位，是把祖業活成永動機的那個。』",
    chk:(s)=>!!(s.flags&&s.flags.r70a_chainboss)&&s.age>=75},
-  {id:"he_r70b_full", ic:"🧳", nm:"城鄉兩端・這座島我都活過了",
+  {id:"he_r70b_full", ic:"🧳", nm:"城鄉兩端・這座島我都活過了", rar:2,
    cond:"跨局集滿北漂落地生根、中年回流、留鄉創生三種人生收尾",
    hint:"北漂上岸、葉落歸根、留鄉做頭家——這座島的三種活法，分好幾局把它們全走過一遍…",
    text:"北漂上岸、繞一圈回鄉、從沒離開卻把家鄉做成嚮往之地——這座島能怎麼活，你用好幾段人生親自驗收完畢。有人一輩子困在『當初要是去（留）就好了』的假設裡，你把每一種『如果』都真的活過一次。城與鄉、走與留，到你這裡不再是選擇題，是一整本你親手寫完的答案集。",
    chk:(s,sv)=>{ if(!sv) return false; const ach=sv.ach||{}, f=(s&&s.flags)||{};
      const rooted=!!(ach.r70b_rooted||f.r70b_rooted), ret=!!(ach.r70b_return||f.r70b_return), hero=!!(ach.r70b_localhero||f.r70b_localhero);
      return rooted&&ret&&hero; }},
+  /* ---- R100 台味鬼島自嘲稀有結局（純讀屬性峰值／謝幕值＋既有支線結局旗標，零 rng；尺度走低薪過勞買不起房自嘲，不踩政治暴力仇恨）---- */
+  {id:"he_22k", ic:"💸", nm:"22K 戰士・爆肝兌不到一間房", rar:2,
+   cond:"健康巔峰曾破 85，卻在財富 25 以下、健康 30 以下硬撐到 60 歲謝幕",
+   hint:"年輕時明明是頭好壯壯的勞動力，結果一條命全拿去換班表，撐到退休年紀回頭一看戶頭還是那個數字…",
+   text:"年輕時健康破表，是公司眼中最耐操的那塊料；幾十年加班輪班責任制操下來，肝先過保、戶頭卻始終卡在當年那張薪資單的數字。你用一整副好身體換來的，不是一間房，是一句『我們是一家人』。鬼島勞動史替你立碑：這位用命跑完全程，終點線還是租來的。",
+   chk:(s)=>{ const a=s.attr; const pk=(s.peak&&s.peak.hp!=null)?s.peak.hp:a.hp; return a.mny<=25 && pk>=85 && a.hp<=30 && s.age>=60; }},
+  {id:"he_renterforever", ic:"🐌", nm:"無殼蝸牛・房東的終身金主", rar:1,
+   cond:"走完居住支線選擇終身租屋，謝幕時財富 60 以上、活過 65 歲",
+   hint:"明明攢得出頭期款，卻把一輩子的房租準時匯進別人帳戶——錢有，殼始終沒有…",
+   text:"你不是買不起，是這座島把『買得起』的門檻搬到了天花板上。於是你準時繳了三、四十年房租，把別人的第二間、第三間房養得白白胖胖，自己戶頭數字漂亮，卻連一面牆都不掛在自己名下。房東年年寄賀年卡謝謝你——你是他最穩的被動收入，無殼蝸牛界的傳奇金主。",
+   chk:(s)=>{ const f=s.flags||{}; return f.r87_endtype==="r87_end_renter" && (s.attr.mny||0)>=60 && s.age>=65; }},
+  {id:"he_burnout_broke", ic:"🕯️", nm:"過勞之巔・燃盡在打卡鐘前", rar:2,
+   cond:"職涯硬拚到過勞收場，謝幕時財富 30 以下、70 歲前登出",
+   hint:"信了『拚就有』那套，把命押在升遷上，結果升遷沒來、健康先走，戶頭還是空的…",
+   text:"你把『再撐一下就翻身』當座右銘，加班加成全公司最猛、KPI 扛成部門門面——然後在某個還沒領到年終的清晨，倒在打卡鐘前。錢沒賺到、官沒升到、命先燒完。老闆在群組貼了蠟燭表情，隔天職缺就上人力銀行了。鬼島職場最寫實的一課：你拚的是命，公司算的是成本。",
+   chk:(s)=>{ const f=s.flags||{}; return f.r86_endtype==="r86_end_burnout" && (s.attr.mny||0)<=30 && s.age<=70; }},
+  {id:"he_lieflat_zen", ic:"🛋️", nm:"躺平成佛・鬼島頓悟者", rar:1,
+   cond:"職場選擇躺平到底，卻以快樂 80 以上、財富 35 以下活過 75 歲謝幕",
+   hint:"當全島都在內捲，你選擇把卷攤平當坐墊——窮是真的窮，但笑得比誰都久…",
+   text:"當全島為了買不起的房、升不上的官捲生捲死，你冷靜地把那張卷攤平、墊在屁股下，盤腿坐成一尊佛。沒存款、沒頭銜、沒車沒房，卻活得又久又樂，血壓比定存利率還穩。後人爭論你是耍廢還是開悟，你只回一句：『我贏的不是你們的賽道，是不上場。』鬼島內捲時代，唯一笑著畢業的反向勝利組。",
+   chk:(s)=>{ const f=s.flags||{}; const a=s.attr; return f.r86_endtype==="r86_end_lieflat" && a.hap>=80 && a.mny<=35 && s.age>=75; }},
 ];
 const HE_MAP = Object.fromEntries(HIDDEN_ENDINGS.map(h=>[h.id,h]));
+/* R100 稀有度分級：1=★稀有（金）、2=☆☆傳說（紫）；缺 rar 鍵一律當稀有（舊資料零影響） */
+const HE_RARITY = {1:{star:"★", nm:"稀有", col:"#ffd24a"}, 2:{star:"☆☆", nm:"傳說", col:"#c9a3ff"}};
+function heRarity(he){ return HE_RARITY[(he&&he.rar)||1] || HE_RARITY[1]; }
+function heRarityBadge(he){ const r=heRarity(he); return `<span style="color:${r.col};font-size:11px;font-weight:700">${r.star}${r.nm}</span>`; }
 function hiddenEndCount(){ return Object.keys((SAVE&&SAVE.hiddenEnds)||{}).length; }
 /* die() 內呼叫：判定 + 入冊（回寫 S.hiddenEnd / S.hiddenHits / S.newHidden，渲染與分享層純讀） */
 function evalHiddenEndings(){
@@ -13670,6 +13695,7 @@ function r48HiddenHTML(){
     : "";
   return `<div class="panel center" style="margin:10px 0;border:1px solid var(--accent,#ffd24a);background:linear-gradient(180deg,rgba(255,210,74,.10),rgba(255,210,74,.02))">
     <h2 class="etitle raretitle" style="position:relative;display:inline-block">🌟 隱 藏 結 局 達 成${spk}</h2>
+    <p style="margin:2px 0 0"><span style="display:inline-block;border:1px solid ${heRarity(he).col};border-radius:999px;padding:1px 10px;font-size:12px;color:${heRarity(he).col};letter-spacing:1px">${heRarity(he).star} ${heRarity(he).nm}結局</span></p>
     <p style="font-size:17px;font-weight:700;color:var(--accent,#ffd24a);margin:4px 0">${he.ic}【${he.nm}】</p>
     <p class="etext">${he.text}</p>
     ${S.newHidden
@@ -13981,7 +14007,10 @@ function renderCollection(){
     const gh=SAVE.hiddenEnds||{};
     items = HIDDEN_ENDINGS.map(h=>{
       const ok=!!gh[h.id];
-      const tag=`　<span style="color:var(--accent,#ffd24a);font-size:11px">【隱藏】</span>`;
+      // 已解鎖 → 顯示稀有徽章（★稀有／☆☆傳說）；未解鎖 → 只標【隱藏】不爆稀有度、不破梗
+      const tag = ok
+        ? `　<span style="color:var(--accent,#ffd24a);font-size:11px">【隱藏】</span>　${heRarityBadge(h)}`
+        : `　<span style="color:var(--accent,#ffd24a);font-size:11px">【隱藏】</span>`;
       return {ok, html:collRow(ok, ok&&isNewFound("h",h.id), h.ic, h.nm, tag,
         ok?`<b>達成條件：</b>${h.cond}<br>${h.text}`:hintTip(h.hint), foundNote("h",h.id))};
     });
@@ -15294,8 +15323,11 @@ function buildBragText(style){
   if(f.r43_ftfin) fates.push("半仙伯");
   if(fates.length) lines.push(`🏮 一生緣分圓滿：${fates.join("、")}`);
   // R48 隱藏結局稀有標記：命中才加一行（多重命中只標演出主位那個，曬卡夠稀有就好）
-  if(S.hiddenEnd && typeof HE_MAP!=="undefined" && HE_MAP[S.hiddenEnd])
-    lines.push(`🌟 隱藏結局【${HE_MAP[S.hiddenEnd].nm}】達成${salty?"——這行你貼出去沒人敢嘴":""}`);
+  // R100：印上稀有度（★稀有／☆☆傳說），誘導截圖分享
+  if(S.hiddenEnd && typeof HE_MAP!=="undefined" && HE_MAP[S.hiddenEnd]){
+    const _he=HE_MAP[S.hiddenEnd], _r=(typeof heRarity!=="undefined")?heRarity(_he):{star:"★",nm:"稀有"};
+    lines.push(`🌟 ${_r.star}${_r.nm}・隱藏結局【${_he.nm}】達成${salty?"——這行你貼出去沒人敢嘴":""}`);
+  }
   lines.push(lifePick(R47_CLOSE[salty?"salty":"plain"], "r47close"));
   return lines.join("\n");
 }

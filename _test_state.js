@@ -3482,5 +3482,59 @@ ok(r96.balance && r96.deathbook, 'R96 ⑤⑥ 平衡護欄：全鏈選項 eff 每
 ok(r96.noRedline, 'R96 ⑦ 文案紅線：全鏈無政治/暴力/仇恨字串，防災文化自嘲非嘲弄傷亡/族群');
 ok(r96.compat && r96.clean && r96.cleanPlain && r96.reviewSkip && r96.reviewShow, 'R96 ⑧⑨ 零汙染+舊存檔相容：開局/舊save/非天災鏈事件 S.flags 皆無 r96 鍵、沒踏進天災鏈時回顧卡省略、踏進後正常顯示');
 
+// ========================================================================
+// R100 隱藏稀有結局系統：稀有度分級、4 個新台味自嘲結局的真驅動觸發、圖鑑/分享卡稀有徽章、文案紅線
+// ========================================================================
+const r100 = JSON.parse(vm.runInContext(`(function(){
+  const out={};
+  // ① 結構：所有隱藏結局齊備 rar(1|2)/cond/hint/text/chk；HE_RARITY 兩級齊全
+  out.struct = HIDDEN_ENDINGS.every(h=>
+    (h.rar===1||h.rar===2) && typeof h.cond==='string' && h.cond.length>2
+    && typeof h.hint==='string' && h.hint.length>4 && typeof h.text==='string' && h.text.length>10
+    && typeof h.chk==='function');
+  out.rarity = !!(HE_RARITY[1]&&HE_RARITY[2]&&typeof heRarity==='function'&&typeof heRarityBadge==='function');
+  out.rarityDefault = heRarity({}).nm==='稀有' && heRarity({rar:2}).nm==='傳說';
+  out.badge = heRarityBadge({rar:2}).indexOf('傳說')>=0 && heRarityBadge({rar:1}).indexOf('稀有')>=0;
+  // ② 4 個新結局存在＋稀有度正確
+  const NEW={he_22k:2, he_renterforever:1, he_burnout_broke:2, he_lieflat_zen:1};
+  out.newExist = Object.keys(NEW).every(id=>{ const h=HE_MAP[id]; return h&&h.rar===NEW[id]; });
+  // ③ 真驅動觸發：滿足條件的 S 必中、差一格必不中（純讀屬性/旗標/peak/age，零 rng）
+  const mk=(o)=>Object.assign({attr:{hp:50,int:50,apr:50,mny:50,hap:50},flags:{},peak:{},age:50},o);
+  // he_22k：mny<=25 && peak.hp>=85 && hp<=30 && age>=60
+  out.t22k_hit  =  HE_MAP.he_22k.chk(mk({attr:{hp:28,int:50,apr:50,mny:20,hap:50},peak:{hp:88},age:62}));
+  out.t22k_miss = !HE_MAP.he_22k.chk(mk({attr:{hp:28,int:50,apr:50,mny:20,hap:50},peak:{hp:80},age:62})) // peak 不足
+              &&  !HE_MAP.he_22k.chk(mk({attr:{hp:28,int:50,apr:50,mny:40,hap:50},peak:{hp:88},age:62})); // 不夠窮
+  // he_renterforever：r87_end_renter && mny>=60 && age>=65
+  out.trent_hit  =  HE_MAP.he_renterforever.chk(mk({attr:{hp:50,int:50,apr:50,mny:70,hap:50},flags:{r87_endtype:'r87_end_renter'},age:68}));
+  out.trent_miss = !HE_MAP.he_renterforever.chk(mk({attr:{hp:50,int:50,apr:50,mny:70,hap:50},flags:{r87_endtype:'r87_end_owner'},age:68})) // 非租屋結局
+               &&  !HE_MAP.he_renterforever.chk(mk({attr:{hp:50,int:50,apr:50,mny:40,hap:50},flags:{r87_endtype:'r87_end_renter'},age:68})); // 沒錢就不是金主梗
+  // he_burnout_broke：r86_end_burnout && mny<=30 && age<=70
+  out.tburn_hit  =  HE_MAP.he_burnout_broke.chk(mk({attr:{hp:10,int:50,apr:50,mny:20,hap:30},flags:{r86_endtype:'r86_end_burnout'},age:58}));
+  out.tburn_miss = !HE_MAP.he_burnout_broke.chk(mk({attr:{hp:10,int:50,apr:50,mny:20,hap:30},flags:{r86_endtype:'r86_end_climb'},age:58})) // 升遷不算過勞
+               &&  !HE_MAP.he_burnout_broke.chk(mk({attr:{hp:10,int:50,apr:50,mny:20,hap:30},flags:{r86_endtype:'r86_end_burnout'},age:80})); // 太老不算燃盡
+  // he_lieflat_zen：r86_end_lieflat && hap>=80 && mny<=35 && age>=75
+  out.tflat_hit  =  HE_MAP.he_lieflat_zen.chk(mk({attr:{hp:50,int:50,apr:50,mny:25,hap:85},flags:{r86_endtype:'r86_end_lieflat'},age:80}));
+  out.tflat_miss = !HE_MAP.he_lieflat_zen.chk(mk({attr:{hp:50,int:50,apr:50,mny:25,hap:60},flags:{r86_endtype:'r86_end_lieflat'},age:80})) // 不夠快樂
+               &&  !HE_MAP.he_lieflat_zen.chk(mk({attr:{hp:50,int:50,apr:50,mny:25,hap:85},flags:{r86_endtype:'r86_end_lieflat'},age:70})); // 不夠長壽
+  // ④ evalHiddenEndings 端到端：造一個 22K 狀態，跑判定 → S.hiddenEnd 命中、首抽入冊
+  startGame(); SAVE.hiddenEnds={};
+  S.attr={hp:28,int:50,apr:50,mny:20,hap:50}; S.peak={hp:88}; S.age=62; S.flags={};
+  evalHiddenEndings();
+  out.eval = S.hiddenEnd==='he_22k' && S.newHidden===true && SAVE.hiddenEnds.he_22k===true;
+  // ⑤ 文案紅線：4 新結局 nm/cond/hint/text 不得含政治/暴力/仇恨字串（自嘲非仇恨）
+  const RED=['共產','統一','獨立','國民黨','民進黨','政黨','邪教','低能','智障','廢物','去死','該死','活該死'];
+  let blob=''; Object.keys(NEW).forEach(id=>{ const h=HE_MAP[id]; blob+=(h.nm||'')+(h.cond||'')+(h.hint||'')+(h.text||''); });
+  out.noRedline = RED.every(w=>blob.indexOf(w)<0);
+  return JSON.stringify(out);
+})()`, sandbox));
+ok(r100.struct && r100.rarity && r100.rarityDefault && r100.badge, 'R100 ① 隱藏結局結構完整：每筆齊備 rar(1|2)/cond/hint/text/chk；HE_RARITY 兩級＋heRarity/heRarityBadge（缺 rar 預設稀有）');
+ok(r100.newExist, 'R100 ② 4 個新台味自嘲稀有結局齊備＋稀有度正確：he_22k/he_burnout_broke=傳說、he_renterforever/he_lieflat_zen=稀有');
+ok(r100.t22k_hit && r100.t22k_miss, 'R100 ③ he_22k 真驅動：健康巔峰85+×謝幕窮(mny≤25)病(hp≤30)撐到60→必中；peak不足/不夠窮→必不中');
+ok(r100.trent_hit && r100.trent_miss, 'R100 ③ he_renterforever 真驅動：終身租屋結局×mny≥60×65歲→必中；非租屋結局/沒錢→必不中');
+ok(r100.tburn_hit && r100.tburn_miss, 'R100 ③ he_burnout_broke 真驅動：過勞結局×mny≤30×70歲前→必中；升遷結局/太老→必不中');
+ok(r100.tflat_hit && r100.tflat_miss, 'R100 ③ he_lieflat_zen 真驅動：躺平結局×hap≥80×mny≤35×75歲→必中；不夠快樂/不夠長壽→必不中');
+ok(r100.eval, 'R100 ④ evalHiddenEndings 端到端：22K 狀態跑判定→S.hiddenEnd=he_22k、首抽 newHidden、入冊 SAVE.hiddenEnds');
+ok(r100.noRedline, 'R100 ⑤ 文案紅線：4 新結局全文無政治/暴力/仇恨字串，尺度走低薪過勞買不起房自嘲');
+
 console.log(fails ? `\n結果: ❌ ${fails} 項未通過` : '\n結果: ✅ 狀態機全數正確');
 process.exit(fails ? 1 : 0);
