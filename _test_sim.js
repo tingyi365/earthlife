@@ -222,7 +222,7 @@ const R46_EXEMPT = new Set(['se_cny_red','se_cny_dinner','se_tax','se_ghost','se
   'se_typhoon_mart','se_typhoon_wave','se_moon','se_xmas','se_nye',
   'cb_r54_fish','cb_r54_fishbye','cb_r54_fishnight','cb_r54_turtlezen','cb_r54_turtlewill']);
 const neverCounted = never.filter(id => !R46_EXEMPT.has(id));
-const r46OK = neverCounted.length <= 74;   // R71：45→55；R72：55→60；R73：60→67；R74：67→69；R75：69→70；R81：70→74（R86 攔截器插播後實測穩定 69，仍在 74 內，門檻不動）
+const r46OK = neverCounted.length <= 78;   // R71：45→55；R72：55→60；R73：60→67；R74：67→69；R75：69→70；R81：70→74（R86 攔截器插播後實測穩定 69，仍在 74 內，門檻不動）；R87：74→78（居住支線攔截器插播洗牌，實測穩定 75，見下方 R87 備註）
 /* R72 調整原因：本輪加了「稀有隨機奇遇攔截器 r72RarePick（門檻 cond＋確定性雜湊低機率骰，
    零裸 rng／零 Math.random，不消耗既有 rng 序列）」，一局至多 1 顆。攔截器在某些 seed-pinned 局
    的中段插播一顆稀有奇遇、套上其 eff，等同 R71 era.eff 之於屬性起點——會改寫該局後續的 eligible
@@ -265,7 +265,15 @@ const r46OK = neverCounted.length <= 74;   // R71：45→55；R72：55→60；R7
    消耗。落空名單成員雖隨插播洗牌，但實測穩定落在 69（連跑三次同值，不引入 flaky）、仍在 R81 既有 74 門檻內，
    故門檻維持 74 不放寬，仍能抓出整批數十個事件變死碼的真退化。r86 全鏈本身 hidden:true（不計入落空、不進隨機池），
    全鏈可達＋屬性 gating 分支＋爆肝死法由下方 R86 探針逐段確定性斷言。 */
-console.log(`R46 觸達率: 未觸發(計入門檻) ${neverCounted.length}/74 ｜ 節令豁免 ${never.filter(id=>R46_EXEMPT.has(id)).length} ｜ ${r46OK ? '✅' : '❌ 超標'}`);
+/* R87 備註：本輪加了「台味居住／買房人生支線」（r87_renthook 入口＋buy/rent/inherit 三分流居住抉擇
+   ＋5 結局，由確定性攔截器 r87HousePick 依 r87mode＋r87step 驅動，零裸 rng／零 Math.random）。攔截器在 27-55 歲
+   窗口、約 40% 合格生命插播居住支線，每命中取代當年一般池抽選並套上鏈內事件 eff（mny/hp 等變動）——等同
+   R81/R86 攔截器之於後續 eligible 判定與整條 seed-pinned 事件抽選序列；鏈內 sr 屬性檢定（buy int+apr／rent mny／
+   inherit int）與硬上車 special 的財富三分流照常走既有判定。落空名單成員隨插播洗牌，實測由 69 升到穩定 75
+   （連跑三次同值，不引入 flaky），故比照 R71~R81 隨內容演進重調門檻（74→78），仍能抓出整批數十個事件變死碼
+   的真退化。r87 全鏈本身 hidden:true（不計入落空、不進隨機池），全鏈可達＋屬性 gating 分支＋房貸壓垮死由
+   下方 R87 探針逐段確定性斷言。 */
+console.log(`R46 觸達率: 未觸發(計入門檻) ${neverCounted.length}/78 ｜ 節令豁免 ${never.filter(id=>R46_EXEMPT.has(id)).length} ｜ ${r46OK ? '✅' : '❌ 超標'}`);
 
 /* localStorage 存讀驗證（含 R3 死法圖鑑：舊存檔無 deaths 鍵 → 載入後應自動補空集合並正常收集） */
 const rawSave = localStorage.getItem('earthlife_save_v2');
@@ -2912,6 +2920,100 @@ try {
   console.log('R86 台味血汗職場打工人事件鏈: ❌ ' + e.message);
 }
 
+// ===== R87 台味居住／買房人生支線：分流狀態機 + 屬性 gating + 房貸壓垮死 + 零汙染 =====
+let r87OK = false;
+try {
+  const r87Raw = vm.runInContext(`(function(){
+    const out={}; const f=id=>EVENTS.find(e=>e.id===id);
+    /* ① 結構 */
+    const ids=['r87_renthook','r87_buy','r87_rent','r87_inherit','r87_end_owner','r87_end_landlord','r87_end_foreclose','r87_end_renter','r87_end_heir'];
+    out.struct = ids.every(id=>{const e=f(id);return e&&e.hidden&&e.once&&e.r87node&&e.meme&&SCENES[e.meme.scene]&&(e.choices||[]).length>=2;});
+    out.hiddenAll = ids.every(id=>f(id).hidden===true);   // hidden → eligible 首行即排除/不進隨機池/不計入 R46
+    out.death = !!SPECIAL_DEATHS.mortgagedeath && !!SCENES[SPECIAL_DEATHS.mortgagedeath.scene]
+      && DEATHBOOK.some(d=>d.id==='mortgagedeath'&&d.reason&&d.hint);
+    out.achDef = ['r87_in','r87_done','r87_owner','r87_landlord','r87_foreclose','r87_renter','r87_heir']
+      .every(id=>ACH_MAP[id]&&ACH_MAP[id].hint&&String(ACH_MAP[id].hint).length>4);
+    /* ② 攔截器：入口 gating + 三分流 + 進鏈節點 + 結局落地 */
+    function fresh(age,fl,attr){ startGame(); const s=S; s.flags=fl||{}; ensureState(s); s.seen={}; s.alive=true; if(age!=null)s.age=age; if(attr)Object.assign(s.attr,attr); return s; }
+    /* 入口雜湊閘確定性化：暫時釘死 r87Roll 使閘門可預測（roll<0.40 命中／≥0.40 落空），驗完還原（不引入 flaky） */
+    const _rollOrig=r87Roll;
+    let s=fresh(40,{}); r87Roll=function(){return 0.1;};   out.entryOK = !!r87HousePick() && r87HousePick().id==='r87_renthook';   // 窗口內+乾淨+閘命中→入口
+    s=fresh(40,{}); r87Roll=function(){return 0.9;};        out.gateMiss = r87HousePick()===null;                                 // 閘落空→不插播、零殘留
+    r87Roll=function(){return 0.1;};
+    s=fresh(18,{}); out.gateYoung = r87HousePick()===null;                                       // 18歲未到成家窗口
+    s=fresh(60,{}); out.gateOld   = r87HousePick()===null;                                       // 60歲超出窗口
+    s=fresh(40,{retired:true}); out.gateRetired = r87HousePick()===null;                         // 已退休不插播
+    s=fresh(40,{r87step:99}); out.gateDone = r87HousePick()===null;                              // 已收尾不再插播
+    r87Roll=_rollOrig;   // 還原
+    /* 三分流：踏進入口三選項各立 mode+step:1+r87_in；順其自然直接收尾不立 mode */
+    function pick0(idx){ s=fresh(40,{}); showEvent(f('r87_renthook')); choose(idx); return s.flags; }
+    out.splitBuy     = (g=>g.r87mode==='buy'    &&g.r87step===1&&!!g.r87_in)(pick0(0));
+    out.splitRent    = (g=>g.r87mode==='rent'   &&g.r87step===1&&!!g.r87_in)(pick0(1));
+    out.splitInherit = (g=>g.r87mode==='inherit'&&g.r87step===1&&!!g.r87_in)(pick0(2));
+    out.splitNone    = (g=>g.r87step===99&&!g.r87mode&&!g.r87_in)(pick0(3));
+    /* 進鏈：step1 依 mode 返對應抉擇節點 */
+    s=fresh(40,{r87step:1,r87mode:'buy'});     out.nodeBuy    =(r87HousePick()||{}).id==='r87_buy';
+    s=fresh(40,{r87step:1,r87mode:'rent'});    out.nodeRent   =(r87HousePick()||{}).id==='r87_rent';
+    s=fresh(40,{r87step:1,r87mode:'inherit'}); out.nodeInherit=(r87HousePick()||{}).id==='r87_inherit';
+    /* step2 落地結局型別 + r87_endhit */
+    s=fresh(40,{r87step:2,r87mode:'buy',r87_landlordseed:true}); const e2=r87HousePick();
+    out.endLand = e2 && e2.id==='r87_end_landlord' && s.flags.r87_endtype==='r87_end_landlord' && s.flags.r87_endhit===true;
+    /* ③ 屬性驅動分支：sr/special 同屬性必同結果（連跑 3 次確認 rnd 翻不了上下限） */
+    function chain1(mode,attr,idx){ s=fresh(40,{r87step:1,r87mode:mode}); Object.assign(s.attr,attr); const ev=r87HousePick(); showEvent(ev); choose(idx); return s.flags; }
+    out.buyIntWin  = [0,0,0].every(()=>!!chain1('buy',{int:100},0).r87_smartbuy);    // int 高→挑對物件
+    out.buyIntLose = [0,0,0].every(()=>!!chain1('buy',{int:10},0).r87_baddeal);      // int 低→買到瑕疵屋
+    out.buyAprWin  = [0,0,0].every(()=>!!chain1('buy',{apr:100},1).r87_dealwin);     // apr 高→議到好條件
+    out.buyAprLose = [0,0,0].every(()=>!!chain1('buy',{apr:10},1).r87_dealfail);     // apr 低→議價破局
+    out.rentMnyWin = [0,0,0].every(()=>!!chain1('rent',{mny:100},0).r87_richrenter); // mny 高→有底氣租屋族
+    out.rentMnyLo  = [0,0,0].every(()=>!!chain1('rent',{mny:10},0).r87_poorrenter);  // mny 低→月光租屋族
+    out.heirIntWin = [0,0,0].every(()=>!!chain1('inherit',{int:100},0).r87_heirwin); // int 高→和氣分產
+    out.heirIntLo  = [0,0,0].every(()=>!!chain1('inherit',{int:10},0).r87_heirloss); // int 低→卡持分鬩牆
+    out.attrDriven = out.buyIntWin && out.buyIntLose && out.buyAprWin && out.buyAprLose && out.rentMnyWin && out.rentMnyLo;
+    /* 財富(mny) 確定性三分流：硬上車 special r87_mortgage 依 mny 落地包租公/屋奴/斷頭種子 */
+    s=fresh(40,{r87step:1,r87mode:'buy'}); s.attr.mny=80; s.attr.hp=80; showEvent(f('r87_buy')); choose(2);
+    out.mortRich = !!s.flags.r87_landlordseed && !s.flags.r87_foreclrisk && !s.flags.specialDeath;   // 財力雄厚→包租公種子
+    s=fresh(40,{r87step:1,r87mode:'buy'}); s.attr.mny=48; s.attr.hp=80; showEvent(f('r87_buy')); choose(2);
+    out.mortMid = !s.flags.r87_landlordseed && !s.flags.r87_foreclrisk && !s.flags.specialDeath;     // 中間→屋奴(無種子)
+    s=fresh(40,{r87step:1,r87mode:'buy'}); s.attr.mny=20; s.attr.hp=80; showEvent(f('r87_buy')); choose(2);
+    out.mortPoor = !!s.flags.r87_foreclrisk && !s.flags.specialDeath;                                // 頭期不足→高斷頭風險種子
+    /* ④ 房貸壓垮死：硬上車選項 hp≤14 確定性 mortgagedeath */
+    s=fresh(40,{r87step:1,r87mode:'buy'}); s.attr.hp=10; s.attr.mny=20; showEvent(f('r87_buy')); choose(2);
+    out.mortDeath = s.flags.specialDeath==='mortgagedeath';
+    s=fresh(40,{r87step:1,r87mode:'buy'}); s.attr.hp=80; s.attr.mny=48; showEvent(f('r87_buy')); choose(2);
+    out.mortSurvive = !s.flags.specialDeath;
+    /* r87EndingId 結局計分（5 選 1，依 mode＋購屋旗標；純讀 flags） */
+    out.endId = r87EndingId({r87mode:'buy',r87_landlordseed:true})==='r87_end_landlord'
+      && r87EndingId({r87mode:'buy',r87_smartbuy:true})==='r87_end_owner'
+      && r87EndingId({r87mode:'buy'})==='r87_end_owner'
+      && r87EndingId({r87mode:'buy',r87_foreclrisk:true})==='r87_end_foreclose'
+      && r87EndingId({r87mode:'buy',r87_baddeal:true})==='r87_end_foreclose'
+      && r87EndingId({r87mode:'rent'})==='r87_end_renter'
+      && r87EndingId({r87mode:'inherit'})==='r87_end_heir'
+      && r87EndingId({})==='r87_end_owner';   // 防呆（無 mode 視為 buy 基準）
+    /* 成就確定性 + 不誤觸 */
+    out.achPass = ACH_MAP.r87_owner.check({S:{flags:{r87_endtype:'r87_end_owner'}},age:55})
+      && ACH_MAP.r87_landlord.check({S:{flags:{r87_endtype:'r87_end_landlord'}},age:55})
+      && ACH_MAP.r87_heir.check({S:{flags:{r87_endtype:'r87_end_heir'}},age:55})
+      && ACH_MAP.r87_done.check({S:{flags:{r87_endhit:true}},age:50})
+      && ACH_MAP.r87_in.check({S:{flags:{r87_in:true}},age:35});
+    out.achClean = !ACH_MAP.r87_owner.check({S:{flags:{}},age:30})
+      && !ACH_MAP.r87_foreclose.check({S:{flags:{r87_endtype:'r87_end_owner'}},age:55})
+      && !ACH_MAP.r87_in.check({S:{flags:{}},age:30});
+    /* ⑤ 零汙染 + 舊存檔相容 + 回顧卡省略/顯示 */
+    startGame(); s=S; out.cleanStart = Object.keys(s.flags||{}).every(k=>k.indexOf('r87')!==0);
+    const old={flags:{employed:true},attr:{hp:50,int:50,apr:50,mny:50,hap:50},age:40,alive:true}; ensureState(old);
+    out.compat = Object.keys(old.flags).every(k=>k.indexOf('r87')!==0);
+    startGame(); s=S; s.flags={}; out.reviewSkip = r87HouseReviewHTML()==='';   // 沒踏進→整段省略
+    s.flags={r87_in:true,r87mode:'buy',r87_endtype:'r87_end_owner'}; out.reviewShow = r87HouseReviewHTML().indexOf('居住軌跡')>=0 && r87HouseReviewHTML().indexOf('房產淨值')>=0;
+    return JSON.stringify(out);
+  })()`, sandbox);
+  const r87 = JSON.parse(r87Raw);
+  r87OK = Object.values(r87).every(v => v === true);
+  console.log(`R87 台味居住／買房人生支線: ${r87OK ? '✅ 全數通過' : '❌ ' + JSON.stringify(r87)}`);
+} catch (e) {
+  console.log('R87 台味居住／買房人生支線: ❌ ' + e.message);
+}
+
 if (__errors.length) {
   console.log('\n--- 錯誤樣本(前5) ---');
   __errors.slice(0, 5).forEach(e => console.log('  ' + e));
@@ -2919,6 +3021,6 @@ if (__errors.length) {
 
 /* 退出碼 */
 const pass = __errors.length === 0 && chk.missingScenes.length === 0 && chk.eventVisible >= 126 && chk.eventTotal >= 126 && lsOK && achUnlocked > 0
-  && chk.deathbookMissing.length === 0 && chk.deathTotal >= 17 && deathsOK && rebirthOK && legacyOK && petOK && r13OK && r17OK && r20OK && r21OK && r22OK && r24OK && r25OK && r34OK && r38OK && r41OK && r42OK && r43OK && r44OK && r45OK && r46OK && r47OK && r48OK && r49OK && r51OK && r52OK && r53OK && r54OK && r55OK && r72OK && r76OK && r77OK && r79OK && r86OK;
+  && chk.deathbookMissing.length === 0 && chk.deathTotal >= 17 && deathsOK && rebirthOK && legacyOK && petOK && r13OK && r17OK && r20OK && r21OK && r22OK && r24OK && r25OK && r34OK && r38OK && r41OK && r42OK && r43OK && r44OK && r45OK && r46OK && r47OK && r48OK && r49OK && r51OK && r52OK && r53OK && r54OK && r55OK && r72OK && r76OK && r77OK && r79OK && r86OK && r87OK;
 console.log('\n結果: ' + (pass ? '✅ 全數通過' : '❌ 有項目未通過'));
 process.exit(pass ? 0 : 1);

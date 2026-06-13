@@ -2795,5 +2795,75 @@ ok(r86.burnDeath && r86.burnSurvive && r86.death, 'R86 ④ 爆肝過勞死：賣
 ok(r86.endId && r86.ach, 'R86 ④ 5 結局確定性計分(爬管理職/爆肝畢業/FIRE/被資遣/躺平)＋6 成就確定性解鎖、零誤觸、提示齊備');
 ok(r86.clean && r86.compat && r86.reviewSkip, 'R86 ⑤ 零汙染：開局/舊存檔 S.flags 皆無 r86 鍵、沒踏進職場鏈時戰績回顧卡整段省略');
 
+// ===== R87 台味居住／買房人生支線：分流狀態機 + 屬性 gating + 房貸壓垮死 + 零汙染 =====
+const r87 = JSON.parse(vm.runInContext(`(function(){
+  const out={}; const f=id=>EVENTS.find(e=>e.id===id);
+  function fresh(age,fl,attr){ startGame(); S.flags=fl||{}; ensureState(S); S.seen={}; S.alive=true; if(age!=null)S.age=age; if(attr)Object.assign(S.attr,attr); return S; }
+  // 入口雜湊閘確定性化：暫釘 r87Roll（命中 vs 落空），驗完還原
+  const _ro=r87Roll;
+  fresh(40,{}); r87Roll=function(){return 0.1;}; out.entry = !!r87HousePick() && r87HousePick().id==='r87_renthook';
+  fresh(40,{}); r87Roll=function(){return 0.9;}; out.gateMiss = r87HousePick()===null;        // 閘落空零殘留
+  r87Roll=_ro;
+  fresh(18,{}); out.gateYoung = r87HousePick()===null;                                          // 窗口外不插播
+  fresh(40,{retired:true}); out.gateRetired = r87HousePick()===null;
+  // 三分流：入口三選項各立 r87mode + step:1 + r87_in（順其自然直接收尾）
+  function pick0(i){ fresh(40,{}); showEvent(f('r87_renthook')); choose(i); return S.flags; }
+  out.split = (g=>g.r87mode==='buy'&&g.r87step===1&&!!g.r87_in)(pick0(0))
+    && (g=>g.r87mode==='rent'&&g.r87step===1)(pick0(1))
+    && (g=>g.r87mode==='inherit'&&g.r87step===1)(pick0(2))
+    && (g=>g.r87step===99&&!g.r87mode&&!g.r87_in)(pick0(3));
+  // 進鏈：step1 依 mode 確定性返抉擇節點；step2 落地結局型別
+  fresh(40,{r87step:1,r87mode:'buy'});     out.nodeBuy    =(r87HousePick()||{}).id==='r87_buy';
+  fresh(40,{r87step:1,r87mode:'rent'});    out.nodeRent   =(r87HousePick()||{}).id==='r87_rent';
+  fresh(40,{r87step:1,r87mode:'inherit'}); out.nodeInherit=(r87HousePick()||{}).id==='r87_inherit';
+  fresh(40,{r87step:2,r87mode:'inherit'}); const e2=r87HousePick();
+  out.endLand = e2&&e2.id==='r87_end_heir'&&S.flags.r87_endtype==='r87_end_heir'&&S.flags.r87_endhit===true;
+  // 屬性真驅動（連跑 3 次確認 sr 上下限不被 rnd 翻盤）：buy int/apr、rent mny、inherit int
+  function c1(mode,attr,idx){ fresh(40,{r87step:1,r87mode:mode}); Object.assign(S.attr,attr); const ev=r87HousePick(); showEvent(ev); choose(idx); return S.flags; }
+  out.buyInt  = [0,0,0].every(()=>!!c1('buy',{int:100},0).r87_smartbuy) && [0,0,0].every(()=>!!c1('buy',{int:10},0).r87_baddeal);
+  out.buyApr  = [0,0,0].every(()=>!!c1('buy',{apr:100},1).r87_dealwin) && [0,0,0].every(()=>!!c1('buy',{apr:10},1).r87_dealfail);
+  out.rentMny = [0,0,0].every(()=>!!c1('rent',{mny:100},0).r87_richrenter) && [0,0,0].every(()=>!!c1('rent',{mny:10},0).r87_poorrenter);
+  out.heirInt = [0,0,0].every(()=>!!c1('inherit',{int:100},0).r87_heirwin) && [0,0,0].every(()=>!!c1('inherit',{int:10},0).r87_heirloss);
+  // 財富(mny) 確定性三分流：硬上車 special 依 mny 落地包租公/屋奴/斷頭種子（hp 足夠不觸發死）
+  function mort(mny){ fresh(40,{r87step:1,r87mode:'buy'}); S.attr.mny=mny; S.attr.hp=80; showEvent(f('r87_buy')); choose(2); return S.flags; }
+  out.mortRich = !!mort(80).r87_landlordseed && !mort(80).r87_foreclrisk;
+  out.mortMid  = !mort(48).r87_landlordseed && !mort(48).r87_foreclrisk;
+  out.mortPoor = !!mort(20).r87_foreclrisk;
+  // 房貸壓垮死：硬上車選項 hp≤14 確定性 mortgagedeath、hp 足夠不死
+  fresh(40,{r87step:1,r87mode:'buy'}); S.attr.hp=10; S.attr.mny=20; showEvent(f('r87_buy')); choose(2);
+  out.mortDeath = S.flags.specialDeath==='mortgagedeath';
+  fresh(40,{r87step:1,r87mode:'buy'}); S.attr.hp=80; S.attr.mny=48; showEvent(f('r87_buy')); choose(2);
+  out.mortSurvive = !S.flags.specialDeath;
+  out.death = !!SPECIAL_DEATHS.mortgagedeath && DEATHBOOK.some(d=>d.id==='mortgagedeath'&&d.reason&&d.hint);
+  // r87EndingId 結局計分 5 選 1（含防呆）
+  out.endId = r87EndingId({r87mode:'buy',r87_landlordseed:true})==='r87_end_landlord'
+    && r87EndingId({r87mode:'buy',r87_smartbuy:true})==='r87_end_owner'
+    && r87EndingId({r87mode:'buy'})==='r87_end_owner'
+    && r87EndingId({r87mode:'buy',r87_foreclrisk:true})==='r87_end_foreclose'
+    && r87EndingId({r87mode:'buy',r87_baddeal:true})==='r87_end_foreclose'
+    && r87EndingId({r87mode:'rent'})==='r87_end_renter'
+    && r87EndingId({r87mode:'inherit'})==='r87_end_heir' && r87EndingId({})==='r87_end_owner';
+  // 成就確定性 + 不誤觸 + 提示齊
+  out.ach = ACH_MAP.r87_owner.check({S:{flags:{r87_endtype:'r87_end_owner'}},age:55})
+    && ACH_MAP.r87_done.check({S:{flags:{r87_endhit:true}},age:50})
+    && !ACH_MAP.r87_owner.check({S:{flags:{}},age:30})
+    && !ACH_MAP.r87_foreclose.check({S:{flags:{r87_endtype:'r87_end_owner'}},age:55})
+    && ['r87_in','r87_done','r87_owner','r87_landlord','r87_foreclose','r87_renter','r87_heir'].every(id=>ACH_MAP[id]&&ACH_MAP[id].hint&&ACH_MAP[id].hint.length>4);
+  // 零汙染 + 舊存檔相容 + 回顧卡未踏進即省略
+  startGame(); out.clean = Object.keys(S.flags).every(k=>k.indexOf('r87')!==0);
+  const old={flags:{employed:true},attr:{hp:50,int:50,apr:50,mny:50,hap:50},age:40,alive:true}; ensureState(old);
+  out.compat = Object.keys(old.flags).every(k=>k.indexOf('r87')!==0);
+  startGame(); S.flags={}; out.reviewSkip = r87HouseReviewHTML()==='';
+  return JSON.stringify(out);
+})()`, sandbox));
+ok(r87.entry && r87.gateMiss && r87.gateYoung && r87.gateRetired, 'R87 ① 攔截器 r87HousePick：27-55 窗口+未退休+雜湊閘命中→入口、閘落空/窗口外/已退休皆零殘留不插播');
+ok(r87.split, 'R87 ② 入口三分流：拚上車買房/終身租屋/繼承祖厝各立 r87mode+step:1+r87_in；順其自然直接收尾(step:99)不立 mode');
+ok(r87.nodeBuy && r87.nodeRent && r87.nodeInherit && r87.endLand, 'R87 ② 進鏈依 mode/step 確定性返抉擇節點、step:2 落地 r87_endtype/r87_endhit');
+ok(r87.buyInt && r87.buyApr && r87.rentMny && r87.heirInt, 'R87 ③ 五圍真驅動有權衡：買房靠智力(int 挑物件)×魅力(apr 議價)、租屋靠財富(mny)、繼承靠智力(int 分產)，同屬性必同結果(sr 上下限不被 rnd 翻盤)');
+ok(r87.mortRich && r87.mortMid && r87.mortPoor, 'R87 ③ 財富(mny)確定性三分流：硬上車 special 依財富落地 包租公種子(≥60)/屋奴(38-59)/高斷頭風險(<38)，同財富必同結果');
+ok(r87.mortDeath && r87.mortSurvive && r87.death, 'R87 ④ 房貸壓垮死：硬上車選項健康見底(≤14)→mortgagedeath、撐住→續鏈；死法進圖鑑(reason+hint)');
+ok(r87.endId && r87.ach, 'R87 ④ 5 結局確定性計分(繳清有殼/包租公/斷頭法拍/終身租屋/繼承祖厝)＋7 成就確定性解鎖、零誤觸、提示齊備');
+ok(r87.clean && r87.compat && r87.reviewSkip, 'R87 ⑤ 零汙染：開局/舊存檔 S.flags 皆無 r87 鍵、沒踏進居住鏈時居住軌跡回顧卡整段省略');
+
 console.log(fails ? `\n結果: ❌ ${fails} 項未通過` : '\n結果: ✅ 狀態機全數正確');
 process.exit(fails ? 1 : 0);

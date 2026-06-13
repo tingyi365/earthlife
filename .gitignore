@@ -28,3 +28,4 @@ _smoke_*
 _test_*
 !_test_sim.js
 !_test_state.js
+docs/earthlife_star_log.md
