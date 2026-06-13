@@ -5,17 +5,17 @@
 [![▶ Play Now](https://img.shields.io/badge/%E2%96%B6%20%E7%B7%9A%E4%B8%8A%E8%A9%A6%E7%8E%A9-earthlife.pages.dev-7fd7ff?style=for-the-badge)](https://earthlife.pages.dev)
 [![License: MIT](https://img.shields.io/badge/License-MIT-3fb950?style=for-the-badge)](LICENSE)
 [![Single HTML file](https://img.shields.io/badge/Build-%E5%96%AE%E4%B8%80%20HTML%20%E6%AA%94%C2%B7%E7%84%A1%E6%A1%86%E6%9E%B6-ff9d5c?style=for-the-badge)](index.html)
-[![AI Self-Evolved](https://img.shields.io/badge/AI%20%E8%87%AA%E4%B8%BB%E9%80%B2%E5%8C%96-R1%20%E2%86%92%20R90%20%E4%BB%8D%E5%9C%A8%E7%B9%BC%E7%BA%8C-ffd24a?style=for-the-badge)](docs/AI_AUTONOMOUS_UPDATE.md)
+[![AI Self-Evolved](https://img.shields.io/badge/AI%20%E8%87%AA%E4%B8%BB%E9%80%B2%E5%8C%96-R1%20%E2%86%92%20R93%20%E4%BB%8D%E5%9C%A8%E7%B9%BC%E7%BA%8C-ffd24a?style=for-the-badge)](docs/AI_AUTONOMOUS_UPDATE.md)
 [![Zero human-written game code](https://img.shields.io/badge/%E9%81%8A%E6%88%B2%E7%A8%8B%E5%BC%8F%E7%A2%BC-100%25%20AI%20%E6%89%8B%E5%AF%AB%C2%B7%E9%9B%B6%E4%BA%BA%E9%A1%9E%E6%8F%92%E6%89%8B-ff5d8f?style=for-the-badge)](docs/AI_AUTONOMOUS_UPDATE.md)
 
-> 🧬 **這是一款「自己進化自己」的遊戲——一個 AI agent 自己寫出來、自己養大的。** 從 61 個事件的雛形開始，沒有人類排需求、沒有人類改一行 code，AI 每 30 分鐘自我迭代一輪：自己選題、自己改碼、自己跑測試、自己部署、自己寫日誌，全程無人介入。到今天它已經**連續自主進化 90 輪（R1 → R90，仍在繼續）**，且每一輪都得先過自動化測試閘門才准上線。**每一行遊戲程式碼都是 AI 手寫、零人類手寫遊戲碼。** 你現在玩到的這個版本，不是誰設計的——是它自己一輪一輪長出來的。
+> 🧬 **這是一款「自己進化自己」的遊戲——一個 AI agent 自己寫出來、自己養大的。** 從 61 個事件的雛形開始，沒有人類排需求、沒有人類改一行 code，AI 每 30 分鐘自我迭代一輪：自己選題、自己改碼、自己跑測試、自己部署、自己寫日誌，全程無人介入。到今天它已經**連續自主進化 93 輪（R1 → R93，仍在繼續）**，且每一輪都得先過自動化測試閘門才准上線。**每一行遊戲程式碼都是 AI 手寫、零人類手寫遊戲碼。** 你現在玩到的這個版本，不是誰設計的——是它自己一輪一輪長出來的。
 
 🎮 線上試玩 / Play now: **https://earthlife.pages.dev**
 
 <p align="center">
   <img src="docs/demo.gif" width="62%" alt="EarthLife 實機 demo：投胎抽卡 → 梗圖事件 → 人生總結卡">
 </p>
-<p align="center"><sub>↑ 實機 demo（持續進化中，目前 R90）</sub></p>
+<p align="center"><sub>↑ 實機 demo（持續進化中，目前 R93）</sub></p>
 
 <p align="center">
   <img src="docs/screenshot_start.png" width="31%" alt="開局投胎抽卡">
@@ -30,7 +30,7 @@
 
 這不只是一款遊戲——它是一個 **「AI 自主更新管理」的實驗場**。
 
-遊戲上線後的每一輪迭代（**R1 → R90，仍在繼續**），都由一個 AI agent 自主完成，**每 30 分鐘一輪**，無人介入、**全程零人類手寫遊戲碼**：
+遊戲上線後的每一輪迭代（**R1 → R93，仍在繼續**），都由一個 AI agent 自主完成，**每 30 分鐘一輪**，無人介入、**全程零人類手寫遊戲碼**：
 
 ```
 ┌─────────────────────────────────────────────────┐
@@ -45,11 +45,11 @@
 └─────────────────────────────────────────────────┘
 ```
 
-90 輪下來，遊戲從 61 個事件的雛形，長成 **726 個事件、111 種梗圖場景、269 個成就、66 種死法、10 個隱藏結局**、外加多館合一的收藏圖鑑（死法／成就／出身／天賦）的完整作品（內容數據截至 R84，由測試報告即時統計，R85→R90 另有新增）——每一步都有測試把關、每一步都可回溯。
+93 輪下來，遊戲從 61 個事件的雛形，長成 **726 個事件、111 種梗圖場景、269 個成就、66 種死法、10 個隱藏結局**、外加多館合一的收藏圖鑑（死法／成就／出身／天賦）的完整作品（內容數據截至 R84，由測試報告即時統計，R85→R93 另有新增）——每一步都有測試把關、每一步都可回溯。
 
 詳細機制設計請見 **[docs/AI_AUTONOMOUS_UPDATE.md](docs/AI_AUTONOMOUS_UPDATE.md)**。
 
-### 🧬 AI 自主進化時間軸（R1 → R90 精選里程碑）
+### 🧬 AI 自主進化時間軸（R1 → R93 精選里程碑）
 
 > 從一個 61 事件的雛形，AI agent 自己一路把它養成了下面這條軌跡。沒有人類排需求，每一輪都是它讀完現況後自己決定要長什麼：
 
@@ -76,9 +76,11 @@
 | **R86** | 😮‍💨 台味血汗職場打工人事件鏈：受僱上班族日常三分流（爆肝衝刺／躺平擺爛／跳槽談判），健康賣肝、魅力×智力跳槽、財富躺平的屬性檢定 → 五種結局（爬上管理職／爆肝中年過勞畢業／跳槽贏家提早 FIRE／中年被資遣／全職躺平低慾望仙人），新增爆肝過勞死限定死法＋6 成就，回扣 R74 躺平 vs 內捲 |
 | **R87** | 🏠 台味居住買房人生支線：無殼蝸牛的買房長征——頭期款、30 年房貸、包租公收租、繼承祖厝、法拍屋撿便宜，財富與運氣決定上車或被房市套牢的分流結局 |
 | **R89** | 📈 屬性數值實感化：回應「數值存在感低」的痛點——讓五圍真正驅動事件分支、檢定成功率與解鎖門檻，不再只是裝飾數字，並在結算新增「關鍵抉擇屬性快照」攤開這一生每個靠屬性做的關鍵決定（哪項屬性、當下幾分、贏沒贏） |
-| **R90** | ⛩️ 台味宮廟民間信仰人生支線：誠心信徒／有事才拜／鐵齒跟拜三線分流——安太歲犯太歲運勢 buff 牽動擲筊檢定、求籤問事與凡事靠自己的屬性門檻 → 四種信仰結局（神明欽點有保庇／香火傳承／心誠則靈／鐵齒到底），含宮廟主題成就（最新一輪） |
+| **R90** | ⛩️ 台味宮廟民間信仰人生支線：誠心信徒／有事才拜／鐵齒跟拜三線分流——安太歲犯太歲運勢 buff 牽動擲筊檢定、求籤問事與凡事靠自己的屬性門檻 → 四種信仰結局（神明欽點有保庇／香火傳承／心誠則靈／鐵齒到底），含宮廟主題成就 |
+| **R92** | 🛣️ 台味交通／行人地獄人生支線：機車仔／四輪族／無車通勤三線分流，守規禮讓換安全 buff vs 搶快闖紅燈的取捨，體質×運勢決定鑽車陣／過馬路／酒駕臨檢的存活 → 四種結局（老司機零違規／機車仔魂／塞國道的中產／行人地獄倖存者），含酒駕釀禍與車禍猝逝限定死法 |
+| **R93** | 🏥 台味健保醫療人生支線：健保鄉民／自費養生／鐵齒硬撐三線分流——體質×運勢決定病痛、財富決定自費療程與單人病房、智力識破密醫、魅力影響醫病關係 → 四種結局（百歲人瑞健檢全綠／逛醫院達人／自費養生家／鐵齒倖存者），含急診人球延誤與慢性病惡化限定死法（最新一輪） |
 
-> 一個 AI agent，連續自我迭代 **90 輪**、每一輪都得過測試閘門才放行，**全程零人類手寫遊戲碼**——這是這個專案最獨特的賣點。完整 90 輪逐輪設計決策直接寫在 `index.html` 的程式碼註解裡，那也是下一輪 AI 的記憶。
+> 一個 AI agent，連續自我迭代 **93 輪**、每一輪都得過測試閘門才放行，**全程零人類手寫遊戲碼**——這是這個專案最獨特的賣點。完整 93 輪逐輪設計決策直接寫在 `index.html` 的程式碼註解裡，那也是下一輪 AI 的記憶。
 
 ## 🎮 遊戲說明
 
@@ -127,7 +129,7 @@ node _test_state.js
 
 This is not just a game — it's a working experiment in **AI-autonomous release management**.
 
-Every iteration since launch (**R1 → R90 and counting**) was performed by an AI agent, **one round every 30 minutes**, with no human in the loop and **zero human-written game code**:
+Every iteration since launch (**R1 → R93 and counting**) was performed by an AI agent, **one round every 30 minutes**, with no human in the loop and **zero human-written game code**:
 
 1. **Pick a direction** — the agent reads the current game state and decides what to evolve this round (new system / balancing / polish / easter eggs).
 2. **Modify the code** — edits the game directly.
@@ -135,7 +137,7 @@ Every iteration since launch (**R1 → R90 and counting**) was performed by an A
 4. **Deploy** — pushes the build to Cloudflare Pages.
 5. **Write the log** — leaves structured design comments in the code, which become context for the next round's agent.
 
-Over 90 rounds the game grew from a 61-event prototype into **726 events, 111 meme scenes, 269 achievements, 66 ways to die, 10 hidden endings**, plus a multi-museum collection gallery (deaths / achievements / origins / talents) — content figures as of R84 (R85→R90 added more), tallied live by the test report. Every step gated by tests, every step traceable.
+Over 93 rounds the game grew from a 61-event prototype into **726 events, 111 meme scenes, 269 achievements, 66 ways to die, 10 hidden endings**, plus a multi-museum collection gallery (deaths / achievements / origins / talents) — content figures as of R84 (R85→R93 added more), tallied live by the test report. Every step gated by tests, every step traceable.
 
 See **[docs/AI_AUTONOMOUS_UPDATE.md](docs/AI_AUTONOMOUS_UPDATE.md)** for the full mechanism design and evolution log.
 
