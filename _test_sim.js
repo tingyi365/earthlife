@@ -3014,6 +3014,48 @@ try {
   console.log('R87 台味居住／買房人生支線: ❌ ' + e.message);
 }
 
+// ===== R92 台味交通／行人地獄人生支線：分流狀態機全鏈可達性 + 屬性 gating + 安全 buff + 專屬死法 + 零汙染 =====
+let r92OK = false;
+try {
+  const r92Raw = vm.runInContext(`(function(){
+    const out={}; const f=id=>EVENTS.find(e=>e.id===id);
+    function fresh(age,flags){ startGame(); ensureState(S); S.seen={}; S.alive=true; S.keySnap=[]; S.flags=Object.assign({},flags||{}); ensureState(S); if(age!=null)S.age=age; return S; }
+    const ids=['r92_roadhook','r92_habit','r92_scooter','r92_driver','r92_pedi','r92_end_veteran','r92_end_scooter','r92_end_driver','r92_end_pedi'];
+    // 結構：全鏈 hidden+once+r92node+meme 場景存在+至少 2 選項
+    out.struct = ids.every(id=>{const e=f(id);return e&&e.hidden&&e.once&&e.r92node&&e.meme&&SCENES[e.meme.scene]&&(e.choices||[]).length>=2;});
+    // 全鏈 hidden → 不進隨機池
+    out.hiddenPool = ids.every(id=>{const e=f(id);return e.hidden===true;});
+    // 成就/死法定義齊備
+    out.achDef = ['r92_in','r92_done','r92_veteran','r92_pedi'].every(id=>ACH_MAP[id]&&ACH_MAP[id].hint&&String(ACH_MAP[id].hint).length>4);
+    out.deathDef = !!SPECIAL_DEATHS.roadkill && !!SPECIAL_DEATHS.drunkdrive && DEATHBOOK.some(d=>d.id==='roadkill') && DEATHBOOK.some(d=>d.id==='drunkdrive');
+    // 攔截器入口雜湊閘確定性化：釘死 r92Roll 驗閘門可預測（命中/落空），驗完還原
+    const _ro=r92Roll;
+    let s=fresh(40,{}); r92Roll=function(){return 0.05;}; out.entryOK = !!r92RoadPick() && r92RoadPick().id==='r92_roadhook';
+    s=fresh(40,{}); r92Roll=function(){return 0.9;}; out.gateMiss = r92RoadPick()===null;
+    r92Roll=function(){return 0.05;};
+    s=fresh(18,{}); out.gateYoung = r92RoadPick()===null;
+    s=fresh(60,{}); out.gateOld = r92RoadPick()===null;
+    r92Roll=_ro;
+    // 全鏈可達：三線各跑完一輪（亂選 choose(0) 也必推進到結局並落 r92_endhit）
+    function runline(mode){ s=fresh(30,{r92step:1,r92mode:mode}); s.attr={hp:80,int:80,apr:80,mny:80,hap:80}; let guard=0;
+      while(s.flags.r92step<99 && guard<12){ const ev=r92RoadPick(); if(!ev)break; showEvent(ev); choose(0); guard++; if(s.flags.specialDeath)break; }
+      return s.flags; }
+    const gs=runline('scooter'); out.lineScoot = gs.r92step>=99 ? !!gs.r92_endhit : !!gs.specialDeath;   // 走完落結局 或 中途專屬死法
+    const gd=runline('driver');  out.lineDrive = gd.r92step>=99 ? !!gd.r92_endhit : !!gd.specialDeath;
+    const gp=runline('pedi');    out.linePedi  = gp.r92step>=99 ? !!gp.r92_endhit : !!gp.specialDeath;
+    // 零汙染：開局/舊存檔無 r92 鍵
+    startGame(); out.cleanStart = Object.keys(S.flags||{}).every(k=>k.indexOf('r92')!==0);
+    const old={flags:{employed:true},attr:{hp:50,int:50,apr:50,mny:50,hap:50},age:40,alive:true}; ensureState(old);
+    out.compat = Object.keys(old.flags).every(k=>k.indexOf('r92')!==0);
+    return JSON.stringify(out);
+  })()`, sandbox);
+  const r92 = JSON.parse(r92Raw);
+  r92OK = Object.values(r92).every(v => v === true);
+  console.log(`R92 台味交通／行人地獄人生支線: ${r92OK ? '✅ 全數通過' : '❌ ' + JSON.stringify(r92)}`);
+} catch (e) {
+  console.log('R92 台味交通／行人地獄人生支線: ❌ ' + e.message);
+}
+
 if (__errors.length) {
   console.log('\n--- 錯誤樣本(前5) ---');
   __errors.slice(0, 5).forEach(e => console.log('  ' + e));
@@ -3021,6 +3063,6 @@ if (__errors.length) {
 
 /* 退出碼 */
 const pass = __errors.length === 0 && chk.missingScenes.length === 0 && chk.eventVisible >= 126 && chk.eventTotal >= 126 && lsOK && achUnlocked > 0
-  && chk.deathbookMissing.length === 0 && chk.deathTotal >= 17 && deathsOK && rebirthOK && legacyOK && petOK && r13OK && r17OK && r20OK && r21OK && r22OK && r24OK && r25OK && r34OK && r38OK && r41OK && r42OK && r43OK && r44OK && r45OK && r46OK && r47OK && r48OK && r49OK && r51OK && r52OK && r53OK && r54OK && r55OK && r72OK && r76OK && r77OK && r79OK && r86OK && r87OK;
+  && chk.deathbookMissing.length === 0 && chk.deathTotal >= 17 && deathsOK && rebirthOK && legacyOK && petOK && r13OK && r17OK && r20OK && r21OK && r22OK && r24OK && r25OK && r34OK && r38OK && r41OK && r42OK && r43OK && r44OK && r45OK && r46OK && r47OK && r48OK && r49OK && r51OK && r52OK && r53OK && r54OK && r55OK && r72OK && r76OK && r77OK && r79OK && r86OK && r87OK && r92OK;
 console.log('\n結果: ' + (pass ? '✅ 全數通過' : '❌ 有項目未通過'));
 process.exit(pass ? 0 : 1);

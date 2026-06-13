@@ -3017,5 +3017,117 @@ ok(r90.balance, 'R90 ⑤ 平衡護欄：全鏈所有選項 eff(含 sr/br win/los
 ok(r90.noRedline, 'R90 ⑥ 文案紅線：全鏈無政治/宗教仇恨字串，文化共鳴非嘲諷信仰');
 ok(r90.compat && r90.clean && r90.cleanPlain && r90.reviewSkip, 'R90 ⑦⑧ 零汙染+舊存檔相容：開局/舊save/非信仰鏈事件 S.flags 皆無 r90 鍵、沒踏進信仰鏈時回顧卡整段省略');
 
+// ===== R92 台味交通／行人地獄人生支線：分流狀態機 + 安全 buff 取捨 + 體質×運勢驅動存活 + 專屬死法 + 零汙染 =====
+const r92 = JSON.parse(vm.runInContext(`(function(){
+  const out={}; const f=id=>EVENTS.find(e=>e.id===id);
+  function fresh(age,flags){ startGame(); ensureState(S); S.seen={}; S.alive=true; S.keySnap=[]; S.flags=Object.assign({},flags||{}); ensureState(S); if(age!=null)S.age=age; return S; }
+  // ① 攔截器 r92RoadPick：20-58 窗口+未退休+雜湊閘命中→入口、閘落空/窗口外/已退休皆零殘留
+  const _ro=r92Roll;
+  fresh(40,{}); r92Roll=function(){return 0.05;}; out.entry = !!r92RoadPick() && r92RoadPick().id==='r92_roadhook';
+  fresh(40,{}); r92Roll=function(){return 0.9;}; out.gateMiss = r92RoadPick()===null;
+  r92Roll=_ro;
+  fresh(18,{}); out.gateYoung = r92RoadPick()===null;
+  fresh(40,{retired:true}); out.gateRetired = r92RoadPick()===null;
+  fresh(40,{r92step:99}); out.gateDone = r92RoadPick()===null;
+  // ② 入口三分流：各立 r92mode + step:1 + r92_in；佛系慢活直接收尾(step:99)不立 mode
+  function pick0(i){ fresh(40,{}); showEvent(f('r92_roadhook')); choose(i); return S.flags; }
+  out.split = (g=>g.r92mode==='scooter'&&g.r92step===1&&!!g.r92_in)(pick0(0))
+    && (g=>g.r92mode==='driver'&&g.r92step===1&&!!g.r92_in)(pick0(1))
+    && (g=>g.r92mode==='pedi'&&g.r92step===1&&!!g.r92_in)(pick0(2))
+    && (g=>g.r92step===99&&!g.r92mode&&!g.r92_in)(pick0(3));
+  // ② 進鏈依 step/mode 確定性返節點：step1 共用行車習慣、step2 依 mode、step3 落地結局型別
+  fresh(40,{r92step:1,r92mode:'scooter'}); out.nodeHabit=(r92RoadPick()||{}).id==='r92_habit';
+  fresh(40,{r92step:2,r92mode:'scooter'}); out.nodeScoot=(r92RoadPick()||{}).id==='r92_scooter';
+  fresh(40,{r92step:2,r92mode:'driver'});  out.nodeDrive=(r92RoadPick()||{}).id==='r92_driver';
+  fresh(40,{r92step:2,r92mode:'pedi'});    out.nodePedi =(r92RoadPick()||{}).id==='r92_pedi';
+  fresh(40,{r92step:3,r92mode:'scooter',r92_lawful:true,r92_roadwin:true}); const e3=r92RoadPick();
+  out.endLand = e3&&e3.id==='r92_end_veteran'&&S.flags.r92_endtype==='r92_end_veteran'&&S.flags.r92_endhit===true;
+  // ③ 行車習慣安全 buff 取捨：守規落 r92_lawful、搶快落 r92_reckless、int>=68 gate 防禦駕駛也落 lawful
+  function hab(i,attr){ fresh(40,{r92step:1,r92mode:'scooter'}); if(attr)Object.assign(S.attr,attr); showEvent(f('r92_habit')); choose(i); return S.flags; }
+  const h0=hab(0); out.habLawful = h0.r92_lawful===true && h0.r92_safe===true && h0.r92step===2 && !h0.r92_reckless;
+  const h1=hab(1); out.habReckless = h1.r92_reckless===true && !h1.r92_lawful && h1.r92step===2;
+  const hg=hab(2,{int:90}); out.habGate = hg.r92_lawful===true && hg.r92_defensive===true && S.flags.gateWin>0;
+  // 安全 buff 三選項 |eff|<=8、gate 真為 gate
+  const cL=f('r92_habit').choices[0], cR=f('r92_habit').choices[1], cG=f('r92_habit').choices[2];
+  out.habCost = [cL,cR,cG].every(c=>Object.values(c.eff).every(v=>Math.abs(v)<=8)) && cG.gate===true && cG.cond!=null;
+  // ④ 機車仔鑽車陣 special r92_weave 體質×安全 buff 確定性存活（零 rng）：hp 見底硬鑽→roadkill 死；adj>=55 閃過(roadwin)；adj<55 擦撞(roadloss) 仍生還
+  function weave(hp,buff,attr){ fresh(40,Object.assign({r92step:2,r92mode:'scooter'},buff)); S.attr.hp=hp; if(attr)Object.assign(S.attr,attr); showEvent(f('r92_scooter')); choose(0); return S.flags; }
+  out.weaveDeath = [0,0,0].every(()=>weave(10,{}).specialDeath==='roadkill');                         // hp<=14 硬鑽→車禍猝逝
+  out.weaveWin   = [0,0,0].every(()=>{const g=weave(100,{});return g.r92_roadwin===true&&!g.specialDeath;}); // 高 hp→閃過
+  out.weaveLoss  = [0,0,0].every(()=>{const g=weave(30,{},{mny:80,apr:80});return g.r92_roadloss===true&&!g.specialDeath;}); // 中 hp→擦撞生還(賠得起和解)
+  // ④ 安全 buff 對存活門檻 ±10 確定性生效：lawful 下 hp=50→adj=60>=55 閃過；reckless 下 hp=60→adj=50<55 擦撞（同 hp 不同 buff 翻盤）
+  out.weaveBuffWin  = [0,0,0].every(()=>{const g=weave(50,{r92_lawful:true});return g.r92_roadwin===true;});
+  out.weaveBuffLose = [0,0,0].every(()=>{const g=weave(60,{r92_reckless:true});return g.r92_roadloss===true;});
+  // ④ 四輪族酒駕 special r92_drunk：太衰(adj<=22)→drunkdrive 死、其餘無 roadwin（守規好結局走找代駕選項）；adj>=55 吊照重罰(生還)
+  function drunk(hp,buff){ fresh(40,Object.assign({r92step:2,r92mode:'driver'},buff)); S.attr.hp=hp; showEvent(f('r92_driver')); choose(0); return S.flags; }
+  out.drunkDeath = [0,0,0].every(()=>drunk(20,{r92_reckless:true}).specialDeath==='drunkdrive');       // adj=10<=22→酒駕釀禍
+  out.drunkBust  = [0,0,0].every(()=>{const g=drunk(60,{r92_lawful:true});return g.r92_roadloss===true&&!g.specialDeath;}); // adj=70→吊照重罰生還
+  out.drunkNoWin = [0,0,0].every(()=>!drunk(60,{r92_lawful:true}).r92_roadwin);                        // 酒駕絕無 roadwin
+  // driver 守規找代駕選項→roadwin + lawful（好結局來源）
+  fresh(40,{r92step:2,r92mode:'driver'}); showEvent(f('r92_driver')); choose(1);
+  out.driverSafe = S.flags.r92_roadwin===true && S.flags.r92_lawful===true && !S.flags.specialDeath;
+  // ④ 行人地獄過馬路 special r92_cross：hp 見底→roadkill 死、adj>=55 閃過(roadwin)、adj<55 擦撞(roadloss) 生還
+  function cross(hp,buff){ fresh(40,Object.assign({r92step:2,r92mode:'pedi'},buff)); S.attr.hp=hp; showEvent(f('r92_pedi')); choose(0); return S.flags; }
+  out.crossDeath = [0,0,0].every(()=>cross(10,{}).specialDeath==='roadkill');
+  out.crossWin   = [0,0,0].every(()=>{const g=cross(100,{});return g.r92_roadwin===true&&!g.specialDeath;});
+  out.crossLoss  = [0,0,0].every(()=>{const g=cross(30,{});return g.r92_roadloss===true&&!g.specialDeath;});
+  // ⑤ r92EndingId 結局確定性計分 4 選 1：lawful+roadwin→老司機、scooter/driver/pedi 各預設、reckless+roadloss 壓回 mode 預設
+  out.endId = r92EndingId({r92mode:'scooter',r92_lawful:true,r92_roadwin:true})==='r92_end_veteran'
+    && r92EndingId({r92mode:'pedi',r92_lawful:true,r92_roadwin:true})==='r92_end_veteran'
+    && r92EndingId({r92mode:'scooter'})==='r92_end_scooter'
+    && r92EndingId({r92mode:'scooter',r92_reckless:true,r92_roadloss:true})==='r92_end_scooter'
+    && r92EndingId({r92mode:'driver'})==='r92_end_driver'
+    && r92EndingId({r92mode:'pedi'})==='r92_end_pedi'
+    && r92EndingId({})==='r92_end_pedi';
+  // ⑤ 成就確定性解鎖、零誤觸、提示齊備
+  out.ach = ACH_MAP.r92_in.check({S:{flags:{r92_in:true}},age:40})
+    && ACH_MAP.r92_done.check({S:{flags:{r92_endhit:true}},age:55})
+    && ACH_MAP.r92_veteran.check({S:{flags:{r92_endtype:'r92_end_veteran'}},age:55})
+    && ACH_MAP.r92_pedi.check({S:{flags:{r92_endtype:'r92_end_pedi'}},age:55})
+    && !ACH_MAP.r92_in.check({S:{flags:{}},age:40})
+    && !ACH_MAP.r92_veteran.check({S:{flags:{r92_endtype:'r92_end_pedi'}},age:55})
+    && ['r92_in','r92_done','r92_veteran','r92_pedi'].every(id=>ACH_MAP[id]&&ACH_MAP[id].hint&&ACH_MAP[id].hint.length>4);
+  // ⑤ 平衡護欄：全鏈所有選項 eff（含 sr/br win/lose 分支）每格 |eff|<=8（special 內 runtime eff 不在選項定義內、另由文案護欄把關）
+  const r92ids=['r92_roadhook','r92_habit','r92_scooter','r92_driver','r92_pedi','r92_end_veteran','r92_end_scooter','r92_end_driver','r92_end_pedi'];
+  let maxEff=0;
+  r92ids.forEach(id=>{ const e=f(id); e.choices.forEach(c=>{
+    const buckets=[c.eff];
+    if(c.sr){ buckets.push(c.sr.win.eff,c.sr.lose.eff); }
+    if(c.br){ buckets.push(c.br.hi.eff,c.br.lo.eff); }
+    buckets.forEach(b=>{ if(b) Object.values(b).forEach(v=>{ if(Math.abs(v)>maxEff)maxEff=Math.abs(v); }); });
+  }); });
+  out.balance = maxEff<=8;
+  // ⑥ 死法圖鑑：roadkill / drunkdrive 進 SPECIAL_DEATHS + DEATHBOOK（reason+hint 齊備）
+  out.deathbook = !!SPECIAL_DEATHS.roadkill && !!SPECIAL_DEATHS.drunkdrive
+    && DEATHBOOK.some(d=>d.id==='roadkill'&&d.reason&&d.hint&&d.hint.length>4)
+    && DEATHBOOK.some(d=>d.id==='drunkdrive'&&d.reason&&d.hint&&d.hint.length>4);
+  // ⑦ 文案紅線：全鏈 title/text/res 不得含政治/暴力/仇恨字串（交通文化自嘲非嘲諷受害者）
+  const RED=['共產','統一','獨立','國民黨','民進黨','政黨','邪教','低能','智障','廢物','去死','該死','活該死'];
+  let blob='';
+  r92ids.forEach(id=>{ const e=f(id); blob+=(e.title||'')+(e.text||''); e.choices.forEach(c=>{ blob+=(c.label||'')+(c.res||''); }); });
+  out.noRedline = RED.every(w=>blob.indexOf(w)<0);
+  // ⑧ 舊存檔相容：舊 save 經 ensureState 不注入任何 r92 鍵；鏈仍能在舊 save 上正常評估
+  const old={flags:{employed:true},attr:{hp:50,int:50,apr:50,mny:50,hap:50},age:40,alive:true,seen:{}}; ensureState(old);
+  out.compat = Object.keys(old.flags).every(k=>k.indexOf('r92')!==0);
+  // ⑨ 零汙染：開局 S.flags 無 r92 鍵；非交通鏈事件不落 r92 旗標；沒踏進交通鏈時回顧卡整段省略
+  startGame(); out.clean = Object.keys(S.flags).every(k=>k.indexOf('r92')!==0);
+  fresh(45,{}); showEvent(f('networking')); choose(0); out.cleanPlain = Object.keys(S.flags).every(k=>k.indexOf('r92')!==0);
+  startGame(); S.flags={}; out.reviewSkip = r92RoadReviewHTML()==='';
+  S.flags={r92_in:true,r92mode:'scooter',r92_endtype:'r92_end_veteran'}; out.reviewShow = r92RoadReviewHTML().indexOf('交通／行人地獄軌跡')>=0;
+  return JSON.stringify(out);
+})()`, sandbox));
+ok(r92.entry && r92.gateMiss && r92.gateYoung && r92.gateRetired && r92.gateDone, 'R92 ① 攔截器 r92RoadPick：20-58 窗口+未退休+雜湊閘命中→入口、閘落空/窗口外/已退休/已收尾皆零殘留不插播');
+ok(r92.split, 'R92 ② 入口三分流：機車仔/四輪族/無車通勤各立 r92mode+step:1+r92_in；佛系慢活直接收尾(step:99)不立 mode');
+ok(r92.nodeHabit && r92.nodeScoot && r92.nodeDrive && r92.nodePedi && r92.endLand, 'R92 ② 進鏈依 step/mode 確定性返節點：step1 共用行車習慣、step2 依 mode、step3 落地 r92_endtype/r92_endhit');
+ok(r92.habLawful && r92.habReckless && r92.habGate && r92.habCost, 'R92 ③ 安全 buff 取捨：守規落 lawful/搶快落 reckless/int68 gate 防禦駕駛換 lawful，三選項 |eff|<=8 不 power creep');
+ok(r92.weaveDeath && r92.weaveWin && r92.weaveLoss, 'R92 ④ 機車仔鑽車陣 special r92_weave 體質×運勢確定性存活：hp 見底硬鑽→車禍猝逝 roadkill、高 hp 閃過(roadwin)、中 hp 擦撞生還(roadloss)，3 連跑零 rng 不翻盤');
+ok(r92.weaveBuffWin && r92.weaveBuffLose, 'R92 ④ 安全 buff 對鑽車陣存活門檻 ±10 確定性生效：lawful(+10)同 hp 閃過、reckless(-10)同 hp 擦撞，同屬性不同 buff 翻盤');
+ok(r92.drunkDeath && r92.drunkBust && r92.drunkNoWin && r92.driverSafe, 'R92 ④ 四輪族酒駕 special r92_drunk：太衰→酒駕釀禍 drunkdrive、其餘吊照重罰生還且絕無 roadwin；守規找代駕選項才有 roadwin(好結局來源)');
+ok(r92.crossDeath && r92.crossWin && r92.crossLoss, 'R92 ④ 行人地獄過馬路 special r92_cross 體質×運勢確定性存活：hp 見底硬闖→roadkill、高 hp 閃過(roadwin)、中 hp 擦撞生還(roadloss)，3 連跑零 rng 不翻盤');
+ok(r92.endId && r92.ach, 'R92 ⑤ 4 結局確定性計分(老司機/機車仔魂/四輪族/行人地獄倖存)＋4 成就確定性解鎖、零誤觸、提示齊備');
+ok(r92.balance && r92.deathbook, 'R92 ⑤⑥ 平衡護欄：全鏈選項 eff 每格 |eff|<=8；專屬死法 roadkill/drunkdrive 進 SPECIAL_DEATHS+DEATHBOOK(reason+hint 齊備)');
+ok(r92.noRedline, 'R92 ⑦ 文案紅線：全鏈無政治/暴力/仇恨字串，交通文化自嘲非嘲諷受害者');
+ok(r92.compat && r92.clean && r92.cleanPlain && r92.reviewSkip && r92.reviewShow, 'R92 ⑧⑨ 零汙染+舊存檔相容：開局/舊save/非交通鏈事件 S.flags 皆無 r92 鍵、沒踏進交通鏈時回顧卡省略、踏進後正常顯示');
+
 console.log(fails ? `\n結果: ❌ ${fails} 項未通過` : '\n結果: ✅ 狀態機全數正確');
 process.exit(fails ? 1 : 0);
