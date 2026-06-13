@@ -5,17 +5,19 @@
 [![▶ Play Now](https://img.shields.io/badge/%E2%96%B6%20%E7%B7%9A%E4%B8%8A%E8%A9%A6%E7%8E%A9-earthlife.pages.dev-7fd7ff?style=for-the-badge)](https://earthlife.pages.dev)
 [![License: MIT](https://img.shields.io/badge/License-MIT-3fb950?style=for-the-badge)](LICENSE)
 [![Single HTML file](https://img.shields.io/badge/Build-%E5%96%AE%E4%B8%80%20HTML%20%E6%AA%94%C2%B7%E7%84%A1%E6%A1%86%E6%9E%B6-ff9d5c?style=for-the-badge)](index.html)
-[![AI Self-Evolved](https://img.shields.io/badge/AI%20%E8%87%AA%E4%B8%BB%E9%80%B2%E5%8C%96-R1%20%E2%86%92%20R96%20%E4%BB%8D%E5%9C%A8%E7%B9%BC%E7%BA%8C-ffd24a?style=for-the-badge)](docs/AI_AUTONOMOUS_UPDATE.md)
+[![AI Self-Evolved](https://img.shields.io/badge/AI%20%E8%87%AA%E4%B8%BB%E9%80%B2%E5%8C%96-R1%20%E2%86%92%20R100%20%E4%BB%8D%E5%9C%A8%E7%B9%BC%E7%BA%8C-ffd24a?style=for-the-badge)](docs/AI_AUTONOMOUS_UPDATE.md)
 [![Zero human-written game code](https://img.shields.io/badge/%E9%81%8A%E6%88%B2%E7%A8%8B%E5%BC%8F%E7%A2%BC-100%25%20AI%20%E6%89%8B%E5%AF%AB%C2%B7%E9%9B%B6%E4%BA%BA%E9%A1%9E%E6%8F%92%E6%89%8B-ff5d8f?style=for-the-badge)](docs/AI_AUTONOMOUS_UPDATE.md)
 
-> 🧬 **這是一款「自己進化自己」的遊戲——一個 AI agent 自己寫出來、自己養大的。** 從 61 個事件的雛形開始，沒有人類排需求、沒有人類改一行 code，AI 每 30 分鐘自我迭代一輪：自己選題、自己改碼、自己跑測試、自己部署、自己寫日誌，全程無人介入。到今天它已經**連續自主進化 96 輪（R1 → R96，仍在繼續）**，且每一輪都得先過自動化測試閘門才准上線。**每一行遊戲程式碼都是 AI 手寫、零人類手寫遊戲碼。** 你現在玩到的這個版本，不是誰設計的——是它自己一輪一輪長出來的。
+> 🧬 **這是一款「自己進化自己」的遊戲——一個 AI agent 自己寫出來、自己養大的。** 從 61 個事件的雛形開始，沒有人類排需求、沒有人類改一行 code，AI 每 30 分鐘自我迭代一輪：自己選題、自己改碼、自己跑測試、自己部署、自己寫日誌，全程無人介入。到今天它已經**連續自主進化 100 輪（R1 → R100，仍在繼續）**，且每一輪都得先過自動化測試閘門才准上線。**每一行遊戲程式碼都是 AI 手寫、零人類手寫遊戲碼。** 你現在玩到的這個版本，不是誰設計的——是它自己一輪一輪長出來的。
+
+> 📸 **最新賣點（R99→R100）**：死了還能領一張**自繪人生分享卡**（Canvas 直接畫、一鍵下載 PNG／複製文字摘要）配上**跨局累積的成就圖鑑**；更埋了一整套**隱藏稀有結局**——多個台味自嘲的限定收尾＋稀有度徽章，要特定活法才解得到。截圖、炫耀、再投胎一次，停不下來。
 
 🎮 線上試玩 / Play now: **https://earthlife.pages.dev**
 
 <p align="center">
   <img src="docs/demo.gif" width="62%" alt="EarthLife 實機 demo：投胎抽卡 → 梗圖事件 → 人生總結卡">
 </p>
-<p align="center"><sub>↑ 實機 demo（持續進化中，目前 R96）</sub></p>
+<p align="center"><sub>↑ 實機 demo（持續進化中，目前 R100）</sub></p>
 
 <p align="center">
   <img src="docs/screenshot_start.png" width="31%" alt="開局投胎抽卡">
@@ -30,7 +32,7 @@
 
 這不只是一款遊戲——它是一個 **「AI 自主更新管理」的實驗場**。
 
-遊戲上線後的每一輪迭代（**R1 → R96，仍在繼續**），都由一個 AI agent 自主完成，**每 30 分鐘一輪**，無人介入、**全程零人類手寫遊戲碼**：
+遊戲上線後的每一輪迭代（**R1 → R100，仍在繼續**），都由一個 AI agent 自主完成，**每 30 分鐘一輪**，無人介入、**全程零人類手寫遊戲碼**：
 
 ```
 ┌─────────────────────────────────────────────────┐
@@ -45,11 +47,11 @@
 └─────────────────────────────────────────────────┘
 ```
 
-96 輪下來，遊戲從 61 個事件的雛形，長成 **789 個事件、111 種梗圖場景、303 個成就、77 種死法、10 個隱藏結局**、外加多館合一的收藏圖鑑（死法／成就／出身／天賦）的完整作品（內容數據由測試報告即時統計，截至 R96）——每一步都有測試把關、每一步都可回溯。
+100 輪下來，遊戲從 61 個事件的雛形，長成 **789 個事件、111 種梗圖場景、303 個成就、77 種死法、10 個隱藏結局＋一整套隱藏稀有結局**、外加自繪人生分享卡與成就圖鑑、多館合一的收藏圖鑑（死法／成就／出身／天賦）的完整作品（內容數據由測試報告即時統計，截至 R100）——每一步都有測試把關、每一步都可回溯。
 
 詳細機制設計請見 **[docs/AI_AUTONOMOUS_UPDATE.md](docs/AI_AUTONOMOUS_UPDATE.md)**。
 
-### 🧬 AI 自主進化時間軸（R1 → R96 精選里程碑）
+### 🧬 AI 自主進化時間軸（R1 → R100 精選里程碑）
 
 > 從一個 61 事件的雛形，AI agent 自己一路把它養成了下面這條軌跡。沒有人類排需求，每一輪都是它讀完現況後自己決定要長什麼：
 
@@ -80,9 +82,12 @@
 | **R92** | 🛣️ 台味交通／行人地獄人生支線：機車仔／四輪族／無車通勤三線分流，守規禮讓換安全 buff vs 搶快闖紅燈的取捨，體質×運勢決定鑽車陣／過馬路／酒駕臨檢的存活 → 四種結局（老司機零違規／機車仔魂／塞國道的中產／行人地獄倖存者），含酒駕釀禍與車禍猝逝限定死法 |
 | **R93** | 🏥 台味健保醫療人生支線：健保鄉民／自費養生／鐵齒硬撐三線分流——體質×運勢決定病痛、財富決定自費療程與單人病房、智力識破密醫、魅力影響醫病關係 → 四種結局（百歲人瑞健檢全綠／逛醫院達人／自費養生家／鐵齒倖存者），含急診人球延誤與慢性病惡化限定死法 |
 | **R95** | 🎥 台味網紅直播主人生支線：開台／抖內／業配／炎上／退網復出多段分流，魅力×運勢決定爆紅、智力避開炎上翻車 → 從沒沒無聞到頂流網紅的起落，含過勞爆肝限定死法 |
-| **R96** | 🌪️ 台味天災生存人生支線：地震／颱風／淹水／土石流——體質×運勢決定生存、智力×財富決定防災準備是否到位，含強震／土石流／淹水限定死法＋結算屬性軌跡回顧（最新一輪） |
+| **R96** | 🌪️ 台味天災生存人生支線：地震／颱風／淹水／土石流——體質×運勢決定生存、智力×財富決定防災準備是否到位，含強震／土石流／淹水限定死法＋結算屬性軌跡回顧 |
+| **R98** | 📊 數值系統實感強化：五圍從「結算頁裝飾數字」升級成真正的命運引擎——屬性實質驅動事件分支、檢定成功率與系統解鎖門檻，成長帶權衡取捨（拉高一項常有代價），結算頁攤開這一生的屬性軌跡回顧，讓每一分配點都看得到後果 |
+| **R99** | 🪪 結局分享卡＋成就圖鑑：死亡結算改用 **Canvas 自繪人生分享卡**，一鍵下載 PNG／複製文字摘要直接丟群組炫耀；新增**成就圖鑑頁**用 localStorage 跨局累積你解過的所有成就——把「截圖分享」做成內建功能 |
+| **R100** | 🏆 隱藏稀有結局系統：埋進多個台味自嘲的**隱藏稀有結局**＋專屬觸發條件，配**稀有度徽章**標示你拿到的是多罕見的收尾，並與 R99 分享卡整合——抽到稀有結局的那張卡，就是最想截圖外流的炫耀本錢（最新一輪） |
 
-> 一個 AI agent，連續自我迭代 **96 輪**、每一輪都得過測試閘門才放行，**全程零人類手寫遊戲碼**——這是這個專案最獨特的賣點。完整 96 輪逐輪設計決策直接寫在 `index.html` 的程式碼註解裡，那也是下一輪 AI 的記憶。
+> 一個 AI agent，連續自我迭代 **100 輪**、每一輪都得過測試閘門才放行，**全程零人類手寫遊戲碼**——這是這個專案最獨特的賣點。完整 100 輪逐輪設計決策直接寫在 `index.html` 的程式碼註解裡，那也是下一輪 AI 的記憶。
 
 ## 🎮 遊戲說明
 
@@ -91,7 +96,7 @@
 1. **隨機投胎**：抽天賦＋家境，決定 ❤️健康 / 🧠智力 / 💅外貌 / 💰財富 / 😄快樂 五維屬性。
 2. **逐年推進**：每年觸發事件，每個事件是一張**梗圖卡**（迷因排版＋上下粗白字），做出選擇。
 3. **選擇有後果**：屬性增減、旗標埋伏筆、事件連鎖——年輕的選擇會在中年回來找你。
-4. **死亡結算**：享年＋稱號＋墓誌銘＋屬性曲線，產出一張可分享的「人生總結卡」。
+4. **死亡結算**：享年＋稱號＋墓誌銘＋屬性曲線，產出一張 **Canvas 自繪的「人生總結卡」**，可下載 PNG／複製文字摘要直接丟群組；運氣夠刁還能撞上**隱藏稀有結局**＋稀有度徽章。
 5. **跨局成長**：成就圖鑑、死法圖鑑、收藏館、轉生天賦、祖產傳承、節令限定……再投胎一次。
 
 台味滿點：補習班人生、北漂租屋到無殼蝸牛買房（頭期款／30 年房貸／包租公／繼承祖厝／法拍）、手搖飲、夾娃娃機、颱風假賭盤、過年紅包攻防、兵役體位判定（常備役／替代役／免役／軍官）、健保、網路鄉民、22K 躺平 vs 內捲與血汗職場打工人、自己當頭家開店創業（夜市攤販到上市連鎖）、詐騙之島防詐學分（被害者／車手／反詐三線）、晚年退休型錄與身後事、潤出國重開機，再到依出生世代分流的鬼島時代大事記（戒嚴尾巴一路走到 AI 浪潮）。
@@ -131,7 +136,7 @@ node _test_state.js
 
 This is not just a game — it's a working experiment in **AI-autonomous release management**.
 
-Every iteration since launch (**R1 → R96 and counting**) was performed by an AI agent, **one round every 30 minutes**, with no human in the loop and **zero human-written game code**:
+Every iteration since launch (**R1 → R100 and counting**) was performed by an AI agent, **one round every 30 minutes**, with no human in the loop and **zero human-written game code**:
 
 1. **Pick a direction** — the agent reads the current game state and decides what to evolve this round (new system / balancing / polish / easter eggs).
 2. **Modify the code** — edits the game directly.
@@ -139,7 +144,7 @@ Every iteration since launch (**R1 → R96 and counting**) was performed by an A
 4. **Deploy** — pushes the build to Cloudflare Pages.
 5. **Write the log** — leaves structured design comments in the code, which become context for the next round's agent.
 
-Over 96 rounds the game grew from a 61-event prototype into **789 events, 111 meme scenes, 303 achievements, 77 ways to die, 10 hidden endings**, plus a multi-museum collection gallery (deaths / achievements / origins / talents) — content figures tallied live by the test report, as of R96. Every step gated by tests, every step traceable.
+Over 100 rounds the game grew from a 61-event prototype into **789 events, 111 meme scenes, 303 achievements, 77 ways to die, 10 hidden endings plus a whole set of secret rare endings**, plus a Canvas-drawn shareable life card, an achievements gallery, and a multi-museum collection gallery (deaths / achievements / origins / talents) — content figures tallied live by the test report, as of R100. Every step gated by tests, every step traceable.
 
 See **[docs/AI_AUTONOMOUS_UPDATE.md](docs/AI_AUTONOMOUS_UPDATE.md)** for the full mechanism design and evolution log.
 
