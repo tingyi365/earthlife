@@ -13630,6 +13630,7 @@ function screenSummary(cat){
         <button class="btn" onclick="copyBragText(this,'salty')">🌶️ 複製精華戰績（靠北版 · 貼群必引戰）</button>
         <button class="btn" onclick="copyRoastCard(this)">🃏 一鍵複製分享卡（台味嘲諷版，貼群比慘）</button>
         <button class="btn" onclick="makeShareCard()">📤 分享這個人生（人生回顧卡 PNG，存圖丟群）</button>
+        <button class="btn" onclick="makeCollectionCard()">📊 圖鑑收集卡（七館進度 PNG，秀收集量炫耀）</button>
         <button class="btn" onclick="copyShareTextCard(this)">📇 複製文字版（墓誌銘＋連結，貼社群嗆人）</button>
         <button class="btn" onclick="copyTextReport(this)">📣 複製人生戰報（稱號＋名場面，貼群組嗆人）</button>
         <button class="btn" onclick="copyShareLink()">🔗 複製比拼連結，嗆朋友</button>
@@ -14028,6 +14029,7 @@ function renderCollection(){
         ${extra}
       </div>
       <div class="choices" style="margin-top:14px">
+        <button class="btn" onclick="makeCollectionCard()">📊 產生圖鑑收集卡（存圖丟群炫耀進度）</button>
         <button class="btn sec" onclick="backFromGallery()">← 返回</button>
       </div>
     </div>
@@ -14473,7 +14475,7 @@ function wrapText(ctx,text,x,y,maxW,lineH,max){
 function makeShareCard(){
   try{
     if(!S){ alert("沒有可分享的人生資料"); return; }
-    const W=540,H=1060;   /* R59：加高容納年代職業列＋墓誌銘 */
+    const W=540,H=1190;   /* R59：加高容納年代職業列＋墓誌銘；R99：再加高放台味金句＋跨局圖鑑收集進度 */
     const dpr=(typeof window!=="undefined"&&window.devicePixelRatio)||1;
     const cv=document.createElement('canvas');
     cv.width=W*dpr; cv.height=H*dpr; cv.style.width=W+"px"; cv.style.height=H+"px";
@@ -14556,6 +14558,35 @@ function makeShareCard(){
     if(his.length){ his.forEach(h=>{ y=wrapText(ctx, h, bx, y, bw, 19, 2); }); y+=8; }
     else y=wrapText(ctx, absurdRecap(), bx, y, bw, 19, 3)+8;
 
+    // R99 台味人生金句（lifeHash 定選，同一生逐字一致，零 rng；走自嘲哲理，截圖外傳用）
+    const r99q=lifeQuoteText();
+    if(r99q){
+      ctx.textAlign='center';
+      ctx.fillStyle='#ffe9a8'; ctx.font='italic 14px monospace';
+      y=wrapText(ctx, '「'+r99q+'」', W/2, y+4, W-78, 21, 2)+12;
+      ctx.textAlign='left';
+    }
+
+    // R99 跨局圖鑑收集進度（成就展示：把整個檔案的收集成果秀在卡上，吊人回玩；collStats 缺席自動略過）
+    try{
+      if(typeof collStats==="function"){
+        const cs=collStats();
+        ctx.textAlign='left'; ctx.fillStyle='#7fffc4'; ctx.font='bold 14px monospace';
+        ctx.fillText('🗃️ 圖鑑收集進度', bx, y);
+        ctx.fillStyle='#cfd3e6'; ctx.font='12px monospace'; ctx.textAlign='right';
+        ctx.fillText(cs.got+' / '+cs.total+' 種', bx+bw, y); ctx.textAlign='left';
+        y+=11;
+        const pct=cs.total?Math.max(0,Math.min(1,cs.got/cs.total)):0;
+        ctx.fillStyle='rgba(255,255,255,0.10)'; ctx.fillRect(bx, y, bw, 12);
+        const pg=ctx.createLinearGradient(bx,0,bx+bw,0); pg.addColorStop(0,'#39ff88'); pg.addColorStop(1,'#7fd7ff');
+        ctx.fillStyle=pg; ctx.fillRect(bx, y, bw*pct, 12);
+        y+=24;
+        ctx.fillStyle='#9fb4ff'; ctx.font='11.5px monospace';
+        ctx.fillText('💀 '+cs.d+'　🏆 '+cs.a+'　🎴 '+cs.o+'　🌟 '+cs.h+'　🏅 '+cs.b, bx, y);
+        y+=10;
+      }
+    }catch(e){}
+
     // 嘲諷標語 + 網址（底部固定）
     ctx.textAlign='center';
     ctx.fillStyle='#ffd24a'; ctx.font='bold 17px monospace';
@@ -14587,6 +14618,76 @@ function showShareOverlay(dataUrl){
   document.body.appendChild(ov);
 }
 function closeShareOverlay(){ const o=document.getElementById('shareov'); if(o&&o.remove) o.remove(); }
+
+/* =========== ①.b R99 圖鑑收集卡（canvas → PNG）：跨局收集成就展示卡，存圖外傳吊人回玩 ===========
+   純外掛層：只讀 collStats() 與各圖鑑陣列長度，零 rng / 零狀態改動；無 DOM/canvas 環境自動降級不炸。 */
+function makeCollectionCard(){
+  try{
+    if(typeof document==="undefined"||!document.createElement){ alert("此環境無法產生圖卡"); return; }
+    const cs=(typeof collStats==="function")?collStats():null;
+    if(!cs){ alert("沒有可分享的收集資料"); return; }
+    const rows=[
+      ['💀','死法圖鑑',  cs.d, DEATHBOOK.length,        '#ff5a6e'],
+      ['🏆','成就牆',    cs.a, ACHIEVEMENTS.length,     '#ffd24a'],
+      ['🎴','出身圖鑑',  cs.o, ORIGINS.length,          '#ff7ac6'],
+      ['🔄','天賦架',    cs.r, REBIRTH_TALENTS.length,  '#46e08a'],
+      ['🏅','稱號名人堂',cs.b, LIFE_BADGES.length,      '#7fd7ff'],
+      ['🌟','隱藏結局',  cs.h, HIDDEN_ENDINGS.length,   '#c9a3ff'],
+      ['🃏','開局天賦',  cs.k, R49_PERKS.length,        '#9fb4ff'],
+    ];
+    const W=540, H=860;
+    const dpr=(typeof window!=="undefined"&&window.devicePixelRatio)||1;
+    const cv=document.createElement('canvas');
+    cv.width=W*dpr; cv.height=H*dpr; cv.style.width=W+"px"; cv.style.height=H+"px";
+    const ctx=cv.getContext('2d'); ctx.scale(dpr,dpr);
+    // 背景 + 像素格 + 綠框（與結算卡同家族視覺）
+    const g=ctx.createLinearGradient(0,0,0,H); g.addColorStop(0,'#10221a'); g.addColorStop(1,'#0a0e16');
+    ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+    ctx.strokeStyle='rgba(255,255,255,0.03)'; ctx.lineWidth=1;
+    for(let x=0;x<=W;x+=18){ ctx.beginPath(); ctx.moveTo(x+.5,0); ctx.lineTo(x+.5,H); ctx.stroke(); }
+    for(let y=0;y<=H;y+=18){ ctx.beginPath(); ctx.moveTo(0,y+.5); ctx.lineTo(W,y+.5); ctx.stroke(); }
+    ctx.strokeStyle='#39ff88'; ctx.lineWidth=4; ctx.strokeRect(12,12,W-24,H-24);
+    // 標題
+    ctx.textAlign='center';
+    ctx.fillStyle='#7fffc4'; ctx.font='16px monospace';
+    let y=58; ctx.fillText('地球 ONLINE · 人生圖鑑收集卡', W/2, y); y+=52;
+    // 總進度大數字
+    const pct=cs.total?Math.round(cs.got/cs.total*100):0;
+    ctx.fillStyle='#39ff88'; ctx.font='bold 56px monospace';
+    ctx.fillText(pct+'%', W/2, y); y+=34;
+    ctx.fillStyle='#cfd3e6'; ctx.font='15px monospace';
+    ctx.fillText('全館收集 '+cs.got+' / '+cs.total+' 種', W/2, y); y+=36;
+    // 七館進度條
+    ctx.textAlign='left';
+    const bx=44, bw=W-44*2;
+    rows.forEach(function(r){
+      const ic=r[0], nm=r[1], gv=r[2], tv=r[3], col=r[4];
+      ctx.fillStyle='#e8ebf5'; ctx.font='14px monospace';
+      ctx.fillText(ic+' '+nm, bx, y+12);
+      ctx.fillStyle='#fff'; ctx.font='bold 13px monospace'; ctx.textAlign='right';
+      ctx.fillText(gv+' / '+tv, bx+bw, y+12); ctx.textAlign='left';
+      y+=20;
+      const p=tv?Math.max(0,Math.min(1,gv/tv)):0;
+      ctx.fillStyle='rgba(255,255,255,0.10)'; ctx.fillRect(bx, y, bw, 12);
+      ctx.fillStyle=col; ctx.fillRect(bx, y, bw*p, 12);
+      y+=24;
+    });
+    y+=10;
+    // 台味金句（lifeHash 定選，S 缺席自動退預設，零 rng）
+    const q=(typeof lifeQuoteText==="function")?lifeQuoteText():'';
+    if(q){ ctx.textAlign='center'; ctx.fillStyle='#ffe9a8'; ctx.font='italic 14px monospace'; ctx.fillText('「'+q+'」', W/2, y); }
+    // 底部行動呼籲 + 網址
+    const left=cs.total-cs.got;
+    ctx.textAlign='center';
+    ctx.fillStyle='#ffd24a'; ctx.font='bold 16px monospace';
+    ctx.fillText(left>0?('還差 '+left+' 種就全收集，換你來追 👇'):'全圖鑑收集完成・地表最強鬼島玩家', W/2, H-74);
+    ctx.fillStyle='#7fffc4'; ctx.font='14px monospace';
+    ctx.fillText('▶ '+SHARE_URL, W/2, H-48);
+    ctx.fillStyle='rgba(207,211,230,0.7)'; ctx.font='11px monospace';
+    ctx.fillText('open source · github.com/tingyi365/earthlife', W/2, H-26);
+    showShareOverlay(cv.toDataURL('image/png'));
+  }catch(e){ alert("圖鑑收集卡生成失敗："+(e&&e.message||e)); }
+}
 
 /* =========== ①.5 文字戰報（R2）：複製到剪貼簿，貼群組嗆朋友 =========== */
 const REPORT_TAUNTS = [
@@ -14866,6 +14967,23 @@ const SHARE_TAUNTS = [
 ];
 function tauntText(){ return lifePick(SHARE_TAUNTS, "taunt24"); }
 
+/* ---- R99 台味人生金句：分享卡專用、雜湊定選零隨機，跟嗆聲文案分池（語氣走自嘲哲理，貼社群會被截圖那種） ---- */
+const LIFE_QUOTES = [
+  "人生就像鬼島的天氣，再爛也是要過。",
+  "投胎是抽卡，活著是課金，登出免費。",
+  "別人在贏，我在還活著，這也算一種贏。",
+  "認真你就輸了，可惜我每次都很認真。",
+  "這輩子最大的成就，是撐到了結算畫面。",
+  "命是上天給的，爛是自己活的。",
+  "躺平不是擺爛，是節能模式啟動。",
+  "有些人活成傳奇，有些人活成案例，我兩個都沾到邊。",
+  "地球 Online 沒有重來鍵，但有投胎按鈕，公平。",
+  "活得精彩或活得久，這題我選了『都沒有』。",
+  "再怎麼魯，至少這條命是我自己跑完的。",
+  "人生苦短，所以更要把它玩成搞笑番。",
+];
+function lifeQuoteText(){ return lifePick(LIFE_QUOTES, "quote99"); }
+
 /* ---- 墓誌銘產生器：依死法 / 出身 / 最終屬性 / 人生軌跡組池，雜湊定選一句 ---- */
 const EPITAPH_GENERAL = [
   "他這一生沒有開掛，全程手動，辛苦了。",
@@ -15037,6 +15155,9 @@ function buildShareText(){
   }
   const ta=topAch(1)[0];   // R24 最高成就（本局達標制，零 rng）
   if(ta) lines.push(`🏆 最高成就：${ta.ic} ${ta.nm}`);
+  // R99 跨局圖鑑收集進度（成就展示；collStats 缺席或拋錯自動略過，兩次生成仍逐字一致）
+  try{ if(typeof collStats==="function"){ const _cs=collStats(); lines.push(`🗃️ 圖鑑收集：${_cs.got}/${_cs.total} 種（💀${_cs.d}・🏆${_cs.a}・🎴${_cs.o}）`); } }catch(e){}
+  lines.push(`💭 ${lifeQuoteText()}`);   // R99 台味金句
   lines.push(`🗯️ ${tauntText()}`);
   if(code){
     lines.push(`🧬 種子碼：${code}`);
