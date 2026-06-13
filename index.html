@@ -1511,6 +1511,25 @@ function r83BizReviewHTML(){
     <div class="muted" style="font-size:11.5px;margin-top:5px">十個頭家九個倒，敢開過的人，都有資格說一句「我當過老闆」。</div></div>`;
 }
 
+/* R84 結算回顧：你的反詐戰績（無觸發/舊存檔自動省略，純讀 S.flags 零 rng） */
+const R84_PATHNM = {victim:"🥬 被害者線（差點當韭菜）", mule:"🛵 車手線（被吸收進詐團）", anti:"🛡️ 反詐線（將計就計）"};
+const R84_ENDNM = {r84_end_leek:"📉 血本無歸的資深韭菜", r84_end_jail:"🚓 車手被攔・吃牢飯", r84_end_boss:"🏢 升機房幹部洗錢（黑化）", r84_end_whitehat:"🛡️ 金盆洗手・反詐尖兵", r84_end_bait:"🎣 識破反釣・領檢舉獎金"};
+function r84ScamReviewHTML(){
+  const f=(S&&S.flags)||{};
+  if(!f.r84_in) return "";   // 從沒接到可疑機會（含直接已讀不回前的入口）→ 整段省略；r84_in 由三分流選項立旗
+  const rows=[];
+  if(f.r84path) rows.push(`<div style="display:flex;gap:6px;align-items:baseline;padding:2px 0;font-size:13px"><span>🚪</span><span class="muted" style="min-width:84px">入坑路線</span><span>${R84_PATHNM[f.r84path]||"動了念頭"}</span></div>`);
+  const decs=[];
+  if(f.r84w_int) decs.push("智力識破/反釣過關"); if(f.r84w_mny) decs.push("財富止血過關"); if(f.r84w_apr) decs.push("魅力爬升過關");
+  if(f.r84_allin) decs.push("越陷越深一路加碼"); if(f.r84_pawn) decs.push("乖乖當免洗車手"); if(f.r84_report) decs.push("報警檢舉了事");
+  if(decs.length) rows.push(`<div style="display:flex;gap:6px;align-items:baseline;padding:2px 0;font-size:13px"><span>🎲</span><span class="muted" style="min-width:84px">關鍵抉擇</span><span>${decs.join("、")}</span></div>`);
+  if(f.r84_endtype && R84_ENDNM[f.r84_endtype]) rows.push(`<div style="display:flex;gap:6px;align-items:baseline;padding:2px 0;font-size:13px"><span>🏁</span><span class="muted" style="min-width:84px">詐騙結局</span><span><b>${R84_ENDNM[f.r84_endtype]}</b></span></div>`);
+  return `<div class="origin" style="margin-top:10px;text-align:left">
+    🎣 <b>你的反詐戰績</b>　<span class="muted">台味詐騙之島</span>
+    <div style="margin-top:5px">${rows.join("")}</div>
+    <div class="muted" style="font-size:11.5px;margin-top:5px">在詐騙之島活一遭，不是被割就是學會收網——165 是這座島的全民必修課。</div></div>`;
+}
+
 /* =========================================================================
    R55 台灣時代背景系統：投胎時 roll 出生年代（走 rng() → 同種子同年代，挑戰/對戰公平）。
    年代解鎖各年代 2 個專屬事件（cond 掛 S.era）。
@@ -2161,6 +2180,12 @@ const ACHIEVEMENTS = [
   {id:"r83_empire", ic:"🏰", nm:"連鎖帝國・敲響上市鐘", desc:"從一間寒酸小店，靠展店與檢定一路做成全島插旗的連鎖品牌，最後站上交易所敲響上市鐘。台灣囡仔靠一門小生意翻身的傳奇，這次主角是你。", check:c=>!!(c.S.flags&&c.S.flags.r83_endtype==="r83_end_ipo"), hint:"創業時選擇展店做連鎖、又把資金與規模的關鍵檢定多數過關，才能把小店一路做到上市上櫃…"},
   {id:"r83_bust", ic:"💸", nm:"慘賠收攤・學費繳好繳滿", desc:"食安出包、債務雪球、或人潮退散——你終究把鐵門拉了下來，扛著一身債和教訓收場。但你敢開過，這句話有些人一輩子都說不出口。", check:c=>!!(c.S.flags&&c.S.flags.r83_endtype==="r83_end_bust"), hint:"創業路上偷工減料壓成本、或一路檢定翻車又背了一身貸款，多半會把店做到慘賠收攤…"},
   {id:"r83_legend", ic:"🏵️", nm:"在地傳奇老店", desc:"沒上市、沒連鎖，你卻把一家小店熬成在地人從小吃到大的傳奇——觀光客按圖朝聖、老主顧帶下一代回味。財富不是最頂的，但口碑這東西，千金難買。", check:c=>!!(c.S.flags&&c.S.flags.r83_endtype==="r83_end_legend"), hint:"守成顧好一家店、堅持拚 CP 值用好料、又把關鍵檢定多數過關，才能把小店做成在地名店…"},
+  /* ---- R84 台味詐騙之島人生支線成就（純讀 S.flags 確定性判定，零 rng；沒踏進詐騙鏈/舊存檔永不誤觸；與既有 victim/r52_scamhero 不衝突——各自獨立旗標）---- */
+  {id:"r84_leek", ic:"🥬", nm:"初代韭菜・血本無歸", desc:"被『穩賺不賠』的假投資一路畫餅，越陷越深，最後棺材本清空、戶頭歸零。你親身把每則防詐新聞的劇本走了一遍，從此『穩賺不賠』四個字成了你一生的警報聲。", check:c=>!!(c.S.flags&&c.S.flags.r84_endtype==="r84_end_leek"), hint:"踏進假投資被害者線、又沒在財富檢定及時止血（或一路聽客服加碼匯解凍金），多半會把老本割好割滿…"},
+  {id:"r84_mule", ic:"🚓", nm:"車手末路・吃牢飯", desc:"為了『在家日領五千』下海當車手，在 ATM 前被攔下、上了手銬。詐團把你當免洗筷，出事第一個丟包，你頂下的罪，是那份工作從沒寫在合約上的隱藏條款。", check:c=>!!(c.S.flags&&c.S.flags.r84_endtype==="r84_end_jail"), hint:"走進車手線、又沒靠魅力檢定往上爬（或乾脆乖乖領日薪多跑幾趟 ATM），下場多半是被攔下吃牢飯…"},
+  {id:"r84_boss", ic:"🏢", nm:"機房幹部（黑色幽默）", desc:"從 ATM 前的車手，靠一張嘴爬進機房當幹部、調度金流洗錢。錢多到要透過人頭帳戶層層洗白，代價是良心債越欠越深、睡眠越來越淺——這座金山，是用別人的血淚堆的。", check:c=>!!(c.S.flags&&c.S.flags.r84_endtype==="r84_end_boss"), hint:"在車手線靠魅力檢定過關、一路往詐團上層爬，會迎來一個賺得越髒、睡得越淺的黑化結局…"},
+  {id:"r84_whitehat", ic:"🛡️", nm:"金盆洗手・反詐尖兵", desc:"在詐騙之島走過一遭沒被割光、也沒走偏，反而把整套套路摸透，當起一條街的反詐守門人——長輩接到怪電話先問你，鄰居看到假投資群先截圖給你。", check:c=>!!(c.S.flags&&c.S.flags.r84_endtype==="r84_end_whitehat"), hint:"被害者線靠財富檢定及時止血、或反詐線沒釣成仍踏實檢舉，都能金盆洗手活成反詐守門人…"},
+  {id:"r84_bait", ic:"🎣", nm:"反釣戲精・全身而退", desc:"對方想釣你，你偏要反過來釣他——下餌、約面交、通報警方一氣呵成，車手落網、你領了檢舉獎金還上了反詐宣導。在詐騙之島，你不只沒當獵物，還把獵人送進了局子。", check:c=>!!(c.S.flags&&c.S.flags.r84_endtype==="r84_end_bait"), hint:"走反詐線、又在智力檢定將計就計成功釣出車手、協助逮捕，才能全身而退還領到檢舉獎金…"},
 ];
 const ACH_MAP = {}; ACHIEVEMENTS.forEach(a=>ACH_MAP[a.id]=a);
 
@@ -8687,6 +8712,98 @@ function buildEvents(){ return [
     ]},
 
   /* =====================================================================
+     R84 台味詐騙之島人生支線（階梯式分流，由確定性攔截器 r84ScamPick 驅動）：
+     起心動念(接到可疑機會) → 入口三分流(被害者線／車手線／反詐線) → 經營抉擇(1 sr 屬性檢定+1 平選項)
+       → 結局 ×5（血本無歸資深韭菜／車手被攔吃牢飯／升機房幹部洗錢[黑化]／金盆洗手反詐尖兵／識破反釣領檢舉獎金）。
+     掛接鐵律（沿用 R50 確定性節拍／R81/R83 攔截器精神，零裸 rng／零 Math.random）：
+     ① 全 hidden:true（不進隨機池、不計入 R46 觸達率落空名單）＋ once:true，只由 r84ScamPick 插播。
+     ② 分流靠 S.flags.r84path（"victim"／"mule"／"anti"）＋階梯靠 S.flags.r84step 推進（每選項都帶
+        flags:{r84step:N+1} → 不論模擬亂選都會前進、鏈必走完）；入口 r84_hook 由確定性雜湊閘
+        （r41Hash 種子化）低機率攔截，舊存檔無旗標整套無感（R50/R81/R83 相容性精神）。
+     ③ 每個「經營抉擇」節點 1 個 sr 屬性檢定（吃 R44 公式 {k,need,spread:40,win,lose}，win 必帶代價負值、
+        效果 ±12 內）＋ 1 個平選項。回扣 R44 屬性驅動：智力決定抗騙/識破成功率(anti)、財富決定損失量(victim)、
+        魅力決定組織爬升(mule)；理財接口沿用既有 scammed 旗標（結局命中血本無歸時順手點亮，不覆寫舊旗標）。
+     ④ 結局由 r84ScamPick 依 r84path＋檢定旗標確定性計分選一（5 選 1），picker 落地 r84_endtype/r84_endhit
+        供成就/回顧/戰績卡。台味自嘲基調（詐騙之島、車手滿街、ATM 解除分期、165 反詐專線、檢舉獎金、機房在
+        柬埔寨），守政治/仇恨/暴力紅線走幽默自嘲，黑化結局帶代價/反諷不美化犯罪。
+     ===================================================================== */
+  {id:"r84_hook", hidden:true, once:true, ic:"🎣", nm:"接到可疑的機會", r84node:"hook",
+    title:"歡迎光臨詐騙之島", text:"手機又震了一下：一個自稱『老師』的人把你拉進『穩賺不賠投資群』、一通『猜猜我是誰』的電話喊你阿明、外加一則『在家輕鬆日領五千・免經驗』的徵人廣告——這座島被戲稱詐騙之島不是沒道理，全民都修過防詐學分，差別只在你是被當教材，還是當講師。那個聲音又冒出來：『搞不好這次是真的？』",
+    meme:{scene:"scam", top:"全民都修過防詐學分", bot:"差別只在你被當教材還是當講師", tag:"詐騙"},
+    choices:[
+      {label:"📈 心動了，先丟五千進那個『穩賺』投資群試水溫", eff:{hap:1,mny:-1}, flags:{r84step:1, r84path:"victim", r84_in:true}, res:"你想著『試一點點不會怎樣』，加了 LINE、入了群。群裡每天有人貼對帳單、曬出金截圖，老師親切回你每一句話。你不知道的是：群裡九成是工讀生跟機器人，唯一的真人，是你。魚餌已經吞下，接下來就看魚鉤多深。"},
+      {label:"💸 缺錢缺到眼紅，回那則『在家日領五千』的徵人", eff:{mny:1,hp:-1}, flags:{r84step:1, r84path:"mule", r84_in:true}, res:"對方很快回訊，話術滴水不漏：『工作超簡單，幫公司跑跑腿、領領包裹、操作一下 ATM 就好。』你心裡知道哪有這麼好康，但帳單不會等你良心掙扎完。你按下『我願意』那一刻，沒意識到自己正從待業青年，變成詐團食物鏈最底層、最容易被丟包的那一環——車手。"},
+      {label:"🛡️ 一看就詐騙——截圖、打 165，順便將計就計", eff:{int:2,hap:1}, flags:{r84step:1, r84path:"anti", r84_in:true}, res:"你冷笑一聲：這套劇本你看到會背了。你一邊截圖存證、一邊撥 165 反詐專線報案，腦中甚至開始盤算——既然對方想釣你，不如反過來釣他一票。在這座詐騙滿街的島上，你決定不當待宰的魚，要當收網的人。"},
+      {label:"🙄 已讀不回，這種訊息我一天收到飽", eff:{int:1,hap:1}, flags:{r84step:99}, res:"你看都懶得看，直接封鎖、刪除、檢舉一條龍。在詐騙之島活久了，你的手指對這類訊息已經演化出反射神經。少賺一個『穩賺不賠』的機會，也少賠一副棺材本——這座島教會你最值錢的一課：天上掉下來的，多半是要你命的。"},
+    ]},
+  /* ---- 被害者線 經營抉擇：財富檢定（損失量）---- */
+  {id:"r84_victim", hidden:true, once:true, ic:"🥬", nm:"越陷越深的投資夢", r84node:"step", cond:s=>s.flags&&s.flags.r84path==="victim",
+    title:"出金被卡住的那一刻", text:"前面幾筆『獲利』真的入帳了，你嚐到甜頭、把本金越加越大。直到你想把錢領出來，客服才慢條斯理地說：『不好意思，您的帳戶觸發風控，需先繳一筆 20% 解凍金才能出金喔。』你心頭一涼——這套『解除分期付款』『安全帳戶』的台詞，新聞演過一百遍，只是這次主角換成你。要止血，還是再賭一把？",
+    meme:{scene:"stonks", top:"前面真的有出金", bot:"想領全部時 帳戶被風控了", tag:"詐騙"},
+    choices:[
+      {label:'<i class="gtag">⚖️財富檢定・骰0~40需68</i> 老本夠厚，當機立斷認賠、止血殺出', sr:{k:"mny", need:68, spread:40,
+        win:{eff:{mny:-6,int:5,hap:-2}, flags:{r84w_mny:true}, res:"💰 你身家夠厚、頭腦及時清醒：『解凍金』三個字一出口你就懂了，這是吊著你不斷加碼的無底洞。你忍痛把已投入的當學費、立刻封鎖斷聯、跑去 165 報案。賠是賠了一筆，但你保住了大頭——這堂課很貴，可比起把棺材本全填進去的人，你已經是贏家。代價是那筆學費，肉痛了好一陣子。"},
+        lose:{eff:{mny:-12,hap:-4,int:2}, res:"💸 你捨不得放掉帳面上那串『獲利』數字，咬牙把解凍金匯了過去。然後是『稅金』、是『保證金』、是『手續費』……每繳一筆，對方就生出下一個名目。等你發現群組解散、老師人間蒸發，戶頭也跟著清空了。沉沒成本是世界上最貴的賭注，你用半生積蓄買了這個教訓。"}}, flags:{r84step:2}},
+      {label:"客服說再匯一筆就能出金，照做，不信領不回來", eff:{mny:-10,hap:-3,int:2}, flags:{r84step:2, r84_allin:true}, res:"你被『再一步就能領回』的執念綁架，一筆接一筆地匯。家人勸你是詐騙，你還反過來護航：『他們對我很好，你們不懂。』直到錢全沒了、人也聯絡不上，你才從那場精心設計的美夢裡醒來。詐騙最狠的不是騙走你的錢，是先騙走你的判斷力。"},
+    ]},
+  /* ---- 車手線 經營抉擇：魅力檢定（組織爬升 vs 被當免洗）---- */
+  {id:"r84_mule", hidden:true, once:true, ic:"🛵", nm:"詐團裡的食物鏈", r84node:"step", cond:s=>s.flags&&s.flags.r84path==="mule",
+    title:"車手的分岔路", text:"跑了幾趟你就摸透了：站在 ATM 前提領、被監視器拍好拍滿的車手，是整條鏈上最沒保障、最容易被丟出來頂罪的炮灰。上面的『水房』『機房』才是真正數錢的人。你看著鏡子裡這張臉，盤算著——是繼續當免洗的最底層，還是憑著一張嘴往上爬，混進真正賺錢的那層？",
+    meme:{scene:"deal", top:"車手是最容易被丟包的一環", bot:"上面數錢的才是贏家", tag:"詐騙"},
+    choices:[
+      {label:'<i class="gtag">⚖️魅力檢定・骰0~40需66</i> 嘴皮夠甜會帶人，往上爬進機房幹部', sr:{k:"apr", need:66, spread:40,
+        win:{eff:{mny:9,hap:-3,hp:-4}, flags:{r84w_apr:true}, res:"🏢 你靠著一張能說會道的嘴、帶得動人的手腕，從跑腿車手一路被拔擢進機房當小幹部。錢確實變多了，多到你不敢跟家人說來路。代價是你每晚都在背債——不是金錢的債，是良心的債：螢幕另一端被你話術掏空的，是一個個跟你媽一樣的人。睡得越來越淺，賺得越來越髒。"},
+        lose:{eff:{mny:-8,hp:-5,hap:-3}, res:"🚓 你想往上爬，可惜口才撐不起野心，反而因為知道太多、又不夠『自己人』，被上頭當成最好用的替死鬼。某次提領被埋伏的警察當場壓制，你才發現自己連幹部的邊都沒摸到，就先成了卷宗裡的一個代號。詐團的溫情都是假的，唯一真實的，是你頂下的那條罪。"}}, flags:{r84step:2}},
+      {label:"不想動腦，乖乖領日薪當車手，多跑幾趟 ATM", eff:{mny:5,hap:-4,hp:-2}, flags:{r84step:2, r84_pawn:true}, res:"你說服自己『我只是領個錢，又沒騙人』，每天戴著安全帽穿梭在各家 ATM 之間，領一趟抽一趟。錢來得快，但你開始怕路口的監視器、怕陌生的腳步聲、怕半夜的敲門。你以為自己站在岸上，其實早就泡在水裡——而且是最先滅頂的那個。"},
+    ]},
+  /* ---- 反詐線 經營抉擇：智力檢定（識破/將計就計反釣）---- */
+  {id:"r84_anti", hidden:true, once:true, ic:"🕵️", nm:"反過來收網的人", r84node:"step", cond:s=>s.flags&&s.flags.r84path==="anti",
+    title:"報警，還是將計就計？", text:"165 那頭請你提高警覺、別再回應。但你不甘心只當個防守的人——對方那麼有自信地想割你，你偏要反過來釣他一票。你開了個空殼帳戶當誘餌、約對方派車手出來『面交』，同步把時間地點通報給警方。在這座詐騙之島當獵物太久了，這一次，換你下餌。",
+    meme:{scene:"rollsafe", top:"與其當防守的獵物", bot:"不如反過來下餌收網", tag:"詐騙"},
+    choices:[
+      {label:'<i class="gtag">⚖️智力檢定・骰0~40需66</i> 腦袋夠清楚，將計就計釣出車手、協助逮捕領檢舉獎金', sr:{k:"int", need:66, spread:40,
+        win:{eff:{int:6,mny:7,hap:3,hp:-3}, flags:{r84w_int:true}, res:"🎣 你的劇本天衣無縫：話術接話術、定位給警方，車手依約現身的那一刻被人贓俱獲。你不但全身而退，還因協助破案領到一筆檢舉獎金，事後上了反詐宣導的訪談。你笑說：『在詐騙之島，最好的防身術不是不接電話，是比騙子更會演。』代價是這場心理戰耗了你不少精神，緊張到好幾天沒睡好。"},
+        lose:{eff:{int:3,hap:1,hp:-2}, res:"🛡️ 你的反釣計畫沒能成局——對方嗅到不對勁，秒切斷聯絡、收掉帳號跑了。你沒釣到大魚，但好歹保全了自己、也把蒐集到的資料完整交給警方備案。將計就計沒成功不丟臉，至少你從待宰的魚，變成了會反咬一口的硬骨頭。"}}, flags:{r84step:2}},
+      {label:"不玩心機，直接報警、封鎖、做好防詐宣導", eff:{int:3,hap:2}, flags:{r84step:2, r84_report:true}, res:"你決定不逞英雄，把證據完整交給 165 和警方，自己則把這段經歷分享到家族群組、社區布告欄，提醒長輩鄰居小心同款手法。你沒抓到半個車手，但你讓身邊一票人少踩了一次雷。反詐最樸實的勝利，就是讓詐騙集團的話術，在你這條街上失效。"},
+    ]},
+  /* ---- R84 結局 ×5（由 r84ScamPick 依 r84path＋檢定旗標確定性計分擇一插播；picker 已落地 r84_endtype/r84_endhit）---- */
+  {id:"r84_end_leek", hidden:true, once:true, ic:"📉", nm:"血本無歸的資深韭菜", r84node:"end",
+    title:"棺材本畢業典禮", text:"等你徹底清醒，戶頭也清空了。那串曾經讓你心跳加速的『獲利』數字，原來只是螢幕上的像素；你匯出去的每一塊，都是真金白銀的血汗。你在 ATM 前站了很久很久，像所有新聞裡演過的長輩一樣——只是這次，主角是你。資深韭菜的認證，蓋章生效。",
+    meme:{scene:"panik", top:"螢幕上的獲利是像素", bot:"匯出去的是真金白銀", tag:"詐騙"},
+    choices:[
+      {label:"認賠，把這筆當人生最貴的一堂防詐課", eff:{mny:-5,hap:-3,int:5}, flags:{r84step:99, r84_done:true}, res:"你哭過、悔過、罵過自己笨，最後還是擦乾眼淚去報案、去做筆錄、去面對清空的存摺。錢追不太回來了，但你把這段慘痛經歷講給每個願意聽的人：『穩賺不賠四個字，就是詐騙的同義詞。』你用半生積蓄，換來一張誰也騙不了你第二次的免疫力。"},
+      {label:"逢人就講自己被騙的故事，當免費的防詐教材", eff:{hap:1,int:4,apr:1}, flags:{r84step:99, r84_done:true}, res:"你不怕丟臉，反而把『我就是被騙的那個』掛在嘴邊，到處現身說法。社區講座、家族群組、晚輩耳邊，你那套親身血淚史比任何官方宣導都有用。被割成資深韭菜不是你的選擇，但把傷口變成別人的疫苗，是。這座島少一個受害者，就是你這筆學費沒白繳。"},
+    ]},
+  {id:"r84_end_jail", hidden:true, once:true, ic:"🚓", nm:"車手被攔・吃牢飯", r84node:"end",
+    title:"ATM 前的最後一趟", text:"那通『工作』的代價，是手銬扣上的瞬間。你以為自己只是『領個錢』，法律可不這麼看——你是詐欺集團的共犯，被害者的眼淚有一份算在你頭上。詐團早把你當免洗筷，出事第一個丟包的就是你，上頭數錢的人連你長相都記不得。你頂下的這條罪，是這份『日領五千』從沒寫在合約上的隱藏條款。",
+    meme:{scene:"court", top:"我以為只是領個錢", bot:"法律說你是共犯", tag:"詐騙"},
+    choices:[
+      {label:"認罪、配合偵辦，把該還的還、該關的關", eff:{mny:-6,hap:-3,int:4}, flags:{r84step:99, r84_done:true}, res:"你在偵訊室裡終於懂了：詐團口中的『超簡單工作』，賠上的是你的前科、你的青春、和被害者一輩子的怨。你配合供出上線、賠償被害人、把刑期關完。出來那天你發誓：再缺錢，也不碰那種好到不真實的工作——天下沒有白領的五千，只有先借後還的人生。"},
+      {label:"出獄後現身說法，勸年輕人別當詐團炮灰", eff:{hap:2,int:3,apr:1}, flags:{r84step:99, r84_done:true}, res:"關完出來，你帶著前科這個甩不掉的標籤重新做人。你開始去學校、去更生團體現身說法：『他們叫你車手，是因為你最好丟；他們叫你工讀生，是因為你最好騙。』你把自己活成一個警世故事，只盼下一個缺錢的少年，別再走上你這條 ATM 前的不歸路。"},
+    ]},
+  {id:"r84_end_boss", hidden:true, once:true, ic:"🏢", nm:"升上機房幹部・洗錢", r84node:"end",
+    title:"睡不著的機房幹部", text:"你爬上來了。從 ATM 前的車手，混成了機房裡發落人手、調度金流的幹部，手下也有了一票聽你號令的小弟。錢多到要透過一層層人頭帳戶、虛擬貨幣去洗白。你住進了好房子、開上了好車——只是每晚閉上眼，螢幕另一頭那些被你掏空的人臉，總準時來討債。這是黑化的成功，代價寫在你越來越淺的睡眠裡。",
+    meme:{scene:"mock", top:"錢多到要洗", bot:"良心債卻越欠越深", tag:"詐騙"},
+    choices:[
+      {label:"繼續往上爬，告訴自己『不賺也有別人賺』", eff:{mny:8,hap:-5,hp:-4}, flags:{r84step:99, r84_done:true, r84_blackboss:true}, res:"🏢 你用『反正不是我做也有別人做』替自己脫罪，把生意越做越大、把良心越埋越深。錢確實滾成了天文數字，機房卻得設在境外、隨時提防被掃、防著被自己人吞。你贏了財富，輸了能安穩走在路上的權利——這座金山是用別人的血淚堆的，而你心知肚明，總有一天會連本帶利還。（黑化結局：賺得越髒，睡得越淺。）"},
+      {label:"良心發現，當汙點證人把整個機房端掉", eff:{mny:-7,hap:3,int:5,hp:-3}, flags:{r84step:99, r84_done:true, r84_turncoat:true}, res:"🔁 某天你看著對帳單上一個被掏空的退休帳戶，崩潰的家屬名字跟你媽一樣——你再也演不下去了。你聯繫檢警、當汙點證人，把整個機房的架構、金流、上線全盤托出。你賠上了不義之財、也賠上了餘生的躲藏，但你親手拆掉了自己參與建造的怪物。罪不會一筆勾銷，可你終於敢在半夜閉上眼。"},
+    ]},
+  {id:"r84_end_whitehat", hidden:true, once:true, ic:"🛡️", nm:"金盆洗手・反詐尖兵", r84node:"end",
+    title:"從獵物變成守門人", text:"這一遭走完，你沒被割光、也沒走偏，反而把這套詐騙的套路摸了個透。你索性把經驗變成本事：在社區開防詐講座、幫長輩設好帳戶警示、看到可疑訊息就教大家怎麼破。你從一個差點上當的獵物，活成了一條街的反詐守門人——165 都該頒個感謝狀給你。",
+    meme:{scene:"win", top:"差點上當的獵物", bot:"變成一條街的反詐守門人", tag:"詐騙"},
+    choices:[
+      {label:"把防詐當志業，守住身邊每一個容易被騙的人", eff:{hap:5,int:4,apr:2}, flags:{r84step:99, r84_done:true, r84_whitehat:true}, res:"🛡️ 你成了里長伯口中『有問題先問他準沒錯』的那個人。長輩接到怪電話會先打給你、鄰居看到假投資群會先截圖問你。你擋下的每一筆匯款、戳破的每一個話術，都是別人沒流的眼淚。在詐騙之島當守門人很累，但每救下一個人，你就更確定這條路沒選錯。"},
+      {label:"低調收手，從此把『天上掉餡餅』列為人生警報", eff:{hap:4,int:3,mny:2}, flags:{r84step:99, r84_done:true, r84_whitehat:true}, res:"你沒有大張旗鼓，只是默默把這次經歷刻進骨子裡：凡是『穩賺不賠』『解除分期』『安全帳戶』『猜猜我是誰』，一律當詐騙處理。你守好自己的錢、也順手提醒身邊人。在這座全民都被詐騙磨練過的島上，全身而退、還更聰明了一點，本身就是一種小小的勝利。"},
+    ]},
+  {id:"r84_end_bait", hidden:true, once:true, ic:"🎣", nm:"識破反釣・領檢舉獎金", r84node:"end",
+    title:"收網的那一刻", text:"你的反釣劇本漂亮收尾：車手依約落網、上線的金流被警方順藤摸瓜，你不但全身而退，還領到一筆檢舉獎金。事後反詐宣導找你錄訪談，你坐在鏡頭前，把詐騙集團的話術一條條拆給全島看。在這座詐騙之島，你不只沒當成獵物，還反手把獵人送進了局子。",
+    meme:{scene:"reveal", top:"他想釣我", bot:"結果被我反釣進局子", tag:"詐騙"},
+    choices:[
+      {label:"把獎金捐給反詐基金，繼續當民間最強釣手", eff:{hap:5,int:4,mny:1}, flags:{r84step:99, r84_done:true, r84_baitking:true}, res:"🎣 你把那筆檢舉獎金捐了出去，笑說『這錢本來就是騙子要給我的，物歸原主給反詐用剛好』。你成了警方眼中的民間神隊友、鄉民口中『反詐戲精本精』，每次有新型話術出現，總有人 tag 你來破解。在詐騙之島當收網的人，比當被網住的魚，爽太多了。"},
+      {label:"見好就收，把整套反釣心法寫成爆紅教學文", eff:{hap:4,int:5,apr:2}, flags:{r84step:99, r84_done:true, r84_baitking:true}, res:"🎣 你把這次將計就計、反釣收網的全過程寫成長文發上網，從話術拆解到報警 SOP 一應俱全，瞬間被瘋傳轉爆。網友封你『岸上最強釣手』，留言全是『學起來』。你用一篇文章，把自己的一次反詐勝利，複製成了千千萬萬人的防身術——這才是這場戲最大的票房。"},
+    ]},
+
+  /* =====================================================================
      R57 台味理財人生橫向事件線：
      ① 一般理財事件 ×6（跟會/儲蓄險親戚/樂透刮刮樂/股市韭菜/定存vs通膨/頭期款），
         主要落在工作期/中年期；屬性驅動回扣 R44——智力 sr 檢定投資判斷、
@@ -9095,6 +9212,51 @@ function r83BizPick(){
   }
   if(!id) return null;
   const ev=r83BizById(id);
+  if(!ev || S.seen[ev.id]) return null;
+  return ev;
+}
+/* ---- R84 台味詐騙之島人生支線攔截器：分流狀態機（純查 S.flags.r84path／r84step／旗標，零裸 rng／零 Math.random）----
+   入口 r84_hook 由種子化雜湊閘低機率攔截；3 個分流選項各設 r84path＝victim／mule／anti 並推進 r84step，進鏈後
+   每節點選項都帶 flags:{r84step:N+1}，故不論模擬亂選都會推進、鏈必走完。結局依 r84path＋檢定旗標確定性計分擇一
+   （5 選 1），picker 落地 r84_endtype/r84_endhit 供成就/回顧/戰績卡；血本無歸結局順手點亮既有 scammed 相容旗標。
+   置於 r83BizPick 之後、一般池之前；hidden:true → 永不進 eligible 隨機池、不計入 R46 觸達率落空名單；
+   舊存檔無 r84step → 入口閘照常評估，未命中即完全無感（不寫任何旗標）。 */
+function r84ById(id){ return EVENTS.find(e=>e.id===id)||null; }
+function r84Roll(id){ return r41Hash(r41SeedStr()+"|r84|"+id)/4294967296; }
+/* 依 r84path＋檢定旗標確定性計算結局 id（零 rng）：
+   anti → 反釣成功(r84w_int)領獎金 / 否則單純檢舉金盆洗手；
+   mule → 魅力過關(r84w_apr)升機房幹部黑化 / 否則車手被攔吃牢飯；
+   victim → 財富過關(r84w_mny)及時止血痛改前非當反詐 / 否則血本無歸資深韭菜。 */
+function r84EndingId(f){
+  const p=f.r84path;
+  if(p==="anti")   return f.r84w_int ? "r84_end_bait"     : "r84_end_whitehat";
+  if(p==="mule")   return f.r84w_apr ? "r84_end_boss"     : "r84_end_jail";
+  /* victim（含未設 path 的防呆）*/
+  return f.r84w_mny ? "r84_end_whitehat" : "r84_end_leek";
+}
+function r84ScamPick(){
+  if(!S || !S.alive || !S.attr || !S.flags) return null;
+  if(!S.seen) S.seen={};
+  const step=S.flags.r84step||0;
+  if(step>=99) return null;                                        // 已收尾（含放棄/結局）→ 永不再插播
+  // 入口：尚未起念。年齡窗口＋種子化雜湊低機率閘（舊存檔無旗標時此分支唯一觸點，未命中零殘留）
+  if(step===0){
+    if(S.age<20 || S.age>70) return null;
+    if(r84Roll("hook")>=0.42) return null;                         // 確定性閘：約 42% 合格生命會接到可疑機會
+    return r84ById("r84_hook");
+  }
+  // 進鏈後：依 path＋step 確定性返回對應節點（已 seen 防重觸）
+  let id=null;
+  if(step===1){
+    const p=S.flags.r84path;
+    id = p==="victim" ? "r84_victim" : p==="mule" ? "r84_mule" : p==="anti" ? "r84_anti" : null;
+  } else if(step===2){
+    id=r84EndingId(S.flags);
+    if(id && !S.seen[id]){ S.flags.r84_endtype=id; S.flags.r84_endhit=true;
+      if(id==="r84_end_leek") S.flags.scammed=true; }              // 血本無歸 → 點亮既有 victim 相容旗標（不覆寫舊鏈）
+  }
+  if(!id) return null;
+  const ev=r84ById(id);
   if(!ev || S.seen[ev.id]) return null;
   return ev;
 }
@@ -9655,6 +9817,9 @@ function resolveYear(){
   // R83 台味創業開店人生支線：階梯式狀態機，命中即確定性插播（零裸 rng；置於 R81 之後、一般池之前）
   const biz83=r83BizPick();
   if(biz83) return showEvent(biz83);
+  // R84 台味詐騙之島人生支線：分流狀態機，命中即確定性插播（零裸 rng；置於 R83 之後、一般池之前）
+  const scam84=r84ScamPick();
+  if(scam84) return showEvent(scam84);
   const pool=eligible();
   if(pool.length && chance(0.78)){
     // 優先池：此刻成立的門檻事件 + 帶 flag 的因果鏈回呼。
@@ -11810,6 +11975,7 @@ function screenSummary(cat){
       ${r50SummaryHTML()}
       ${r81EraReviewHTML()}
       ${r83BizReviewHTML()}
+      ${r84ScamReviewHTML()}
       <div class="stats" style="margin:12px 0">${attrRows}</div>
       ${attrPersonaHTML()}
       ${r41WishHTML()}
@@ -13343,6 +13509,13 @@ function buildBragText(style){
       ? `🏪 開過${bn.replace(/^\S+\s/,"")}當頭家，結局「${en.replace(/^\S+\s/,"")}」——十個頭家九個倒，我至少敢開`
       : `🏪 創業戰績：${bn} → ${en}`);
   }
+  // R84 台味詐騙之島戰績：沒踏進詐騙鏈/舊局自動省略，零 rng
+  if(S.flags && S.flags.r84_endtype && R84_ENDNM[S.flags.r84_endtype]){
+    const sen=R84_ENDNM[S.flags.r84_endtype];
+    lines.push(salty
+      ? `🎣 在詐騙之島走一遭，結局「${sen.replace(/^\S+\s/,"")}」——這座島不是被割就是學會收網`
+      : `🎣 反詐戰績：${sen}`);
+  }
   // R56 劇本局標記：非劇本局/舊存檔自動省略，零 rng
   const sc47=r56Script();
   if(sc47) lines.push(`🎭 劇本「${sc47.nm}」${S.scriptDone?"通關":"未通關"}${salty?(S.scriptDone?"——命題作文照樣寫出滿級分":"——是劇本太難，不是我不會演"):""}`);
@@ -13496,6 +13669,7 @@ function buildRoastCard(){
     `🪪 人格認證：${pd?pd.p[0]:"🧍 地球路人"}`,
     ...((S.careerId&&R50_MAP[S.careerId])?[`💼 本局職業：${R50_MAP[S.careerId].ic} ${R50_MAP[S.careerId].nm}`]:[]),   // R50 嘲諷卡帶職業（無職業自動省略，零 rng）
     ...((Array.isArray(S.r81log)&&S.r81log.length)?[`📜 見證時代：${S.r81log.map(e=>e.tag).filter(Boolean).join("、")}（${S.r81log.length} 個）`]:[]),   // R81 時代標籤（無觸發自動省略，零 rng）
+    ...((S.flags&&S.flags.r84_endtype&&R84_ENDNM[S.flags.r84_endtype])?[`🎣 詐騙之島：${R84_ENDNM[S.flags.r84_endtype]}`]:[]),   // R84 反詐結局標籤（無觸發自動省略，零 rng）
     `⏳ 享年 ${S.age} 歲 · 人生評價 ${grade} 級（${sum}/500）`,
     `☠️ 死法：${r37DeathLine()}`,
     `📈 最強屬性：${ATTR[topK].ic}${ATTR[topK].nm} ${a[topK]}`,
