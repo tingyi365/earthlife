@@ -1830,6 +1830,7 @@ function ensureState(s){
   if(!s.seenCount) s.seenCount={};   // 各事件本局出現次數（降重複用）
   if(!s.recent)    s.recent=[];      // 最近出現過的事件 id（避免立即重播）
   if(!Array.isArray(s.attrHist)) s.attrHist=[];   // R30 屬性年史（舊存檔缺鍵 → 從載入當下開始記，曲線照常但較短）
+  if(!Array.isArray(s.keySnap)) s.keySnap=[];     // R89 關鍵抉擇屬性快照（gate/sr/br 觸發即記一筆 {age,k,v,kind,won,ev}；舊存檔缺鍵補空，未觸發即空陣列零殘留）
   if(!Array.isArray(s.tl)) s.tl=[];  // R9 人生大事時間軸（當局有效，舊進行中存檔補空陣列）
   if(!s.peakAge || typeof s.peakAge!=="object") s.peakAge={};  // R15 巔峰年齡（舊進行中存檔補空，缺鍵顯示時 fallback 0）
   if(!s.low || typeof s.low!=="object") s.low={};              // R25 谷底值（舊進行中存檔補空，缺鍵顯示時 fallback 謝幕值）
@@ -3576,6 +3577,9 @@ function buildEvents(){ return [
     choices:[
       {label:"豁出去拼酒搏感情", eff:{mny:6,hp:-8,hap:-2}, res:"你拚了一場，人脈+1，肝指數也+1。"},
       {label:"以茶代酒，守住底線", eff:{hp:4,hap:2,mny:-3}, res:"你婉拒了拼酒，保住了健康也保住了清醒。"},
+      {label:'<i class="gtag">⚖️外貌檢定</i> 場面話接好接滿，把飯局變舞台', r22:true, sr:{k:"apr", need:72, spread:40,
+        win:{eff:{mny:12,apr:3,hp:-7}, res:"你左敬右謝、笑點接得比主管的酒還順，整桌長官都記住了你這張臉。隔週大案子直接點名你進核心組——人脈是真的，肝指數也是真的，這頓飯你用健康換了張入場券。"},
+        lose:{eff:{hp:-8,hap:-5,int:3}, res:"你想撐場面硬接話，結果酒一上頭舌頭打結，把董事長的名字喊成了隔壁部門經理。全場尷尬三秒，你隔天還得挨家挨戶賠不是——場面沒撐起來，肝倒是先躺平了。"}}},
     ]},
 
   /* ---------- 感情 / 家庭 ---------- */
@@ -3630,6 +3634,9 @@ function buildEvents(){ return [
     choices:[
       {label:"勇敢轉職，追夢去", eff:{hap:10,mny:rnd(-12,15),hp:-4}, res:"你跳出舒適圈，前路未知但眼裡重新有了光。"},
       {label:"穩住現狀，安全下莊", eff:{mny:6,hap:-3}, res:"你按下了悸動，選擇了確定的安穩。"},
+      {label:'<i class="gtag">⚖️智力檢定</i> 帶著二十年經驗轉戰新領域', r22:true, sr:{k:"int", need:74, spread:40,
+        win:{eff:{mny:14,int:5,hap:6,hp:-4}, res:"你沒裸辭追夢，而是把二十年的行業 know-how 打包成新賽道的競爭力——學新工具、考新證照，半年就被挖去當資深顧問。轉得漂亮的人都有個共通點：腦袋先轉，腳步才跟上。代價是這半年燒腦燒到失眠。"},
+        lose:{eff:{mny:-12,hap:-6,int:4}, res:"你憑一股衝動跳進完全陌生的領域，才發現過去的經驗在這裡一文不值，從零學起又跟不上年輕人的速度。半年後存款見底、灰頭土臉回老本行——轉職不是只靠勇氣，腦袋沒準備好就是繳學費。"}}},
     ]},
   {id:"kids_exam", stage:[42,55], w:1,
     title:"換你當考生家長", text:"輪到你的孩子面對人生大考，你比他還緊張，整夜失眠。",
@@ -3637,6 +3644,7 @@ function buildEvents(){ return [
     choices:[
       {label:"全力支持，陪考陪讀", eff:{hap:6,hp:-4,mny:-4}, res:"你成了最強後盾，孩子的成績裡有你的白頭髮。"},
       {label:"佛系放手，尊重孩子", eff:{hap:4,int:4}, res:"你選擇相信孩子，把人生的方向盤還給他。"},
+      {label:'<i class="gtag">💰財富70+</i> 砸錢請名師一對一衝刺', eff:{mny:-8,hap:6,int:2}, cond:s=>s.attr.mny>=70, gate:true, gk:"mny", res:"你直接請了補教界傳說的一對一名師，鐘點費一小時抵別人一週薪水。在這座島，教育早就是一場軍備競賽——別人家拚天分，你家拚的是爸媽的口袋深度。孩子成績是真的上去了，你的存摺也是真的瘦了一圈。"},
     ]},
 
   /* ---------- 老年 60+ ---------- */
@@ -3654,6 +3662,7 @@ function buildEvents(){ return [
     choices:[
       {label:"把財產分配清楚", eff:{hap:6,int:4}, res:"你了卻一樁心事，子孫少了一場可能的紛爭。"},
       {label:"通通捐出去做公益", eff:{hap:12,mny:-10}, flags:{philanthropist:true}, res:"你決定取之社會、還之社會，留下的是名聲與溫暖。"},
+      {label:'<i class="gtag">🧠智力75+</i> 用信託與節稅布局，一毛都不浪費', eff:{int:5,mny:8,hap:4}, cond:s=>s.attr.int>=75, gate:true, gk:"int", res:"你翻遍稅法、找來會計師與律師排了三套方案，最後用信託＋分年贈與把遺產稅壓到最低。律師闔上資料夾搖頭佩服：『阿伯，您這腦袋當年要是去當稅務官，國庫要哭。』錢一毛沒漏給政府，全留給了該留的人。"},
     ]},
   {id:"grandkids", stage:[60,88], w:2,
     title:"含飴弄孫", text:"孫子撲進你懷裡喊著爺爺/奶奶，順手摸走了你桌上的糖。",
@@ -3661,6 +3670,9 @@ function buildEvents(){ return [
     choices:[
       {label:"使出渾身解數陪玩", eff:{hap:12,hp:-4}, res:"你被小傢伙電到沒電，卻笑得合不攏嘴。"},
       {label:"塞錢給孫，當慈祥金主", eff:{hap:8,mny:-6}, res:"你用紅包換來孫子的崇拜，皆大歡喜。"},
+      {label:'<i class="gtag">🧭健康58分流</i> 帶孫爬山遠足，當最強阿公阿嬤', br:{k:"hp", need:58,
+        hi:{eff:{hp:4,hap:14,apr:2}, res:"你揹著背包走在最前頭，孫子在後面氣喘吁吁喊等等——七十歲的腳力電翻一票年輕家長。全家福照片裡，你笑得比誰都挺。體力就是晚年最硬的本錢。"},
+        lo:{eff:{hp:-9,hap:6}, res:"出發前你信心滿滿，爬到半山腰膝蓋先投降，反過來要孫子攙你下山。回家貼了一整條腿的痠痛貼布——心是有餘，力是真的不足，這把老骨頭得認了。"}}, eff:{}, res:""},
     ]},
   {id:"old_romance", stage:[60,85], w:1, cond:isSingle,
     title:"黃昏之戀", text:"公園裡，一位同樣銀髮的對象向你遞來一杯熱茶與一個微笑。",
@@ -3668,6 +3680,9 @@ function buildEvents(){ return [
     choices:[
       {label:"勇敢追求第二春", eff:{hap:14,apr:4,hp:3}, res:"你證明了愛情沒有年齡限制，晚年也能心動。"},
       {label:"含蓄微笑，當個老朋友", eff:{hap:6,int:3}, res:"你享受這份淡淡的陪伴，不急著貼標籤。"},
+      {label:'<i class="gtag">⚖️外貌檢定</i> 拿出凍齡本錢，主動出擊', r22:true, sr:{k:"apr", need:70, spread:40,
+        win:{eff:{hap:16,apr:3,mny:-5}, res:"你銀髮梳得一絲不苟、襯衫燙得筆挺，遞茶的手穩、說話的眼神更穩。對方紅了臉笑說：『你年輕時一定電死不少人。』黃昏之戀正式開張——保養了一輩子的外貌，在七十歲這天兌現了最後一張好牌。約會花的小錢，買的是晚年不孤單。"},
+        lose:{eff:{hap:-6,int:4}, res:"你鼓起勇氣主動出擊，對方卻只是禮貌地把茶喝完、客氣地道別。回家照鏡子，你對著那張寫滿歲月的臉笑了笑——心動是真的，但這場仗，本錢確實是不夠了。也罷，當個老朋友也挺好。"}}},
     ]},
 
   /* ---------- 隨機 / 全年齡 ---------- */
@@ -10487,7 +10502,17 @@ function choose(i){
      c.gate=true：屬性門檻選項（cond 把關才看得到，點下記一次「靠屬性翻盤」，零 rng 消耗）
      c.sr={k,need,spread,win,lose}：屬性成功率選項——roll = 屬性 + rnd(0,spread)，
      判定一律走既有 rng()，同種子同選擇 → 同結果，挑戰/對戰復現性不破壞 */
-  if(c.gate){ S.flags.gateWin=(S.flags.gateWin||0)+1; }
+  /* ---- R89 關鍵抉擇屬性快照：gate/sr/br 觸發的當下，記下「哪一項屬性、值多少、贏沒贏」
+          一筆 {age,k,v,kind,won,ev}（純記錄層、零 rng；驅動屬性 gate 取 c.gk、sr 取 c.sr.k、br 取 c.br.k；
+          缺驅動鍵則不記；上限 24 筆防爆量；結算 keySnapHTML() 呈現），與年史曲線錯開：
+          年史是逐歲被動快照、本層是「主動抉擇當下」的決定性快照 ---- */
+  function r89Snap(k, kind, won){
+    if(!k || !ATTR[k] || !S) return;
+    if(!Array.isArray(S.keySnap)) S.keySnap=[];
+    if(S.keySnap.length>=24) return;
+    S.keySnap.push({age:S.age, k, v:(S.attr[k]||0), kind, won:!!won, ev:stripTags((ev&&ev.title)||"")});
+  }
+  if(c.gate){ S.flags.gateWin=(S.flags.gateWin||0)+1; r89Snap(c.gk, "gate", true); }
   if(c.sr){
     // R16 前世練過的手氣：擲骰 +5。rnd 照常先消耗（種子序列不變）；挑戰/對戰局 rtal=[] 永不觸發
     // R26 鐵齒第一名：擲骰 -5（與 rb_dice +5 同一掛點；rnd 照常先消耗，種子序列不變）
@@ -10498,6 +10523,7 @@ function choose(i){
     if(out.flags) Object.assign(S.flags, out.flags);
     if(roll >= c.sr.need) S.flags.gateWin=(S.flags.gateWin||0)+1;
     else S.flags.srLose=(S.flags.srLose||0)+1;   // R22 檢定翻車計數（成就「骰子恨我」用）
+    r89Snap(c.sr.k, "sr", roll >= c.sr.need);
   }
   /* ---- R25 確定性屬性分流 ----
      c.br={k, need, hi:{eff,res,flags?}, lo:{eff,res,flags?}}：同一選項依屬性門檻走不同結局，
@@ -10511,6 +10537,7 @@ function choose(i){
     if(brOut.flags) Object.assign(S.flags, brOut.flags);
     if(brHit) S.flags.brHi=(S.flags.brHi||0)+1;   // 分流好結局計數（成就「分流路口的常勝軍」用）
     else S.flags.brLo=(S.flags.brLo||0)+1;
+    r89Snap(c.br.k, "br", brHit);
   }
   /* ---- R41 志向轉向：換候選池中下一個沒立過的志向（確定性、零 rng）；
           代價寫在選項 eff（快樂/財富小扣），轉向次數記 r41pivot 供結算與成就觀察 ---- */
@@ -12133,6 +12160,42 @@ function attrCurveHTML(){
 }
 
 /* =========================================================================
+   R89 關鍵抉擇屬性快照：把這一生靠屬性門檻/檢定/分流做的關鍵決定攤開，
+   每筆記「第幾歲、靠哪項屬性（值多少）、贏了還是翻車、什麼事件」。
+   純讀 S.keySnap（choose 當下記錄）、零 rng 消耗；同種子同軌跡 → 同回顧。
+   舊存檔/沒做過任何屬性抉擇的局 keySnap 為空 → 整塊省略不報錯。
+   與 R30 年史曲線錯開：曲線是逐歲被動快照、本卡是主動抉擇的決定性瞬間。
+   ========================================================================= */
+function keySnapHTML(){
+  if(!S || !Array.isArray(S.keySnap) || S.keySnap.length<1) return "";
+  const snaps=S.keySnap.slice().sort((a,b)=>a.age-b.age);
+  const KIND={gate:"門檻",sr:"檢定",br:"分流"};
+  const wins=snaps.filter(x=>x.won).length, total=snaps.length;
+  // 一生最常派上用場的屬性（決定關鍵抉擇次數最多的那項，同數取 ATTR 先序）
+  const cnt={}; snaps.forEach(x=>{ if(ATTR[x.k]) cnt[x.k]=(cnt[x.k]||0)+1; });
+  let mainK=null; for(const k in ATTR){ if(cnt[k] && (mainK===null || cnt[k]>cnt[mainK])) mainK=k; }
+  // 只列最多 8 筆（先取贏的高光、再依年齡），避免洗版
+  const show=snaps.slice().sort((a,b)=>(b.won-a.won)||(a.age-b.age)).slice(0,8).sort((a,b)=>a.age-b.age);
+  const rows=show.map(x=>{
+    const tag=x.won?'<span style="color:var(--good,#39ff88)">✔ 過關</span>':'<span style="color:var(--bad,#ff6b6b)">✘ 翻車</span>';
+    return `<div class="atrow"><span class="atage">${x.age} 歲</span>`
+      +`<span style="white-space:nowrap;color:${ATTR[x.k].col}">${ATTR[x.k].ic}${ATTR[x.k].nm} ${x.v}</span>`
+      +`<span class="atev">${KIND[x.kind]||""}・${x.ev}　${tag}</span></div>`;
+  }).join("");
+  const verdict = mainK
+    ? (wins*2>=total
+        ? `這一生 ${total} 次靠數值定生死的關頭，你贏下 ${wins} 次——最常替你扛場的是 ${ATTR[mainK].ic}${ATTR[mainK].nm}。數值不是裝飾，是你掀牌時的底氣。`
+        : `這一生 ${total} 次數值大考，只過了 ${wins} 次——${ATTR[mainK].ic}${ATTR[mainK].nm} 撐得最勤卻常差臨門一腳。屬性沒養夠，關鍵時刻就只能看天吃飯。`)
+    : `這一生在關鍵路口賭了 ${total} 把，過 ${wins} 把。`;
+  return `<div class="panel" style="margin-top:12px;background:var(--panel2)">
+    <h2 class="sec">🎲 關鍵抉擇・屬性翻牌實錄</h2>
+    <div class="muted" style="font-size:12px;margin-bottom:4px;text-align:left">在這些路口，是你的數值替你做了決定（過關 ${wins}/${total}）</div>
+    ${rows}
+    <div style="margin-top:6px;font-size:12.5px;text-align:left;line-height:1.7;color:var(--accent,#ffd24a)">「${verdict}」</div>
+  </div>`;
+}
+
+/* =========================================================================
    R68 屬性命運回顧：總結這一生五圍如何「主動驅動」命運——
    讀 S.flags 裡被動命運層累積的紅利/短板計數＋各屬性貢獻＋年史走勢，給一段總評。
    純讀狀態、零 rng，同種子同軌跡 → 同回顧；無觸發（極短命/全中庸）整塊省略不報錯。
@@ -12377,6 +12440,7 @@ function screenSummary(cat){
       ${r41WishHTML()}
       ${attrReviewHTML()}
       ${attrCurveHTML()}
+      ${keySnapHTML()}
       ${attrTurnsHTML()}
       ${r68FateHTML()}
       ${highlightsHTML()}

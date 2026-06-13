@@ -2865,5 +2865,54 @@ ok(r87.mortDeath && r87.mortSurvive && r87.death, 'R87 ④ 房貸壓垮死：硬
 ok(r87.endId && r87.ach, 'R87 ④ 5 結局確定性計分(繳清有殼/包租公/斷頭法拍/終身租屋/繼承祖厝)＋7 成就確定性解鎖、零誤觸、提示齊備');
 ok(r87.clean && r87.compat && r87.reviewSkip, 'R87 ⑤ 零汙染：開局/舊存檔 S.flags 皆無 r87 鍵、沒踏進居住鏈時居住軌跡回顧卡整段省略');
 
+// ===== R89 屬性數值實感化：關鍵抉擇屬性快照 + 新門檻/檢定/分流選項 + 成長權衡 + 零汙染 =====
+const r89 = JSON.parse(vm.runInContext(`(function(){
+  const out={}; const f=id=>EVENTS.find(e=>e.id===id);
+  function fresh(age,attr){ startGame(); ensureState(S); S.seen={}; S.alive=true; S.keySnap=[]; if(age!=null)S.age=age; if(attr)Object.assign(S.attr,attr); return S; }
+  function optByLabel(id,kw){ const e=f(id); return e&&e.choices.find(c=>c.label.indexOf(kw)>=0); }
+  // ① gate 屬性快照：智力 gate 選項觸發 → keySnap 記一筆 {k:int,kind:gate,won:true,v=當下屬性}
+  fresh(70,{int:90}); showEvent(f('legacy')); choose(2);
+  out.gateSnap = S.keySnap.length===1 && S.keySnap[0].k==='int' && S.keySnap[0].kind==='gate' && S.keySnap[0].won===true && S.keySnap[0].v===90;
+  // ② 成功率吃屬性：networking 外貌檢定，高 apr 必過/低 apr 必翻（連跑 3 次 rnd 不翻盤）＋快照 won 正確
+  function srRun(id,idx,attr){ fresh(45,attr); showEvent(f(id)); choose(idx); return S; }
+  out.srHigh = [0,0,0].every(()=>{const s=srRun('networking',2,{apr:100,hp:60}); return s.flags.gateWin>0 && s.keySnap[0].k==='apr' && s.keySnap[0].kind==='sr' && s.keySnap[0].won===true;});
+  out.srLow  = [0,0,0].every(()=>{const s=srRun('networking',2,{apr:5,hp:60}); return s.flags.srLose>0 && s.keySnap[0].won===false;});
+  // ③ 分流吃屬性：grandkids 健康58 分流，高 hp 走 hi(won)、低 hp 走 lo(!won)，快照 kind:br
+  out.brHigh = (()=>{const s=srRun('grandkids',2,{hp:100}); return s.keySnap[0].k==='hp'&&s.keySnap[0].kind==='br'&&s.keySnap[0].won===true;})();
+  out.brLow  = (()=>{const s=srRun('grandkids',2,{hp:10});  return s.keySnap[0].won===false;})();
+  // ④ 成長有權衡：≥3 處「拿增益要付代價」（砸錢補習扣財富/應酬與轉職檢定贏了傷健康/帶孫遠足翻車傷健康）
+  const tradeoffs=[
+    (c=>c&&c.eff&&c.eff.mny<0&&(c.eff.hap>0||c.eff.int>0))(optByLabel('kids_exam','名師')),
+    (c=>c&&c.sr&&c.sr.win.eff.hp<0&&c.sr.win.eff.mny>0)(optByLabel('networking','場面話')),
+    (c=>c&&c.sr&&c.sr.win.eff.hp<0&&c.sr.win.eff.int>0)(optByLabel('second_career','二十年經驗')),
+    (c=>c&&c.br&&c.br.lo.eff.hp<0)(optByLabel('grandkids','遠足')),
+  ].filter(Boolean).length;
+  out.tradeoff = tradeoffs>=3;
+  // ⑤ 平衡護欄：gate 確定增益選項每項 |eff|<=8（不 power creep）；sr/br 賭博選項 win/lose 雙分支齊備
+  const gateEffOK = [optByLabel('kids_exam','名師'),optByLabel('legacy','信託')].every(c=>c&&c.gate&&Object.values(c.eff).every(v=>Math.abs(v)<=8));
+  const gambleOK = [optByLabel('networking','場面話'),optByLabel('second_career','二十年經驗'),optByLabel('old_romance','凍齡')].every(c=>c&&c.sr&&c.sr.win&&c.sr.lose) && (c=>c&&c.br&&c.br.hi&&c.br.lo)(optByLabel('grandkids','遠足'));
+  out.balance = gateEffOK && gambleOK;
+  // ⑥ 結算軌跡資料組裝 + 結算畫面有軌跡呈現：keySnap 有料 → keySnapHTML 非空且含關鍵字
+  fresh(60,{int:90}); showEvent(f('legacy')); choose(2);
+  const html = keySnapHTML();
+  out.render = html.indexOf('關鍵抉擇')>=0 && html.indexOf('過關')>=0 && html.length>120;
+  // ⑦ 舊存檔相容：缺 keySnap 鍵經 ensureState 補空陣列、空陣列 keySnapHTML 省略不炸
+  const old={flags:{},attr:{hp:50,int:50,apr:50,mny:50,hap:50},age:40,alive:true,resume:[],seen:{}}; ensureState(old);
+  out.compat = Array.isArray(old.keySnap) && old.keySnap.length===0;
+  fresh(); S.keySnap=[]; out.renderEmpty = keySnapHTML()==='';
+  // ⑧ 零汙染：開局 keySnap 空；無屬性選項事件(拼酒)不寫快照
+  startGame(); ensureState(S); out.cleanStart = Array.isArray(S.keySnap) && S.keySnap.length===0;
+  fresh(45,{apr:50,hp:60}); showEvent(f('networking')); choose(0); out.cleanPlain = S.keySnap.length===0;
+  return JSON.stringify(out);
+})()`, sandbox));
+ok(r89.gateSnap, 'R89 ① gate 屬性快照：門檻選項觸發即記 {k,v,kind:gate,won:true}，v=當下屬性值');
+ok(r89.srHigh && r89.srLow, 'R89 ② 成功率吃屬性：networking 外貌檢定高 apr 必過/低 apr 必翻(3 連跑 rnd 不翻盤)，快照 won 正確');
+ok(r89.brHigh && r89.brLow, 'R89 ③ 分流吃屬性：grandkids 健康分流高 hp 走 hi/低 hp 走 lo，快照 kind:br、won 正確');
+ok(r89.tradeoff, 'R89 ④ 成長有權衡：≥3 處拿增益付代價(砸錢補習扣財富/應酬與轉職檢定贏了傷健康/帶孫遠足翻車傷健康)');
+ok(r89.balance, 'R89 ⑤ 平衡護欄：gate 確定增益選項每項 |eff|<=8 不 power creep、sr/br 賭博選項 win/lose 雙分支齊備');
+ok(r89.render, 'R89 ⑥ 結算軌跡組裝+呈現：keySnap 有料 → keySnapHTML 含「關鍵抉擇/過關」非空');
+ok(r89.compat && r89.renderEmpty, 'R89 ⑦ 舊存檔相容：缺 keySnap 經 ensureState 補空陣列、空陣列 keySnapHTML 省略不炸');
+ok(r89.cleanStart && r89.cleanPlain, 'R89 ⑧ 零汙染：開局 keySnap 空、無屬性選項事件(拼酒)不寫快照');
+
 console.log(fails ? `\n結果: ❌ ${fails} 項未通過` : '\n結果: ✅ 狀態機全數正確');
 process.exit(fails ? 1 : 0);
