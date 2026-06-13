@@ -3129,5 +3129,122 @@ ok(r92.balance && r92.deathbook, 'R92 ⑤⑥ 平衡護欄：全鏈選項 eff 每
 ok(r92.noRedline, 'R92 ⑦ 文案紅線：全鏈無政治/暴力/仇恨字串，交通文化自嘲非嘲諷受害者');
 ok(r92.compat && r92.clean && r92.cleanPlain && r92.reviewSkip && r92.reviewShow, 'R92 ⑧⑨ 零汙染+舊存檔相容：開局/舊save/非交通鏈事件 S.flags 皆無 r92 鍵、沒踏進交通鏈時回顧卡省略、踏進後正常顯示');
 
+// ===== R93 台味健保醫療人生支線：分流狀態機 + 健康 buff 取捨 + 體質×運勢驅動存活 + 專屬死法 + 零汙染 =====
+const r93 = JSON.parse(vm.runInContext(`(function(){
+  const out={}; const f=id=>EVENTS.find(e=>e.id===id);
+  function fresh(age,flags){ startGame(); ensureState(S); S.seen={}; S.alive=true; S.keySnap=[]; S.flags=Object.assign({},flags||{}); ensureState(S); if(age!=null)S.age=age; return S; }
+  // ① 攔截器 r93MedPick：20-58 窗口+未退休+雜湊閘命中→入口、閘落空/窗口外/已退休/已收尾皆零殘留
+  const _ro=r93Roll;
+  fresh(40,{}); r93Roll=function(){return 0.05;}; out.entry = !!r93MedPick() && r93MedPick().id==='r93_medhook';
+  fresh(40,{}); r93Roll=function(){return 0.9;}; out.gateMiss = r93MedPick()===null;
+  r93Roll=_ro;
+  fresh(18,{}); out.gateYoung = r93MedPick()===null;
+  fresh(40,{retired:true}); out.gateRetired = r93MedPick()===null;
+  fresh(40,{r93step:99}); out.gateDone = r93MedPick()===null;
+  // ② 入口三分流：各立 r93mode + step:1 + r93_in；佛系養生直接收尾(step:99)不立 mode
+  function pick0(i){ fresh(40,{}); showEvent(f('r93_medhook')); choose(i); return S.flags; }
+  out.split = (g=>g.r93mode==='thrifty'&&g.r93step===1&&!!g.r93_in)(pick0(0))
+    && (g=>g.r93mode==='premium'&&g.r93step===1&&!!g.r93_in)(pick0(1))
+    && (g=>g.r93mode==='tough'&&g.r93step===1&&!!g.r93_in)(pick0(2))
+    && (g=>g.r93step===99&&!g.r93mode&&!g.r93_in)(pick0(3));
+  // ② 進鏈依 step/mode 確定性返節點
+  fresh(40,{r93step:1,r93mode:'thrifty'}); out.nodeHabit=(r93MedPick()||{}).id==='r93_habit';
+  fresh(40,{r93step:2,r93mode:'thrifty'}); out.nodeThrifty=(r93MedPick()||{}).id==='r93_thrifty';
+  fresh(40,{r93step:2,r93mode:'premium'}); out.nodePremium=(r93MedPick()||{}).id==='r93_premium';
+  fresh(40,{r93step:2,r93mode:'tough'});   out.nodeTough  =(r93MedPick()||{}).id==='r93_tough';
+  fresh(40,{r93step:3,r93mode:'thrifty',r93_healthy:true,r93_medwin:true}); const e3=r93MedPick();
+  out.endLand = e3&&e3.id==='r93_end_longevity'&&S.flags.r93_endtype==='r93_end_longevity'&&S.flags.r93_endhit===true;
+  // ③ 養生習慣健康 buff 取捨：養生落 r93_healthy、鐵齒落 r93_stubborn、int>=65 gate 醫療知識也落 healthy+savvy
+  function hab(i,attr){ fresh(40,{r93step:1,r93mode:'thrifty'}); if(attr)Object.assign(S.attr,attr); showEvent(f('r93_habit')); choose(i); return S.flags; }
+  const h0=hab(0); out.habHealthy = h0.r93_healthy===true && h0.r93_care===true && h0.r93step===2 && !h0.r93_stubborn;
+  const h1=hab(1); out.habStubborn = h1.r93_stubborn===true && !h1.r93_healthy && h1.r93step===2;
+  const hg=hab(2,{int:90}); out.habGate = hg.r93_healthy===true && hg.r93_savvy===true && S.flags.gateWin>0;
+  const cH=f('r93_habit').choices[0], cS=f('r93_habit').choices[1], cG=f('r93_habit').choices[2];
+  out.habCost = (cH.eff.hap<0) && (cS.eff.hp<0) && !!cG.cond && cG.gate===true;
+  // ④ 健保鄉民急診人球 special r93_er 體質×健康 buff 確定性存活（零 rng）：hp 見底→ercrash 死；adj>=55 救回(medwin)；adj<55 拖成大病(medloss) 仍生還
+  function er(hp,buff,attr){ fresh(40,Object.assign({r93step:2,r93mode:'thrifty'},buff)); S.attr.hp=hp; if(attr)Object.assign(S.attr,attr); showEvent(f('r93_thrifty')); choose(0); return S.flags; }
+  out.erDeath = [0,0,0].every(()=>er(10,{}).specialDeath==='ercrash');
+  out.erWin   = [0,0,0].every(()=>{const g=er(100,{});return g.r93_medwin===true&&!g.specialDeath;}); // 高 hp→撐到救治
+  out.erLoss  = [0,0,0].every(()=>{const g=er(30,{},{mny:80});return g.r93_medloss===true&&!g.specialDeath;}); // 中 hp→自費加護救回
+  out.erBuffWin  = [0,0,0].every(()=>{const g=er(50,{r93_healthy:true});return g.r93_medwin===true;}); // healthy(+10)同 hp 救回
+  out.erBuffLose = [0,0,0].every(()=>{const g=er(60,{r93_stubborn:true});return g.r93_medloss===true&&!g.specialDeath;}); // stubborn(-10)同 hp 拖成大病
+  // thrifty 自費搶時間選項→medwin（好結局來源）
+  fresh(40,{r93step:2,r93mode:'thrifty'}); showEvent(f('r93_thrifty')); choose(1);
+  out.thriftySafe = S.flags.r93_medwin===true && !S.flags.specialDeath;
+  // ④ 自費醫美 special r93_beauty：savvy/財富>=58 變美成功(medwin)、否則踩雷蒙古大夫翻車(medloss)，非致命無死法
+  function beauty(buff,attr){ fresh(40,Object.assign({r93step:2,r93mode:'premium'},buff)); if(attr)Object.assign(S.attr,attr); showEvent(f('r93_premium')); choose(0); return S.flags; }
+  out.beautySavvy = [0,0,0].every(()=>{const g=beauty({r93_savvy:true},{mny:20});return g.r93_medwin===true&&!g.specialDeath;}); // savvy 識破密醫→變美
+  out.beautyRich  = [0,0,0].every(()=>{const g=beauty({},{mny:70});return g.r93_medwin===true&&!g.specialDeath;}); // 財富>=58 找正規→變美
+  out.beautyBotch = [0,0,0].every(()=>{const g=beauty({},{mny:20});return g.r93_medloss===true&&!g.specialDeath;}); // 貪便宜踩雷→翻車(非致命)
+  out.beautyNoDeath = [0,0,0].every(()=>!beauty({},{mny:10}).specialDeath); // 醫美翻車絕不致命
+  // premium 找合格醫師選項→medwin（好結局來源）
+  fresh(40,{r93step:2,r93mode:'premium'}); showEvent(f('r93_premium')); choose(1);
+  out.premiumSafe = S.flags.r93_medwin===true && !S.flags.specialDeath;
+  // ④ 鐵齒慢性病 special r93_chronic：hp 見底→chroniccrash 死、adj>=55 控制住(medwin)、adj<55 拖成住院(medloss) 生還
+  function chronic(hp,buff){ fresh(40,Object.assign({r93step:2,r93mode:'tough'},buff)); S.attr.hp=hp; showEvent(f('r93_tough')); choose(0); return S.flags; }
+  out.chronicDeath = [0,0,0].every(()=>chronic(10,{r93_stubborn:true}).specialDeath==='chroniccrash');
+  out.chronicWin   = [0,0,0].every(()=>{const g=chronic(100,{});return g.r93_medwin===true&&!g.specialDeath;});
+  out.chronicLoss  = [0,0,0].every(()=>{const g=chronic(30,{r93_stubborn:true});return g.r93_medloss===true&&!g.specialDeath;});
+  // tough 就醫服軟選項→medwin+healthy（好結局來源）
+  fresh(40,{r93step:2,r93mode:'tough'}); showEvent(f('r93_tough')); choose(1);
+  out.toughSafe = S.flags.r93_medwin===true && S.flags.r93_healthy===true && !S.flags.specialDeath;
+  // ⑤ r93EndingId 結局確定性計分 4 選 1
+  out.endId = r93EndingId({r93mode:'thrifty',r93_healthy:true,r93_medwin:true})==='r93_end_longevity'
+    && r93EndingId({r93mode:'tough',r93_healthy:true,r93_medwin:true})==='r93_end_longevity'
+    && r93EndingId({r93mode:'thrifty'})==='r93_end_thrifty'
+    && r93EndingId({r93mode:'thrifty',r93_stubborn:true,r93_medloss:true})==='r93_end_thrifty'
+    && r93EndingId({r93mode:'premium'})==='r93_end_premium'
+    && r93EndingId({r93mode:'tough'})==='r93_end_tough'
+    && r93EndingId({})==='r93_end_tough';
+  // ⑤ 成就確定性解鎖、零誤觸、提示齊備
+  out.ach = ACH_MAP.r93_in.check({S:{flags:{r93_in:true}},age:40})
+    && ACH_MAP.r93_done.check({S:{flags:{r93_endhit:true}},age:55})
+    && ACH_MAP.r93_centenarian.check({S:{flags:{r93_endtype:'r93_end_longevity'}},age:99})
+    && ACH_MAP.r93_hospitaltour.check({S:{flags:{r93_endtype:'r93_end_thrifty'}},age:70})
+    && !ACH_MAP.r93_in.check({S:{flags:{}},age:40})
+    && !ACH_MAP.r93_centenarian.check({S:{flags:{r93_endtype:'r93_end_thrifty'}},age:99})
+    && ['r93_in','r93_done','r93_centenarian','r93_hospitaltour'].every(id=>ACH_MAP[id]&&ACH_MAP[id].hint&&ACH_MAP[id].hint.length>4);
+  // ⑤ 平衡護欄：全鏈所有選項 eff（含 sr/br win/lose 分支）每格 |eff|<=8（special 內 runtime eff 不在選項定義內、另由文案護欄把關）
+  const r93ids=['r93_medhook','r93_habit','r93_thrifty','r93_premium','r93_tough','r93_end_longevity','r93_end_thrifty','r93_end_premium','r93_end_tough'];
+  let maxEff=0;
+  r93ids.forEach(id=>{ const e=f(id); e.choices.forEach(c=>{
+    const buckets=[c.eff];
+    if(c.sr){ buckets.push(c.sr.win.eff,c.sr.lose.eff); }
+    if(c.br){ buckets.push(c.br.hi.eff,c.br.lo.eff); }
+    buckets.forEach(b=>{ if(b) Object.values(b).forEach(v=>{ if(Math.abs(v)>maxEff)maxEff=Math.abs(v); }); });
+  }); });
+  out.balance = maxEff<=8;
+  // ⑥ 死法圖鑑：ercrash / chroniccrash 進 SPECIAL_DEATHS + DEATHBOOK（reason+hint 齊備）
+  out.deathbook = !!SPECIAL_DEATHS.ercrash && !!SPECIAL_DEATHS.chroniccrash
+    && DEATHBOOK.some(d=>d.id==='ercrash'&&d.reason&&d.hint&&d.hint.length>4)
+    && DEATHBOOK.some(d=>d.id==='chroniccrash'&&d.reason&&d.hint&&d.hint.length>4);
+  // ⑦ 文案紅線：全鏈 title/text/res 不得含政治/暴力/仇恨字串（醫療文化自嘲非嘲諷病患/族群）
+  const RED=['共產','統一','獨立','國民黨','民進黨','政黨','邪教','低能','智障','廢物','去死','該死','活該死'];
+  let blob='';
+  r93ids.forEach(id=>{ const e=f(id); blob+=(e.title||'')+(e.text||''); e.choices.forEach(c=>{ blob+=(c.label||'')+(c.res||''); }); });
+  out.noRedline = RED.every(w=>blob.indexOf(w)<0);
+  // ⑧ 舊存檔相容：舊 save 經 ensureState 不注入任何 r93 鍵
+  const old={flags:{employed:true},attr:{hp:50,int:50,apr:50,mny:50,hap:50},age:40,alive:true,seen:{}}; ensureState(old);
+  out.compat = Object.keys(old.flags).every(k=>k.indexOf('r93')!==0);
+  // ⑨ 零汙染：開局 S.flags 無 r93 鍵；非醫療鏈事件不落 r93 旗標；沒踏進醫療鏈時回顧卡整段省略
+  startGame(); out.clean = Object.keys(S.flags).every(k=>k.indexOf('r93')!==0);
+  fresh(45,{}); showEvent(f('networking')); choose(0); out.cleanPlain = Object.keys(S.flags).every(k=>k.indexOf('r93')!==0);
+  startGame(); S.flags={}; out.reviewSkip = r93MedReviewHTML()==='';
+  S.flags={r93_in:true,r93mode:'thrifty',r93_endtype:'r93_end_longevity'}; out.reviewShow = r93MedReviewHTML().indexOf('健保醫療軌跡')>=0;
+  return JSON.stringify(out);
+})()`, sandbox));
+ok(r93.entry && r93.gateMiss && r93.gateYoung && r93.gateRetired && r93.gateDone, 'R93 ① 攔截器 r93MedPick：20-58 窗口+未退休+雜湊閘命中→入口、閘落空/窗口外/已退休/已收尾皆零殘留不插播');
+ok(r93.split, 'R93 ② 入口三分流：健保鄉民/自費養生/鐵齒硬撐各立 r93mode+step:1+r93_in；佛系養生直接收尾(step:99)不立 mode');
+ok(r93.nodeHabit && r93.nodeThrifty && r93.nodePremium && r93.nodeTough && r93.endLand, 'R93 ② 進鏈依 step/mode 確定性返節點：step1 共用養生習慣、step2 依 mode、step3 落地 r93_endtype/r93_endhit');
+ok(r93.habHealthy && r93.habStubborn && r93.habGate && r93.habCost, 'R93 ③ 健康 buff 取捨：養生落 healthy/鐵齒落 stubborn/int65 gate 醫療知識換 healthy+savvy，三選項 |eff|<=8 不 power creep');
+ok(r93.erDeath && r93.erWin && r93.erLoss, 'R93 ④ 健保鄉民急診人球 special r93_er 體質×運勢確定性存活：hp 見底硬撐→延誤猝逝 ercrash、高 hp 救回(medwin)、中 hp 自費加護救回(medloss)，3 連跑零 rng 不翻盤');
+ok(r93.erBuffWin && r93.erBuffLose && r93.thriftySafe, 'R93 ④ 健康 buff 對急診存活門檻 ±10 確定性生效：healthy(+10)同 hp 救回、stubborn(-10)同 hp 拖成大病；當機立斷自費搶時間選項→medwin(好結局來源)');
+ok(r93.beautySavvy && r93.beautyRich && r93.beautyBotch && r93.beautyNoDeath && r93.premiumSafe, 'R93 ④ 自費醫美 special r93_beauty：savvy 識破密醫/財富>=58 找正規→變美(medwin)、貪便宜踩雷蒙古大夫→翻車(medloss)且絕不致命；找合格醫師選項→medwin');
+ok(r93.chronicDeath && r93.chronicWin && r93.chronicLoss && r93.toughSafe, 'R93 ④ 鐵齒慢性病 special r93_chronic 體質×運勢確定性存活：hp 見底硬撐→惡化中風猝逝 chroniccrash、高 hp 控制住(medwin)、中 hp 拖成住院救回(medloss)；終於就醫選項→medwin+healthy(好結局來源)');
+ok(r93.endId && r93.ach, 'R93 ⑤ 4 結局確定性計分(百歲人瑞/逛醫院達人/自費養生家/鐵齒倖存)＋4 成就確定性解鎖、零誤觸、提示齊備');
+ok(r93.balance && r93.deathbook, 'R93 ⑤⑥ 平衡護欄：全鏈選項 eff 每格 |eff|<=8；專屬死法 ercrash/chroniccrash 進 SPECIAL_DEATHS+DEATHBOOK(reason+hint 齊備)');
+ok(r93.noRedline, 'R93 ⑦ 文案紅線：全鏈無政治/暴力/仇恨字串，醫療文化自嘲非嘲諷病患/族群');
+ok(r93.compat && r93.clean && r93.cleanPlain && r93.reviewSkip && r93.reviewShow, 'R93 ⑧⑨ 零汙染+舊存檔相容：開局/舊save/非醫療鏈事件 S.flags 皆無 r93 鍵、沒踏進醫療鏈時回顧卡省略、踏進後正常顯示');
+
 console.log(fails ? `\n結果: ❌ ${fails} 項未通過` : '\n結果: ✅ 狀態機全數正確');
 process.exit(fails ? 1 : 0);

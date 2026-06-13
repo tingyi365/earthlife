@@ -273,6 +273,14 @@ const r46OK = neverCounted.length <= 80;   // R71：45→55；R72：55→60；R7
    （連跑三次同值，不引入 flaky），故比照 R71~R81 隨內容演進重調門檻（74→78），仍能抓出整批數十個事件變死碼
    的真退化。r87 全鏈本身 hidden:true（不計入落空、不進隨機池），全鏈可達＋屬性 gating 分支＋房貸壓垮死由
    下方 R87 探針逐段確定性斷言。 */
+/* R93 備註：本輪加了「台味健保醫療人生支線」（r93_medhook 入口＋thrifty 健保鄉民/premium 自費養生/tough 鐵齒硬撐
+   三分流醫療抉擇＋4 結局，由確定性攔截器 r93MedPick 依 r93mode＋r93step 驅動，零裸 rng／零 Math.random）。攔截器在
+   20-58 歲窗口、約 10% 合格生命插播醫療支線，每命中取代當年一般池抽選並套上鏈內事件 eff——等同 R81/R86/R87 攔截器
+   之於後續 eligible 判定與整條 seed-pinned 事件抽選序列；special r93_er/r93_chronic 走確定性門檻（體質×健康 buff）、
+   r93_beauty 走財富/savvy 判定，皆零裸 rng。落空名單成員隨插播洗牌：入口率刻意壓到 10%（曾試 13% 洗到 88、超標），
+   實測穩定落在 75（連跑三次同值，不引入 flaky）、仍在 R89 既有 80 門檻內，故門檻維持 80 不放寬，仍能抓出整批數十個
+   事件變死碼的真退化。r93 全鏈本身 hidden:true（不計入落空、不進隨機池），全鏈可達＋屬性 gating 分支＋急診人球延誤
+   猝逝/慢性病惡化猝逝兩專屬死法由下方 R93 探針逐段確定性斷言。 */
 console.log(`R46 觸達率: 未觸發(計入門檻) ${neverCounted.length}/80 ｜ 節令豁免 ${never.filter(id=>R46_EXEMPT.has(id)).length} ｜ ${r46OK ? '✅' : '❌ 超標'}`);
 
 /* localStorage 存讀驗證（含 R3 死法圖鑑：舊存檔無 deaths 鍵 → 載入後應自動補空集合並正常收集） */
@@ -3056,6 +3064,48 @@ try {
   console.log('R92 台味交通／行人地獄人生支線: ❌ ' + e.message);
 }
 
+// ===== R93 台味健保醫療人生支線：分流狀態機全鏈可達性 + 屬性 gating + 健康 buff + 專屬死法 + 零汙染 =====
+let r93OK = false;
+try {
+  const r93Raw = vm.runInContext(`(function(){
+    const out={}; const f=id=>EVENTS.find(e=>e.id===id);
+    function fresh(age,flags){ startGame(); ensureState(S); S.seen={}; S.alive=true; S.keySnap=[]; S.flags=Object.assign({},flags||{}); ensureState(S); if(age!=null)S.age=age; return S; }
+    const ids=['r93_medhook','r93_habit','r93_thrifty','r93_premium','r93_tough','r93_end_longevity','r93_end_thrifty','r93_end_premium','r93_end_tough'];
+    // 結構：全鏈 hidden+once+r93node+meme 場景存在+至少 2 選項
+    out.struct = ids.every(id=>{const e=f(id);return e&&e.hidden&&e.once&&e.r93node&&e.meme&&SCENES[e.meme.scene]&&(e.choices||[]).length>=2;});
+    // 全鏈 hidden → 不進隨機池
+    out.hiddenPool = ids.every(id=>{const e=f(id);return e.hidden===true;});
+    // 成就/死法定義齊備
+    out.achDef = ['r93_in','r93_done','r93_centenarian','r93_hospitaltour'].every(id=>ACH_MAP[id]&&ACH_MAP[id].hint&&String(ACH_MAP[id].hint).length>4);
+    out.deathDef = !!SPECIAL_DEATHS.ercrash && !!SPECIAL_DEATHS.chroniccrash && DEATHBOOK.some(d=>d.id==='ercrash') && DEATHBOOK.some(d=>d.id==='chroniccrash');
+    // 攔截器入口雜湊閘確定性化：釘死 r93Roll 驗閘門可預測（命中/落空），驗完還原
+    const _ro=r93Roll;
+    let s=fresh(40,{}); r93Roll=function(){return 0.05;}; out.entryOK = !!r93MedPick() && r93MedPick().id==='r93_medhook';
+    s=fresh(40,{}); r93Roll=function(){return 0.9;}; out.gateMiss = r93MedPick()===null;
+    r93Roll=function(){return 0.05;};
+    s=fresh(18,{}); out.gateYoung = r93MedPick()===null;
+    s=fresh(60,{}); out.gateOld = r93MedPick()===null;
+    r93Roll=_ro;
+    // 全鏈可達：三線各跑完一輪（亂選 choose(0) 也必推進到結局並落 r93_endhit）
+    function runline(mode){ s=fresh(30,{r93step:1,r93mode:mode}); s.attr={hp:80,int:80,apr:80,mny:80,hap:80}; let guard=0;
+      while(s.flags.r93step<99 && guard<12){ const ev=r93MedPick(); if(!ev)break; showEvent(ev); choose(0); guard++; if(s.flags.specialDeath)break; }
+      return s.flags; }
+    const gt=runline('thrifty'); out.lineThrifty = gt.r93step>=99 ? !!gt.r93_endhit : !!gt.specialDeath;   // 走完落結局 或 中途專屬死法
+    const gp=runline('premium'); out.linePremium = gp.r93step>=99 ? !!gp.r93_endhit : !!gp.specialDeath;
+    const go=runline('tough');   out.lineTough   = go.r93step>=99 ? !!go.r93_endhit : !!go.specialDeath;
+    // 零汙染：開局/舊存檔無 r93 鍵
+    startGame(); out.cleanStart = Object.keys(S.flags||{}).every(k=>k.indexOf('r93')!==0);
+    const old={flags:{employed:true},attr:{hp:50,int:50,apr:50,mny:50,hap:50},age:40,alive:true}; ensureState(old);
+    out.compat = Object.keys(old.flags).every(k=>k.indexOf('r93')!==0);
+    return JSON.stringify(out);
+  })()`, sandbox);
+  const r93 = JSON.parse(r93Raw);
+  r93OK = Object.values(r93).every(v => v === true);
+  console.log(`R93 台味健保醫療人生支線: ${r93OK ? '✅ 全數通過' : '❌ ' + JSON.stringify(r93)}`);
+} catch (e) {
+  console.log('R93 台味健保醫療人生支線: ❌ ' + e.message);
+}
+
 if (__errors.length) {
   console.log('\n--- 錯誤樣本(前5) ---');
   __errors.slice(0, 5).forEach(e => console.log('  ' + e));
@@ -3063,6 +3113,6 @@ if (__errors.length) {
 
 /* 退出碼 */
 const pass = __errors.length === 0 && chk.missingScenes.length === 0 && chk.eventVisible >= 126 && chk.eventTotal >= 126 && lsOK && achUnlocked > 0
-  && chk.deathbookMissing.length === 0 && chk.deathTotal >= 17 && deathsOK && rebirthOK && legacyOK && petOK && r13OK && r17OK && r20OK && r21OK && r22OK && r24OK && r25OK && r34OK && r38OK && r41OK && r42OK && r43OK && r44OK && r45OK && r46OK && r47OK && r48OK && r49OK && r51OK && r52OK && r53OK && r54OK && r55OK && r72OK && r76OK && r77OK && r79OK && r86OK && r87OK && r92OK;
+  && chk.deathbookMissing.length === 0 && chk.deathTotal >= 17 && deathsOK && rebirthOK && legacyOK && petOK && r13OK && r17OK && r20OK && r21OK && r22OK && r24OK && r25OK && r34OK && r38OK && r41OK && r42OK && r43OK && r44OK && r45OK && r46OK && r47OK && r48OK && r49OK && r51OK && r52OK && r53OK && r54OK && r55OK && r72OK && r76OK && r77OK && r79OK && r86OK && r87OK && r92OK && r93OK;
 console.log('\n結果: ' + (pass ? '✅ 全數通過' : '❌ 有項目未通過'));
 process.exit(pass ? 0 : 1);
