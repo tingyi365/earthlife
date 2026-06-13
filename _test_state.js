@@ -3246,5 +3246,122 @@ ok(r93.balance && r93.deathbook, 'R93 ⑤⑥ 平衡護欄：全鏈選項 eff 每
 ok(r93.noRedline, 'R93 ⑦ 文案紅線：全鏈無政治/暴力/仇恨字串，醫療文化自嘲非嘲諷病患/族群');
 ok(r93.compat && r93.clean && r93.cleanPlain && r93.reviewSkip && r93.reviewShow, 'R93 ⑧⑨ 零汙染+舊存檔相容：開局/舊save/非醫療鏈事件 S.flags 皆無 r93 鍵、沒踏進醫療鏈時回顧卡省略、踏進後正常顯示');
 
+// ===== R95 台味網紅／直播主人生支線：分流狀態機 + 爆紅 buff 取捨 + 魅力×運勢/智力驅動 gating + 專屬死法 + 零汙染 =====
+const r95 = JSON.parse(vm.runInContext(`(function(){
+  const out={}; const f=id=>EVENTS.find(e=>e.id===id);
+  function fresh(age,flags){ startGame(); ensureState(S); S.seen={}; S.alive=true; S.keySnap=[]; S.flags=Object.assign({},flags||{}); ensureState(S); if(age!=null)S.age=age; return S; }
+  // ① 攔截器 r95CreatorPick：16-52 窗口+未退休+雜湊閘命中→入口、閘落空/窗口外/已退休/已收尾皆零殘留
+  const _ro=r95Roll;
+  fresh(30,{}); r95Roll=function(){return 0.05;}; out.entry = !!r95CreatorPick() && r95CreatorPick().id==='r95_hook';
+  fresh(30,{}); r95Roll=function(){return 0.9;}; out.gateMiss = r95CreatorPick()===null;
+  r95Roll=_ro;
+  fresh(14,{}); out.gateYoung = r95CreatorPick()===null;
+  fresh(30,{retired:true}); out.gateRetired = r95CreatorPick()===null;
+  fresh(30,{r95step:99}); out.gateDone = r95CreatorPick()===null;
+  // ② 入口三分流：各立 r95mode + step:1 + r95_in；佛系觀眾直接收尾(step:99)不立 mode
+  function pick0(i){ fresh(30,{}); showEvent(f('r95_hook')); choose(i); return S.flags; }
+  out.split = (g=>g.r95mode==='stream'&&g.r95step===1&&!!g.r95_in)(pick0(0))
+    && (g=>g.r95mode==='tuber'&&g.r95step===1&&!!g.r95_in)(pick0(1))
+    && (g=>g.r95mode==='dao'&&g.r95step===1&&!!g.r95_in)(pick0(2))
+    && (g=>g.r95step===99&&!g.r95mode&&!g.r95_in)(pick0(3));
+  // ② 進鏈依 step/mode 確定性返節點
+  fresh(30,{r95step:1,r95mode:'stream'}); out.nodeGrind=(r95CreatorPick()||{}).id==='r95_grind';
+  fresh(30,{r95step:2,r95mode:'stream'}); out.nodeStream=(r95CreatorPick()||{}).id==='r95_stream';
+  fresh(30,{r95step:2,r95mode:'tuber'});  out.nodeTuber =(r95CreatorPick()||{}).id==='r95_tuber';
+  fresh(30,{r95step:2,r95mode:'dao'});    out.nodeDao   =(r95CreatorPick()||{}).id==='r95_dao';
+  fresh(30,{r95step:3,r95mode:'stream',r95_hit:true,r95_quality:true}); const e3=r95CreatorPick();
+  out.endLand = e3&&e3.id==='r95_end_star'&&S.flags.r95_endtype==='r95_end_star'&&S.flags.r95_endhit===true;
+  // ③ 經營習慣 buff 取捨：砸錢設備落 r95_quality(吃財富)、爆肝拚量落 r95_hardcore(吃體質)、int>=65 gate 看穿演算法落 quality+savvy
+  function grind(i,attr){ fresh(30,{r95step:1,r95mode:'stream'}); if(attr)Object.assign(S.attr,attr); showEvent(f('r95_grind')); choose(i); return S.flags; }
+  const g0=grind(0); out.grindQuality = g0.r95_quality===true && g0.r95_invest===true && g0.r95step===2 && !g0.r95_hardcore;
+  const g1=grind(1); out.grindHardcore = g1.r95_hardcore===true && !g1.r95_quality && g1.r95step===2;
+  const gg=grind(2,{int:90}); out.grindGate = gg.r95_quality===true && gg.r95_savvy===true && S.flags.gateWin>0;
+  const cQ=f('r95_grind').choices[0], cH=f('r95_grind').choices[1], cG=f('r95_grind').choices[2];
+  out.grindCost = (cQ.eff.mny<0) && (cH.eff.hp<0) && !!cG.cond && cG.gate===true;
+  // ④ 開台爆紅 special r95_blowup 魅力×運勢確定性 gating（零 rng）：hp 見底→burnstream 死；apr×r95Roll 翻牌→爆紅(hit)、低 apr→做白工(flop)
+  function blowup(hp,apr,buff,roll){ fresh(30,Object.assign({r95step:2,r95mode:'stream'},buff)); S.attr.hp=hp; S.attr.apr=apr; const _r=r95Roll; r95Roll=function(){return roll;}; showEvent(f('r95_stream')); choose(0); r95Roll=_r; return S.flags; }
+  out.burnDeath = [0,0,0].every(()=>blowup(10,80,{},0.9).specialDeath==='burnstream');
+  out.viralWin  = [0,0,0].every(()=>{const g=blowup(80,80,{},0.9);return g.r95_hit===true&&!g.specialDeath;}); // 高魅力+演算法翻牌→一夜爆紅
+  out.viralMid  = [0,0,0].every(()=>{const g=blowup(80,80,{},0.2);return !g.r95_hit&&!g.r95_flop&&!g.specialDeath;}); // 高魅力沒翻牌→小有人氣（非 hit 非 flop）
+  out.viralFlop = [0,0,0].every(()=>{const g=blowup(80,20,{},0.9);return g.r95_flop===true&&!g.specialDeath;}); // 低魅力→做白工
+  // stream 不賭命穩穩經營選項→hit（好結局來源、不拿命換）
+  fresh(30,{r95step:2,r95mode:'stream'}); showEvent(f('r95_stream')); choose(1);
+  out.streamSafe = S.flags.r95_hit===true && !S.flags.specialDeath;
+  // ④ 內容創作炎上 special r95_cancel 智力確定性 gating（零 rng）：int 見底→cancelled 死；int+savvy adj>=58 化解(hit)、否則被公審掉粉(flop) 生還
+  function cancel(int,buff){ fresh(30,Object.assign({r95step:2,r95mode:'tuber'},buff)); S.attr.int=int; showEvent(f('r95_tuber')); choose(0); return S.flags; }
+  out.cancelDeath = [0,0,0].every(()=>cancel(10,{}).specialDeath==='cancelled');
+  out.cancelWin   = [0,0,0].every(()=>{const g=cancel(90,{});return g.r95_hit===true&&!g.specialDeath;}); // 高智力→理性化解守信任
+  out.cancelLoss  = [0,0,0].every(()=>{const g=cancel(40,{});return g.r95_flop===true&&!g.specialDeath;}); // 中智力→被公審掉粉但生還
+  out.cancelBuffWin = [0,0,0].every(()=>{const g=cancel(50,{r95_savvy:true});return g.r95_hit===true;}); // savvy(+10)同 int 化解
+  // tuber 冷靜理性溝通選項→hit（好結局來源）
+  fresh(30,{r95step:2,r95mode:'tuber'}); showEvent(f('r95_tuber')); choose(1);
+  out.tuberSafe = S.flags.r95_hit===true && !S.flags.specialDeath;
+  // ④ 業配開團 special r95_deal：savvy/智力>=58 看穿合約→賺爛(hit)、否則貪快踩賣身契翻車(flop)，非致命無死法
+  function deal(buff,attr){ fresh(30,Object.assign({r95step:2,r95mode:'dao'},buff)); if(attr)Object.assign(S.attr,attr); showEvent(f('r95_dao')); choose(0); return S.flags; }
+  out.dealSavvy = [0,0,0].every(()=>{const g=deal({r95_savvy:true},{int:20,mny:20});return g.r95_hit===true&&!g.specialDeath;}); // savvy 看穿合約→賺爛
+  out.dealSmart = [0,0,0].every(()=>{const g=deal({},{int:70,mny:20});return g.r95_hit===true&&!g.specialDeath;}); // 智力>=58 看穿→賺爛
+  out.dealBotch = [0,0,0].every(()=>{const g=deal({},{int:20,mny:70});return g.r95_flop===true&&!g.specialDeath;}); // 貪快踩雷→翻車(賠得起)
+  out.dealNoDeath = [0,0,0].every(()=>!deal({},{int:20,mny:10}).specialDeath); // 業配翻車絕不致命(賠到負債也不死)
+  // dao 先查清楚再簽選項→hit（好結局來源）
+  fresh(30,{r95step:2,r95mode:'dao'}); showEvent(f('r95_dao')); choose(1);
+  out.daoSafe = S.flags.r95_hit===true && !S.flags.specialDeath;
+  r95Roll=_ro;
+  // ⑤ r95EndingId 結局確定性計分 4 選 1
+  out.endId = r95EndingId({r95mode:'stream',r95_hit:true,r95_quality:true})==='r95_end_star'
+    && r95EndingId({r95mode:'tuber',r95_hit:true,r95_savvy:true})==='r95_end_star'
+    && r95EndingId({r95mode:'stream'})==='r95_end_stream'
+    && r95EndingId({r95mode:'stream',r95_hardcore:true,r95_flop:true})==='r95_end_stream'
+    && r95EndingId({r95mode:'tuber'})==='r95_end_tuber'
+    && r95EndingId({r95mode:'dao'})==='r95_end_dao'
+    && r95EndingId({})==='r95_end_dao';
+  // ⑤ 成就確定性解鎖、零誤觸、提示齊備
+  out.ach = ACH_MAP.r95_in.check({S:{flags:{r95_in:true}},age:30})
+    && ACH_MAP.r95_done.check({S:{flags:{r95_endhit:true}},age:55})
+    && ACH_MAP.r95_star.check({S:{flags:{r95_endtype:'r95_end_star'}},age:60})
+    && ACH_MAP.r95_dao_king.check({S:{flags:{r95_endtype:'r95_end_dao'}},age:60})
+    && !ACH_MAP.r95_in.check({S:{flags:{}},age:30})
+    && !ACH_MAP.r95_star.check({S:{flags:{r95_endtype:'r95_end_dao'}},age:60})
+    && ['r95_in','r95_done','r95_star','r95_dao_king'].every(id=>ACH_MAP[id]&&ACH_MAP[id].hint&&ACH_MAP[id].hint.length>4);
+  // ⑤ 平衡護欄：全鏈所有選項 eff 每格 |eff|<=8（special 內 runtime eff 不在選項定義內、另由文案護欄把關）
+  const r95ids=['r95_hook','r95_grind','r95_stream','r95_tuber','r95_dao','r95_end_star','r95_end_stream','r95_end_tuber','r95_end_dao'];
+  let maxEff=0;
+  r95ids.forEach(id=>{ const e=f(id); e.choices.forEach(c=>{
+    const buckets=[c.eff];
+    if(c.sr){ buckets.push(c.sr.win.eff,c.sr.lose.eff); }
+    if(c.br){ buckets.push(c.br.hi.eff,c.br.lo.eff); }
+    buckets.forEach(b=>{ if(b) Object.values(b).forEach(v=>{ if(Math.abs(v)>maxEff)maxEff=Math.abs(v); }); });
+  }); });
+  out.balance = maxEff<=8;
+  // ⑥ 死法圖鑑：burnstream / cancelled 進 SPECIAL_DEATHS + DEATHBOOK（reason+hint 齊備）
+  out.deathbook = !!SPECIAL_DEATHS.burnstream && !!SPECIAL_DEATHS.cancelled
+    && DEATHBOOK.some(d=>d.id==='burnstream'&&d.reason&&d.hint&&d.hint.length>4)
+    && DEATHBOOK.some(d=>d.id==='cancelled'&&d.reason&&d.hint&&d.hint.length>4);
+  // ⑦ 文案紅線：全鏈 title/text/res 不得含政治/暴力/仇恨字串（網紅文化自嘲非嘲諷受害者/族群）
+  const RED=['共產','統一','獨立','國民黨','民進黨','政黨','邪教','低能','智障','廢物','去死','該死','活該死'];
+  let blob='';
+  r95ids.forEach(id=>{ const e=f(id); blob+=(e.title||'')+(e.text||''); e.choices.forEach(c=>{ blob+=(c.label||'')+(c.res||''); }); });
+  out.noRedline = RED.every(w=>blob.indexOf(w)<0);
+  // ⑧ 舊存檔相容：舊 save 經 ensureState 不注入任何 r95 鍵
+  const old={flags:{employed:true},attr:{hp:50,int:50,apr:50,mny:50,hap:50},age:40,alive:true,seen:{}}; ensureState(old);
+  out.compat = Object.keys(old.flags).every(k=>k.indexOf('r95')!==0);
+  // ⑨ 零汙染：開局 S.flags 無 r95 鍵；非創作者鏈事件不落 r95 旗標；沒踏進創作者鏈時回顧卡整段省略
+  startGame(); out.clean = Object.keys(S.flags).every(k=>k.indexOf('r95')!==0);
+  fresh(45,{}); showEvent(f('networking')); choose(0); out.cleanPlain = Object.keys(S.flags).every(k=>k.indexOf('r95')!==0);
+  startGame(); S.flags={}; out.reviewSkip = r95CreatorReviewHTML()==='';
+  S.flags={r95_in:true,r95mode:'stream',r95_endtype:'r95_end_star'}; out.reviewShow = r95CreatorReviewHTML().indexOf('網紅創作者軌跡')>=0;
+  return JSON.stringify(out);
+})()`, sandbox));
+ok(r95.entry && r95.gateMiss && r95.gateYoung && r95.gateRetired && r95.gateDone, 'R95 ① 攔截器 r95CreatorPick：16-52 窗口+未退休+雜湊閘命中→入口、閘落空/窗口外/已退休/已收尾皆零殘留不插播');
+ok(r95.split, 'R95 ② 入口三分流：開台直播/內容創作/業配帶貨各立 r95mode+step:1+r95_in；佛系觀眾直接收尾(step:99)不立 mode');
+ok(r95.nodeGrind && r95.nodeStream && r95.nodeTuber && r95.nodeDao && r95.endLand, 'R95 ② 進鏈依 step/mode 確定性返節點：step1 共用經營習慣、step2 依 mode、step3 落地 r95_endtype/r95_endhit');
+ok(r95.grindQuality && r95.grindHardcore && r95.grindGate && r95.grindCost, 'R95 ③ 經營 buff 取捨：砸錢設備落 quality(吃財富)/爆肝拚量落 hardcore(吃體質)/int65 gate 看穿演算法換 quality+savvy，三選項 |eff|<=8 不 power creep');
+ok(r95.burnDeath && r95.viralWin && r95.viralMid && r95.viralFlop && r95.streamSafe, 'R95 ④ 開台爆紅 special r95_blowup 魅力×運勢確定性 gating：hp 見底硬撐→爆肝猝死 burnstream、高魅力+演算法翻牌→爆紅(hit)、高魅力沒翻牌→小有人氣、低魅力→做白工(flop)；穩穩經營選項→hit 不拿命換');
+ok(r95.cancelDeath && r95.cancelWin && r95.cancelLoss && r95.cancelBuffWin && r95.tuberSafe, 'R95 ④ 內容創作炎上 special r95_cancel 智力確定性 gating：int 見底情緒對嗆→炎上社死 cancelled、高智力→理性化解(hit)、中智力→被公審掉粉生還(flop)、savvy(+10)同 int 化解；冷靜溝通選項→hit');
+ok(r95.dealSavvy && r95.dealSmart && r95.dealBotch && r95.dealNoDeath && r95.daoSafe, 'R95 ④ 業配開團 special r95_deal：savvy 看穿合約/智力>=58→賺爛(hit)、貪快踩賣身契→翻車(flop)且絕不致命(賠到負債也不死)；先查清楚再簽選項→hit');
+ok(r95.endId && r95.ach, 'R95 ⑤ 4 結局確定性計分(頂流長紅/人氣主播/內容創作者/帶貨天王)＋4 成就確定性解鎖、零誤觸、提示齊備');
+ok(r95.balance && r95.deathbook, 'R95 ⑤⑥ 平衡護欄：全鏈選項 eff 每格 |eff|<=8；專屬死法 burnstream/cancelled 進 SPECIAL_DEATHS+DEATHBOOK(reason+hint 齊備)');
+ok(r95.noRedline, 'R95 ⑦ 文案紅線：全鏈無政治/暴力/仇恨字串，網紅文化自嘲非嘲諷受害者/族群');
+ok(r95.compat && r95.clean && r95.cleanPlain && r95.reviewSkip && r95.reviewShow, 'R95 ⑧⑨ 零汙染+舊存檔相容：開局/舊save/非創作者鏈事件 S.flags 皆無 r95 鍵、沒踏進創作者鏈時回顧卡省略、踏進後正常顯示');
+
 console.log(fails ? `\n結果: ❌ ${fails} 項未通過` : '\n結果: ✅ 狀態機全數正確');
 process.exit(fails ? 1 : 0);

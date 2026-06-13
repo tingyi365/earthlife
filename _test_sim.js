@@ -3106,6 +3106,61 @@ try {
   console.log('R93 台味健保醫療人生支線: ❌ ' + e.message);
 }
 
+// ===== R95 台味網紅／直播主人生支線：分流狀態機全鏈可達性 + 屬性 gating（爆紅/炎上）+ buff + 專屬死法 + 零汙染 =====
+let r95OK = false;
+try {
+  const r95Raw = vm.runInContext(`(function(){
+    const out={}; const f=id=>EVENTS.find(e=>e.id===id);
+    function fresh(age,flags){ startGame(); ensureState(S); S.seen={}; S.alive=true; S.keySnap=[]; S.flags=Object.assign({},flags||{}); ensureState(S); if(age!=null)S.age=age; return S; }
+    const ids=['r95_hook','r95_grind','r95_stream','r95_tuber','r95_dao','r95_end_star','r95_end_stream','r95_end_tuber','r95_end_dao'];
+    // 結構：全鏈 hidden+once+r95node+meme 場景存在+至少 2 選項
+    out.struct = ids.every(id=>{const e=f(id);return e&&e.hidden&&e.once&&e.r95node&&e.meme&&SCENES[e.meme.scene]&&(e.choices||[]).length>=2;});
+    // 全鏈 hidden → 不進隨機池
+    out.hiddenPool = ids.every(id=>{const e=f(id);return e.hidden===true;});
+    // 成就/死法定義齊備
+    out.achDef = ['r95_in','r95_done','r95_star','r95_dao_king'].every(id=>ACH_MAP[id]&&ACH_MAP[id].hint&&String(ACH_MAP[id].hint).length>4);
+    out.deathDef = !!SPECIAL_DEATHS.burnstream && !!SPECIAL_DEATHS.cancelled && DEATHBOOK.some(d=>d.id==='burnstream') && DEATHBOOK.some(d=>d.id==='cancelled');
+    // 攔截器入口雜湊閘確定性化：釘死 r95Roll 驗閘門可預測（命中/落空），驗完還原
+    const _ro=r95Roll;
+    let s=fresh(30,{}); r95Roll=function(){return 0.05;}; out.entryOK = !!r95CreatorPick() && r95CreatorPick().id==='r95_hook';
+    s=fresh(30,{}); r95Roll=function(){return 0.9;}; out.gateMiss = r95CreatorPick()===null;
+    r95Roll=function(){return 0.05;};
+    s=fresh(14,{}); out.gateYoung = r95CreatorPick()===null;
+    s=fresh(56,{}); out.gateOld = r95CreatorPick()===null;
+    r95Roll=_ro;
+    // 全鏈可達：三線各跑完一輪（亂選 choose(0) 也必推進到結局並落 r95_endhit）
+    function runline(mode){ s=fresh(28,{r95step:1,r95mode:mode}); s.attr={hp:80,int:80,apr:80,mny:80,hap:80}; let guard=0;
+      while(s.flags.r95step<99 && guard<12){ const ev=r95CreatorPick(); if(!ev)break; showEvent(ev); choose(0); guard++; if(s.flags.specialDeath)break; }
+      return s.flags; }
+    const gs=runline('stream'); out.lineStream = gs.r95step>=99 ? !!gs.r95_endhit : !!gs.specialDeath;   // 走完落結局 或 中途專屬死法
+    const gt=runline('tuber');  out.lineTuber  = gt.r95step>=99 ? !!gt.r95_endhit : !!gt.specialDeath;
+    const gd=runline('dao');    out.lineDao    = gd.r95step>=99 ? !!gd.r95_endhit : !!gd.specialDeath;
+    // 屬性 gating：開台爆紅體質見底→爆肝猝死 burnstream（選 special r95_blowup 那一支）
+    s=fresh(28,{r95step:2,r95mode:'stream'}); s.attr={hp:10,int:80,apr:80,mny:80,hap:80}; { const ev=r95CreatorPick(); showEvent(ev); choose(0); }
+    out.deathBurn = s.flags.specialDeath==='burnstream';
+    // 屬性 gating：內容創作智力見底→炎上社死 cancelled（選 special r95_cancel 那一支）
+    s=fresh(28,{r95step:2,r95mode:'tuber'}); s.attr={hp:80,int:10,apr:80,mny:80,hap:80}; { const ev=r95CreatorPick(); showEvent(ev); choose(0); }
+    out.deathCancel = s.flags.specialDeath==='cancelled';
+    // 屬性 gating：高魅力高運勢（釘 r95Roll 翻牌）→ 一夜爆紅 r95_hit；低魅力 → 做白工 flop
+    r95Roll=function(){return 0.9;};
+    s=fresh(28,{r95step:2,r95mode:'stream'}); s.attr={hp:80,int:50,apr:80,mny:50,hap:50}; { const ev=r95CreatorPick(); showEvent(ev); choose(0); }
+    out.viralWin = s.flags.r95_hit===true && !s.flags.specialDeath;
+    s=fresh(28,{r95step:2,r95mode:'stream'}); s.attr={hp:80,int:50,apr:20,mny:50,hap:50}; { const ev=r95CreatorPick(); showEvent(ev); choose(0); }
+    out.viralFlop = s.flags.r95_flop===true && !s.flags.specialDeath;
+    r95Roll=_ro;
+    // 零汙染：開局/舊存檔無 r95 鍵
+    startGame(); out.cleanStart = Object.keys(S.flags||{}).every(k=>k.indexOf('r95')!==0);
+    const old={flags:{employed:true},attr:{hp:50,int:50,apr:50,mny:50,hap:50},age:40,alive:true}; ensureState(old);
+    out.compat = Object.keys(old.flags).every(k=>k.indexOf('r95')!==0);
+    return JSON.stringify(out);
+  })()`, sandbox);
+  const r95 = JSON.parse(r95Raw);
+  r95OK = Object.values(r95).every(v => v === true);
+  console.log(`R95 台味網紅直播主人生支線: ${r95OK ? '✅ 全數通過' : '❌ ' + JSON.stringify(r95)}`);
+} catch (e) {
+  console.log('R95 台味網紅直播主人生支線: ❌ ' + e.message);
+}
+
 if (__errors.length) {
   console.log('\n--- 錯誤樣本(前5) ---');
   __errors.slice(0, 5).forEach(e => console.log('  ' + e));
@@ -3113,6 +3168,6 @@ if (__errors.length) {
 
 /* 退出碼 */
 const pass = __errors.length === 0 && chk.missingScenes.length === 0 && chk.eventVisible >= 126 && chk.eventTotal >= 126 && lsOK && achUnlocked > 0
-  && chk.deathbookMissing.length === 0 && chk.deathTotal >= 17 && deathsOK && rebirthOK && legacyOK && petOK && r13OK && r17OK && r20OK && r21OK && r22OK && r24OK && r25OK && r34OK && r38OK && r41OK && r42OK && r43OK && r44OK && r45OK && r46OK && r47OK && r48OK && r49OK && r51OK && r52OK && r53OK && r54OK && r55OK && r72OK && r76OK && r77OK && r79OK && r86OK && r87OK && r92OK && r93OK;
+  && chk.deathbookMissing.length === 0 && chk.deathTotal >= 17 && deathsOK && rebirthOK && legacyOK && petOK && r13OK && r17OK && r20OK && r21OK && r22OK && r24OK && r25OK && r34OK && r38OK && r41OK && r42OK && r43OK && r44OK && r45OK && r46OK && r47OK && r48OK && r49OK && r51OK && r52OK && r53OK && r54OK && r55OK && r72OK && r76OK && r77OK && r79OK && r86OK && r87OK && r92OK && r93OK && r95OK;
 console.log('\n結果: ' + (pass ? '✅ 全數通過' : '❌ 有項目未通過'));
 process.exit(pass ? 0 : 1);
