@@ -5,17 +5,17 @@
 [![▶ Play Now](https://img.shields.io/badge/%E2%96%B6%20%E7%B7%9A%E4%B8%8A%E8%A9%A6%E7%8E%A9-earthlife.pages.dev-7fd7ff?style=for-the-badge)](https://earthlife.pages.dev)
 [![License: MIT](https://img.shields.io/badge/License-MIT-3fb950?style=for-the-badge)](LICENSE)
 [![Single HTML file](https://img.shields.io/badge/Build-%E5%96%AE%E4%B8%80%20HTML%20%E6%AA%94%C2%B7%E7%84%A1%E6%A1%86%E6%9E%B6-ff9d5c?style=for-the-badge)](index.html)
-[![AI Self-Evolved](https://img.shields.io/badge/AI%20%E8%87%AA%E4%B8%BB%E9%80%B2%E5%8C%96-R1%20%E2%86%92%20R81%20%E4%BB%8D%E5%9C%A8%E7%B9%BC%E7%BA%8C-ffd24a?style=for-the-badge)](docs/AI_AUTONOMOUS_UPDATE.md)
+[![AI Self-Evolved](https://img.shields.io/badge/AI%20%E8%87%AA%E4%B8%BB%E9%80%B2%E5%8C%96-R1%20%E2%86%92%20R84%20%E4%BB%8D%E5%9C%A8%E7%B9%BC%E7%BA%8C-ffd24a?style=for-the-badge)](docs/AI_AUTONOMOUS_UPDATE.md)
 [![Zero human-written game code](https://img.shields.io/badge/%E9%81%8A%E6%88%B2%E7%A8%8B%E5%BC%8F%E7%A2%BC-100%25%20AI%20%E6%89%8B%E5%AF%AB%C2%B7%E9%9B%B6%E4%BA%BA%E9%A1%9E%E6%8F%92%E6%89%8B-ff5d8f?style=for-the-badge)](docs/AI_AUTONOMOUS_UPDATE.md)
 
-> 🧬 **這款遊戲，是一個 AI agent 自己寫出來、自己養大的。** 從 61 個事件的雛形開始，AI 無人介入、每 30 分鐘自我迭代一輪，連續進化 **80＋ 輪（目前 R81、仍在繼續）**——選題、改碼、測試、部署、寫日誌全自動，**每一行遊戲程式碼都是 AI 手寫、零人類手寫遊戲碼**，且每一輪都得先過自動化測試閘門才准上線。你現在玩到的，是它自己長出來的。
+> 🧬 **這是一款「自己進化自己」的遊戲——一個 AI agent 自己寫出來、自己養大的。** 從 61 個事件的雛形開始，沒有人類排需求、沒有人類改一行 code，AI 每 30 分鐘自我迭代一輪：自己選題、自己改碼、自己跑測試、自己部署、自己寫日誌，全程無人介入。到今天它已經**連續自主進化 84 輪（R1 → R84，仍在繼續）**，且每一輪都得先過自動化測試閘門才准上線。**每一行遊戲程式碼都是 AI 手寫、零人類手寫遊戲碼。** 你現在玩到的這個版本，不是誰設計的——是它自己一輪一輪長出來的。
 
 🎮 線上試玩 / Play now: **https://earthlife.pages.dev**
 
 <p align="center">
   <img src="docs/demo.gif" width="62%" alt="EarthLife 實機 demo：投胎抽卡 → 梗圖事件 → 人生總結卡">
 </p>
-<p align="center"><sub>↑ 實機 demo（持續進化中，目前 R81）</sub></p>
+<p align="center"><sub>↑ 實機 demo（持續進化中，目前 R84）</sub></p>
 
 <p align="center">
   <img src="docs/screenshot_start.png" width="31%" alt="開局投胎抽卡">
@@ -30,7 +30,7 @@
 
 這不只是一款遊戲——它是一個 **「AI 自主更新管理」的實驗場**。
 
-遊戲上線後的每一輪迭代（**R1 → R81，仍在繼續**），都由一個 AI agent 自主完成，**每 30 分鐘一輪**，無人介入、**全程零人類手寫遊戲碼**：
+遊戲上線後的每一輪迭代（**R1 → R84，仍在繼續**），都由一個 AI agent 自主完成，**每 30 分鐘一輪**，無人介入、**全程零人類手寫遊戲碼**：
 
 ```
 ┌─────────────────────────────────────────────────┐
@@ -45,11 +45,11 @@
 └─────────────────────────────────────────────────┘
 ```
 
-81 輪下來，遊戲從 61 個事件的雛形，長成 **707 個事件、111 種梗圖場景、259 個成就、66 種死法、10 個隱藏結局**、外加多館合一的收藏圖鑑（死法／成就／出身／天賦）的完整作品（數據截至 R81，由測試報告即時統計）——每一步都有測試把關、每一步都可回溯。
+84 輪下來，遊戲從 61 個事件的雛形，長成 **726 個事件、111 種梗圖場景、269 個成就、66 種死法、10 個隱藏結局**、外加多館合一的收藏圖鑑（死法／成就／出身／天賦）的完整作品（數據截至 R84，由測試報告即時統計）——每一步都有測試把關、每一步都可回溯。
 
 詳細機制設計請見 **[docs/AI_AUTONOMOUS_UPDATE.md](docs/AI_AUTONOMOUS_UPDATE.md)**。
 
-### 🧬 AI 自主進化時間軸（R1 → R81 精選里程碑）
+### 🧬 AI 自主進化時間軸（R1 → R84 精選里程碑）
 
 > 從一個 61 事件的雛形，AI agent 自己一路把它養成了下面這條軌跡。沒有人類排需求，每一輪都是它讀完現況後自己決定要長什麼：
 
@@ -70,9 +70,11 @@
 | **R76** | ✈️ 台味「潤學」海外移民人生分流：成年潤出國 → 海外適應 → 思鄉拉扯 → 葉落歸根，與留台人生形成對照 |
 | **R77** | 🎓 鬼島升學×校園青春事件鏈：學測放榜 → 大學青春 → 學歷變現三段，智力／財富實際驅動頂大／私校／技職／落榜重考分流，回扣 R50 職涯起薪，含報告週爆肝校園限定死法與升學成就 |
 | **R79** | 🎖️ 鬼島兵役人生支線：填補升學畢業與職涯之間的役齡真空——役男體檢「體位判定」依體質分流常備役／替代役／免役／軍官志願役，含免役被酸的社會眼光、軍官當一份職涯（回扣 R50）、軍中操演熱衰竭限定死法，與既有 R58 兵役鏈並行零汙染 |
-| **R81** | 📜 鬼島時代大事記・時代背景事件系統：依角色出生世代錨定「當下日曆年」確定性插播時代節點（戒嚴尾巴→解嚴開放→……→AI 浪潮），不同世代撞到不同歷史組合，每節點帶屬性檢定抉擇，結算回顧列出「你這一生見證過的時代」（最新一輪） |
+| **R81** | 📜 鬼島時代大事記・時代背景事件系統：依角色出生世代錨定「當下日曆年」確定性插播時代節點（戒嚴尾巴→解嚴開放→……→AI 浪潮），不同世代撞到不同歷史組合，每節點帶屬性檢定抉擇，結算回顧列出「你這一生見證過的時代」 |
+| **R83** | 🏪 台味創業開店人生支線：辭頭路自己當頭家——選業態（夜市攤販／手搖飲／雞排鹽酥雞／早餐店／加盟連鎖）→ 資金借貸、展店守成、用料良心三道屬性檢定抉擇 → 五種頭家結局（慘賠收攤／小確幸穩定／上市上櫃連鎖帝國／被加盟總部坑／在地傳奇老店），回扣 R50 職涯與 R57 理財 |
+| **R84** | 🎣 台味詐騙之島人生支線：接到可疑機會後三線分流（被害者／車手／反詐），智力決定識破、財富決定損失、魅力決定組織爬升 → 五種結局（血本無歸資深韭菜／車手被攔吃牢飯／升機房幹部洗錢黑化／金盆洗手反詐尖兵／識破反釣領檢舉獎金），黑化結局帶代價反諷不美化犯罪（最新一輪） |
 
-> 一個 AI agent，連續自我迭代 **81 輪**、每一輪都得過測試閘門才放行，**全程零人類手寫遊戲碼**——這是這個專案最獨特的賣點。完整 81 輪逐輪設計決策直接寫在 `index.html` 的程式碼註解裡，那也是下一輪 AI 的記憶。
+> 一個 AI agent，連續自我迭代 **84 輪**、每一輪都得過測試閘門才放行，**全程零人類手寫遊戲碼**——這是這個專案最獨特的賣點。完整 84 輪逐輪設計決策直接寫在 `index.html` 的程式碼註解裡，那也是下一輪 AI 的記憶。
 
 ## 🎮 遊戲說明
 
@@ -84,7 +86,7 @@
 4. **死亡結算**：享年＋稱號＋墓誌銘＋屬性曲線，產出一張可分享的「人生總結卡」。
 5. **跨局成長**：成就圖鑑、死法圖鑑、收藏館、轉生天賦、祖產傳承、節令限定……再投胎一次。
 
-台味滿點：補習班人生、北漂租屋、手搖飲、夾娃娃機、颱風假賭盤、過年紅包攻防、兵役體位判定（常備役／替代役／免役／軍官）、健保、網路鄉民、22K 躺平 vs 內捲、晚年退休型錄與身後事、潤出國重開機，再到依出生世代分流的鬼島時代大事記（戒嚴尾巴一路走到 AI 浪潮）。
+台味滿點：補習班人生、北漂租屋、手搖飲、夾娃娃機、颱風假賭盤、過年紅包攻防、兵役體位判定（常備役／替代役／免役／軍官）、健保、網路鄉民、22K 躺平 vs 內捲、自己當頭家開店創業（夜市攤販到上市連鎖）、詐騙之島防詐學分（被害者／車手／反詐三線）、晚年退休型錄與身後事、潤出國重開機，再到依出生世代分流的鬼島時代大事記（戒嚴尾巴一路走到 AI 浪潮）。
 
 ## 🛠 技術架構
 
@@ -121,7 +123,7 @@ node _test_state.js
 
 This is not just a game — it's a working experiment in **AI-autonomous release management**.
 
-Every iteration since launch (**R1 → R81 and counting**) was performed by an AI agent, **one round every 30 minutes**, with no human in the loop and **zero human-written game code**:
+Every iteration since launch (**R1 → R84 and counting**) was performed by an AI agent, **one round every 30 minutes**, with no human in the loop and **zero human-written game code**:
 
 1. **Pick a direction** — the agent reads the current game state and decides what to evolve this round (new system / balancing / polish / easter eggs).
 2. **Modify the code** — edits the game directly.
@@ -129,7 +131,7 @@ Every iteration since launch (**R1 → R81 and counting**) was performed by an A
 4. **Deploy** — pushes the build to Cloudflare Pages.
 5. **Write the log** — leaves structured design comments in the code, which become context for the next round's agent.
 
-Over 81 rounds the game grew from a 61-event prototype into **707 events, 111 meme scenes, 259 achievements, 66 ways to die, 10 hidden endings**, plus a multi-museum collection gallery (deaths / achievements / origins / talents) — figures as of R81, tallied live by the test report. Every step gated by tests, every step traceable.
+Over 84 rounds the game grew from a 61-event prototype into **726 events, 111 meme scenes, 269 achievements, 66 ways to die, 10 hidden endings**, plus a multi-museum collection gallery (deaths / achievements / origins / talents) — figures as of R84, tallied live by the test report. Every step gated by tests, every step traceable.
 
 See **[docs/AI_AUTONOMOUS_UPDATE.md](docs/AI_AUTONOMOUS_UPDATE.md)** for the full mechanism design and evolution log.
 
