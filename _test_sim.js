@@ -222,7 +222,7 @@ const R46_EXEMPT = new Set(['se_cny_red','se_cny_dinner','se_tax','se_ghost','se
   'se_typhoon_mart','se_typhoon_wave','se_moon','se_xmas','se_nye',
   'cb_r54_fish','cb_r54_fishbye','cb_r54_fishnight','cb_r54_turtlezen','cb_r54_turtlewill']);
 const neverCounted = never.filter(id => !R46_EXEMPT.has(id));
-const r46OK = neverCounted.length <= 74;   // R71：45→55；R72：55→60；R73：60→67；R74：67→69；R75：69→70；R81：70→74
+const r46OK = neverCounted.length <= 74;   // R71：45→55；R72：55→60；R73：60→67；R74：67→69；R75：69→70；R81：70→74（R86 攔截器插播後實測穩定 69，仍在 74 內，門檻不動）
 /* R72 調整原因：本輪加了「稀有隨機奇遇攔截器 r72RarePick（門檻 cond＋確定性雜湊低機率骰，
    零裸 rng／零 Math.random，不消耗既有 rng 序列）」，一局至多 1 顆。攔截器在某些 seed-pinned 局
    的中段插播一顆稀有奇遇、套上其 eff，等同 R71 era.eff 之於屬性起點——會改寫該局後續的 eligible
@@ -258,6 +258,13 @@ const r46OK = neverCounted.length <= 74;   // R71：45→55；R72：55→60；R7
    會改寫該局後續事件抽選序列，落空名單成員隨之洗牌（總量同級、非新增死內容）。已驗證：11 個時代節點本身
    都會在 500 局內觸發（皆不在上方落空清單）、攔截為確定性（跑兩次同為 74，不引入 flaky）。
    故比照 R71~R75 隨內容演進重調門檻（70→74），仍能抓出整批數十個事件變死碼的真退化。 */
+/* R86 備註：本輪加了「台味血汗職場打工人事件鏈」（r86_clockin 入口＋grind/chill/jump 三分流職場抉擇
+   ＋5 結局，由確定性攔截器 r86WorkPick 依 r86mode＋r86step 驅動，零裸 rng／零 Math.random）。攔截器在 23-58 歲
+   窗口、約 42% 合格生命插播職場日常鏈，每命中取代當年一般池抽選——等同 R81 era 時代軸攔截器之於後續 eligible
+   判定與整條 seed-pinned 事件抽選序列；鏈內 sr 屬性檢定（grind hp／jump apr+int／chill mny）照常走既有 rng()
+   消耗。落空名單成員雖隨插播洗牌，但實測穩定落在 69（連跑三次同值，不引入 flaky）、仍在 R81 既有 74 門檻內，
+   故門檻維持 74 不放寬，仍能抓出整批數十個事件變死碼的真退化。r86 全鏈本身 hidden:true（不計入落空、不進隨機池），
+   全鏈可達＋屬性 gating 分支＋爆肝死法由下方 R86 探針逐段確定性斷言。 */
 console.log(`R46 觸達率: 未觸發(計入門檻) ${neverCounted.length}/74 ｜ 節令豁免 ${never.filter(id=>R46_EXEMPT.has(id)).length} ｜ ${r46OK ? '✅' : '❌ 超標'}`);
 
 /* localStorage 存讀驗證（含 R3 死法圖鑑：舊存檔無 deaths 鍵 → 載入後應自動補空集合並正常收集） */
@@ -2815,6 +2822,96 @@ try {
   console.log('R79 鬼島兵役人生支線: ❌ ' + e.message);
 }
 
+/* ===== R86 台味血汗職場打工人事件鏈探針 =====
+   ① 結構：r86_clockin 入口＋r86_grind/r86_jump/r86_chill 三分流抉擇＋5 結局皆 hidden+once+meme/scene 有效；
+      死法 burnoutdeath 進 SPECIAL_DEATHS/DEATHBOOK/場景有效；成就 6 個 hint 齊備
+   ② 攔截器 r86WorkPick：入口雜湊閘＋年齡窗口 gating、3 分流各設 r86mode+step:1、進鏈依 mode/step 確定性返節點、
+      step:2 落地 r86_endtype/r86_endhit
+   ③ 屬性驅動分支（呼應五圍要真有用有權衡）：grind hp sr（撐過→climb／爆肝→burnout）、jump apr sr（談成→fire／
+      破局→layoff）、chill mny br（躺得起→fireseed／月光→否），同屬性必同結果（sr 上下限不被 rnd 翻盤）
+   ④ 爆肝死法：grind 硬撐選項 hp≤14 確定性觸發 burnoutdeath、活路 grindhero；r86EndingId 結局計分正確
+   ⑤ 零汙染：乾淨開局無 r86 旗標、舊存檔 ensureState 不補 r86 鍵；回顧卡未踏進(無 r86_in)整段省略 */
+let r86OK = false;
+try {
+  const r86Raw = vm.runInContext(`(function(){
+    const out={}; const f=id=>EVENTS.find(e=>e.id===id);
+    /* ① 結構 */
+    const ids=['r86_clockin','r86_grind','r86_jump','r86_chill','r86_end_climb','r86_end_burnout','r86_end_fire','r86_end_layoff','r86_end_lieflat'];
+    out.struct = ids.every(id=>{const e=f(id);return e&&e.hidden&&e.once&&e.r86node&&e.meme&&SCENES[e.meme.scene]&&(e.choices||[]).length>=2;});
+    out.hiddenAll = ids.every(id=>f(id).hidden===true);   // hidden → eligible 首行即排除/不進隨機池/不計入 R46
+    out.death = !!SPECIAL_DEATHS.burnoutdeath && !!SCENES[SPECIAL_DEATHS.burnoutdeath.scene]
+      && DEATHBOOK.some(d=>d.id==='burnoutdeath'&&d.reason&&d.hint);
+    out.achDef = ['r86_clockin','r86_done','r86_climb','r86_fire','r86_layoff','r86_burnout','r86_lieflat']
+      .every(id=>ACH_MAP[id]&&ACH_MAP[id].hint&&String(ACH_MAP[id].hint).length>4);
+    /* ② 攔截器：入口 gating + 三分流 + 進鏈節點 + 結局落地 */
+    function fresh(age,fl,attr){ startGame(); const s=S; s.flags=fl||{}; ensureState(s); s.seen={}; s.alive=true; if(age!=null)s.age=age; if(attr)Object.assign(s.attr,attr); return s; }
+    /* 入口雜湊閘確定性化：暫時釘死 r86Roll 使閘門可預測（roll<0.42 命中／≥0.42 落空），驗完還原（不引入 flaky） */
+    const _rollOrig=r86Roll;
+    let s=fresh(40,{}); r86Roll=function(){return 0.1;};   out.entryOK = !!r86WorkPick() && r86WorkPick().id==='r86_clockin';   // 窗口內+乾淨+閘命中→入口
+    s=fresh(40,{}); r86Roll=function(){return 0.9;};        out.gateMiss = r86WorkPick()===null;                                 // 閘落空→不插播、零殘留
+    r86Roll=function(){return 0.1;};
+    s=fresh(15,{}); out.gateYoung = r86WorkPick()===null;                                        // 15歲未進職場（窗口外）
+    s=fresh(60,{}); out.gateOld   = r86WorkPick()===null;                                        // 60歲超出受僱窗口
+    s=fresh(40,{retired:true}); out.gateRetired = r86WorkPick()===null;                          // 已退休不插播
+    s=fresh(40,{r86step:99}); out.gateDone = r86WorkPick()===null;                               // 已收尾不再插播
+    r86Roll=_rollOrig;   // 還原
+    /* 三分流：踏進入口三選項各立 mode+step:1+r86_in */
+    function pick0(idx){ s=fresh(40,{}); showEvent(f('r86_clockin')); choose(idx); return s.flags; }
+    out.splitGrind = (g=>g.r86mode==='grind'&&g.r86step===1&&!!g.r86_in)(pick0(0));
+    out.splitChill = (g=>g.r86mode==='chill'&&g.r86step===1&&!!g.r86_in)(pick0(1));
+    out.splitJump  = (g=>g.r86mode==='jump' &&g.r86step===1&&!!g.r86_in)(pick0(2));
+    out.splitNone  = (g=>g.r86step===99&&!g.r86mode)(pick0(3));   // 安分守己→直接收尾、不立 mode/r86_in
+    /* 進鏈：step1 依 mode 返對應抉擇節點 */
+    s=fresh(40,{r86step:1,r86mode:'grind'}); out.nodeGrind=(r86WorkPick()||{}).id==='r86_grind';
+    s=fresh(40,{r86step:1,r86mode:'jump'});  out.nodeJump =(r86WorkPick()||{}).id==='r86_jump';
+    s=fresh(40,{r86step:1,r86mode:'chill'}); out.nodeChill=(r86WorkPick()||{}).id==='r86_chill';
+    /* step2 落地結局型別 + r86_endhit */
+    s=fresh(40,{r86step:2,r86mode:'grind',r86w_hp:true}); const e2=r86WorkPick();
+    out.endLand = e2 && e2.id==='r86_end_climb' && s.flags.r86_endtype==='r86_end_climb' && s.flags.r86_endhit===true;
+    /* ③ 屬性驅動分支：sr/br 同屬性必同結果（連跑 3 次確認 rnd 翻不了上下限） */
+    function chain1(mode,attr,idx){ s=fresh(40,{r86step:1,r86mode:mode}); Object.assign(s.attr,attr); const ev=r86WorkPick(); showEvent(ev); choose(idx); return s.flags; }
+    out.grindWin = [0,0,0].every(()=>!!chain1('grind',{hp:100},0).r86w_hp);          // hp 高→撐過拿年終
+    out.grindLose= [0,0,0].every(()=>!chain1('grind',{hp:10},0).r86w_hp);            // hp 低→爆肝(無 r86w_hp)
+    out.jumpWin  = [0,0,0].every(()=>!!chain1('jump',{apr:100},0).r86w_jump);        // apr 高→談成跳槽
+    out.jumpLose = [0,0,0].every(()=>!chain1('jump',{apr:10},0).r86w_jump);          // apr 低→談判破局
+    out.chillRich= !!chain1('chill',{mny:80},0).r86_fireseed;                        // mny 夠→躺得起 FIRE 種子
+    out.chillPoor= !chain1('chill',{mny:10},0).r86_fireseed;                         // mny 低→月光躺不起
+    out.attrDriven = out.grindWin && out.grindLose && out.jumpWin && out.jumpLose;   // 五圍真驅動成敗
+    /* ④ 爆肝死法：grind 硬撐選項 hp≤14 確定性觸發；活路立 grindhero */
+    s=fresh(40,{r86step:1,r86mode:'grind'}); s.attr.hp=10; showEvent(f('r86_grind')); choose(1);
+    out.burnDeath = s.flags.specialDeath==='burnoutdeath';
+    s=fresh(40,{r86step:1,r86mode:'grind'}); s.attr.hp=80; showEvent(f('r86_grind')); choose(1);
+    out.burnSurvive = !s.flags.specialDeath && !!s.flags.r86_grindhero;
+    /* r86EndingId 結局計分（5 選 1，依 mode＋檢定旗標） */
+    out.endId = r86EndingId({r86mode:'grind',r86w_hp:true})==='r86_end_climb'
+      && r86EndingId({r86mode:'grind'})==='r86_end_burnout'
+      && r86EndingId({r86mode:'jump',r86w_jump:true})==='r86_end_fire'
+      && r86EndingId({r86mode:'jump'})==='r86_end_layoff'
+      && r86EndingId({r86mode:'chill'})==='r86_end_lieflat'
+      && r86EndingId({})==='r86_end_lieflat';   // 防呆
+    /* 成就確定性 + 不誤觸 */
+    out.achPass = ACH_MAP.r86_climb.check({S:{flags:{r86_endtype:'r86_end_climb'}},age:45})
+      && ACH_MAP.r86_fire.check({S:{flags:{r86_endtype:'r86_end_fire'}},age:50})
+      && ACH_MAP.r86_done.check({S:{flags:{r86_endhit:true}},age:50})
+      && ACH_MAP.r86_clockin.check({S:{flags:{r86_in:true}},age:30});
+    out.achClean = !ACH_MAP.r86_climb.check({S:{flags:{}},age:30})
+      && !ACH_MAP.r86_burnout.check({S:{flags:{r86_endtype:'r86_end_climb'}},age:45})
+      && !ACH_MAP.r86_clockin.check({S:{flags:{}},age:30});
+    /* ⑤ 零汙染 + 舊存檔相容 + 回顧卡省略 */
+    startGame(); s=S; out.cleanStart = Object.keys(s.flags||{}).every(k=>k.indexOf('r86')!==0);
+    const old={flags:{employed:true},attr:{hp:50,int:50,apr:50,mny:50,hap:50},age:40,alive:true}; ensureState(old);
+    out.compat = Object.keys(old.flags).every(k=>k.indexOf('r86')!==0);
+    startGame(); s=S; s.flags={}; out.reviewSkip = r86WorkReviewHTML()==='';   // 沒踏進→整段省略
+    s.flags={r86_in:true,r86mode:'grind',r86_endtype:'r86_end_climb'}; out.reviewShow = r86WorkReviewHTML().indexOf('血汗職場戰績')>=0;
+    return JSON.stringify(out);
+  })()`, sandbox);
+  const r86 = JSON.parse(r86Raw);
+  r86OK = Object.values(r86).every(v => v === true);
+  console.log(`R86 台味血汗職場打工人事件鏈: ${r86OK ? '✅ 全數通過' : '❌ ' + JSON.stringify(r86)}`);
+} catch (e) {
+  console.log('R86 台味血汗職場打工人事件鏈: ❌ ' + e.message);
+}
+
 if (__errors.length) {
   console.log('\n--- 錯誤樣本(前5) ---');
   __errors.slice(0, 5).forEach(e => console.log('  ' + e));
@@ -2822,6 +2919,6 @@ if (__errors.length) {
 
 /* 退出碼 */
 const pass = __errors.length === 0 && chk.missingScenes.length === 0 && chk.eventVisible >= 126 && chk.eventTotal >= 126 && lsOK && achUnlocked > 0
-  && chk.deathbookMissing.length === 0 && chk.deathTotal >= 17 && deathsOK && rebirthOK && legacyOK && petOK && r13OK && r17OK && r20OK && r21OK && r22OK && r24OK && r25OK && r34OK && r38OK && r41OK && r42OK && r43OK && r44OK && r45OK && r46OK && r47OK && r48OK && r49OK && r51OK && r52OK && r53OK && r54OK && r55OK && r72OK && r76OK && r77OK && r79OK;
+  && chk.deathbookMissing.length === 0 && chk.deathTotal >= 17 && deathsOK && rebirthOK && legacyOK && petOK && r13OK && r17OK && r20OK && r21OK && r22OK && r24OK && r25OK && r34OK && r38OK && r41OK && r42OK && r43OK && r44OK && r45OK && r46OK && r47OK && r48OK && r49OK && r51OK && r52OK && r53OK && r54OK && r55OK && r72OK && r76OK && r77OK && r79OK && r86OK;
 console.log('\n結果: ' + (pass ? '✅ 全數通過' : '❌ 有項目未通過'));
 process.exit(pass ? 0 : 1);
