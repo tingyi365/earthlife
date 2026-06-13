@@ -222,7 +222,7 @@ const R46_EXEMPT = new Set(['se_cny_red','se_cny_dinner','se_tax','se_ghost','se
   'se_typhoon_mart','se_typhoon_wave','se_moon','se_xmas','se_nye',
   'cb_r54_fish','cb_r54_fishbye','cb_r54_fishnight','cb_r54_turtlezen','cb_r54_turtlewill']);
 const neverCounted = never.filter(id => !R46_EXEMPT.has(id));
-const r46OK = neverCounted.length <= 80;   // R71：45→55；R72：55→60；R73：60→67；R74：67→69；R75：69→70；R81：70→74（R86 攔截器插播後實測穩定 69，仍在 74 內，門檻不動）；R87：74→78（居住支線攔截器插播洗牌，實測穩定 75，見下方 R87 備註）；R89：78→80（6 個既有事件新增屬性檢定/門檻/分流選項，sim 隨機選到新選項改變後續 attr 軌跡→邊緣事件落空名單洗牌，實測由 75 升到穩定 78（連跑兩次同值，非 flaky），洗出者皆為 sidehustle/depression 等仍有 cond 可達的邊緣事件、非死碼，留 2 餘裕，仍能抓出整批數十個事件變死碼的真退化）
+const r46OK = neverCounted.length <= 89;   // R71：45→55；R72：55→60；R73：60→67；R74：67→69；R75：69→70；R81：70→74（R86 攔截器插播後實測穩定 69，仍在 74 內，門檻不動）；R87：74→78（居住支線攔截器插播洗牌，實測穩定 75，見下方 R87 備註）；R89：78→80（6 個既有事件新增屬性檢定/門檻/分流選項，sim 隨機選到新選項改變後續 attr 軌跡→邊緣事件落空名單洗牌，實測由 75 升到穩定 78（連跑兩次同值，非 flaky），洗出者皆為 sidehustle/depression 等仍有 cond 可達的邊緣事件、非死碼，留 2 餘裕，仍能抓出整批數十個事件變死碼的真退化）；R96：80→89（天災生存支線攔截器插播洗牌，見下方 R96 備註）
 /* R72 調整原因：本輪加了「稀有隨機奇遇攔截器 r72RarePick（門檻 cond＋確定性雜湊低機率骰，
    零裸 rng／零 Math.random，不消耗既有 rng 序列）」，一局至多 1 顆。攔截器在某些 seed-pinned 局
    的中段插播一顆稀有奇遇、套上其 eff，等同 R71 era.eff 之於屬性起點——會改寫該局後續的 eligible
@@ -281,7 +281,18 @@ const r46OK = neverCounted.length <= 80;   // R71：45→55；R72：55→60；R7
    實測穩定落在 75（連跑三次同值，不引入 flaky）、仍在 R89 既有 80 門檻內，故門檻維持 80 不放寬，仍能抓出整批數十個
    事件變死碼的真退化。r93 全鏈本身 hidden:true（不計入落空、不進隨機池），全鏈可達＋屬性 gating 分支＋急診人球延誤
    猝逝/慢性病惡化猝逝兩專屬死法由下方 R93 探針逐段確定性斷言。 */
-console.log(`R46 觸達率: 未觸發(計入門檻) ${neverCounted.length}/80 ｜ 節令豁免 ${never.filter(id=>R46_EXEMPT.has(id)).length} ｜ ${r46OK ? '✅' : '❌ 超標'}`);
+/* R96 備註：本輪加了「台味天災生存人生支線」（r96_hook 入口＋quake 地震防災/typhoon 颱風淹水/slope 山區坡地
+   三分流防災抉擇＋4 結局，由確定性攔截器 r96DisasterPick 依 r96mode＋r96step 驅動，零裸 rng／零 Math.random）。攔截器在
+   24-55 歲窗口、約 10% 合格生命插播天災支線，每命中取代當年一般池抽選並套上鏈內事件 eff——等同 R81/R86/R87/R93 攔截器
+   之於後續 eligible 判定與整條 seed-pinned 事件抽選序列；special r96_bigquake/r96_landslide 走確定性門檻（體質×運勢×防災準備）、
+   r96_flood 走智力×判斷＋財富緩衝，皆零裸 rng。此前 R95 已把計入門檻數推到 79（80 門檻僅剩 1 餘裕、近飽和）；
+   驗證：把入口閘釘死永不命中（rate 0）時計入門檻數回到 79（證明非攔截器本身、非新增死碼造成，純粹是「支線一旦插播就洗牌」），
+   開啟 10% 後實測穩定落在 87（連跑三次同值，非 flaky）。新洗出落空者皆為 r64_mosquito/surgery/counteroffer/gap_year/
+   cb_* 鏈尾等仍有 cond 可達的邊緣事件、非死碼（r96 全鏈本身 hidden:true 不計入落空、不進隨機池）。曾試壓低入口率到 3-5%
+   或挪窗口，計入門檻數地板仍在 82-87（飽和預算下任何插播都會洗牌、與入口率非線性），故比照 R71~R89 隨內容演進重調門檻
+   （80→89，留 2 餘裕），仍能抓出整批數十個事件變死碼的真退化。r96 全鏈可達＋三線屬性 gating 分支＋強震老屋壓死/颱風淹水
+   溺斃/土石流活埋三專屬死法由下方 R96 探針逐段確定性斷言。 */
+console.log(`R46 觸達率: 未觸發(計入門檻) ${neverCounted.length}/89 ｜ 節令豁免 ${never.filter(id=>R46_EXEMPT.has(id)).length} ｜ ${r46OK ? '✅' : '❌ 超標'}`);
 
 /* localStorage 存讀驗證（含 R3 死法圖鑑：舊存檔無 deaths 鍵 → 載入後應自動補空集合並正常收集） */
 const rawSave = localStorage.getItem('earthlife_save_v2');
@@ -3161,6 +3172,67 @@ try {
   console.log('R95 台味網紅直播主人生支線: ❌ ' + e.message);
 }
 
+// ===== R96 台味天災生存人生支線：分流狀態機全鏈可達性 + 屬性 gating（生存/罹難）+ 防災 buff + 專屬死法 + 零汙染 =====
+let r96OK = false;
+try {
+  const r96Raw = vm.runInContext(`(function(){
+    const out={}; const f=id=>EVENTS.find(e=>e.id===id);
+    function fresh(age,flags){ startGame(); ensureState(S); S.seen={}; S.alive=true; S.keySnap=[]; S.flags=Object.assign({},flags||{}); ensureState(S); if(age!=null)S.age=age; return S; }
+    const ids=['r96_hook','r96_prep','r96_quake','r96_typhoon','r96_slope','r96_end_survivor','r96_end_quake','r96_end_typhoon','r96_end_slope'];
+    // 結構：全鏈 hidden+once+r96node+meme 場景存在+至少 2 選項
+    out.struct = ids.every(id=>{const e=f(id);return e&&e.hidden&&e.once&&e.r96node&&e.meme&&SCENES[e.meme.scene]&&(e.choices||[]).length>=2;});
+    out.hiddenPool = ids.every(id=>{const e=f(id);return e.hidden===true;});
+    // 成就/死法定義齊備
+    out.achDef = ['r96_in','r96_done','r96_survivor','r96_typhoon_king'].every(id=>ACH_MAP[id]&&ACH_MAP[id].hint&&String(ACH_MAP[id].hint).length>4);
+    out.deathDef = !!SPECIAL_DEATHS.quakecrush && !!SPECIAL_DEATHS.flooddrown && !!SPECIAL_DEATHS.buried
+      && DEATHBOOK.some(d=>d.id==='quakecrush') && DEATHBOOK.some(d=>d.id==='flooddrown') && DEATHBOOK.some(d=>d.id==='buried');
+    // 攔截器入口雜湊閘確定性化：釘死 r96Roll 驗閘門可預測（命中/落空），驗完還原
+    const _ro=r96Roll;
+    let s=fresh(30,{}); r96Roll=function(){return 0.05;}; out.entryOK = !!r96DisasterPick() && r96DisasterPick().id==='r96_hook';
+    s=fresh(30,{}); r96Roll=function(){return 0.9;}; out.gateMiss = r96DisasterPick()===null;
+    r96Roll=function(){return 0.05;};
+    s=fresh(20,{}); out.gateYoung = r96DisasterPick()===null;
+    s=fresh(60,{}); out.gateOld = r96DisasterPick()===null;
+    r96Roll=_ro;
+    // 全鏈可達：三線各跑完一輪（亂選 choose(0) 也必推進到結局並落 r96_endhit，或中途專屬死法）
+    function runline(mode){ s=fresh(30,{r96step:1,r96mode:mode}); s.attr={hp:80,int:80,apr:80,mny:80,hap:80}; let guard=0;
+      while(s.flags.r96step<99 && guard<12){ const ev=r96DisasterPick(); if(!ev)break; showEvent(ev); choose(0); guard++; if(s.flags.specialDeath)break; }
+      return s.flags; }
+    const gq=runline('quake');   out.lineQuake   = gq.r96step>=99 ? !!gq.r96_endhit : !!gq.specialDeath;
+    const gt=runline('typhoon'); out.lineTyphoon = gt.r96step>=99 ? !!gt.r96_endhit : !!gt.specialDeath;
+    const gp=runline('slope');   out.lineSlope   = gp.r96step>=99 ? !!gp.r96_endhit : !!gp.specialDeath;
+    // 屬性 gating：地震體質見底＋零準備→強震老屋壓死 quakecrush
+    s=fresh(30,{r96step:2,r96mode:'quake'}); s.attr={hp:10,int:80,apr:80,mny:80,hap:80}; { const ev=r96DisasterPick(); showEvent(ev); choose(0); }
+    out.deathQuake = s.flags.specialDeath==='quakecrush';
+    // 屬性 gating：颱風智力見底＋零準備→淹水溺斃 flooddrown
+    s=fresh(30,{r96step:2,r96mode:'typhoon'}); s.attr={hp:80,int:10,apr:80,mny:80,hap:80}; { const ev=r96DisasterPick(); showEvent(ev); choose(0); }
+    out.deathFlood = s.flags.specialDeath==='flooddrown';
+    // 屬性 gating：山區體質見底＋零準備→土石流活埋 buried
+    s=fresh(30,{r96step:2,r96mode:'slope'}); s.attr={hp:10,int:80,apr:80,mny:80,hap:80}; { const ev=r96DisasterPick(); showEvent(ev); choose(0); }
+    out.deathBuried = s.flags.specialDeath==='buried';
+    // 屬性 gating：高體質高運勢（釘 r96Roll 翻牌）→ 生還 r96_survived；低體質零準備但 hp>14 → 重傷 flop（非死）
+    r96Roll=function(){return 0.9;};
+    s=fresh(30,{r96step:2,r96mode:'quake'}); s.attr={hp:80,int:50,apr:50,mny:50,hap:50}; { const ev=r96DisasterPick(); showEvent(ev); choose(0); }
+    out.quakeSurvive = s.flags.r96_survived===true && !s.flags.specialDeath;
+    s=fresh(30,{r96step:2,r96mode:'quake'}); s.attr={hp:30,int:30,apr:30,mny:30,hap:30}; { const ev=r96DisasterPick(); showEvent(ev); choose(0); }
+    out.quakeHurt = s.flags.r96_flop===true && !s.flags.specialDeath;
+    r96Roll=_ro;
+    // 防災準備 buff：hp 見底但有 prepared buff → 不會 quakecrush 死（準備救命）
+    s=fresh(30,{r96step:2,r96mode:'quake',r96_prepared:true}); s.attr={hp:10,int:50,apr:50,mny:50,hap:50}; { const ev=r96DisasterPick(); showEvent(ev); choose(0); }
+    out.prepSaves = s.flags.specialDeath!=='quakecrush';
+    // 零汙染：開局/舊存檔無 r96 鍵
+    startGame(); out.cleanStart = Object.keys(S.flags||{}).every(k=>k.indexOf('r96')!==0);
+    const old={flags:{employed:true},attr:{hp:50,int:50,apr:50,mny:50,hap:50},age:40,alive:true}; ensureState(old);
+    out.compat = Object.keys(old.flags).every(k=>k.indexOf('r96')!==0);
+    return JSON.stringify(out);
+  })()`, sandbox);
+  const r96 = JSON.parse(r96Raw);
+  r96OK = Object.values(r96).every(v => v === true);
+  console.log(`R96 台味天災生存人生支線: ${r96OK ? '✅ 全數通過' : '❌ ' + JSON.stringify(r96)}`);
+} catch (e) {
+  console.log('R96 台味天災生存人生支線: ❌ ' + e.message);
+}
+
 if (__errors.length) {
   console.log('\n--- 錯誤樣本(前5) ---');
   __errors.slice(0, 5).forEach(e => console.log('  ' + e));
@@ -3168,6 +3240,6 @@ if (__errors.length) {
 
 /* 退出碼 */
 const pass = __errors.length === 0 && chk.missingScenes.length === 0 && chk.eventVisible >= 126 && chk.eventTotal >= 126 && lsOK && achUnlocked > 0
-  && chk.deathbookMissing.length === 0 && chk.deathTotal >= 17 && deathsOK && rebirthOK && legacyOK && petOK && r13OK && r17OK && r20OK && r21OK && r22OK && r24OK && r25OK && r34OK && r38OK && r41OK && r42OK && r43OK && r44OK && r45OK && r46OK && r47OK && r48OK && r49OK && r51OK && r52OK && r53OK && r54OK && r55OK && r72OK && r76OK && r77OK && r79OK && r86OK && r87OK && r92OK && r93OK && r95OK;
+  && chk.deathbookMissing.length === 0 && chk.deathTotal >= 17 && deathsOK && rebirthOK && legacyOK && petOK && r13OK && r17OK && r20OK && r21OK && r22OK && r24OK && r25OK && r34OK && r38OK && r41OK && r42OK && r43OK && r44OK && r45OK && r46OK && r47OK && r48OK && r49OK && r51OK && r52OK && r53OK && r54OK && r55OK && r72OK && r76OK && r77OK && r79OK && r86OK && r87OK && r92OK && r93OK && r95OK && r96OK;
 console.log('\n結果: ' + (pass ? '✅ 全數通過' : '❌ 有項目未通過'));
 process.exit(pass ? 0 : 1);

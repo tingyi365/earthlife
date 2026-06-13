@@ -3363,5 +3363,124 @@ ok(r95.balance && r95.deathbook, 'R95 ⑤⑥ 平衡護欄：全鏈選項 eff 每
 ok(r95.noRedline, 'R95 ⑦ 文案紅線：全鏈無政治/暴力/仇恨字串，網紅文化自嘲非嘲諷受害者/族群');
 ok(r95.compat && r95.clean && r95.cleanPlain && r95.reviewSkip && r95.reviewShow, 'R95 ⑧⑨ 零汙染+舊存檔相容：開局/舊save/非創作者鏈事件 S.flags 皆無 r95 鍵、沒踏進創作者鏈時回顧卡省略、踏進後正常顯示');
 
+// ===== R96 台味天災生存人生支線：分流狀態機 + 防災 buff 取捨 + 體質×運勢/智力驅動 gating + 專屬死法 + 零汙染 =====
+const r96 = JSON.parse(vm.runInContext(`(function(){
+  const out={}; const f=id=>EVENTS.find(e=>e.id===id);
+  function fresh(age,flags){ startGame(); ensureState(S); S.seen={}; S.alive=true; S.keySnap=[]; S.flags=Object.assign({},flags||{}); ensureState(S); if(age!=null)S.age=age; return S; }
+  // ① 攔截器 r96DisasterPick：24-55 窗口+未退休+雜湊閘命中→入口、閘落空/窗口外/已退休/已收尾皆零殘留
+  const _ro=r96Roll;
+  fresh(30,{}); r96Roll=function(){return 0.05;}; out.entry = !!r96DisasterPick() && r96DisasterPick().id==='r96_hook';
+  fresh(30,{}); r96Roll=function(){return 0.9;}; out.gateMiss = r96DisasterPick()===null;
+  r96Roll=_ro;
+  fresh(20,{}); out.gateYoung = r96DisasterPick()===null;
+  fresh(30,{retired:true}); out.gateRetired = r96DisasterPick()===null;
+  fresh(30,{r96step:99}); out.gateDone = r96DisasterPick()===null;
+  // ② 入口三分流：各立 r96mode + step:1 + r96_in；佛系搬天龍國高樓直接收尾(step:99)不立 mode
+  function pick0(i){ fresh(30,{}); showEvent(f('r96_hook')); choose(i); return S.flags; }
+  out.split = (g=>g.r96mode==='quake'&&g.r96step===1&&!!g.r96_in)(pick0(0))
+    && (g=>g.r96mode==='typhoon'&&g.r96step===1&&!!g.r96_in)(pick0(1))
+    && (g=>g.r96mode==='slope'&&g.r96step===1&&!!g.r96_in)(pick0(2))
+    && (g=>g.r96step===99&&!g.r96mode&&!g.r96_in)(pick0(3));
+  // ② 進鏈依 step/mode 確定性返節點
+  fresh(30,{r96step:1,r96mode:'quake'}); out.nodePrep=(r96DisasterPick()||{}).id==='r96_prep';
+  fresh(30,{r96step:2,r96mode:'quake'});   out.nodeQuake  =(r96DisasterPick()||{}).id==='r96_quake';
+  fresh(30,{r96step:2,r96mode:'typhoon'}); out.nodeTyphoon=(r96DisasterPick()||{}).id==='r96_typhoon';
+  fresh(30,{r96step:2,r96mode:'slope'});   out.nodeSlope  =(r96DisasterPick()||{}).id==='r96_slope';
+  fresh(30,{r96step:3,r96mode:'quake',r96_survived:true,r96_prepared:true}); const e3=r96DisasterPick();
+  out.endLand = e3&&e3.id==='r96_end_survivor'&&S.flags.r96_endtype==='r96_end_survivor'&&S.flags.r96_endhit===true;
+  // ③ 防災準備 buff 取捨：砸錢備防災包保險補強落 r96_prepared(吃財富)、心存僥倖落 r96_lucky、int>=65 gate 研究潛勢圖落 prepared+savvy
+  function prep(i,attr){ fresh(30,{r96step:1,r96mode:'quake'}); if(attr)Object.assign(S.attr,attr); showEvent(f('r96_prep')); choose(i); return S.flags; }
+  const p0=prep(0); out.prepInvest = p0.r96_prepared===true && p0.r96_invest===true && p0.r96step===2 && !p0.r96_lucky;
+  const p1=prep(1); out.prepLucky = p1.r96_lucky===true && !p1.r96_prepared && p1.r96step===2;
+  const pg=prep(2,{int:90}); out.prepGate = pg.r96_prepared===true && pg.r96_savvy===true && S.flags.gateWin>0;
+  const cI=f('r96_prep').choices[0], cG=f('r96_prep').choices[2];
+  out.prepCost = (cI.eff.mny<0) && !!cG.cond && cG.gate===true;
+  // ④ 地震強震 special r96_bigquake 體質×運勢確定性 gating（零 rng）：hp 見底＋零準備→quakecrush 死；hp×運勢翻牌→生還(survived)、低 hp→重傷(flop)
+  function quake(hp,buff,roll){ fresh(30,Object.assign({r96step:2,r96mode:'quake'},buff)); S.attr.hp=hp; const _r=r96Roll; r96Roll=function(){return roll;}; showEvent(f('r96_quake')); choose(0); r96Roll=_r; return S.flags; }
+  out.quakeDeath = [0,0,0].every(()=>quake(10,{},0.9).specialDeath==='quakecrush'); // hp 見底＋零準備→老屋壓死
+  out.quakeSurvive = [0,0,0].every(()=>{const g=quake(80,{},0.9);return g.r96_survived===true&&!g.specialDeath;}); // 高體質+天公伯翻牌→驚險生還
+  out.quakeHurt = [0,0,0].every(()=>{const g=quake(30,{},0.2);return g.r96_flop===true&&!g.specialDeath;}); // 低體質沒翻牌→重傷生還(非死)
+  out.quakePrepSaves = [0,0,0].every(()=>quake(10,{r96_prepared:true},0.9).specialDeath!=='quakecrush'); // hp 見底但有防災準備→不被壓死(準備救命)
+  // quake 冷靜躲桌下選項→survived（好結局來源、不冒險）
+  fresh(30,{r96step:2,r96mode:'quake'}); showEvent(f('r96_quake')); choose(1);
+  out.quakeSafe = S.flags.r96_survived===true && !S.flags.specialDeath;
+  // ④ 颱風淹水 special r96_flood 智力確定性 gating（零 rng）：int 見底＋零準備→flooddrown 死；int+準備 adj>=58 撤離(survived)、否則淹損(flop) 生還
+  function flood(int,buff,attr){ fresh(30,Object.assign({r96step:2,r96mode:'typhoon'},buff)); S.attr.int=int; if(attr)Object.assign(S.attr,attr); showEvent(f('r96_typhoon')); choose(0); return S.flags; }
+  out.floodDeath = [0,0,0].every(()=>flood(10,{},{mny:50}).specialDeath==='flooddrown'); // int 見底＋零準備→涉水溺斃
+  out.floodSurvive = [0,0,0].every(()=>{const g=flood(90,{},{mny:50});return g.r96_survived===true&&!g.specialDeath;}); // 高智力→及時撤離保命
+  out.floodLoss = [0,0,0].every(()=>{const g=flood(40,{},{mny:70});return g.r96_flop===true&&!g.specialDeath;}); // 中智力財富撐→淹損但生還
+  out.floodBuffSurvive = [0,0,0].every(()=>flood(50,{r96_savvy:true},{mny:50}).r96_survived===true); // savvy(+12)同 int 及時撤離
+  out.floodNoDeath = [0,0,0].every(()=>!flood(40,{},{mny:10}).specialDeath); // 颱風淹損(賠到負債)絕不致命(int>14 不溺斃)
+  // typhoon 棄守家當保命選項→survived（好結局來源）
+  fresh(30,{r96step:2,r96mode:'typhoon'}); showEvent(f('r96_typhoon')); choose(1);
+  out.typhoonSafe = S.flags.r96_survived===true && !S.flags.specialDeath;
+  // ④ 山區土石流 special r96_landslide 體質×運勢確定性 gating（零 rng）：hp 見底＋零準備不撤離→buried 死；hp×運勢翻牌→生還(survived)、低 hp→重傷(flop)
+  function slope(hp,buff,roll){ fresh(30,Object.assign({r96step:2,r96mode:'slope'},buff)); S.attr.hp=hp; const _r=r96Roll; r96Roll=function(){return roll;}; showEvent(f('r96_slope')); choose(0); r96Roll=_r; return S.flags; }
+  out.slopeDeath = [0,0,0].every(()=>slope(10,{},0.9).specialDeath==='buried'); // hp 見底＋零準備不撤離→土石流活埋
+  out.slopeSurvive = [0,0,0].every(()=>{const g=slope(80,{},0.9);return g.r96_survived===true&&!g.specialDeath;}); // 高體質+天公伯翻牌→驚險逃生
+  out.slopeHurt = [0,0,0].every(()=>{const g=slope(30,{},0.2);return g.r96_flop===true&&!g.specialDeath;}); // 低體質沒翻牌→重傷生還(非死)
+  out.slopePrepSaves = [0,0,0].every(()=>slope(10,{r96_savvy:true},0.9).specialDeath!=='buried'); // hp 見底但有 savvy 準備→不被活埋
+  // slope 政府一發布就撤離選項→survived（好結局來源）
+  fresh(30,{r96step:2,r96mode:'slope'}); showEvent(f('r96_slope')); choose(1);
+  out.slopeSafe = S.flags.r96_survived===true && !S.flags.specialDeath;
+  r96Roll=_ro;
+  // ⑤ r96EndingId 結局確定性計分 4 選 1
+  out.endId = r96EndingId({r96mode:'quake',r96_survived:true,r96_prepared:true})==='r96_end_survivor'
+    && r96EndingId({r96mode:'typhoon',r96_survived:true,r96_savvy:true})==='r96_end_survivor'
+    && r96EndingId({r96mode:'quake'})==='r96_end_quake'
+    && r96EndingId({r96mode:'quake',r96_lucky:true,r96_flop:true})==='r96_end_quake'
+    && r96EndingId({r96mode:'typhoon'})==='r96_end_typhoon'
+    && r96EndingId({r96mode:'slope'})==='r96_end_slope'
+    && r96EndingId({})==='r96_end_slope';
+  // ⑤ 成就確定性解鎖、零誤觸、提示齊備
+  out.ach = ACH_MAP.r96_in.check({S:{flags:{r96_in:true}},age:30})
+    && ACH_MAP.r96_done.check({S:{flags:{r96_endhit:true}},age:55})
+    && ACH_MAP.r96_survivor.check({S:{flags:{r96_endtype:'r96_end_survivor'}},age:60})
+    && ACH_MAP.r96_typhoon_king.check({S:{flags:{r96_endtype:'r96_end_typhoon'}},age:60})
+    && !ACH_MAP.r96_in.check({S:{flags:{}},age:30})
+    && !ACH_MAP.r96_survivor.check({S:{flags:{r96_endtype:'r96_end_typhoon'}},age:60})
+    && ['r96_in','r96_done','r96_survivor','r96_typhoon_king'].every(id=>ACH_MAP[id]&&ACH_MAP[id].hint&&ACH_MAP[id].hint.length>4);
+  // ⑤ 平衡護欄：全鏈所有選項 eff 每格 |eff|<=8（special 內 runtime eff 不在選項定義內、另由文案護欄把關）
+  const r96ids=['r96_hook','r96_prep','r96_quake','r96_typhoon','r96_slope','r96_end_survivor','r96_end_quake','r96_end_typhoon','r96_end_slope'];
+  let maxEff=0;
+  r96ids.forEach(id=>{ const e=f(id); e.choices.forEach(c=>{
+    const buckets=[c.eff];
+    if(c.sr){ buckets.push(c.sr.win.eff,c.sr.lose.eff); }
+    if(c.br){ buckets.push(c.br.hi.eff,c.br.lo.eff); }
+    buckets.forEach(b=>{ if(b) Object.values(b).forEach(v=>{ if(Math.abs(v)>maxEff)maxEff=Math.abs(v); }); });
+  }); });
+  out.balance = maxEff<=8;
+  // ⑥ 死法圖鑑：quakecrush / flooddrown / buried 進 SPECIAL_DEATHS + DEATHBOOK（reason+hint 齊備）
+  out.deathbook = !!SPECIAL_DEATHS.quakecrush && !!SPECIAL_DEATHS.flooddrown && !!SPECIAL_DEATHS.buried
+    && DEATHBOOK.some(d=>d.id==='quakecrush'&&d.reason&&d.hint&&d.hint.length>4)
+    && DEATHBOOK.some(d=>d.id==='flooddrown'&&d.reason&&d.hint&&d.hint.length>4)
+    && DEATHBOOK.some(d=>d.id==='buried'&&d.reason&&d.hint&&d.hint.length>4);
+  // ⑦ 文案紅線：全鏈 title/text/res 不得含政治/暴力/仇恨字串（防災文化自嘲非嘲弄傷亡/族群）
+  const RED=['共產','統一','獨立','國民黨','民進黨','政黨','邪教','低能','智障','廢物','去死','該死','活該死'];
+  let blob='';
+  r96ids.forEach(id=>{ const e=f(id); blob+=(e.title||'')+(e.text||''); e.choices.forEach(c=>{ blob+=(c.label||'')+(c.res||''); }); });
+  out.noRedline = RED.every(w=>blob.indexOf(w)<0);
+  // ⑧ 舊存檔相容：舊 save 經 ensureState 不注入任何 r96 鍵
+  const old={flags:{employed:true},attr:{hp:50,int:50,apr:50,mny:50,hap:50},age:40,alive:true,seen:{}}; ensureState(old);
+  out.compat = Object.keys(old.flags).every(k=>k.indexOf('r96')!==0);
+  // ⑨ 零汙染：開局 S.flags 無 r96 鍵；非天災鏈事件不落 r96 旗標；沒踏進天災鏈時回顧卡整段省略
+  startGame(); out.clean = Object.keys(S.flags).every(k=>k.indexOf('r96')!==0);
+  fresh(45,{}); showEvent(f('networking')); choose(0); out.cleanPlain = Object.keys(S.flags).every(k=>k.indexOf('r96')!==0);
+  startGame(); S.flags={}; out.reviewSkip = r96DisasterReviewHTML()==='';
+  S.flags={r96_in:true,r96mode:'quake',r96_endtype:'r96_end_survivor'}; out.reviewShow = r96DisasterReviewHTML().indexOf('天災生存軌跡')>=0;
+  return JSON.stringify(out);
+})()`, sandbox));
+ok(r96.entry && r96.gateMiss && r96.gateYoung && r96.gateRetired && r96.gateDone, 'R96 ① 攔截器 r96DisasterPick：24-55 窗口+未退休+雜湊閘命中→入口、閘落空/窗口外/已退休/已收尾皆零殘留不插播');
+ok(r96.split, 'R96 ② 入口三分流：地震防災/颱風淹水/山區坡地各立 r96mode+step:1+r96_in；佛系搬天龍國高樓直接收尾(step:99)不立 mode');
+ok(r96.nodePrep && r96.nodeQuake && r96.nodeTyphoon && r96.nodeSlope && r96.endLand, 'R96 ② 進鏈依 step/mode 確定性返節點：step1 共用防災準備、step2 依 mode、step3 落地 r96_endtype/r96_endhit');
+ok(r96.prepInvest && r96.prepLucky && r96.prepGate && r96.prepCost, 'R96 ③ 防災準備 buff 取捨：砸錢備防災包保險補強落 prepared(吃財富)/心存僥倖落 lucky/int65 gate 研究潛勢圖換 prepared+savvy，三選項 |eff|<=8 不 power creep');
+ok(r96.quakeDeath && r96.quakeSurvive && r96.quakeHurt && r96.quakePrepSaves && r96.quakeSafe, 'R96 ④ 地震強震 special r96_bigquake 體質×運勢確定性 gating：hp 見底＋零準備→老屋壓死 quakecrush、高體質+天公伯翻牌→生還(survived)、低體質→重傷生還(flop)、防災準備救命(hp見底有 prepared 不被壓死)；冷靜躲桌下選項→survived');
+ok(r96.floodDeath && r96.floodSurvive && r96.floodLoss && r96.floodBuffSurvive && r96.floodNoDeath && r96.typhoonSafe, 'R96 ④ 颱風淹水 special r96_flood 智力確定性 gating：int 見底＋零準備涉水→淹水溺斃 flooddrown、高智力→及時撤離(survived)、中智力財富撐→淹損生還(flop)、savvy(+12)同 int 撤離、淹損(int>14)絕不致命；棄守家當保命選項→survived');
+ok(r96.slopeDeath && r96.slopeSurvive && r96.slopeHurt && r96.slopePrepSaves && r96.slopeSafe, 'R96 ④ 山區土石流 special r96_landslide 體質×運勢確定性 gating：hp 見底＋零準備不撤離→土石流活埋 buried、高體質+天公伯翻牌→驚險逃生(survived)、低體質→重傷生還(flop)、防災準備救命(hp見底有 savvy 不被活埋)；政府一發布就撤離選項→survived');
+ok(r96.endId && r96.ach, 'R96 ⑤ 4 結局確定性計分(防災達人/與地牛共存/颱風假之王/山居者)＋4 成就確定性解鎖、零誤觸、提示齊備');
+ok(r96.balance && r96.deathbook, 'R96 ⑤⑥ 平衡護欄：全鏈選項 eff 每格 |eff|<=8；專屬死法 quakecrush/flooddrown/buried 進 SPECIAL_DEATHS+DEATHBOOK(reason+hint 齊備)');
+ok(r96.noRedline, 'R96 ⑦ 文案紅線：全鏈無政治/暴力/仇恨字串，防災文化自嘲非嘲弄傷亡/族群');
+ok(r96.compat && r96.clean && r96.cleanPlain && r96.reviewSkip && r96.reviewShow, 'R96 ⑧⑨ 零汙染+舊存檔相容：開局/舊save/非天災鏈事件 S.flags 皆無 r96 鍵、沒踏進天災鏈時回顧卡省略、踏進後正常顯示');
+
 console.log(fails ? `\n結果: ❌ ${fails} 項未通過` : '\n結果: ✅ 狀態機全數正確');
 process.exit(fails ? 1 : 0);
