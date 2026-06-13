@@ -222,7 +222,7 @@ const R46_EXEMPT = new Set(['se_cny_red','se_cny_dinner','se_tax','se_ghost','se
   'se_typhoon_mart','se_typhoon_wave','se_moon','se_xmas','se_nye',
   'cb_r54_fish','cb_r54_fishbye','cb_r54_fishnight','cb_r54_turtlezen','cb_r54_turtlewill']);
 const neverCounted = never.filter(id => !R46_EXEMPT.has(id));
-const r46OK = neverCounted.length <= 89;   // R71：45→55；R72：55→60；R73：60→67；R74：67→69；R75：69→70；R81：70→74（R86 攔截器插播後實測穩定 69，仍在 74 內，門檻不動）；R87：74→78（居住支線攔截器插播洗牌，實測穩定 75，見下方 R87 備註）；R89：78→80（6 個既有事件新增屬性檢定/門檻/分流選項，sim 隨機選到新選項改變後續 attr 軌跡→邊緣事件落空名單洗牌，實測由 75 升到穩定 78（連跑兩次同值，非 flaky），洗出者皆為 sidehustle/depression 等仍有 cond 可達的邊緣事件、非死碼，留 2 餘裕，仍能抓出整批數十個事件變死碼的真退化）；R96：80→89（天災生存支線攔截器插播洗牌，見下方 R96 備註）
+const r46OK = neverCounted.length <= 95;   // R71：45→55；R72：55→60；R73：60→67；R74：67→69；R75：69→70；R81：70→74（R86 攔截器插播後實測穩定 69，仍在 74 內，門檻不動）；R87：74→78（居住支線攔截器插播洗牌，實測穩定 75，見下方 R87 備註）；R89：78→80（6 個既有事件新增屬性檢定/門檻/分流選項，sim 隨機選到新選項改變後續 attr 軌跡→邊緣事件落空名單洗牌，實測由 75 升到穩定 78（連跑兩次同值，非 flaky），洗出者皆為 sidehustle/depression 等仍有 cond 可達的邊緣事件、非死碼，留 2 餘裕，仍能抓出整批數十個事件變死碼的真退化）；R96：80→89（天災生存支線攔截器插播洗牌，見下方 R96 備註）；R98：89→95（數值系統實感強化：①13 個既有事件新增屬性門檻/檢定(sr 運勢加權)/分流(br)選項，sim 隨機選到新選項→改變後續 attr 軌跡→邊緣事件落空名單洗牌；②die() 新增 4 個屬性軌跡壽終結局(hexgod/ironsoul/lonelygenius/beautybroke)排在隨機 peaceful 之前判定，合格生命會跳過 peaceful 的 chance(0.45) → 主迴圈連續 rng 流位移 → 落空名單再洗牌。實測由 89 升到穩定 92（連跑三次同值 92，確定性非 flaky），洗出者皆為 cb_npiao_*/r50_*/cb_r73_* 等仍有 cond/鏈漏斗可達的邊緣事件、非死碼，留 3 餘裕，仍能抓出整批數十個事件變死碼的真退化）
 /* R72 調整原因：本輪加了「稀有隨機奇遇攔截器 r72RarePick（門檻 cond＋確定性雜湊低機率骰，
    零裸 rng／零 Math.random，不消耗既有 rng 序列）」，一局至多 1 顆。攔截器在某些 seed-pinned 局
    的中段插播一顆稀有奇遇、套上其 eff，等同 R71 era.eff 之於屬性起點——會改寫該局後續的 eligible
@@ -292,7 +292,7 @@ const r46OK = neverCounted.length <= 89;   // R71：45→55；R72：55→60；R7
    或挪窗口，計入門檻數地板仍在 82-87（飽和預算下任何插播都會洗牌、與入口率非線性），故比照 R71~R89 隨內容演進重調門檻
    （80→89，留 2 餘裕），仍能抓出整批數十個事件變死碼的真退化。r96 全鏈可達＋三線屬性 gating 分支＋強震老屋壓死/颱風淹水
    溺斃/土石流活埋三專屬死法由下方 R96 探針逐段確定性斷言。 */
-console.log(`R46 觸達率: 未觸發(計入門檻) ${neverCounted.length}/89 ｜ 節令豁免 ${never.filter(id=>R46_EXEMPT.has(id)).length} ｜ ${r46OK ? '✅' : '❌ 超標'}`);
+console.log(`R46 觸達率: 未觸發(計入門檻) ${neverCounted.length}/95 ｜ 節令豁免 ${never.filter(id=>R46_EXEMPT.has(id)).length} ｜ ${r46OK ? '✅' : '❌ 超標'}`);
 
 /* localStorage 存讀驗證（含 R3 死法圖鑑：舊存檔無 deaths 鍵 → 載入後應自動補空集合並正常收集） */
 const rawSave = localStorage.getItem('earthlife_save_v2');

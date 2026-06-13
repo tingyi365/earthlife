@@ -2159,6 +2159,13 @@ const ACHIEVEMENTS = [
   {id:"r36_mindburn", ic:"🕯️", nm:"鞠躬盡瘁・最強處理器", desc:"以智力 92+ 的頂規大腦在 70 歲前燃盡肉體謝幕——身體先過保，思想永遠在保固期內。", check:c=>c.cat==="mindburnout"},
   {id:"r36_goldtower", ic:"🏦", nm:"金山頂端的風", desc:"抱著 85+ 的財富、不到 30 的快樂走完一生——你贏了整座金山，輸了山頂的溫度。", check:c=>c.cat==="goldlonely"},
   {id:"r36_zenmaster", ic:"🍃", nm:"人生海海・快樂仙人", desc:"存摺不到 20、快樂爆表 90+ 還笑著壽終正寢——證明快樂這檔股票，不用本金也能漲停。", check:c=>c.cat==="zenpoor"},
+  /* ---- R98 屬性軌跡實感強化成就（謝幕當下五圍形狀／一生屬性軌跡驅動，門檻確定性、零裸 rng） ---- */
+  {id:"r98_hexgod", ic:"🛡️", nm:"六邊形戰士・無懈可擊", desc:"謝幕時健康、智力、外貌、財富、快樂全部站上 75——零偏科、零破口，地球 Online 史上最罕見的完美存檔。", check:c=>c.cat==="hexgod"},
+  {id:"r98_ironsoul", ic:"🏔️", nm:"全程高健康的鐵人善終", desc:"健康巔峰破 90、活到 85 歲謝幕還維持在 75 以上——一輩子沒讓健保虧過半毛，把保溫杯泡枸杞泡成了傳奇。", check:c=>c.cat==="ironsoul"},
+  {id:"r98_lonelygenius", ic:"🗿", nm:"智力巔峰但孤獨", desc:"智力衝到接近滿格（95+），謝幕時快樂卻只剩二十出頭——贏了所有需要動腦的賽局，唯獨沒算出『怎麼快樂』那一題。", check:c=>c.cat==="lonelygenius"},
+  {id:"r98_beautybroke", ic:"💋", nm:"魅力 max 卻破產", desc:"外貌衝到接近滿值（95+），謝幕時存款卻剩不到 15——這張臉是老天爺打的錢，可惜祂只打臉、不打到戶頭。", check:c=>c.cat==="beautybroke"},
+  {id:"r98_allround", ic:"⚖️", nm:"樣樣稀鬆也是一種天賦", desc:"一生五條屬性的巔峰全都沒破 60、谷底也都沒跌破 25——你把人生過成一條最平的均線，沒爆發、也沒崩盤，穩穩活完一場。", check:c=>{const ks=Object.keys(c.S.attr); const pk=c.S.peak||{}, lo=c.S.low||{}; return ks.every(k=>(pk[k]!=null?pk[k]:c.S.attr[k])<60) && ks.every(k=>(lo[k]!=null?lo[k]:c.S.attr[k])>=25);}},
+  {id:"r98_tradeoff", ic:"🔁", nm:"拆東牆補西牆大師", desc:"一生靠『犧牲一條換另一條』的取捨選項翻盤 5 次以上——成長從來不是免費的，你只是比別人更早看懂帳單。", check:c=>(c.S.flags.r98trade||0)>=5},
   /* ---- R38 隱藏彩蛋成就（確定性條件彩蛋：撞見即解鎖，出身×天賦/跨局死法連續/門檻組合驅動、零裸 rng） ---- */
   {id:"r38_funeralstar", ic:"🎤", nm:"告別式的安可聲", desc:"禮儀社世家出身又天生社牛，把告別式辦成讓全場又哭又笑的一場活動——人生最後一個舞台，也值得一聲安可。", check:c=>!!(c.S.seen&&c.S.seen.egg38_funeralstar)},
   {id:"r38_samedeath", ic:"🍵", nm:"孟婆湯免費續杯", desc:"連續兩世用一模一樣的死法登出，孟婆看到你直接端出老位子的湯——輪迴櫃台開張以來第一張常客集點卡，因你而生。", check:c=>!!(c.S.seen&&c.S.seen.egg38_samedeath)},
@@ -2528,6 +2535,13 @@ const ACH_HINTS = {
   r36_mindburn:"把腦袋練到接近爆表（92+），再在 70 歲前讓健康先一步歸零…大腦頂規、機殼報廢的那種收尾…",
   r36_goldtower:"錢堆到 85 以上、快樂跌破 30，再撐到終老…山頂見…",
   r36_zenmaster:"把錢花到剩不到 20、快樂卻養到 90 以上，然後笑著活到自然謝幕…",
+  /* R98 屬性軌跡實感強化 */
+  r98_hexgod:"謝幕那一刻，把健康、智力、外貌、財富、快樂五條全部頂在 75 以上…一條都不能漏…",
+  r98_ironsoul:"讓健康巔峰破 90，再保養到 85 歲謝幕時還站在 75 以上…全程把身體顧好的那種善終…",
+  r98_lonelygenius:"把智力衝到接近滿格（95+），代價是讓快樂跌到二十出頭再走完一生…天才的孤獨稅…",
+  r98_beautybroke:"把外貌養到接近滿值（95+），偏偏存款剩不到 15 就謝幕…只剩這張臉的那種傳奇…",
+  r98_allround:"反其道而行——讓五條屬性的巔峰全都別破 60、谷底也別跌破 25，把人生過成一條最平的均線…",
+  r98_tradeoff:"多挑那些『提升一條、犧牲另一條』的取捨選項，靠這種拆東牆補西牆的抉擇翻盤五次以上…",
   /* R32 隱藏彩蛋 */
   r32_scampity:"把錢包活到見底（個位數）、心情卻好到爆表，連最不該心軟的那種電話，都會對你心軟…",
   r32_exparty:"先當夠分手大師（三次起跳），再走進婚姻——之後的某場同學會，座位表會自動長出驚喜…",
@@ -2623,6 +2637,7 @@ function buildEvents(){ return [
     choices:[
       {label:"勇敢邁步，當場摔個狗吃屎", eff:{hp:-3,hap:8}, res:"你摔了，但笑場了全家，氣氛組正式上線。"},
       {label:"保守爬行，安全第一", eff:{int:4,hp:3}, res:"你選擇苟著發育，穩健中帶著一絲老成。"},
+      {label:"扶著茶几邊走邊耍寶，搏君一笑", eff:{hap:9,hp:-4,apr:3}, res:"你邊走邊扭屁股逗全家，笑聲炸開的同時『碰』一聲跌坐在地——換來滿堂彩，跟尾椎一記悶痛。人生第一課：快樂是要付頭期款的。"},
     ]},
   {id:"kindergarten", stage:[3,6], w:3, once:true,
     title:"幼兒園社交大戰", text:"幼兒園裡，有人搶走了你最愛的那台玩具挖土機。",
@@ -2869,6 +2884,9 @@ function buildEvents(){ return [
       {label:"含淚吞下，營養均衡", eff:{hp:8,hap:-4}, res:"你戰勝了蔬菜，身體偷偷感謝你。"},
       {label:"偷偷餵給家裡的狗", eff:{hap:6,hp:-3}, res:"狗狗成了你的共犯，你保住了味蕾的尊嚴。"},
       {label:"上演拒食抗議", eff:{hap:3,hp:-4,apr:-2}, res:"你贏了今晚，輸了長高的機會。"},
+      {label:'<i class="gtag">🧭健康50分流</i> 體質好，挑歸挑照樣長得壯', br:{k:"hp", need:50,
+        hi:{eff:{hp:6,hap:3}, res:"你天生底子好，青椒紅蘿蔔躲過一輪照樣抽高長肉，健檢數字漂亮到醫生問你媽是不是偷加營養劑——有些人就是贏在出廠的腸胃。"},
+        lo:{eff:{hp:-4,hap:3,apr:-2}, res:"你挑食挑得理直氣壯，偏偏底子又不爭氣，個子矮一截、三天兩頭感冒——挑食的快樂是現領的，長不高的帳是後付的。"}}, eff:{}, res:""},
     ]},
   {id:"firstfriend", stage:[5,10], w:2, once:true,
     title:"第一個好朋友", text:"班上有個同學主動把餅乾分你一半，友情的種子悄悄發芽。",
@@ -2876,6 +2894,9 @@ function buildEvents(){ return [
     choices:[
       {label:"從此形影不離", eff:{hap:10,int:3}, res:"你交到了人生第一個摯友，童年從此有了搭檔。"},
       {label:"客氣收下但保持距離", eff:{int:4,hap:-2}, res:"你選擇了獨來獨往，主打一個人類觀察家。"},
+      {label:'<i class="gtag">⚖️魅力檢定</i> 回送整包乖乖，把一個朋友變一群', sr:{k:"apr", need:55, spread:40,
+        win:{eff:{hap:12,apr:4}, res:"你大方回送一整包乖乖，還順手罩了被冷落的同學——下課你的座位變成全班集合點，幼兒園社交圈直接抽到 SSR。討喜這件事，從小就是超能力。"},
+        lose:{eff:{hap:3,int:2}, res:"你鼓起勇氣想多交幾個朋友，卻緊張到把人家的餅乾打翻在地，尷尬到耳朵發燙。朋友還是交到一個，只是『人氣王』的稱號這回先讓給別人。"}}},
     ]},
   {id:"lostmall", stage:[4,9], w:1,
     title:"賣場走失驚魂", text:"一回神，爸媽不見了。你被困在巨大的賣場迷宮裡。",
@@ -2883,6 +2904,7 @@ function buildEvents(){ return [
     choices:[
       {label:"冷靜找服務台廣播", eff:{int:8,hap:2}, res:"你機智地請阿姨廣播，五分鐘後團圓，眾人稱讚。"},
       {label:"原地嚎啕大哭", eff:{hap:-5,hp:-2}, res:"你哭到天崩地裂，最後被熱心路人撿回。"},
+      {label:'<i class="gtag">🧠智力55+</i> 沿來時路標反推回原點', eff:{int:7,hap:3}, cond:s=>s.attr.int>=55, gate:true, res:"你冷靜回想剛剛經過的扶梯、招牌、那攤試吃，像走迷宮一樣反向推算，五分鐘就自己走回爸媽身邊。保全阿姨看傻：『這囡仔，方向感比我還好。』"},
     ]},
   {id:"comicbook", stage:[8,13], w:2,
     title:"漫畫的誘惑", text:"書包夾層藏著一本超好看的漫畫，但月考就在下週。",
@@ -2890,6 +2912,9 @@ function buildEvents(){ return [
     choices:[
       {label:"一口氣追完，欲罷不能", eff:{hap:10,int:-4}, res:"劇情太香，你把月考拋到了平行宇宙。"},
       {label:"忍痛先讀書", eff:{int:8,hap:-4}, res:"你壓抑了慾望，培養了傳說中的延遲享樂能力。"},
+      {label:'<i class="gtag">🧭智力55分流</i> 邊追漫畫邊偷讀書，賭一波兼顧', br:{k:"int", need:55,
+        hi:{eff:{hap:7,int:4}, res:"你腦袋夠用，漫畫追完還能把重點掃過一遍，月考照樣中上——聰明的小孩，連耍廢都能耍出效率。"},
+        lo:{eff:{hap:8,int:-5}, res:"你以為自己能兼顧，結果漫畫一本接一本、書一頁沒翻，月考紅字排排站——『我只是休息一下』這句話的利息，月考替你結清。"}}, eff:{}, res:""},
     ]},
 
   /* ---------- 求學 12-22 ---------- */
@@ -2919,6 +2944,7 @@ function buildEvents(){ return [
       {label:"加入表演型社團，站上舞台", eff:{apr:8,hap:8,int:-2}, res:"你在舞台上發光，校園知名度直線上升。"},
       {label:"加入學術型社團，默默精進", eff:{int:10,hap:3}, res:"你在社辦埋頭鑽研，成了該領域的小神。"},
       {label:"當邊緣人不參加", eff:{int:4,hap:-4}, res:"你選擇放學就閃，主打一個社交絕緣體。"},
+      {label:'<i class="gtag">💅外貌65+</i> 自帶光環，社團搶著要你當門面', eff:{apr:6,hap:8,int:1}, cond:s=>s.attr.apr>=65, gate:true, res:"你還在猶豫選哪社，熱舞社社長已經堵在你面前：『學弟/妹，我們社缺一個 C 位。』顏值就是入場券——你還沒上台表演，海報就先印好了你的臉。"},
     ]},
   {id:"bully", stage:[12,18], w:1,
     title:"校園的陰影", text:"班上有人開始針對你，言語的刀子一片片飛來。",
@@ -2927,6 +2953,9 @@ function buildEvents(){ return [
       {label:"鼓起勇氣告訴大人", eff:{hap:6,int:4,hp:2}, res:"你求助並成功止血，學會了不獨自硬扛。"},
       {label:"練強自己，反擊回去", eff:{hp:6,hap:4,apr:3,int:-2}, res:"你變強了，沒人再敢造次，但過程很痛。"},
       {label:"默默忍受，封閉自己", eff:{hap:-12,hp:-4,int:3}, res:"你把傷口藏起來，獨自消化了一段灰色青春。"},
+      {label:'<i class="gtag">⚖️魅力檢定</i> 靠人緣搬救兵，把孤立反轉成聲援', sr:{k:"apr", need:62, spread:40,
+        win:{eff:{hap:10,apr:4,int:2}, res:"你平時累積的好人緣這時全派上用場——幾個同學主動站出來挺你，連風紀股長都看不下去。霸凌的人發現自己反而被孤立，悻悻然收手。你深刻體會到：人脈，是這座島最硬的護身符。"},
+        lose:{eff:{hap:-8,hp:-3,int:3}, res:"你想拉人聲援，卻發現大家都怕惹麻煩、紛紛別過頭。孤立無援的滋味更苦了，你只能把傷口自己藏起來——這堂課很痛：不是每次求助，都接得到那隻手。"}}},
     ]},
   {id:"esports_addict", stage:[14,24], w:2,
     title:"電競大坑", text:"新出的遊戲讓你天天爆肝上分，排位賽就是你的人生。",
@@ -2935,6 +2964,9 @@ function buildEvents(){ return [
       {label:"立志當職業選手", eff:{hap:rnd(-5,15),int:4,hp:-8}, res:"你把青春 all in 電競，輸贏都是一場豪賭。"},
       {label:"當興趣玩玩就好", eff:{hap:8,int:2,hp:-3}, res:"你掌握了娛樂與生活的平衡，偶爾上個分。"},
       {label:"戒掉，卸載遊戲", eff:{int:6,hp:4,hap:-4}, res:"你忍痛刪檔，把時間還給了現實人生。"},
+      {label:'<i class="gtag">⚖️智力檢定</i> 鑽研版本與運營，賭一個上分爆發', r22:true, sr:{k:"int", need:72, spread:40,
+        win:{eff:{int:5,hap:10,mny:6,hp:-5}, res:"你把每個版本、每張地圖、每套運營都研究透，配上手氣正旺，一波連勝直接衝上伺服器排行榜，靠賽事獎金跟直播抖內小賺一筆。電競這行，腦袋跟手氣缺一不可——這次兩個你都有。"},
+        lose:{eff:{hap:-5,hp:-6,mny:-3}, res:"你熬夜苦練上分，偏偏腦袋跟不上版本、隊友又雷、手氣還背到家，排位賽從黃金一路掉回青銅。天亮關機，換來的只有黑眼圈跟一句隊友的『菜就多練』。"}}},
     ]},
   {id:"gradtrip", stage:[17,23], w:2, once:true,
     title:"畢業旅行", text:"畢旅就要到了，這是青春的最後一場大型團體出遊。",
@@ -2942,6 +2974,7 @@ function buildEvents(){ return [
     choices:[
       {label:"玩好玩滿，徹夜不眠", eff:{hap:14,hp:-5,apr:-2}, res:"你留下滿滿回憶和黑眼圈，照片笑得最燦爛。"},
       {label:"省錢不參加，在家躺", eff:{mny:5,hap:-6}, inc:"lazy", res:"你存下了錢，也錯過了同學們十年後還在聊的那場旅行。"},
+      {label:'<i class="gtag">💰財富55+</i> 升級行程，包棟民宿請全班', eff:{hap:14,apr:6,mny:-10}, cond:s=>s.attr.mny>=55, gate:true, res:"你直接喬了一棟海景民宿、升級包車、晚上加碼放煙火——全班把你扛起來歡呼。畢旅多年後同學聚會還在講：『那次是誰請的客來著？』——是你，財富自由的青春版。"},
     ]},
   {id:"parttime", stage:[16,24], w:2,
     title:"第一份打工", text:"你想賺點零用錢，看到一張『時薪優、輕鬆、可排班』的徵人廣告。",
@@ -3723,6 +3756,9 @@ function buildEvents(){ return [
     choices:[
       {label:"努力經營，每天視訊", eff:{hap:rnd(-6,12),hp:-2,mny:-3}, res:"你們用螢幕守護愛情，思念是甜的也是苦的。"},
       {label:"和平分手，各自安好", eff:{hap:-6,int:5}, inc:"breakups", res:"你們認清現實，把彼此還給了距離。"},
+      {label:'<i class="gtag">⚖️智力檢定</i> 用心經營＋科技維繫，把距離縮成 Wi-Fi', r22:true, sr:{k:"int", need:65, spread:40,
+        win:{eff:{hap:12,int:3,mny:-3}, res:"你把遠距離經營成一門學問：固定視訊、驚喜寄送、行程同步，連時差都排進共同行事曆。距離沒打敗你們，反而磨出更穩的默契——多年後你笑說，遠距離篩掉的是不夠想念的人。"},
+        lose:{eff:{hap:-8,int:4,hp:-2}, res:"你想用心維繫，卻在已讀不回與時差裡漸漸力不從心——訊息越來越短、視訊越來越少。距離沒有錯，是你們都累了。這場遠距離，最後輸給了現實的引力。"}}},
     ]},
   {id:"exback", stage:[22,45], w:1, cond:isSingle,
     title:"前任回頭", text:"某個深夜，前任突然傳來訊息：『最近過得好嗎？我有點想你。』",
@@ -3730,6 +3766,9 @@ function buildEvents(){ return [
     choices:[
       {label:"心軟複合，再試一次", eff:{hap:rnd(-10,10),hp:-2}, res:"你給了舊愛第二次機會，是甜蜜還是重蹈覆轍？"},
       {label:"已讀不回，向前看", eff:{hap:5,int:6}, res:"你關掉對話框，證明自己真的走出來了。"},
+      {label:'<i class="gtag">🧭智力58分流</i> 先冷靜分析：他是想你，還是只是寂寞', br:{k:"int", need:58,
+        hi:{eff:{int:5,hap:4}, res:"你沒急著回，先把當初分手的原因、對方的模式、自己的需求理性盤了一遍——結論是：他想的不是你，是凌晨三點的寂寞。你回了句『早點睡』就封存對話，清醒得讓自己都佩服。"},
+        lo:{eff:{hap:rnd(-8,6),hp:-2}, res:"你腦袋一熱就回了訊息，三句話後又陷進熟悉的拉扯。是甜蜜還是重蹈覆轍你心裡其實有數，只是當下的心動蓋過了理智——複合這種事，從來不是用腦做的決定。"}}, eff:{}, res:""},
     ]},
   {id:"parenting", hidden:true, title:"教養難題",
     text:"孩子漸漸長大，叛逆期的火藥味瀰漫整個家。要怎麼教？",
@@ -3853,6 +3892,9 @@ function buildEvents(){ return [
     choices:[
       {label:"認真練，練出馬甲線/胸肌", eff:{hp:12,apr:10,hap:5,mny:-5}, flags:{fit:true}, res:"你把汗水變成肌肉，整個人煥然一新，自信爆棚。"},
       {label:"辦卡後只去過三次", eff:{mny:-5,hap:2}, inc:"lazy", res:"你成功地用會員費供養了健身房，主打一個做公益。"},
+      {label:'<i class="gtag">⚖️健康檢定</i> 報名魔鬼訓練營，賭一個脫胎換骨', r22:true, sr:{k:"hp", need:70, spread:40,
+        win:{eff:{hp:14,apr:12,hap:6,mny:-8}, flags:{fit:true}, res:"底子夠硬的你扛得住地獄菜單，三個月練出教科書級的身材，教練拿你當招生看板。汗水沒白流——這副好身材，是你用體質本錢加上一堂課沒翹換來的。"},
+        lose:{eff:{hp:-6,hap:-4,mny:-8}, res:"你高估了自己的底子，魔鬼菜單第二週就拉傷躺平，剩下的課程變成全市最貴的請假證明。教練嘆氣：『弟啊，練之前先把身體養好。』"}}},
     ]},
   {id:"adoptpet", stage:[8,70], w:2,
     title:"毛孩來敲門", text:"街角一隻小奶貓/小奶狗用水汪汪的眼睛盯著你，尾巴搖個不停。",
@@ -4843,6 +4885,9 @@ function buildEvents(){ return [
     choices:[
       {label:"滿懷期待，迎接社會", eff:{hap:8,int:4}, res:"你笑著和同窗道別，對未來充滿天真的期待。"},
       {label:"焦慮迷惘，不知去向", eff:{hap:-4,int:5}, res:"你看著畢業證書發呆，第一次嚐到前途未卜的滋味。"},
+      {label:'<i class="gtag">⚖️智力檢定</i> 趁畢業季海投，賭一個好工作上岸', r22:true, sr:{k:"int", need:68, spread:40,
+        win:{eff:{mny:10,int:4,hap:6,hp:-4}, flags:{employed:true}, res:"你把履歷打磨到發光、面試對答如流，畢業還沒滿月就抱回一份起薪漂亮的 offer——代價是熬夜改履歷、跑面試跑到鐵腿。同學還在『畢業即失業』的焦慮裡，你已經在看報到通知：腦袋這項投資，到職場直接兌現。"},
+        lose:{eff:{hap:-5,int:4}, res:"你海投了三十封履歷，已讀的有五封、回覆的有一封、約面試的……是賣保險的。你盯著空蕩蕩的收件匣苦笑，『畢業即失業』六個字，這次親身體驗了完整版。"}}},
     ]},
 
   /* ---------- 補充：工作 22-55 ---------- */
@@ -11993,6 +12038,14 @@ function choose(i){
   applyEff(S.attr, eff);
   for(const k in S.attr) S.attr[k]=clamp(S.attr[k]);
   updatePeaks();
+  /* ---- R98 成長權衡偵測（純讀最終 eff、零 rng）：這次抉擇若「同時」明顯拉高一條屬性（≥+4）又犧牲另一條（≤-4），
+     就計一次『拆東牆補西牆』的取捨——把遊戲裡大量既有的權衡型選項升格成被認可的機制，驅動 r98_tradeoff 成就。
+     排除致命 eff（-100）與裝飾性微調，讓玩家真切感受到「成長不是免費、每次升值都有代價」---- */
+  {
+    let up=false, down=false;
+    for(const k in eff){ if(k in ATTR){ const d=eff[k]; if(d>=4) up=true; else if(d<=-4 && d>-90) down=true; } }
+    if(up && down) S.flags.r98trade=(S.flags.r98trade||0)+1;
+  }
   // R22 六邊形戰士：五圍「同時」站上 80 的瞬間點亮（一次性旗標，供成就與時間軸；零 rng）
   if(!S.flags.hexagon && Object.keys(ATTR).every(k=>S.attr[k]>=80)) S.flags.hexagon=true;
 
@@ -12176,6 +12229,16 @@ const SPECIAL_DEATHS = {
     reason:"金山孤塔——你在頂樓豪宅的真皮沙發上安詳離世，三天後才被管家發現。遺產多到律師清點了兩週，靈堂的花海排到巷口，但簽名簿翻來翻去都是來探聽遺囑的。你贏下了整座金山，只是山頂的風，比想像中冷"},
   zenpoor:    {cat:"zenpoor",   scene:"heaven",    title:"身無分文卻贏走全部快樂的人生海海仙人",
     reason:"快樂歸西——你存摺餘額三位數，笑容存量卻一輩子沒見底。最後一天你照常去公園跟老友下棋、笑著贏了最後一盤，回家在睡夢中嘴角上揚地登出。告別式沒有花海，但全村的人都來了，每個人都帶著一個你講過的笑話"},
+  /* ---- R98 屬性軌跡壽終結局（謝幕當下五圍的「形狀」決定收尾，純門檻確定性、零 rng；
+          優先於隨機壽終正寢，讓極端／圓滿的屬性軌跡都拿得到專屬結局——數值不再只是過程裝飾）---- */
+  hexgod:     {cat:"hexgod",     scene:"heaven",   title:"五圍滿格、毫無破綻的六邊形戰士",
+    reason:"六邊形戰士——你謝幕時健康、智力、外貌、財富、快樂全部站在 75 以上，是地球 Online 史上罕見的『全科都念、樣樣都顧』完美存檔。沒有偏科稅、沒有破口，這座島從沒見過一個人能把每條 K 線都拉成漂亮的右上角。告別式上來賓研究了半天，最後只擠出一句結論：『這人是不是有讀攻略？』——其實你只是，每一步都沒省"},
+  ironsoul:   {cat:"ironsoul",   scene:"marathon", title:"把保溫杯泡枸杞泡成傳奇的鋼鐵長者",
+    reason:"鐵人善終——你這輩子最罩的就是那身體，巔峰時健康衝破 90，到了八十幾歲謝幕還硬是維持在 75 以上。沒進過幾次急診、沒讓健保虧過半毛錢，連感冒都嫌你太硬不敢來。最後一天你照常晨跑、爬完那座你爬了四十年的山，回家洗了個澡，在自己的床上安詳登出。里長說你是全里最後一個還在自己走樓梯的人——你用一輩子證明：健康才是真正花不完的本金"},
+  lonelygenius:{cat:"lonelygenius", scene:"school", title:"智力封頂卻活成孤峰的絕世天才",
+    reason:"智者孤峰——你的腦袋一輩子衝到接近滿格（95+），看穿了人情、算準了局勢、贏遍了所有需要動腦的賽局；可惜越聰明，越孤獨。謝幕時你的快樂只剩個位數出頭，房間裡堆滿沒人讀懂的筆記、沒人接的對話。你贏了所有的辯論，卻輸掉了所有的飯局。告別式上學界齊聚緬懷你的成就，卻沒人能說出你最後一次開懷大笑是什麼時候——這顆人間外掛等級的腦袋，終究沒算出『怎麼快樂』這一題"},
+  beautybroke:{cat:"beautybroke", scene:"broke",   title:"美到滿格、窮到見骨的顏值傳奇",
+    reason:"傾國傾城傾家蕩產——你的外貌一輩子衝到接近滿值（95+），走到哪都是全場焦點、自帶打光師；可惜這張臉再會打，也擋不住對帳單見底。謝幕時你的存款剩不到 15，行頭精緻得像月薪百萬，棺材本卻是跟人借的。鄰居說你這輩子最大的投資就是自己這張臉，最大的虧損也是——美貌是老天爺打的錢，可惜祂只打臉，不打到戶頭。告別式上大家公認：這是他們看過最好看的一場喪禮"},
   /* ---- R45 鬼島嘲諷死法（夏季電價/颱風假上班/躺平；屬性門檻確定性觸發，比照 R27 零裸 rng）---- */
   sweatout:   {cat:"sweatout",  scene:"panik",     title:"用肉身對抗夏季電價的省電模範生",
     reason:"節電成仁——39 度的夏夜你堅持不開冷氣，電風扇盡責地搬運熱風，你在睡夢中過熱關機。隔月帳單寄到：本期電費 97 元，附註『感謝您愛護地球』。告別式上親友幫你把冷氣開到 18 度，這次免錢"},
@@ -12306,6 +12369,11 @@ const DEATHBOOK = [
   {id:"netaddict",  ic:"🖥️", rare:true,  nm:"永久登出",     hint:"連續上線太久…",             reason:SPECIAL_DEATHS.netaddict.reason},
   {id:"forlove",    ic:"🌹", rare:true,  nm:"為愛走天涯",   hint:"跟一張單程機票有關…",       reason:SPECIAL_DEATHS.forlove.reason},
   {id:"peaceful",   ic:"🕊️", rare:true,  nm:"福壽全歸",     hint:"最圓滿的那種謝幕…",         reason:SPECIAL_DEATHS.peaceful.reason},
+  /* ---- R98 屬性軌跡壽終結局（謝幕當下五圍的形狀決定收尾，確定性條件）---- */
+  {id:"hexgod",     ic:"🛡️", rare:true,  nm:"六邊形戰士",   hint:"謝幕時五條數值全部站在 75 以上…樣樣都顧、零破口的那種完美存檔…", reason:SPECIAL_DEATHS.hexgod.reason},
+  {id:"ironsoul",   ic:"🏔️", rare:true,  nm:"鐵人善終",     hint:"健康巔峰破 90，活到八十幾歲謝幕還硬朗如昔…全程高健康的那種善終…", reason:SPECIAL_DEATHS.ironsoul.reason},
+  {id:"lonelygenius",ic:"🗿", rare:true, nm:"智者孤峰",     hint:"智力衝到接近滿格（95+），謝幕時快樂卻只剩個位數…贏了所有辯論、輸了所有飯局…", reason:SPECIAL_DEATHS.lonelygenius.reason},
+  {id:"beautybroke",ic:"💋", rare:true,  nm:"傾家蕩產的顏值傳奇", hint:"外貌衝到接近滿值（95+），謝幕時存款卻見了底…老天爺只打臉、不打到戶頭…", reason:SPECIAL_DEATHS.beautybroke.reason},
   {id:"boba",       ic:"🧋", rare:true,  nm:"以身殉茶",     hint:"跟手搖飲有關…",             reason:SPECIAL_DEATHS.boba.reason},
   {id:"lantern",    ic:"🏮", rare:true,  nm:"天燈砸頂",     hint:"跟放上天的願望有關…",       reason:SPECIAL_DEATHS.lantern.reason},
   {id:"spicy",      ic:"🌶️", rare:true,  nm:"辣到升天",     hint:"跟一鍋紅通通的東西有關…",   reason:SPECIAL_DEATHS.spicy.reason},
@@ -12508,13 +12576,28 @@ function die(from){
     else cat="accident";
     // 圓滿謝幕：高齡且富足快樂的極佳收尾 → 稀有「壽終正寢」結局
     const a=S.attr, total=a.hp+a.int+a.apr+a.mny+a.hap;
-    if(cat==="old" && S.age>=82 && total>=300 && a.hap>=55 && chance(0.45)){
+    const pkMny=(S.peak && S.peak.mny!=null)?S.peak.mny:a.mny;
+    const pkInt=(S.peak && S.peak.int!=null)?S.peak.int:a.int;
+    const pkApr=(S.peak && S.peak.apr!=null)?S.peak.apr:a.apr;
+    const pkHp =(S.peak && S.peak.hp !=null)?S.peak.hp :a.hp;
+    /* R98 屬性軌跡壽終結局：一生數值「養成什麼形狀」就用什麼姿態謝幕（純門檻確定性、零 rng；
+       同種子同選擇必同結局）。刻意排在隨機壽終正寢之前判定——讓六邊形全滿、鐵人高健康、
+       智力孤峰、美貌破產這幾種極端／圓滿軌跡都拿得到專屬收尾，而非被通用結局蓋掉。 */
+    const r98shape = (cat==="old" && a.hp>=75 && a.int>=75 && a.apr>=75 && a.mny>=75 && a.hap>=75) ? "hexgod"
+                   : (cat==="old" && S.age>=85 && pkHp>=90 && a.hp>=75)                            ? "ironsoul"
+                   : (cat==="old" && pkInt>=95 && a.hap<=22)                                        ? "lonelygenius"
+                   : (cat==="old" && pkApr>=95 && a.mny<=15)                                        ? "beautybroke"
+                   : null;
+    if(r98shape){
+      const rp=SPECIAL_DEATHS[r98shape];
+      cat=rp.cat; S.deathReason=rp.reason; S.summaryScene=rp.scene; S.title=rp.title;
+      deathId=r98shape;
+    } else if(cat==="old" && S.age>=82 && total>=300 && a.hap>=55 && chance(0.45)){
       cat="peaceful"; S.deathReason=SPECIAL_DEATHS.peaceful.reason; S.summaryScene="heaven"; S.title=SPECIAL_DEATHS.peaceful.title;
       deathId="peaceful";
     } else {
       // R36 屬性軌跡結局：一生數值的「形狀」決定收尾（純門檻確定性、零 rng；同種子同選擇必同結局）
       // 高智低健→智者燃盡；高財低樂→金山孤塔；高樂低財（且一輩子沒富過）→快樂歸西
-      const pkMny=(S.peak && S.peak.mny!=null)?S.peak.mny:a.mny;
       const traj = (cat==="hp"  && a.int>=92 && S.age<=70)               ? "mindburnout"
                  : (cat==="old" && a.mny>=85 && a.hap<=30)               ? "goldlonely"
                  : (cat==="old" && a.hap>=90 && a.mny<=20 && pkMny<=50)  ? "zenpoor"
@@ -12801,9 +12884,44 @@ function attrReviewHTML(){
   const taxLine=r25tax?`<div class="muted" style="font-size:12px;margin-top:6px;text-align:center">⚖️ 本生累計偏科代價 ${r25tax} 點——頂標的榮耀，都是其他數值集資供養的。</div>`:"";
   // R17 屬性軌跡一句話總評：巔峰 vs 謝幕 vs 死法的反差，雜湊定選零隨機
   const arc=(typeof attrArcQuip==="function") ? attrArcQuip() : "";
+  // R98 屬性軌跡編年：純讀 peak/low/謝幕值（零 rng）找出「主導這一生的屬性」＋「擺盪最劇烈的轉折」，
+  //     給玩家一句『這局的屬性故事』，呼應 directive#1「讓數值真的有存在感」
+  const r98line=(typeof attrChronicleLine==="function") ? attrChronicleLine() : "";
   return `<div class="panel" style="margin-top:12px;background:var(--panel2)">
     <h2 class="sec">📊 屬性人生回顧</h2>${rows}${taxLine}
+    ${r98line?`<div class="arcsum" style="margin-top:8px;font-size:12.5px;line-height:1.7;color:var(--ink,#e8e8e8);text-align:left;opacity:.92">${r98line}</div>`:""}
     ${arc?`<div class="arcsum" style="margin-top:8px;font-size:13px;color:var(--accent,#ffd24a);text-align:center">「${arc}」</div>`:""}</div>`;
+}
+/* R98 屬性軌跡編年：找出一生「巔峰最高的主導屬性」與「巔峰↔谷底擺盪最劇烈的轉折屬性」，
+   各配一句台味總結，讓結算回顧不只是數字，而是「這局的屬性故事」。純讀 S.peak/S.low/S.attr
+   ＋固定查表，零 rng／零 Math.random，同種子同軌跡必同文字，挑戰/對戰復現性不受影響。 */
+const R98_DOMINANT = {
+  hp:"這一生是用『體力』輾過去的——別人靠規劃，你靠的是一身打不垮的本錢，硬是把日子扛到了最後。",
+  int:"這一生由『腦袋』主導——你靠想得比別人深、算得比別人準，在這座島上替自己殺出一條活路。",
+  apr:"這一生靠『這張臉』開路——顏值就是你的履歷、你的入場券，走到哪都自帶打光，連運氣都偏心好看的人。",
+  mny:"這一生由『鈔能力』說了算——你深諳在鬼島，很多難題不是無解，是還沒砸到夠多的錢；數字替你擺平了大半人生。",
+  hap:"這一生靠『快樂』撐起——不管數值怎麼起伏，你總有本事笑著過，把難關活成段子，是最難複製的天賦。",
+};
+function attrChronicleLine(){
+  if(!S || !S.attr) return "";
+  const keys=Object.keys(ATTR);
+  const pk=S.peak||{}, lo=S.low||{};
+  const pV=k=>(pk[k]!=null?pk[k]:S.attr[k]), lV=k=>(lo[k]!=null?lo[k]:S.attr[k]);
+  // 主導屬性＝巔峰最高（同分取 ATTR 先序）
+  let domK=keys[0]; keys.forEach(k=>{ if(pV(k)>pV(domK)) domK=k; });
+  // 轉折屬性＝巔峰↔谷底落差最大（同分取 ATTR 先序）
+  let swK=keys[0]; keys.forEach(k=>{ if((pV(k)-lV(k))>(pV(swK)-lV(swK))) swK=k; });
+  const domPA=(S.peakAge&&S.peakAge[domK]!=null)?S.peakAge[domK]:0;
+  const swing=pV(swK)-lV(swK);
+  const swLA=(S.lowAge&&S.lowAge[swK]!=null)?S.lowAge[swK]:0;
+  let html=`📖 <b>命運主導：${ATTR[domK].ic}${ATTR[domK].nm}</b>（巔峰 ${pV(domK)}＠${domPA} 歲）——${R98_DOMINANT[domK]}`;
+  // 落差夠大才講轉折（≥30），否則就是條平穩的均線人生
+  if(swing>=30){
+    html+=`<br>🎢 <b>最大轉折：${ATTR[swK].ic}${ATTR[swK].nm}</b>——從巔峰 ${pV(swK)} 一路盪到谷底 ${lV(swK)}（${swLA} 歲跌到最低），整整 ${swing} 點的價差，這條 K 線比大盤還刺激。`;
+  } else {
+    html+=`<br>🌊 五條數值起伏都不超過 ${swing} 點，這是一條難得平穩的均線人生——沒有暴起暴落，也是一種本事。`;
+  }
+  return html;
 }
 
 /* =========================================================================
