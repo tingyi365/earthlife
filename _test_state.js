@@ -2914,5 +2914,108 @@ ok(r89.render, 'R89 ⑥ 結算軌跡組裝+呈現：keySnap 有料 → keySnapHT
 ok(r89.compat && r89.renderEmpty, 'R89 ⑦ 舊存檔相容：缺 keySnap 經 ensureState 補空陣列、空陣列 keySnapHTML 省略不炸');
 ok(r89.cleanStart && r89.cleanPlain, 'R89 ⑧ 零汙染：開局 keySnap 空、無屬性選項事件(拼酒)不寫快照');
 
+// ===== R90 台味宮廟民間信仰人生支線：分流狀態機 + 運勢 buff 取捨 + 屬性驅動 + 零汙染 =====
+const r90 = JSON.parse(vm.runInContext(`(function(){
+  const out={}; const f=id=>EVENTS.find(e=>e.id===id);
+  function fresh(age,flags){ startGame(); ensureState(S); S.seen={}; S.alive=true; S.keySnap=[]; S.flags=Object.assign({},flags||{}); ensureState(S); if(age!=null)S.age=age; return S; }
+  // ① 攔截器 r90FaithPick：24-60 窗口+未退休+雜湊閘命中→入口、閘落空/窗口外/已退休皆零殘留
+  const _ro=r90Roll;
+  fresh(40,{}); r90Roll=function(){return 0.1;}; out.entry = !!r90FaithPick() && r90FaithPick().id==='r90_faithhook';
+  fresh(40,{}); r90Roll=function(){return 0.9;}; out.gateMiss = r90FaithPick()===null;
+  r90Roll=_ro;
+  fresh(18,{}); out.gateYoung = r90FaithPick()===null;
+  fresh(40,{retired:true}); out.gateRetired = r90FaithPick()===null;
+  // ② 入口三分流：各立 r90mode + step:1 + r90_in；敬而遠之直接收尾(step:99)不立 mode
+  function pick0(i){ fresh(40,{}); showEvent(f('r90_faithhook')); choose(i); return S.flags; }
+  out.split = (g=>g.r90mode==='devout'&&g.r90step===1&&!!g.r90_in)(pick0(0))
+    && (g=>g.r90mode==='pray'&&g.r90step===1&&!!g.r90_in)(pick0(1))
+    && (g=>g.r90mode==='skeptic'&&g.r90step===1&&!!g.r90_in)(pick0(2))
+    && (g=>g.r90step===99&&!g.r90mode&&!g.r90_in)(pick0(3));
+  // ② 進鏈依 step/mode 確定性返節點：step1 共用安太歲、step2 依 mode、step3 落地結局型別
+  fresh(40,{r90step:1,r90mode:'devout'});  out.nodeTaisui=(r90FaithPick()||{}).id==='r90_taisui';
+  fresh(40,{r90step:2,r90mode:'devout'});  out.nodeDevout=(r90FaithPick()||{}).id==='r90_devout';
+  fresh(40,{r90step:2,r90mode:'pray'});    out.nodePray  =(r90FaithPick()||{}).id==='r90_pray';
+  fresh(40,{r90step:2,r90mode:'skeptic'}); out.nodeSkep  =(r90FaithPick()||{}).id==='r90_skeptic';
+  fresh(40,{r90step:3,r90mode:'devout'}); const e3=r90FaithPick();
+  out.endLand = e3&&e3.id==='r90_end_devout'&&S.flags.r90_endtype==='r90_end_devout'&&S.flags.r90_endhit===true;
+  // ③ 運勢 buff 取捨：安太歲花財富(mny-6)落 r90_blessed、鐵齒省錢落 r90_taisui、int>=70 gate 自擇也落 blessed
+  function tai(i,attr){ fresh(40,{r90step:1,r90mode:'pray'}); if(attr)Object.assign(S.attr,attr); showEvent(f('r90_taisui')); choose(i); return S.flags; }
+  const t0=tai(0); out.taiBless = t0.r90_blessed===true && t0.r90_lamp===true && t0.r90step===2;
+  const t1=tai(1); out.taiCurse = t1.r90_taisui===true && !t1.r90_blessed;
+  const tg=tai(2,{int:90}); out.taiGate = tg.r90_blessed===true && tg.r90_selfward===true && S.flags.gateWin>0;
+  // 安太歲花財富有代價：blessed 選項 mny<0、|eff|<=8；gate 選項 |eff|<=8 不 power creep
+  const cB=f('r90_taisui').choices[0], cG=f('r90_taisui').choices[2];
+  out.taiCost = cB.eff.mny<0 && Object.values(cB.eff).every(v=>Math.abs(v)<=8) && cG.gate===true && Object.values(cG.eff).every(v=>Math.abs(v)<=8);
+  // ④ 求籤 special r90_divine 運勢 buff 確定性生效（零 rng）：同屬性下 blessed 過關(+10)/taisui 翻車(-10)/平 borderline
+  function divine(buff,apr,hap){ fresh(40,Object.assign({r90step:2,r90mode:'pray'},buff)); S.attr.apr=apr; S.attr.hap=hap; showEvent(f('r90_pray')); choose(0); return S.flags; }
+  // base=(50+50)/2=50；blessed → 60>=55 過、taisui → 40<55 翻、無 buff → 50<55 翻：3 連跑 rnd 不翻盤（純門檻）
+  out.divBless = [0,0,0].every(()=>!!divine({r90_blessed:true},50,50).r90_faithwin);
+  out.divCurse = [0,0,0].every(()=>!!divine({r90_taisui:true},50,50).r90_faithloss);
+  out.divPlain = [0,0,0].every(()=>!!divine({},50,50).r90_faithloss);
+  // ④ 遶境 hp sr 真驅動有權衡：高 hp 必過(長 apr/hap、耗 hp 代價)、低 hp 必翻(傷 hp)，3 連跑不翻盤；win 帶 hp 負代價
+  function devo(hp){ fresh(40,{r90step:2,r90mode:'devout'}); S.attr.hp=hp; showEvent(f('r90_devout')); choose(0); return S.flags; }
+  out.devoHi = [0,0,0].every(()=>!!devo(100).r90_faithwin);
+  out.devoLo = [0,0,0].every(()=>!!devo(5).r90_faithloss);
+  const cD=f('r90_devout').choices[0]; out.devoCost = cD.sr.win.eff.hp<0 && cD.sr.win.eff.apr>0 && cD.sr.lose.eff.hp<0;
+  // ④ 運勢 buff 對 r90node sr 檢定加減確定性生效（驗 choose() 內含 r90mod）：
+  // need=62、spread=40：blessed 下 hp=60 → min roll=60+0+5=65>=62 必過；taisui 下 hp=18 → max=18+40-5=53<62 必翻
+  out.srBuffWin = [0,0,0,0].every(()=>{ fresh(40,{r90step:2,r90mode:'devout',r90_blessed:true}); S.attr.hp=60; showEvent(f('r90_devout')); choose(0); return !!S.flags.r90_faithwin; });
+  out.srBuffLose= [0,0,0,0].every(()=>{ fresh(40,{r90step:2,r90mode:'devout',r90_taisui:true}); S.attr.hp=18; showEvent(f('r90_devout')); choose(0); return !!S.flags.r90_faithloss; });
+  // ④ 鐵齒 int 確定性門檻(special r90_resolve，非 br 故不入 R25 普查)：高 int 過關(won)、低 int 翻車
+  function skep(intv){ fresh(40,{r90step:2,r90mode:'skeptic'}); S.attr.int=intv; showEvent(f('r90_skeptic')); choose(0); return S.flags; }
+  out.skepHi = [0,0,0].every(()=>!!skep(100).r90_faithwin); out.skepLo = [0,0,0].every(()=>!!skep(10).r90_faithloss);
+  // ⑤ r90EndingId 結局確定性計分 4 選 1：skeptic 固定、blessed+faithwin→欽點、devout 預設香火、pray 預設有事才拜
+  out.endId = r90EndingId({r90mode:'skeptic'})==='r90_end_skeptic'
+    && r90EndingId({r90mode:'devout',r90_blessed:true,r90_faithwin:true})==='r90_end_blessed'
+    && r90EndingId({r90mode:'pray',r90_blessed:true,r90_faithwin:true})==='r90_end_blessed'
+    && r90EndingId({r90mode:'devout'})==='r90_end_devout'
+    && r90EndingId({r90mode:'devout',r90_taisui:true,r90_faithloss:true})==='r90_end_devout'
+    && r90EndingId({r90mode:'pray'})==='r90_end_pray'
+    && r90EndingId({})==='r90_end_pray';
+  // ⑤ 成就確定性解鎖、零誤觸、提示齊備
+  out.ach = ACH_MAP.r90_in.check({S:{flags:{r90_in:true}},age:40})
+    && ACH_MAP.r90_done.check({S:{flags:{r90_endhit:true}},age:60})
+    && ACH_MAP.r90_blessed.check({S:{flags:{r90_endtype:'r90_end_blessed'}},age:60})
+    && ACH_MAP.r90_skeptic.check({S:{flags:{r90_endtype:'r90_end_skeptic'}},age:60})
+    && !ACH_MAP.r90_in.check({S:{flags:{}},age:40})
+    && !ACH_MAP.r90_blessed.check({S:{flags:{r90_endtype:'r90_end_skeptic'}},age:60})
+    && ['r90_in','r90_done','r90_blessed','r90_skeptic'].every(id=>ACH_MAP[id]&&ACH_MAP[id].hint&&ACH_MAP[id].hint.length>4);
+  // ⑤ 平衡護欄：全鏈所有選項 eff（含 sr/br/special win/lose 分支）每格 |eff|<=8
+  const r90ids=['r90_faithhook','r90_taisui','r90_devout','r90_pray','r90_skeptic','r90_end_blessed','r90_end_devout','r90_end_pray','r90_end_skeptic'];
+  let maxEff=0;
+  r90ids.forEach(id=>{ const e=f(id); e.choices.forEach(c=>{
+    const buckets=[c.eff];
+    if(c.sr){ buckets.push(c.sr.win.eff,c.sr.lose.eff); }
+    if(c.br){ buckets.push(c.br.hi.eff,c.br.lo.eff); }
+    buckets.forEach(b=>{ if(b) Object.values(b).forEach(v=>{ if(Math.abs(v)>maxEff)maxEff=Math.abs(v); }); });
+  }); });
+  out.balance = maxEff<=8;
+  // ⑥ 文案紅線：全鏈 title/text/res 不得含政治/宗教仇恨字串（文化共鳴非嘲諷信仰）
+  const RED=['共產','統一','獨立','國民黨','民進黨','政黨','邪教','異端','滅教','低能','智障','信耶穌得永生','阿拉','真主'];
+  let blob='';
+  r90ids.forEach(id=>{ const e=f(id); blob+=(e.title||'')+(e.text||''); e.choices.forEach(c=>{ blob+=(c.label||'')+(c.res||''); if(c.sr){blob+=(c.sr.win.res||'')+(c.sr.lose.res||'');} if(c.br){blob+=(c.br.hi.res||'')+(c.br.lo.res||'');} }); });
+  out.noRedline = RED.every(w=>blob.indexOf(w)<0);
+  // ⑦ 舊存檔相容：舊 save 經 ensureState 不注入任何 r90 鍵；鏈仍能在舊 save 上正常評估
+  const old={flags:{employed:true},attr:{hp:50,int:50,apr:50,mny:50,hap:50},age:40,alive:true,seen:{}}; ensureState(old);
+  out.compat = Object.keys(old.flags).every(k=>k.indexOf('r90')!==0);
+  // ⑧ 零汙染：開局 S.flags 無 r90 鍵；非信仰鏈事件不落 r90 旗標；沒踏進信仰鏈時回顧卡整段省略
+  startGame(); out.clean = Object.keys(S.flags).every(k=>k.indexOf('r90')!==0);
+  fresh(45,{}); showEvent(f('networking')); choose(0); out.cleanPlain = Object.keys(S.flags).every(k=>k.indexOf('r90')!==0);
+  startGame(); S.flags={}; out.reviewSkip = r90FaithReviewHTML()==='';
+  return JSON.stringify(out);
+})()`, sandbox));
+ok(r90.entry && r90.gateMiss && r90.gateYoung && r90.gateRetired, 'R90 ① 攔截器 r90FaithPick：24-60 窗口+未退休+雜湊閘命中→入口、閘落空/窗口外/已退休皆零殘留不插播');
+ok(r90.split, 'R90 ② 入口三分流：誠心信徒/有事才拜/鐵齒跟拜各立 r90mode+step:1+r90_in；敬而遠之直接收尾(step:99)不立 mode');
+ok(r90.nodeTaisui && r90.nodeDevout && r90.nodePray && r90.nodeSkep && r90.endLand, 'R90 ② 進鏈依 step/mode 確定性返節點：step1 共用安太歲、step2 依 mode、step3 落地 r90_endtype/r90_endhit');
+ok(r90.taiBless && r90.taiCurse && r90.taiGate && r90.taiCost, 'R90 ③ 運勢 buff 取捨：安太歲花財富(mny-6)落 blessed/鐵齒省錢落 taisui/int70 gate 自擇換 blessed，安太歲有代價且 |eff|<=8');
+ok(r90.divBless && r90.divCurse && r90.divPlain, 'R90 ④ 求籤 special r90_divine 運勢 buff 確定性生效(零 rng)：同屬性下 blessed(+10)過關/taisui(-10)翻車/無 buff borderline 翻，3 連跑不翻盤');
+ok(r90.devoHi && r90.devoLo && r90.devoCost, 'R90 ④ 遶境 hp sr 真驅動有權衡：高 hp 必過(長 apr/hap、耗 hp 代價)、低 hp 必翻，3 連跑 rnd 不翻盤');
+ok(r90.srBuffWin && r90.srBuffLose, 'R90 ④ 運勢 buff 對 r90node sr 檢定確定性加減：blessed(+5)邊界過關、taisui(-5/犯太歲)邊界翻車，min/max roll 不翻盤');
+ok(r90.skepHi && r90.skepLo, 'R90 ④ 鐵齒 int 確定性門檻(special r90_resolve)：高 int 過關(won)、低 int 翻車(!won)，3 連跑零 rng 不翻盤');
+ok(r90.endId && r90.ach, 'R90 ⑤ 4 結局確定性計分(神明欽點/香火傳承/有事才拜/鐵齒到底)＋4 成就確定性解鎖、零誤觸、提示齊備');
+ok(r90.balance, 'R90 ⑤ 平衡護欄：全鏈所有選項 eff(含 sr/br win/lose 分支)每格 |eff|<=8 不破壞平衡');
+ok(r90.noRedline, 'R90 ⑥ 文案紅線：全鏈無政治/宗教仇恨字串，文化共鳴非嘲諷信仰');
+ok(r90.compat && r90.clean && r90.cleanPlain && r90.reviewSkip, 'R90 ⑦⑧ 零汙染+舊存檔相容：開局/舊save/非信仰鏈事件 S.flags 皆無 r90 鍵、沒踏進信仰鏈時回顧卡整段省略');
+
 console.log(fails ? `\n結果: ❌ ${fails} 項未通過` : '\n結果: ✅ 狀態機全數正確');
 process.exit(fails ? 1 : 0);

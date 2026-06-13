@@ -1573,6 +1573,27 @@ function r87HouseReviewHTML(){
     <div class="muted" style="font-size:11.5px;margin-top:5px">22K 存不到頭期、30 年房貸當屋奴、房價所得比世界前段班——在這座島，有沒有殼，是一輩子的修行。</div></div>`;
 }
 
+/* R90 結算回顧：你的宮廟民間信仰軌跡（無觸發/舊存檔自動省略，純讀 S.flags 零 rng） */
+const R90_MODENM = {devout:"🙏 誠心信徒線（香火不斷年年遶境）", pray:"💰 有事才拜線（求財求姻緣現實主義）", skeptic:"🤔 鐵齒跟拜線（不信邪凡事靠自己）"};
+const R90_ENDNM = {r90_end_blessed:"🪷 神明欽點・有拜有保庇", r90_end_devout:"⛩️ 香火傳承・廟口的虔誠信徒", r90_end_pray:"🧧 心誠則靈・有事才拜的現實主義", r90_end_skeptic:"🧭 鐵齒到底・凡事靠自己"};
+function r90FaithReviewHTML(){
+  const f=(S&&S.flags)||{};
+  if(!f.r90_in) return "";   // 從沒踏進信仰支線（含敬而遠之）→ 整段省略；r90_in 由分流選項立旗
+  const rows=[];
+  if(f.r90mode) rows.push(`<div style="display:flex;gap:6px;align-items:baseline;padding:2px 0;font-size:13px"><span>🚪</span><span class="muted" style="min-width:84px">信仰路線</span><span>${R90_MODENM[f.r90mode]||"面對信仰課題"}</span></div>`);
+  const blss=f.r90_blessed?"安太歲點燈求得運勢加持":f.r90_taisui?"鐵齒不安太歲、犯太歲全靠自己扛":"順其自然";
+  rows.push(`<div style="display:flex;gap:6px;align-items:baseline;padding:2px 0;font-size:13px"><span>🏮</span><span class="muted" style="min-width:84px">運勢抉擇</span><span>${blss}</span></div>`);
+  const decs=[];
+  if(f.r90_faithwin) decs.push("誠心換來神明保庇"); if(f.r90_faithloss) decs.push("心不誠籤運不順");
+  if(f.r90_lamp) decs.push("點光明燈安太歲消災"); if(f.r90_pilgrim) decs.push("徒步遶境修得圓滿");
+  if(decs.length) rows.push(`<div style="display:flex;gap:6px;align-items:baseline;padding:2px 0;font-size:13px"><span>🎲</span><span class="muted" style="min-width:84px">關鍵抉擇</span><span>${decs.join("、")}</span></div>`);
+  if(f.r90_endtype && R90_ENDNM[f.r90_endtype]) rows.push(`<div style="display:flex;gap:6px;align-items:baseline;padding:2px 0;font-size:13px"><span>🏁</span><span class="muted" style="min-width:84px">信仰結局</span><span><b>${R90_ENDNM[f.r90_endtype]}</b></span></div>`);
+  return `<div class="origin" style="margin-top:10px;text-align:left">
+    ⛩️ <b>你的宮廟信仰軌跡</b>　<span class="muted">台味民間信仰人生</span>
+    <div style="margin-top:5px">${rows.join("")}</div>
+    <div class="muted" style="font-size:11.5px;margin-top:5px">擲筊求籤、安太歲點光明燈、媽祖遶境、有拜有保庇——在這座三步一小廟五步一大廟的島上，信仰是日子的一部分，也是心安的一帖藥。</div></div>`;
+}
+
 /* =========================================================================
    R55 台灣時代背景系統：投胎時 roll 出生年代（走 rng() → 同種子同年代，挑戰/對戰公平）。
    年代解鎖各年代 2 個專屬事件（cond 掛 S.era）。
@@ -2246,6 +2267,11 @@ const ACHIEVEMENTS = [
   {id:"r87_foreclose", ic:"📉", nm:"斷頭法拍・人財兩空", desc:"頭期不足硬擠上車、貸款拉到極限，一次升息或失業就讓還款計畫崩盤。你在法拍公告上看見自己家的門牌——辛苦多年的頭期與青春，全隨一紙法拍化為烏有。", check:c=>!!(c.S.flags&&c.S.flags.r87_endtype==="r87_end_foreclose"), hint:"走拚上車買房線、卻在頭期不足時硬貸上車（或智力翻車買到瑕疵屋），多半會被斷頭法拍淪為無殼蝸牛…"},
   {id:"r87_renter", ic:"🛋️", nm:"終身租屋・漂泊到老", desc:"你貫徹一輩子不買房的瀟灑，卻在晚年嚐到租屋族最殘酷的考驗——房東嫌你年紀大不肯租、房子越搬越小越遠。年輕時無所謂的『沒有自己的房』，到老才嚐到那份漂泊的重量。", check:c=>!!(c.S.flags&&c.S.flags.r87_endtype==="r87_end_renter"), hint:"走終身租屋線到底，把不買房的人生過完一輪，就會在晚年迎來這座島租屋族專屬的居住難題…"},
   {id:"r87_heir", ic:"🏯", nm:"繼承祖厝・有根的有殼人", desc:"你沒在都市房市裡廝殺，卻憑家族傳承成了有殼的人。那棟阿公那輩蓋起的祖厝穩穩落到你手上——不用背三十年房貸，還承載一家三代的記憶與根。這份福氣，許多人求不來。", check:c=>!!(c.S.flags&&c.S.flags.r87_endtype==="r87_end_heir"), hint:"走回鄉繼承祖厝線，把遺產稅與兄弟分產的眉角處理好（或乾脆搬回祖厝知足住下），就能當個有根的有殼人…"},
+  /* ---- R90 台味宮廟民間信仰人生支線成就（純讀 S.flags 確定性判定，零 rng；沒踏進信仰鏈/舊存檔永不誤觸；與既有支線各自獨立旗標）---- */
+  {id:"r90_in", ic:"⛩️", nm:"擲筊問神・踏進香火", desc:"在這座三步一小廟、五步一大廟的島上，你不再只是路過的香客——誠心信徒、有事才拜還是鐵齒跟拜，你選了一條路真的走進民間信仰的日常。擲筊那兩塊筊落地的清脆聲，就是你和神明搭上線的開始。", check:c=>!!(c.S.flags&&c.S.flags.r90_in), hint:"在信仰支線起點別只當敬而遠之的旁觀者——選一條路線（誠心信徒／有事才拜／鐵齒跟拜）真的擲筊踏進去…"},
+  {id:"r90_done", ic:"🏁", nm:"信仰人生・走完一輪", desc:"從擲筊問神的覺悟一路走到信仰結局——不管是神明欽點有保庇、廟口虔誠香火傳承、有事才拜的現實主義還是鐵齒到底凡事靠自己，你把這座島最日常的民間信仰，完整走完了一輪。", check:c=>!!(c.S.flags&&c.S.flags.r90_endhit), hint:"把信仰支線從擲筊覺悟、安太歲點燈、信仰抉擇一路走到出現「信仰結局」那一關，完整跑完一輪…"},
+  {id:"r90_blessed", ic:"🪷", nm:"神明欽點・有拜有保庇", desc:"你誠心安太歲、點光明燈、徒步遶境求籤問事，把『心誠則靈』四個字活成了好運。一路走來大事化小、籤籤是上上，連旁人都說你是有神明罩著的人——這份保庇，是你的虔誠換來的。", check:c=>!!(c.S.flags&&c.S.flags.r90_endtype==="r90_end_blessed"), hint:"花財富安太歲點光明燈求得運勢加持、再誠心求籤問事過關，把『有拜有保庇』走到底，才能得神明欽點…"},
+  {id:"r90_skeptic", ic:"🧭", nm:"鐵齒到底・凡事靠自己", desc:"你跟著家人擲筊上香，心裡卻始終一句『我不信邪』。不靠神明、不求籤運，把人生的吉凶禍福全攬在自己肩上，靠腦袋和雙手趨吉避凶。鐵齒是真鐵齒，只是逢年過節，香還是照樣上。", check:c=>!!(c.S.flags&&c.S.flags.r90_endtype==="r90_end_skeptic"), hint:"走鐵齒跟拜線到底，凡事靠自己（智力分流穩住）不求神明保庇，把不信邪的人生過完一輪…"},
 ];
 const ACH_MAP = {}; ACHIEVEMENTS.forEach(a=>ACH_MAP[a.id]=a);
 
@@ -9077,6 +9103,102 @@ function buildEvents(){ return [
     ]},
 
   /* =====================================================================
+     R90 台味宮廟民間信仰人生支線（分流狀態機，由確定性攔截器 r90FaithPick 驅動）：
+     擲筊問神起點 → 入口三分流(誠心信徒線／有事才拜線／鐵齒跟拜線)
+       → 安太歲點光明燈(運勢 buff 取捨，花財富換加持／省錢但犯太歲被下修／智力 gate 自己擇日趨吉)
+       → 信仰抉擇(屬性檢定/門檻分流，遶境耗體質長魅力/求籤吃運勢 buff/鐵齒靠智力)
+       → 結局 ×4（神明欽點有保庇／廟口虔誠香火傳承／有事才拜現實主義／鐵齒到底凡事靠自己）。
+     掛接鐵律（沿用 R50 確定性節拍／R81/R83/R84/R86/R87 攔截器精神，零裸 rng／零 Math.random）：
+     ① 全 hidden:true（不進隨機池、不計入 R46 觸達率落空名單）＋ once:true，只由 r90FaithPick 插播。
+     ② 分流靠 S.flags.r90mode（"devout"／"pray"／"skeptic"）＋階梯靠 S.flags.r90step 推進（每選項都帶
+        flags:{r90step:N+1} → 不論模擬亂選都會前進、鏈必走完）；入口 r90_faithhook 由確定性雜湊閘
+        （r41Hash 種子化）低機率攔截，舊存檔無旗標整套無感（R50/R87 相容性精神）。
+     ③ 運勢 buff 機制（呼應使用者長期建議：屬性與抉擇要真的有用、有取捨）——
+        安太歲點光明燈花財富(mny-6)換 r90_blessed 運勢加持（r90node sr 檢定 +5、求籤 special 門檻 +10）；
+        鐵齒不安太歲省錢卻落 r90_taisui（犯太歲，r90node sr 檢定 -5、求籤門檻 -10）；智力(int)≥70 gate 自己
+        翻農民曆擇日趨吉避凶（高屬性免費換 buff，屬性即門檻）。三條路落旗確定性影響後續抉擇與結局計分。
+        信仰抉擇：devout 遶境吃體質(hp sr，耗 hp 長 apr/hap)；pray 求籤吃運勢 buff(special r90_divine，
+        apr/hap 門檻＋blessed/taisui 確定性加減，零 rng)；skeptic 凡事靠自己吃智力(int br 分流)。
+        所有 win 必帶代價負值、|eff|≤8 內。
+     ④ 結局由 r90FaithPick 依 r90mode＋運勢/誠心旗標確定性計分擇一（4 選 1，純讀 flags 零 rng），picker 落地
+        r90_endtype/r90_endhit 供成就/回顧戰績卡。台味自嘲溫暖基調（擲筊求籤、安太歲犯太歲、點光明燈、
+        媽祖遶境、收驚、還願、有拜有保庇、心誠則靈），守政治/宗教仇恨/暴力紅線——是文化共鳴不是嘲諷信仰。
+     ===================================================================== */
+  {id:"r90_faithhook", hidden:true, once:true, ic:"🥢", nm:"擲筊問神的覺悟", r90node:"hook",
+    title:"兩塊筊與一支籤", text:"廟埕的香煙裊裊，你蹲在神桌前，手心裡躺著兩塊紅木筊。長輩說，心誠則靈，有事不決就問神明——求姻緣、求財運、求個心安。你看著案上那筒籤，再看看人來人往的香客：有人為考試求文昌、有人為病痛求平安、有人單純來謝神還願。在這座三步一小廟、五步一大廟的島上，信不信，好像也由不得你完全置身事外。這一筊，你到底擲還是不擲？",
+    meme:{scene:"luck", top:"心誠則靈", bot:"有拜有保庇", tag:"信仰"},
+    choices:[
+      {label:"🙏 誠心當個信徒，年年遶境、香火不斷", eff:{hap:2,hp:-1}, flags:{r90step:1, r90mode:"devout", r90_in:true}, res:"你決定誠心信奉。從此初一十五上香、神明聖誕進香、媽祖遶境跟著走——信仰成了你日子的一部分。長輩欣慰你『有心』，你也在一次次合掌祈願裡找到一種踏實：不一定是求神明真的顯靈，而是那份『有人在聽你說話』的安定感。在這座步調飛快的島上，一炷香的時間，是你難得能慢下來面對自己的時刻。"},
+      {label:"💰 有事才拜，求姻緣求財運、靈驗再說", eff:{hap:1,mny:-1}, flags:{r90step:1, r90mode:"pray", r90_in:true}, res:"你信的是『有用就好』。平時不燒香、臨時抱佛腳——考試前求文昌、想脫單跑月老、缺錢拜財神、卡關了去問事。你把信仰當成一種現實主義的人生外掛：靈驗就多拜兩次、不靈就換一間廟。朋友笑你太功利，你聳肩：『神明那麼忙，沒事少打擾，有事才麻煩，這叫互相尊重。』在這座凡事講 CP 值的島上，連拜拜你都拜得很有效率。"},
+      {label:"🤔 鐵齒不信邪，但家人要拜還是跟著拜", eff:{int:1,hap:1}, flags:{r90step:1, r90mode:"skeptic", r90_in:true}, res:"你打從心底覺得這些是心理作用——擲筊是機率、求籤是巴納姆效應、靈驗是倖存者偏差。但逢年過節、阿嬤遞香過來，你還是雙手接過、有模有樣地拜三拜。不是信了，是不想為這種事跟長輩起爭執，也不想觸誰的霉頭。你心裡那把理性的尺始終沒放下：凡事靠自己，吉凶禍福我自己扛——香照上，但命運的方向盤，我不交給神明。"},
+      {label:"🙂 敬而遠之，信者恆信、與我無關", eff:{hap:2}, flags:{r90step:99}, res:"你對民間信仰沒有敵意，也沒有熱情——它是別人的寄託，不是你的。廟會熱鬧你欣賞、香火鼎盛你尊重，但要你擲筊求籤、安太歲點燈，你一律敬謝不敏。你信的是『盡人事』那一半，至於『聽天命』那一半，你選擇不去叩問。在一座信仰濃得化不開的島上，能不被任何香火牽動、安安靜靜過自己的日子，也是一種清醒的自在。"},
+    ]},
+  /* ---- 安太歲點光明燈：運勢 buff 取捨（共用，三線都會經過；花財富換 blessed／省錢落 taisui／int gate 自擇）---- */
+  {id:"r90_taisui", hidden:true, once:true, ic:"🏮", nm:"安太歲與光明燈", r90node:"taisui",
+    title:"今年犯太歲", text:"過年時長輩翻著農民曆提醒你：『你今年犯太歲喔，要去廟裡安太歲、點個光明燈卡平安。』你看著廟方公告——安太歲、點光明燈、祭改一條龍，明碼標價，香油錢隨喜但行情心照不宣。理性告訴你這多半是花錢買心安，可一想到犯太歲那年諸事不順的傳說，你又有點動搖。這筆消災錢，到底是該花，還是不該花？",
+    meme:{scene:"dilemma", top:"犯太歲:諸事不順", bot:"安太歲:花錢買心安", tag:"信仰"},
+    choices:[
+      {label:"🏮 乖乖安太歲、點光明燈，花錢買個一年的心安", eff:{mny:-6,hap:3}, flags:{r90step:2, r90_blessed:true, r90_lamp:true}, res:"🏮 你掏錢安了太歲、點了光明燈，廟方把你的名字寫上太歲星君的名冊、燈塔上多了一盞屬於你的小燈。錢是花了，但那一年你心裡踏實多了——遇到不順就想『還好有安太歲』，遇到順遂就想『果然有保庇』。這份運勢加持說穿了是顆定心丸，可在諸事煩心的日子裡，一顆能讓你睡得著的定心丸，本身就值回票價。接下來求神問事，你都覺得多了幾分底氣。"},
+      {label:"🙅 鐵齒不安太歲，省下這筆錢、犯太歲就犯太歲", eff:{mny:1,hap:-1}, flags:{r90step:2, r90_taisui:true}, res:"😤 你才不信犯太歲這套，省下安太歲點燈的錢，覺得自己理性又清醒。可說也奇怪，那一年偏偏諸事不太順——不是手機掉了就是車被刮、工作上小狀況不斷。你心知肚明這多半是『犯太歲』的心理暗示在作祟，每遇衰事就忍不住想『早知道就去安一下』。沒安太歲的這一年，你的運勢像沒上保險，凡事都得自己硬扛，連求個籤都覺得特別卡。"},
+      {label:'<i class="gtag">🧠智力70+</i> 自己翻農民曆擇日趨吉避凶，不假廟方之手', eff:{int:3,hap:2}, cond:s=>s.attr.int>=70, gate:true, flags:{r90step:2, r90_blessed:true, r90_selfward:true}, res:"📖 你不花廟方那筆錢，而是自己鑽研起農民曆、紫微斗數與擇日學的門道——哪天宜出行、哪天忌動土、犯太歲的方位該怎麼避，你比廟公還清楚。你用知識替自己趨吉避凶，安的不是太歲，是自己心裡那套邏輯。長輩半信半疑，你笑說：『信仰歸信仰，但功課我自己做。』靠腦袋換來的這份運勢底氣，比花錢買的更讓你踏實。"},
+    ]},
+  /* ---- 誠心信徒線 信仰抉擇：hp sr 檢定（媽祖遶境耗體質長魅力；回扣運勢 buff +5/-5）---- */
+  {id:"r90_devout", hidden:true, once:true, ic:"🙏", nm:"九天八夜的遶境", r90node:"step", cond:s=>s.flags&&s.flags.r90mode==="devout",
+    title:"媽祖遶境徒步行", text:"一年一度的媽祖遶境又到了——這場號稱世界三大宗教盛事之一的徒步進香，九天八夜、繞行數百公里，信眾扶老攜幼跟著神轎走。沿途家家戶戶擺出免費的點心茶水、鑽轎腳求平安的人潮跪滿一地。你站在隊伍邊，香汗淋漓、雙腳起泡，這是一場對體力與意志的硬仗。要不要咬牙跟完全程，讓這趟修行圓滿？",
+    meme:{scene:"marathon", top:"遶境九天八夜", bot:"鐵腿換一個圓滿", tag:"信仰"},
+    choices:[
+      {label:'<i class="gtag">⚖️體質檢定・骰0~40需62</i> 咬牙徒步跟完九天全程，求一個圓滿', sr:{k:"hp", need:62, spread:40,
+        win:{eff:{apr:4,hap:4,hp:-2}, flags:{r90_faithwin:true, r90_pilgrim:true}, res:"🚶 你硬是把九天八夜走完了。腳底磨出一層又一層的水泡，肩膀被曬得脫皮，但當你跟著神轎回到起駕的廟前那一刻，整個人被一種說不出的感動填滿。沿途接過陌生人遞來的水與飯糰、和素不相識的香客互相攙扶——你體會到的不只是信仰，是這座島最樸實的人情味。雖然累垮了，但你的氣色裡多了一種被群體溫暖過的光彩，這趟修行，圓滿了。"},
+        lose:{eff:{hp:-6,hap:-2}, flags:{r90_faithloss:true}, res:"🤕 你高估了自己的體力。走到第四天，雙腳腫得塞不進鞋、中暑頭暈差點脫水，最後不得不搭上接駁車提前退場。看著其他香客咬牙繼續往前，你心裡又愧疚又懊惱——原來遶境不只是信仰的虔誠，更是體力的硬底子。你癱在路邊喘氣，深刻體會到這座島老一輩信徒的韌性，不是說說而已。這趟修行，敗給了自己沒練好的身體。"}}, flags:{r90step:3}},
+      {label:"量力而為，跟一小段、鑽個轎腳求平安就好", eff:{hap:3,hp:1,apr:1}, flags:{r90step:3, r90_faithwin:true}, res:"🙏 你沒逞強跟完全程，只挑了住家附近那一段跟著走，趁神轎經過時帶著家人鑽了轎腳，求個闔家平安。短短一程，你避開了鐵腿與中暑，卻一樣感受到了那份萬人空巷的虔誠與熱鬧。回家路上你心情格外輕鬆——信仰本就不必苦行，量力而為的這份誠心，神明想必也收到了。有時候，懂得不勉強，也是一種成熟的修行。"},
+    ]},
+  /* ---- 有事才拜線 信仰抉擇：求籤問事 special r90_divine（吃 apr/hap 門檻＋運勢 buff 確定性加減，零 rng）---- */
+  {id:"r90_pray", hidden:true, once:true, ic:"💰", nm:"月老與財神的考驗", r90node:"step", cond:s=>s.flags&&s.flags.r90mode==="pray",
+    title:"求籤問姻緣財運", text:"你帶著現實的願望走進廟裡——想脫單、想加薪、想轉運。你誠心稟報姓名生辰，擲筊請示後抽了一支籤，又跑去月老面前求紅線、往財神爐裡添了香油錢。求神問卜這種事，靠的到底是心誠則靈，還是平時有沒有積德、運勢夠不夠旺？你捏著那支籤詩，等廟方解籤的師傅開口。",
+    meme:{scene:"deal", top:"月老:給你牽紅線", bot:"財神:先添香油錢", tag:"信仰"},
+    choices:[
+      {label:"擲筊抽籤求姻緣財運，看這回心誠不誠、運勢旺不旺", eff:{}, special:"r90_divine", flags:{r90step:3}},
+      {label:"不強求，添點香油錢誠心還願、求個心安就好", eff:{mny:-4,hap:4}, flags:{r90step:3, r90_faithwin:true}, res:"🧧 你沒執著於籤詩的吉凶，只誠心往功德箱添了香油錢，謝謝神明這一年的照看。求神問卜對你而言，從來不是真要神明點石成金，而是給浮躁的自己一個沉澱的儀式。走出廟門，你心裡那點對姻緣與錢財的焦慮淡了些——日子還是要靠自己過，但有個地方能讓你把煩惱說出口、把心安帶回家，這趟就值了。"},
+    ]},
+  /* ---- 鐵齒跟拜線 信仰抉擇：int br 確定性分流（凡事靠自己穩不穩；運勢 buff 不影響鐵齒，理性自己扛）---- */
+  {id:"r90_skeptic", hidden:true, once:true, ic:"🤔", nm:"鐵齒的人生哲學", r90node:"step", cond:s=>s.flags&&s.flags.r90mode==="skeptic",
+    title:"不信邪的那條路", text:"家人又要你去問事改運，你嘴上應付、心裡冷笑：與其把命運交給籤筒，不如把功課做足。但鐵齒也有鐵齒的考驗——當生活真的卡關、當衰事接二連三，你能不能不靠神明的安慰，純粹用理性和實力把局面穩住？這座島的長輩信『有拜有保庇』，你信的是『靠別人不如靠自己』。問題是，你的自己，夠硬嗎？",
+    meme:{scene:"doubt", top:"別人:求神問卜", bot:"我:Google 跟試算表", tag:"信仰"},
+    choices:[
+      {label:"凡事靠自己，用知識和理性把人生的吉凶禍福攬下來", eff:{}, special:"r90_resolve", flags:{r90step:3}},
+      {label:"敷衍拜拜、心思全花在精進實力上，神明的事隨緣", eff:{int:2,hap:1}, flags:{r90step:3, r90_faithwin:true}, res:"📚 你把長輩要你問事改運的時間，全拿去精進自己——進修、運動、經營人脈。香照上、筊照擲，但那只是給家人一個交代，你真正的信仰是『實力才是最硬的靠山』。你不否定別人的寄託，只是清楚知道自己的路得自己走。日子在你務實的經營下穩步向前，你常說：『神明保佑的，從來都是有在努力的人。』這話信徒愛聽，鐵齒如你說來，卻別有一番底氣。"},
+    ]},
+  /* ---- R90 結局 ×4（由 r90FaithPick 依 r90mode＋運勢/誠心旗標確定性計分擇一插播；picker 已落地 r90_endtype/r90_end* 旗標）---- */
+  {id:"r90_end_blessed", hidden:true, once:true, ic:"🪷", nm:"神明欽點・有拜有保庇", r90node:"end",
+    title:"有神明罩著的人生", text:"回頭看這一路，你誠心安太歲、點光明燈、跟著遶境、有事就誠心請示，把『心誠則靈』四個字過成了日子。說也奇妙，你這輩子大事總能化小、危機總能轉彎，旁人都說你是『有神明罩著的人』。你自己心裡明白：與其說是神明顯靈，不如說那份虔誠讓你遇事更沉得住氣、待人更存著善念——而善念與從容，本身就是最好的護身符。",
+    meme:{scene:"luck", top:"別人:怎麼這麼順", bot:"我:有拜有保庇", tag:"信仰"},
+    choices:[
+      {label:"把這份保庇化作善念，多行善積德、回饋廟口與鄉里", eff:{hap:6,apr:3,hp:-1}, flags:{r90step:99, r90_done:true, r90_blessedend:true}, res:"🪷 你相信神明的保庇不是讓你獨善其身，而是要你把這份福氣傳出去。你成了廟口的常客與善人——出錢出力辦廟會、濟助鄉里的困苦人家、逢人遇難就搭把手。鄉親都說你面相一年比一年慈和，連走路都帶著一團和氣。你笑說這是神明欽點，其實是你把每一次祈願都化成了實際的善行。在這座人情味濃厚的島上，你用一輩子證明：有拜有保庇的真義，是先成為別人的保庇。"},
+      {label:"凡事仍誠心請示神明，把人生的方向盤交給籤詩與聖筊", eff:{hap:4,int:-1,mny:2}, flags:{r90step:99, r90_done:true, r90_blessedend:true, r90_devotee:true}, res:"⛩️ 你把對神明的信賴貫徹到底——大小事都先擲筊請示，搬家、創業、子女婚事，沒得到聖筊絕不輕舉妄動。這份虔誠給了你莫大的安定感，少了許多猶豫與焦慮。偶爾你也會想，是不是太依賴神明的指引、少了點自己拿主意的魄力，但每當聖筊落地、籤詩應驗，那份『冥冥中自有安排』的篤定，又讓你心甘情願地把方向盤交出去。有神明同行的人生，你走得安穩而知足。"},
+    ]},
+  {id:"r90_end_devout", hidden:true, once:true, ic:"⛩️", nm:"香火傳承・廟口的虔誠信徒", r90node:"end",
+    title:"廟口的那盞燈", text:"你這輩子和廟口結下了不解之緣。初一十五的香、神明聖誕的進香、年年跟著走的遶境，信仰成了你生活最穩定的節奏。你或許沒求來大富大貴，但那份年復一年的虔誠，把你的心熬得平和而踏實。廟埕的廟公認得你、賣金紙的阿姨記得你愛點哪盞燈——在這座快速變遷的島上，你成了那種把香火與人情，安安靜靜傳下去的人。",
+    meme:{scene:"old", top:"廟公:你又來啦", bot:"我:報到一甲子", tag:"信仰"},
+    choices:[
+      {label:"接下廟務當志工，把香火與廟口的人情傳給下一代", eff:{hap:5,apr:2,hp:-1}, flags:{r90step:99, r90_done:true, r90_devoutend:true, r90_volunteer:true}, res:"⛩️ 你從一個單純的信徒，慢慢成了廟裡不可或缺的志工——排香案、顧香油錢箱、辦廟會、接待香客，把大半輩子的閒暇都奉獻給了廟口。年輕一輩漸漸不來了，你卻更賣力地守著這份香火，教孩子們擲筊的規矩、講神明的故事。有人說廟宇終會凋零，你搖頭：『只要還有一個人願意上香，這盞燈就不會熄。』你守的不只是一座廟，是一座島正在流失的、最溫熱的那點人情。"},
+      {label:"信仰放心底，誠心過好每一天、不強求也不張揚", eff:{hap:5,hp:1}, flags:{r90step:99, r90_done:true, r90_devoutend:true}, res:"🙏 上了年紀後，你的信仰越發內斂——不再執著於繁複的儀式，而是把那份虔誠化進日常：心存善念、待人寬厚、遇事不慌。廟還是常去，但更多時候只是靜靜上一炷香、和神明說說話，像探望一位老朋友。你不向人傳教、不勸人信教，只是用自己平和知足的樣子，默默詮釋著信仰給一個人帶來的安定。這份不張揚的虔誠，成了你晚年最溫柔的底色。"},
+    ]},
+  {id:"r90_end_pray", hidden:true, once:true, ic:"🧧", nm:"心誠則靈・有事才拜的現實主義", r90node:"end",
+    title:"有用就好的信仰觀", text:"你這輩子的信仰始終很『實用主義』——平時不燒香，有事才抱佛腳。求過姻緣、拜過財神、卡關時問過事，靈驗了就多謝兩句、不靈就換間廟試試。你不是不信，只是把信仰當成人生眾多工具裡的一種：能給心安就用、給不了就算。回頭看，這套有事才拜的哲學沒讓你成為虔誠信徒，卻剛好match你務實的個性——日子，終究是靠自己過出來的，神明只是偶爾搭把手。",
+    meme:{scene:"rollsafe", top:"靈驗:多拜兩次", bot:"不靈:換間廟", tag:"信仰"},
+    choices:[
+      {label:"保持這份務實，信仰當心安、努力靠自己，兩不耽誤", eff:{hap:4,mny:3,int:1}, flags:{r90step:99, r90_done:true, r90_prayend:true}, res:"🧧 你把『有事才拜』的現實主義貫徹了一輩子，而且活得通透：該拜的時候誠心拜、給自己一個心安；該拚的時候埋頭拚、不把成敗推給運氣。信仰是你的減壓閥，不是你的拐杖。靠著這份清醒的平衡，你既享受了民間信仰帶來的慰藉與熱鬧，又沒被它綁住手腳。晚年和老友泡茶聊天，你笑談：『拜拜求個心安，日子還是得自己拚——這叫人神各盡其責。』活得務實又自在，是你給自己最好的籤。"},
+      {label:"越老越愛跑廟祈福，把求神問卜當成生活的小確幸", eff:{hap:5,mny:-2,hp:1}, flags:{r90step:99, r90_done:true, r90_prayend:true, r90_templehop:true}, res:"🧧 退休後時間多了，你那『有事才拜』的習慣，竟慢慢變成了『沒事也拜』的興趣。你開始四處走訪各地宮廟——這間求財靈、那間月老準、哪裡的廟會熱鬧就往哪去，把進香當成最接地氣的小旅行。求籤問事對你而言早已不是求什麼結果，而是過程裡那份熱鬧、那份期待、那份和神明閒話家常的趣味。日子過得有滋有味，你說：『信仰嘛，能讓你開心、給你盼頭，就是好信仰。』"},
+    ]},
+  {id:"r90_end_skeptic", hidden:true, once:true, ic:"🧭", nm:"鐵齒到底・凡事靠自己", r90node:"end",
+    title:"不交給神明的方向盤", text:"你這輩子鐵齒到底——香照上、筊照擲，給足長輩面子，可命運的方向盤，你從沒交到神明手裡。你信因果、信努力、信理性，把吉凶禍福全攬在自己肩上。沒有『有神明罩著』的安慰，你的人生每一步都得自己踩穩。回頭看，這條路走得比別人多了幾分孤勇，少了幾分寄託——但每一分收穫，你都清楚那是自己掙來的，踏實得不摻一點僥倖。",
+    meme:{scene:"realize", top:"別人:求神保佑", bot:"我:靠自己最實在", tag:"信仰"},
+    choices:[
+      {label:"鐵齒得通透，敬天地但不依賴、凡事盡人事而後安心", eff:{int:4,hap:3,mny:2}, flags:{r90step:99, r90_done:true, r90_skepticend:true}, res:"🧭 你的鐵齒不是傲慢，而是一種清醒的成熟——你敬重天地、尊重別人的信仰，逢年過節該拜照拜，只是從不把人生的責任外包給神明。盡了人事，你便坦然接受結果，不怨天、不尤神。這份『靠自己』的哲學讓你格外踏實：成功了知道是努力的回報、失敗了懂得從自己身上找原因。晚年回望，你沒求過任何保庇，卻把一手平凡的牌打得有條有理。你說：『神明保佑努力的人，而我，剛好就是那個努力的人。』"},
+      {label:"鐵齒到有點固執，凡事不信邪、偶爾也錯過該低頭的時候", eff:{int:2,hap:-2,apr:-1}, flags:{r90step:99, r90_done:true, r90_skepticend:true, r90_stubborn:true}, res:"😐 你的鐵齒到老都沒軟化過，甚至有點過了頭——別人善意提醒你去安個太歲、求個平安，你一律嗤之以鼻，覺得那是迷信、是浪費錢。理性是你的驕傲，卻偶爾也成了你的牆：該服軟時不服軟、該求助時拉不下臉，把『靠自己』活成了『誰都不靠』。晚年身邊信神的老友各有各的寄託與圈子，你守著一身硬骨頭，偶爾也會在深夜裡，對那份從不示弱的孤獨，生出一絲說不清的悵然。"},
+    ]},
+
+  /* =====================================================================
      R57 台味理財人生橫向事件線：
      ① 一般理財事件 ×6（跟會/儲蓄險親戚/樂透刮刮樂/股市韭菜/定存vs通膨/頭期款），
         主要落在工作期/中年期；屬性驅動回扣 R44——智力 sr 檢定投資判斷、
@@ -9631,6 +9753,57 @@ function r87HousePick(){
   }
   if(!id) return null;
   const ev=r87ById(id);
+  if(!ev || S.seen[ev.id]) return null;
+  return ev;
+}
+/* ---- R90 台味宮廟民間信仰人生支線攔截器：分流狀態機（純查 S.flags.r90mode／r90step／旗標，零裸 rng／零 Math.random）----
+   入口 r90_faithhook 由種子化雜湊閘低機率攔截；3 個分流選項各設 r90mode＝devout／pray／skeptic 並推進 r90step；
+   進鏈後每節點選項都帶 flags:{r90step:N+1}，故不論模擬亂選都會推進、鏈必走完。安太歲節點(step1→2)落運勢 buff
+   旗標(r90_blessed／r90_taisui)，回扣 choose() 的 r90node sr +5/-5 與 special r90_divine 門檻 ±10。結局依 r90mode＋
+   運勢/誠心旗標確定性計分擇一（4 選 1，純讀 flags 零 rng），picker 落地 r90_endtype/r90_endhit 供成就/回顧戰績卡；
+   置於 r87HousePick 之後、一般池之前；hidden:true → 永不進 eligible 隨機池、不計入 R46 觸達率落空名單；舊存檔無
+   r90step → 入口閘照常評估，未命中即完全無感（不寫任何旗標）。與既有各支線各自獨立旗標、互不衝突。 */
+function r90ById(id){ return EVENTS.find(e=>e.id===id)||null; }
+function r90Roll(id){ return r41Hash(r41SeedStr()+"|r90|"+id)/4294967296; }
+/* 依 r90mode＋運勢/誠心旗標確定性計算結局 id（零 rng；純讀 flags）：
+   skeptic → 鐵齒到底；其餘由運勢加持(r90_blessed +2)＋誠心過關(r90_faithwin +2)
+   －犯太歲(r90_taisui -2)－心不誠翻車(r90_faithloss -1) 計分：≥3 → 神明欽點有保庇；
+   否則 devout → 香火傳承、pray/其餘 → 有事才拜現實主義。 */
+function r90EndingId(f){
+  if(f.r90mode==="skeptic") return "r90_end_skeptic";
+  let sc=0;
+  if(f.r90_blessed)   sc+=2;
+  if(f.r90_faithwin)  sc+=2;
+  if(f.r90_taisui)    sc-=2;
+  if(f.r90_faithloss) sc-=1;
+  if(sc>=3) return "r90_end_blessed";
+  if(f.r90mode==="devout") return "r90_end_devout";
+  return "r90_end_pray";
+}
+function r90FaithPick(){
+  if(!S || !S.alive || !S.attr || !S.flags) return null;
+  if(!S.seen) S.seen={};
+  const step=S.flags.r90step||0;
+  if(step>=99) return null;                                        // 已收尾（含敬而遠之/結局）→ 永不再插播
+  // 入口：尚未面對信仰課題。年齡窗口（成年到中老年）＋未退休＋種子化雜湊低機率閘（舊存檔無旗標時此分支唯一觸點，未命中零殘留）
+  if(step===0){
+    if(S.flags.retired) return null;
+    if(S.age<24 || S.age>60) return null;
+    if(r90Roll("faithhook")>=0.34) return null;                    // 確定性閘：約 34% 合格生命會踏進信仰支線
+    return r90ById("r90_faithhook");
+  }
+  // 進鏈後：依 step＋mode 確定性返回對應節點（已 seen 防重觸）
+  let id=null;
+  if(step===1){ id="r90_taisui"; }                                 // 安太歲節點：三線共用
+  else if(step===2){
+    const m=S.flags.r90mode;
+    id = m==="devout" ? "r90_devout" : m==="pray" ? "r90_pray" : m==="skeptic" ? "r90_skeptic" : null;
+  } else if(step===3){
+    id=r90EndingId(S.flags);
+    if(id && !S.seen[id]){ S.flags.r90_endtype=id; S.flags.r90_endhit=true; }  // picker 落地結局型別供成就/回顧
+  }
+  if(!id) return null;
+  const ev=r90ById(id);
   if(!ev || S.seen[ev.id]) return null;
   return ev;
 }
@@ -10200,6 +10373,9 @@ function resolveYear(){
   // R87 台味居住／買房人生支線：分流狀態機，命中即確定性插播（零裸 rng；置於 R86 之後、一般池之前）
   const house87=r87HousePick();
   if(house87) return showEvent(house87);
+  // R90 台味宮廟民間信仰人生支線：分流狀態機，命中即確定性插播（零裸 rng；置於 R87 之後、一般池之前）
+  const faith90=r90FaithPick();
+  if(faith90) return showEvent(faith90);
   const pool=eligible();
   if(pool.length && chance(0.78)){
     // 優先池：此刻成立的門檻事件 + 帶 flag 的因果鏈回呼。
@@ -10516,7 +10692,9 @@ function choose(i){
   if(c.sr){
     // R16 前世練過的手氣：擲骰 +5。rnd 照常先消耗（種子序列不變）；挑戰/對戰局 rtal=[] 永不觸發
     // R26 鐵齒第一名：擲骰 -5（與 rb_dice +5 同一掛點；rnd 照常先消耗，種子序列不變）
-    const roll = (S.attr[c.sr.k]||0) + rnd(0, c.sr.spread||40) + (rtActive("rb_dice")?5:0) + (S.quirk&&S.quirk.id==="qk_tie"?-5:0) + r49Dice();
+    // R90 運勢 buff：信仰鏈(r90node)事件的 sr 檢定，安太歲加持 +5／犯太歲 -5（純讀旗標、零額外 rng，非信仰鏈零影響）
+    const r90mod = (ev&&ev.r90node) ? ((S.flags.r90_blessed?5:0)-(S.flags.r90_taisui?5:0)) : 0;
+    const roll = (S.attr[c.sr.k]||0) + rnd(0, c.sr.spread||40) + (rtActive("rb_dice")?5:0) + (S.quirk&&S.quirk.id==="qk_tie"?-5:0) + r49Dice() + r90mod;
     const out = roll >= c.sr.need ? c.sr.win : c.sr.lose;
     eff = Object.assign({}, out.eff||{});
     res = out.res||"";
@@ -10558,6 +10736,21 @@ function choose(i){
   if(c.special==="brainmax"){
     if(chance(0.12)){ S.flags.specialDeath="brainburn"; eff={hp:-100}; res="🧠 凌晨四點十三分，你真的想通了宇宙的終極答案。大腦風扇瞬間拉到十萬轉、機殼發燙，眼前彈出最後一行字：『運算資源不足』——你原地藍屏，再也沒能重新開機。遺言只有半句：『原來是 42……』"; }
     else { eff={int:5,hap:8,mny:6}; res="🧠 你把解題過程寫成萬字長文發上網，凌晨五點全網瘋傳，出版社連夜捧著合約來敲門。事實證明：智商真的可以當飯吃，還附排骨。"; }
+  }
+  /* ---- R90 求籤問事 special r90_divine：確定性門檻（零 rng）——基底取 (魅力+快樂)/2 反映「心誠/人緣/福氣」，
+          安太歲運勢加持 +10、犯太歲 -10（回扣 r90_taisui 節點取捨），≥55 求得上上籤、否則籤運不順。
+          同屬性＋同運勢必同結果，挑戰/對戰復現性不破壞；落 r90_faithwin/r90_faithloss 供結局計分與回顧 ---- */
+  if(c.special==="r90_divine"){
+    const base=(S.attr.apr+S.attr.hap)/2;
+    const adj=base + (S.flags.r90_blessed?10:0) - (S.flags.r90_taisui?10:0);
+    if(adj>=55){ eff={hap:6,apr:2}; res="🧧 你擲出三個聖筊、抽到一支上上籤，解籤師傅笑著說你『誠心感動天，這陣子貴人運旺』。是運勢加持也好、是心誠則靈也罷，你捏著籤詩走出廟門，腳步都輕快了起來。求來的未必是神蹟，是一份『事情會往好的方向走』的篤定——而人有了篤定，往往就真的把日子過順了。"; S.flags.r90_faithwin=true; }
+    else { eff={hap:-5,mny:-3}; res="🥢 你連擲幾次都是笑筊、陰筊，好不容易抽到的籤詩還是支下下籤，師傅委婉地要你『近期諸事多忍讓、別強求』。你心裡一沉——是運勢不旺，還是心不夠誠？你又添了香油錢求改運，錢花了，那股不順的悶氣卻沒散去。求神問卜這種事，求得心安是福氣，求來一肚子忐忑，可就成了花錢買煩惱。"; S.flags.r90_faithloss=true; }
+  }
+  /* ---- R90 鐵齒「凡事靠自己」special r90_resolve：確定性 int 門檻（零 rng，非 br 故不入 R25 分流普查）——
+          智力(int)≥58 用理性穩住人生(faithwin)、否則高估自己硬撐翻車(faithloss)。同屬性必同結果，挑戰/對戰復現性不破壞 ---- */
+  if(c.special==="r90_resolve"){
+    if((S.attr.int||0)>=58){ eff={int:3,hap:3,mny:2}; res="🧭 你用最務實的方式經營人生——做決定前查資料、衡量風險、列試算表，把『運氣』的成分壓到最低。別人求神問卜的時候，你在精算與規劃；別人怪罪犯太歲的時候，你在檢討哪裡可以做得更好。一路走來，你靠著清醒的腦袋把日子過得穩穩當當，證明了不靠神明保庇，自己也能替自己撐起一片天。鐵齒的代價是少了點寄託，但你換來了對人生實實在在的掌控感。"; S.flags.r90_faithwin=true; }
+    else { eff={hap:-4,mny:-2,int:1}; res="😮‍💨 你嘴硬說凡事靠自己，可真正遇到難關時，光靠一股鐵齒並不夠。判斷失準、規劃不周，衰事來了你既不肯求神明安慰、又沒能力把局面扳回來，只能硬著頭皮獨自硬撐。夜深人靜時你偶爾會想：那些去廟裡求個心安的人，至少還有個地方能放下焦慮。鐵齒沒有錯，錯的是你高估了自己——理性是把好刀，但你還沒磨得夠利。"; S.flags.r90_faithloss=true; }
   }
 
   // 特殊處理
@@ -12435,6 +12628,7 @@ function screenSummary(cat){
       ${r84ScamReviewHTML()}
       ${r86WorkReviewHTML()}
       ${r87HouseReviewHTML()}
+      ${r90FaithReviewHTML()}
       <div class="stats" style="margin:12px 0">${attrRows}</div>
       ${attrPersonaHTML()}
       ${r41WishHTML()}
@@ -13982,6 +14176,13 @@ function buildBragText(style){
     lines.push(salty
       ? `🐌 居住這題，結局「${hen.replace(/^\S+\s/,"")}」——在房價所得比世界前段班的島上，我至少活成了一種答案`
       : `🐌 居住軌跡：${hm.replace(/（.*?）/,"")} → ${hen}`);
+  }
+  // R90 台味宮廟民間信仰戰績：沒踏進信仰鏈/舊局自動省略，零 rng
+  if(S.flags && S.flags.r90_endtype && R90_ENDNM[S.flags.r90_endtype]){
+    const fen=R90_ENDNM[S.flags.r90_endtype], fm=R90_MODENM[S.flags.r90mode]||"";
+    lines.push(salty
+      ? `⛩️ 信仰這題，結局「${fen.replace(/^\S+\s/,"")}」——在三步一廟的島上，有拜沒拜我都活成了一種樣子`
+      : `⛩️ 信仰軌跡：${fm.replace(/（.*?）/,"")} → ${fen}`);
   }
   // R56 劇本局標記：非劇本局/舊存檔自動省略，零 rng
   const sc47=r56Script();
