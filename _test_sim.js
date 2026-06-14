@@ -3402,6 +3402,72 @@ try {
   console.log('R108 歷代人生名人堂: ❌ ' + e.message);
 }
 
+/* ---- R112 屬性驅動・成長有取捨探針（強制路徑，不靠隨機抽中）----
+   ① 結構：3 入口 once＋stage＋場景＋選項數齊備、3 成就有 hint
+   ② gate 屬性門檻：r112_skilltree 高智選項 int>=70 才渲染（int<70 隱藏不出按鈕，但索引不偏移）；
+      gate 選項落 r112_headhunt／r112_meritwin 旗標＋串既有 gateWin
+   ③ trade-off 取捨偵測：拉高一條+壓低一條的選項 → 既有 r98trade 計數＋本輪 tradeLog 同步記一筆 {up,dn}
+   ④ br 分流：健康 55+ 走 hi 立 r112_bodybank、<55 走 lo 不立（同 hp 必同結果、零裸 rng 翻不了門檻）
+   ⑤ sr 檢定：魅力 95 必過(connwin)、魅力 10 必敗(僅 conn 不 connwin)，上下限不被 rnd 翻盤
+   ⑥ 結算回顧：tradeLog 非空 → r112TradeoffHTML() 渲染取捨明細區塊；空則整塊省略
+   ⑦ 成就確定性＋不誤觸；舊存檔相容（補 tradeLog 空陣列、不注入 r112 旗標）＋乾淨局零殘留 */
+let r112OK = false;
+try {
+  const r112Raw = vm.runInContext(`(function(){
+    const out={};
+    function fresh(age,attr){ startGame(); const s=S; s.flags={}; ensureState(s); s.seen={}; s.alive=true; s.tradeLog=[]; if(age!=null)s.age=age; if(attr)Object.assign(s.attr,attr); return s; }
+    const skill=EVENTS.find(e=>e.id==='r112_skilltree'), body=EVENTS.find(e=>e.id==='r112_bodydebt'), charm=EVENTS.find(e=>e.id==='r112_charm');
+    /* ① 結構 */
+    out.evDef = [skill,body,charm].every(e=>!!e && e.once===true && Array.isArray(e.stage) && e.title && e.text && (e.choices||[]).length>=3
+                && e.meme && e.meme.scene && !!SCENES[e.meme.scene] && e.meme.top && e.meme.bot);
+    out.achDef = ['r112_headhunt','r112_bodybank','r112_sacrifice'].every(id=>ACH_MAP[id] && ACH_MAP[id].hint && String(ACH_MAP[id].hint).length>4);
+    /* ② gate 渲染門檻：int 高才出高智選項按鈕 + 旗標 */
+    let s=fresh(30,{int:75}); showEvent(skill);
+    out.gateShown = document.querySelector('#app').innerHTML.includes('免進修內部直接被挖角');
+    s=fresh(30,{int:50}); showEvent(skill);
+    out.gateHidden = !document.querySelector('#app').innerHTML.includes('免進修內部直接被挖角');
+    s=fresh(30,{int:75}); showEvent(skill); choose(2);
+    out.headhunt = S.flags.r112_headhunt===true && (S.flags.gateWin||0)>=1;
+    s=fresh(30,{int:75}); showEvent(charm); choose(1);
+    out.meritwin = S.flags.r112_meritwin===true && (S.flags.gateWin||0)>=1;
+    /* ③ trade-off：拉高 int +9、犧牲 hp -6 → r98trade +1 且 tradeLog 記一筆 up=int/dn=hp */
+    s=fresh(30,{int:60,hp:60,hap:60}); const t0=S.flags.r98trade||0; showEvent(skill); choose(0);
+    const tl=S.tradeLog||[];
+    out.tradeCount = (S.flags.r98trade||0)===t0+1;
+    out.tradeLog = tl.length===1 && tl[0].up==='int' && tl[0].dn==='hp' && tl[0].upv>=4 && tl[0].dnv<=-4 && typeof tl[0].age==='number' && tl[0].ev.indexOf('<')<0;
+    /* ④ br 分流：健康 55+ → hi 立 bodybank；<55 → lo 不立（連跑 3 次同值）*/
+    out.brHi = [0,0,0].every(()=>{ s=fresh(35,{hp:70}); showEvent(body); choose(1); return S.flags.r112_bodybank===true; });
+    out.brLo = [0,0,0].every(()=>{ s=fresh(35,{hp:40}); showEvent(body); choose(1); return !S.flags.r112_bodybank && S.flags.r112_body===true; });
+    /* ⑤ sr 檢定：魅力極值上下限必過/必敗（連跑 5 次同值，rnd 翻不了）*/
+    out.srWin = [0,0,0,0,0].every(()=>{ s=fresh(30,{apr:95}); showEvent(charm); choose(0); return S.flags.r112_connwin===true; });
+    out.srLose = [0,0,0,0,0].every(()=>{ s=fresh(30,{apr:10}); showEvent(charm); choose(0); return !S.flags.r112_connwin && S.flags.r112_conn===true; });
+    /* ⑥ 結算回顧渲染：tradeLog 非空 → 區塊出現；空 → 省略 */
+    s=fresh(40,{int:60,hp:60}); showEvent(skill); choose(0);
+    out.summaryShown = r112TradeoffHTML().includes('魚與熊掌');
+    s=fresh(40,{}); out.summaryHidden = r112TradeoffHTML()==='';
+    /* ⑦ 成就確定性 + 不誤觸 */
+    out.achPass = ACH_MAP.r112_headhunt.check({S:{flags:{r112_headhunt:true}}})
+               && ACH_MAP.r112_bodybank.check({S:{flags:{r112_bodybank:true}}})
+               && ACH_MAP.r112_sacrifice.check({S:{tradeLog:[{dn:'hp'},{dn:'hap'},{dn:'mny'}]}});
+    out.achClean = !ACH_MAP.r112_headhunt.check({S:{flags:{}}})
+                && !ACH_MAP.r112_bodybank.check({S:{flags:{}}})
+                && !ACH_MAP.r112_sacrifice.check({S:{tradeLog:[{dn:'hp'},{dn:'hp'}]}});  // 同屬性重複只算 1 種、不誤觸
+    /* 舊存檔相容：缺 tradeLog 的 save 經 ensureState 補空陣列、不注入 r112 旗標 */
+    const old={flags:{},attr:{hp:50,int:50,apr:50,mny:50,hap:50},age:40,alive:true}; ensureState(old);
+    out.compat = Array.isArray(old.tradeLog) && old.tradeLog.length===0 && Object.keys(old.flags).every(k=>k.indexOf('r112')!==0);
+    startGame(); s=S;
+    out.clean = Array.isArray(s.tradeLog) && s.tradeLog.length===0
+             && Object.keys(s.flags||{}).every(k=>k.indexOf('r112')!==0)
+             && Object.keys(s.seen||{}).every(k=>k.indexOf('r112')!==0);
+    return JSON.stringify(out);
+  })()`, sandbox);
+  const r112 = JSON.parse(r112Raw);
+  r112OK = Object.values(r112).every(v => v === true);
+  console.log(`R112 屬性驅動・成長有取捨: ${r112OK ? '✅ 全數通過' : '❌ ' + JSON.stringify(r112)}`);
+} catch (e) {
+  console.log('R112 屬性驅動・成長有取捨: ❌ ' + e.message);
+}
+
 if (__errors.length) {
   console.log('\n--- 錯誤樣本(前5) ---');
   __errors.slice(0, 5).forEach(e => console.log('  ' + e));
@@ -3409,6 +3475,6 @@ if (__errors.length) {
 
 /* 退出碼 */
 const pass = __errors.length === 0 && chk.missingScenes.length === 0 && chk.eventVisible >= 126 && chk.eventTotal >= 126 && lsOK && achUnlocked > 0
-  && chk.deathbookMissing.length === 0 && chk.deathTotal >= 17 && deathsOK && rebirthOK && legacyOK && petOK && r13OK && r17OK && r20OK && r21OK && r22OK && r24OK && r25OK && r34OK && r38OK && r41OK && r42OK && r43OK && r44OK && r45OK && r46OK && r47OK && r48OK && r49OK && r51OK && r52OK && r53OK && r54OK && r55OK && r72OK && r76OK && r77OK && r79OK && r86OK && r87OK && r92OK && r93OK && r95OK && r96OK && r108OK && r110OK && r111OK;
+  && chk.deathbookMissing.length === 0 && chk.deathTotal >= 17 && deathsOK && rebirthOK && legacyOK && petOK && r13OK && r17OK && r20OK && r21OK && r22OK && r24OK && r25OK && r34OK && r38OK && r41OK && r42OK && r43OK && r44OK && r45OK && r46OK && r47OK && r48OK && r49OK && r51OK && r52OK && r53OK && r54OK && r55OK && r72OK && r76OK && r77OK && r79OK && r86OK && r87OK && r92OK && r93OK && r95OK && r96OK && r108OK && r110OK && r111OK && r112OK;
 console.log('\n結果: ' + (pass ? '✅ 全數通過' : '❌ 有項目未通過'));
 process.exit(pass ? 0 : 1);

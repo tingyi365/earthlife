@@ -3812,5 +3812,51 @@ ok(r111.deathReg, 'R111 ⑦ emptypie 收錄 SPECIAL_DEATHS＋死法圖鑑（rare
 ok(r111.ach, 'R111 ⑧ 連動成就確定性：逃離鬼島／集滿三苦／頂加蒸籠解鎖且不誤觸');
 ok(r111.compat && r111.clean, 'R111 ⑨ 舊存檔相容＋乾淨局零 r111 殘留');
 
+// ===== R112 屬性驅動・成長有取捨：cond/gate 門檻 + br 分流 + sr 檢定 + 取捨明細序列化 + 舊存檔相容 =====
+const r112 = JSON.parse(vm.runInContext(`(function(){
+  const out={};
+  function fresh(age,attr){ startGame(); const s=S; s.flags={}; ensureState(s); s.seen={}; s.alive=true; s.tradeLog=[]; if(age!=null)s.age=age; if(attr)Object.assign(s.attr,attr); return s; }
+  const skill=EVENTS.find(e=>e.id==='r112_skilltree'), body=EVENTS.find(e=>e.id==='r112_bodydebt'), charm=EVENTS.find(e=>e.id==='r112_charm');
+  /* ① cond gating（入口 once）：三入口進池、once 已踏不再進 */
+  let s=fresh(35,{}); out.entryIn = eligible().some(e=>e.id==='r112_skilltree') && eligible().some(e=>e.id==='r112_bodydebt') && eligible().some(e=>e.id==='r112_charm');
+  s=fresh(35,{}); s.flags.r112_skill=true; out.onceGated = !eligible().some(e=>e.id==='r112_skilltree');
+  /* ② gate 屬性門檻：int 高才渲染高智選項、落 headhunt/meritwin 旗標＋串 gateWin */
+  s=fresh(30,{int:75}); showEvent(skill); out.gateShown = document.querySelector('#app').innerHTML.includes('免進修內部直接被挖角');
+  s=fresh(30,{int:50}); showEvent(skill); out.gateHidden = !document.querySelector('#app').innerHTML.includes('免進修內部直接被挖角');
+  s=fresh(30,{int:75}); showEvent(skill); choose(2); out.headhunt = S.flags.r112_headhunt===true && (S.flags.gateWin||0)>=1;
+  s=fresh(30,{int:75}); showEvent(charm); choose(1); out.meritwin = S.flags.r112_meritwin===true && (S.flags.gateWin||0)>=1;
+  /* ③ trade-off 取捨偵測：int+9/hp-6 → r98trade +1 且 tradeLog 記 up=int/dn=hp（序列化往返保值）*/
+  s=fresh(30,{int:60,hp:60,hap:60}); const t0=S.flags.r98trade||0; showEvent(skill); choose(0);
+  const tl=JSON.parse(JSON.stringify(S.tradeLog||[]));
+  out.trade = (S.flags.r98trade||0)===t0+1 && tl.length===1 && tl[0].up==='int' && tl[0].dn==='hp' && tl[0].upv>=4 && tl[0].dnv<=-4;
+  /* ④ br 分流：健康 55+ → hi 立 bodybank；<55 → lo 不立（連跑 3 次同值、零裸 rng 翻不了門檻）*/
+  out.brHi = [0,0,0].every(()=>{ s=fresh(35,{hp:70}); showEvent(body); choose(1); return S.flags.r112_bodybank===true && S.flags.r112_body===true; });
+  out.brLo = [0,0,0].every(()=>{ s=fresh(35,{hp:40}); showEvent(body); choose(1); return !S.flags.r112_bodybank && S.flags.r112_body===true; });
+  /* ⑤ sr 檢定：魅力 95 必過(connwin)／魅力 10 必敗（僅 conn），上下限不被 rnd 翻盤（連跑 5 次同值）*/
+  out.srWin = [0,0,0,0,0].every(()=>{ s=fresh(30,{apr:95}); showEvent(charm); choose(0); return S.flags.r112_connwin===true; });
+  out.srLose = [0,0,0,0,0].every(()=>{ s=fresh(30,{apr:10}); showEvent(charm); choose(0); return !S.flags.r112_connwin && S.flags.r112_conn===true; });
+  /* ⑥ 死法/成就確定性不誤觸 + 結算回顧渲染 */
+  out.ach = ACH_MAP.r112_headhunt.check({S:{flags:{r112_headhunt:true}}})
+         && ACH_MAP.r112_bodybank.check({S:{flags:{r112_bodybank:true}}})
+         && ACH_MAP.r112_sacrifice.check({S:{tradeLog:[{dn:'hp'},{dn:'hap'},{dn:'mny'}]}})
+         && !ACH_MAP.r112_sacrifice.check({S:{tradeLog:[{dn:'hp'},{dn:'hp'}]}});
+  s=fresh(40,{int:60,hp:60}); showEvent(skill); choose(0); out.summaryShown = r112TradeoffHTML().includes('魚與熊掌');
+  s=fresh(40,{}); out.summaryHidden = r112TradeoffHTML()==='';
+  /* ⑦ 舊存檔相容：缺 tradeLog 的 save 經 ensureState 補空陣列、不注入 r112 旗標 */
+  const old={flags:{},attr:{hp:50,int:50,apr:50,mny:50,hap:50},age:40,alive:true}; ensureState(old);
+  out.compat = Array.isArray(old.tradeLog) && old.tradeLog.length===0 && Object.keys(old.flags).every(k=>k.indexOf('r112')!==0);
+  startGame(); s=S; out.clean = Array.isArray(s.tradeLog) && s.tradeLog.length===0 && Object.keys(s.flags||{}).every(k=>k.indexOf('r112')!==0);
+  return JSON.stringify(out);
+})()`, sandbox));
+ok(r112.entryIn && r112.onceGated, 'R112 ① 取捨事件群 cond gating：三入口進池／once 已踏不重播');
+ok(r112.gateShown && r112.gateHidden, 'R112 ② gate 屬性門檻：智力 70+ 才渲染高智選項、不足即隱藏（索引不偏移）');
+ok(r112.headhunt && r112.meritwin, 'R112 ③ gate 選項落 r112_headhunt／r112_meritwin 旗標＋串既有 gateWin');
+ok(r112.trade, 'R112 ④ 成長取捨：拉高一條+壓低一條 → r98trade 計數＋tradeLog 記明細（序列化往返保值）');
+ok(r112.brHi, 'R112 ⑤ br 分流：健康 55+ 走 hi 把健康存回來立 r112_bodybank（連跑 3 次同值）');
+ok(r112.brLo, 'R112 ⑥ br 分流：健康 <55 走 lo 拉傷收場不立 bodybank（門檻外確定性）');
+ok(r112.srWin && r112.srLose, 'R112 ⑦ sr 魅力檢定：95 必過(connwin)／10 必敗，上下限不被 rnd 翻盤（連跑 5 次同值）');
+ok(r112.ach && r112.summaryShown && r112.summaryHidden, 'R112 ⑧ 成就確定性不誤觸＋取捨人生結算回顧（有取捨才渲染、空則省略）');
+ok(r112.compat && r112.clean, 'R112 ⑨ 舊存檔相容（補 tradeLog 空陣列）＋乾淨局零 r112 殘留');
+
 console.log(fails ? `\n結果: ❌ ${fails} 項未通過` : '\n結果: ✅ 狀態機全數正確');
 process.exit(fails ? 1 : 0);

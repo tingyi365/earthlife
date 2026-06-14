@@ -2021,6 +2021,7 @@ function ensureState(s){
   if(!Array.isArray(s.attrHist)) s.attrHist=[];   // R30 屬性年史（舊存檔缺鍵 → 從載入當下開始記，曲線照常但較短）
   if(!Array.isArray(s.attrTrajectory)) s.attrTrajectory=[];   // R106 屬性編年史里程碑快照（舊存檔缺鍵補空陣列，結算 <1 筆整塊省略不報錯）
   if(!Array.isArray(s.keySnap)) s.keySnap=[];     // R89 關鍵抉擇屬性快照（gate/sr/br 觸發即記一筆 {age,k,v,kind,won,ev}；舊存檔缺鍵補空，未觸發即空陣列零殘留）
+  if(!Array.isArray(s.tradeLog)) s.tradeLog=[];   // R112 取捨明細（同時拉高一條/壓低一條的抉擇記一筆 {age,up,dn,ev}；舊存檔缺鍵補空，未取捨即空陣列零殘留，結算 r112TradeoffHTML() 呈現）
   if(!Array.isArray(s.tl)) s.tl=[];  // R9 人生大事時間軸（當局有效，舊進行中存檔補空陣列）
   if(!s.peakAge || typeof s.peakAge!=="object") s.peakAge={};  // R15 巔峰年齡（舊進行中存檔補空，缺鍵顯示時 fallback 0）
   if(!s.low || typeof s.low!=="object") s.low={};              // R25 谷底值（舊進行中存檔補空，缺鍵顯示時 fallback 謝幕值）
@@ -2260,6 +2261,10 @@ const ACHIEVEMENTS = [
   {id:"r98_beautybroke", ic:"💋", nm:"魅力 max 卻破產", desc:"外貌衝到接近滿值（95+），謝幕時存款卻剩不到 15——這張臉是老天爺打的錢，可惜祂只打臉、不打到戶頭。", check:c=>c.cat==="beautybroke"},
   {id:"r98_allround", ic:"⚖️", nm:"樣樣稀鬆也是一種天賦", desc:"一生五條屬性的巔峰全都沒破 60、谷底也都沒跌破 25——你把人生過成一條最平的均線，沒爆發、也沒崩盤，穩穩活完一場。", check:c=>{const ks=Object.keys(c.S.attr); const pk=c.S.peak||{}, lo=c.S.low||{}; return ks.every(k=>(pk[k]!=null?pk[k]:c.S.attr[k])<60) && ks.every(k=>(lo[k]!=null?lo[k]:c.S.attr[k])>=25);}},
   {id:"r98_tradeoff", ic:"🔁", nm:"拆東牆補西牆大師", desc:"一生靠『犧牲一條換另一條』的取捨選項翻盤 5 次以上——成長從來不是免費的，你只是比別人更早看懂帳單。", check:c=>(c.S.flags.r98trade||0)>=5},
+  /* ---- R112 屬性驅動・成長有取捨成就（門檻/檢定/取捨明細驅動，確定性、零裸 rng；接既有圖鑑） ---- */
+  {id:"r112_headhunt", ic:"🧲", nm:"免投履歷的搶手貨", desc:"智力練到 70+，在下班進修的十字路口直接被內部挖角——別人爆肝考證照，你靠養了好幾年的腦袋躺著被升職。把智力練到位，機會自己會來敲門。", check:c=>!!(c.S.flags&&c.S.flags.r112_headhunt), hint:"把智力養到 70 以上，在『下班後的自我投資』那關，連補習班的門都不用進…"},
+  {id:"r112_bodybank", ic:"🏦", nm:"健康存摺的優質客戶", desc:"體檢紅字找上門時，靠夠硬的底子（健康 55+）認真把健康存回去，紅字一個個消失——你終於懂了，健康才是真正花不完的本金，其他數值都只是利息。", check:c=>!!(c.S.flags&&c.S.flags.r112_bodybank), hint:"在『健康存摺的提領通知』那關，健康底子夠（55+）的時候選認真運動，把欠下的健康債連本帶利還回去…"},
+  {id:"r112_sacrifice", ic:"♟️", nm:"取捨人生・三牲祭", desc:"單局做過的成長取捨涵蓋 3 種以上不同的『犧牲屬性』——你深諳人生沒有全拿這回事，懂得在不同關頭，押上不同的代價去換最想要的。", check:c=>{const t=(c.S&&c.S.tradeLog)||[]; const s=new Set(); t.forEach(x=>{ if(x&&x.dn) s.add(x.dn); }); return s.size>=3;}, hint:"一輩子多挑那些『提升一條、犧牲另一條』的取捨選項，而且刻意換著不同的東西去犧牲（健康、快樂、財富…），湊滿三種不同的代價…"},
   /* ---- R38 隱藏彩蛋成就（確定性條件彩蛋：撞見即解鎖，出身×天賦/跨局死法連續/門檻組合驅動、零裸 rng） ---- */
   {id:"r38_funeralstar", ic:"🎤", nm:"告別式的安可聲", desc:"禮儀社世家出身又天生社牛，把告別式辦成讓全場又哭又笑的一場活動——人生最後一個舞台，也值得一聲安可。", check:c=>!!(c.S.seen&&c.S.seen.egg38_funeralstar)},
   {id:"r38_samedeath", ic:"🍵", nm:"孟婆湯免費續杯", desc:"連續兩世用一模一樣的死法登出，孟婆看到你直接端出老位子的湯——輪迴櫃台開張以來第一張常客集點卡，因你而生。", check:c=>!!(c.S.seen&&c.S.seen.egg38_samedeath)},
@@ -10395,6 +10400,37 @@ function buildEvents(){ return [
       {label:'<i class="gtag">💰財富78+</i> 直接潤出國／移民，逃離這座島重新開始', eff:{mny:-10,hap:10,apr:2}, cond:s=>s.attr.mny>=78, gate:true, flags:{r111_escape:true,r111_chain:true,r111_escaped:true}, res:"你不等結算了，直接行動：把這些年攢下的本錢換成一張單程機票，潤去一個生活成本與薪資更匹配的地方重新開始。有人說你逃避、不愛這片土地，你只回一句：『我愛這座島，但這座島愛不起我。』背起行囊那刻你輕鬆得想哭——人生只有一次，與其耗在改變不了的地方，不如把自己搬到能呼吸的地方。"},
       {label:"認命：這座島再爛也是家，繼續當個社畜", eff:{hap:rnd(-2,4),hp:-2}, flags:{r111_escape:true,r111_chain:true,r111_stayslave:true}, res:"你想了想，還是留下了：爸媽在這、朋友在這、熟悉的巷口小吃在這，再爛也是從小長到大的家。你接受了買不起房就租一輩子、薪水不漲就省著過的現實，把日子過成一種苦中作樂的鈍感。這座島確實有一百個讓人想逃的理由，但也有那麼幾個讓你捨不得走的瞬間——認命不是輸了，是看清楚之後，依然選擇好好活著。"},
     ]},
+
+  /* ---------- R112 屬性驅動・成長有取捨事件群（讓五圍真的左右過程與分流；門檻 cond+gate／br 分流／sr 檢定皆走既有機制，
+     取捨選項同時拉高一條、壓低一條 → 自動串既有 R98 trade 偵測＋本輪取捨明細 tradeLog；文案台味自嘲、零政治紅線） ---------- */
+  {id:"r112_skilltree", stage:[24,48], w:2.4, once:true, cond:s=>!s.flags.r112_skill,
+    title:"下班後的自我投資", text:"下班打卡的瞬間，手機跳出補習班廣告：『學會這個技能，年薪多一個零。』你看看那十年沒怎麼動的薪水條，再看看癱在沙發上只想耍廢的自己——這座島的殘酷是，光把本份做好不會加薪，得自己下班再偷偷變強。問題是，時間和體力就這麼多，學新東西的代價，是拿睡眠和快樂去換。",
+    meme:{scene:"bookcat", top:"想下班後偷偷變強", bot:"睡眠跟快樂先來收過路費", tag:"職場"},
+    choices:[
+      {label:"咬牙進修考證照：犧牲睡眠與娛樂，硬把自己升級", eff:{int:9,mny:5,hp:-6,hap:-5}, tradeoff:true, flags:{r112_skill:true,r112_grind:true}, res:"你把下班時間全砸進線上課程和證照書，假日也泡在圖書館。半年後考過了那張很硬的證照、談判桌上多了籌碼，薪水真的往上跳了一階。代價是黑眼圈掛到下巴、追劇打game全戒了——你用健康和快樂，分期付款買了一張通往加薪的門票。值不值得，只有月底看到薪轉簡訊那一刻最清楚。"},
+      {label:"下班就是要耍廢，學那麼多是要逼死誰", eff:{hap:8,hp:3,int:-3}, flags:{r112_skill:true}, res:"你想通了：人生不是只有 KPI，下班的時間是用命換來的，憑什麼還要拿去進貢給公司？你把追劇、耍廢、跟朋友吃宵夜的時間理直氣壯地討回來，活得鬆弛又快樂。薪水是沒漲啦，但你睡得飽、笑得出來、頭髮也還在——在這座內捲到發燙的島上，懂得停下來喘口氣，本身就是一種稀缺的智慧。"},
+      {label:'<i class="gtag">🧠智力70+</i> 腦袋本來就夠用，免進修內部直接被挖角', eff:{mny:12,int:3,hap:2}, cond:s=>s.attr.int>=70, gk:"int", gate:true, flags:{r112_skill:true,r112_headhunt:true}, res:"你連補習班的門都不用進——平常累積的硬實力早就被別部門看在眼裡，主管一通電話把你挖去帶新專案，薪水直接跳級。別人下班還在爆肝考證照，你靠著養了好幾年的腦袋躺著被升職。同事酸你好運，你笑而不語：所謂的好運，不過是當年那些沒人看見時，自己偷偷讀進去的書，現在替你開了門。"},
+    ]},
+  {id:"r112_bodydebt", stage:[30,55], w:2.3, once:true, cond:s=>!s.flags.r112_body,
+    title:"健康存摺的提領通知", text:"體檢報告紅字越來越多，醫生那句『再不運動，這些數字會找你算帳』言猶在耳。你站在十字路口：年輕時揮霍的健康像刷爆的信用卡，帳單終究要還。可眼前還有接不完的案子、付不完的帳——到底是繼續爆肝換錢，還是趁身體還能動，把健康存回去？",
+    meme:{scene:"cat16", top:"健康存摺收到提領通知", bot:"年輕欠的帳 中年連本帶利討", tag:"健康"},
+    choices:[
+      {label:"沒空養生，狂接案爆肝換錢，命是用來換鈔票的", eff:{mny:11,hp:-9,hap:-3}, tradeoff:true, flags:{r112_body:true,r112_burncash:true}, res:"你把醫生的話當耳邊風，繼續埋頭接案到三更半夜——錢包是肉眼可見地鼓了起來，身體卻一天比一天虛。你安慰自己『等賺夠了再來養生』，卻沒算到健康這筆債利滾利，等真正想還的時候，本金早就被討走一大半。在這座用命換錢的島上，你贏了對帳單，輸了體檢單。"},
+      {label:'<i class="gtag">🧭健康55分流</i> 趁還能動，認真運動把健康存回來', br:{k:"hp", need:55,
+        hi:{eff:{hp:8,apr:4,hap:3,mny:-3}, flags:{r112_body:true,r112_bodybank:true}, res:"你底子還夠硬，重訓、晨跑、規律作息撿回來，身體像被重新格式化——精神變好、線條回來、紅字一個個消失。花的那點健身房錢和時間，是這輩子報酬率最高的投資。你終於懂了：健康才是真正的本金，其他數值都只是利息。"},
+        lo:{eff:{hp:3,hap:-2,mny:-3}, res:"你想認真運動，無奈底子早就被掏空——才跑兩圈就喘到不行，重訓沒幾下舊傷復發。健康存摺欠太久，想一次補回來反而拉傷收場。醫生搖頭：『養生要趁年輕，你這是來還高利貸的。』你苦笑，至少踏出了第一步，總比繼續擺爛強。"}}, flags:{r112_body:true}, eff:{}, res:""},
+      {label:"裝沒看到那張紅字報告，繼續老樣子", eff:{hap:2,hp:-3}, flags:{r112_body:true}, res:"你把體檢報告塞進抽屜最底層，眼不見為淨，日子照樣熬夜、外食、不運動。短期內好像也沒怎樣，但那些紅字就像定時炸彈，安安靜靜地躺在你身體裡——你不是沒事，只是帳還沒到期。鴕鳥的快樂是真的，代價只是延後付款，外加一筆看不見的滯納金。"},
+    ]},
+  {id:"r112_charm", stage:[26,52], w:2.3, once:true, cond:s=>!s.flags.r112_conn,
+    title:"鬼島人脈交叉口", text:"機會來了：業界一個關鍵的位子在徵人，但你知道在這座島上，很多時候『認識誰』比『你會什麼』更管用。你站在交叉口——是要靠人緣去搏一個引薦、賭自己的社交牌夠硬，還是不屑走後門、硬碰硬用實力海投履歷證明給所有人看？",
+    meme:{scene:"interview", top:"關鍵機會就在眼前", bot:"靠人脈 還是靠實力 賭一把", tag:"職場"},
+    choices:[
+      {label:'<i class="gtag">⚖️魅力檢定</i> 靠人緣與交情，搏一個關鍵引薦', sr:{k:"apr", need:62, spread:40,
+        win:{eff:{mny:10,hap:5,apr:3}, flags:{r112_conn:true,r112_connwin:true}, res:"你平常經營的人緣這一刻全變現了——一通電話、一頓飯局，前輩二話不說替你引薦，關鍵的門就這樣替你開了。在這座靠關係運轉的島上，你的魅力就是最硬的通行證。能力決定你走多遠，人脈決定你有沒有上場的機會，而你兩樣都沒缺。"},
+        lose:{eff:{hap:-5,mny:-2}, flags:{r112_conn:true}, res:"你鼓起勇氣去攀關係，卻發現平常沒在經營的交情，臨時抱佛腳根本使不上力——對方客套幾句就把你打發了，引薦的事不了了之。你尷尬地收回伸出去的手，深刻體會到：人脈這種東西，是平常一點一滴存下來的，不是急用時才想去提款的。"}}, eff:{}, res:""},
+      {label:'<i class="gtag">🧠智力68+</i> 不走後門，靠硬實力海投履歷證明自己', eff:{mny:9,int:4,hap:2}, cond:s=>s.attr.int>=68, gk:"int", gate:true, flags:{r112_conn:true,r112_meritwin:true}, res:"你偏不信邪：不靠關係、不求人，把作品集和履歷整理得漂漂亮亮，直接海投硬碰硬。憑著紮實的真本事，你從一堆靠關係的候選人裡殺出重圍，靠實力拿下位子。你用行動證明了：在這座再怎麼講關係的島上，把腦袋練到夠硬，照樣能替自己開一條不必看人臉色的路。"},
+      {label:"算了，這種需要做人的場合我不行，躺平等緣分", eff:{hap:4,mny:-2}, flags:{r112_conn:true}, res:"你看著那個需要八面玲瓏、又要攀關係又要秀實力的場合，默默打了退堂鼓——『太累了，這種局不適合我。』你選擇躺平、把機會讓給更積極的人，告訴自己『緣分到了自然會有』。少了拚搏的焦慮是真的輕鬆，但機會這種東西，從來不會自己走到躺著的人面前。"},
+    ]},
 ];}
 const EVENTS_BASE = buildEvents();   // 載入時建一份（行為與舊版 const EVENTS 完全一致）
 let EVENTS = EVENTS_BASE;            // 每日挑戰時暫時換成種子重建版，結束即還原
@@ -12621,9 +12657,16 @@ function choose(i){
      就計一次『拆東牆補西牆』的取捨——把遊戲裡大量既有的權衡型選項升格成被認可的機制，驅動 r98_tradeoff 成就。
      排除致命 eff（-100）與裝飾性微調，讓玩家真切感受到「成長不是免費、每次升值都有代價」---- */
   {
-    let up=false, down=false;
-    for(const k in eff){ if(k in ATTR){ const d=eff[k]; if(d>=4) up=true; else if(d<=-4 && d>-90) down=true; } }
-    if(up && down) S.flags.r98trade=(S.flags.r98trade||0)+1;
+    let up=false, down=false, upK=null, upV=0, dnK=null, dnV=0;
+    for(const k in eff){ if(k in ATTR){ const d=eff[k];
+      if(d>=4){ up=true; if(d>upV){ upV=d; upK=k; } }
+      else if(d<=-4 && d>-90){ down=true; if(d<dnV){ dnV=d; dnK=k; } } } }
+    if(up && down){
+      S.flags.r98trade=(S.flags.r98trade||0)+1;
+      // R112 取捨明細：記下「拉高了哪條、犧牲了哪條」一筆，供結算 r112TradeoffHTML() 把抽象的取捨具象化（上限 16 筆防爆量、純記錄零 rng）
+      if(!Array.isArray(S.tradeLog)) S.tradeLog=[];
+      if(upK && dnK && S.tradeLog.length<16) S.tradeLog.push({age:S.age, up:upK, upv:upV, dn:dnK, dnv:dnV, ev:stripTags((ev&&ev.title)||"")});
+    }
   }
   // R22 六邊形戰士：五圍「同時」站上 80 的瞬間點亮（一次性旗標，供成就與時間軸；零 rng）
   if(!S.flags.hexagon && Object.keys(ATTR).every(k=>S.attr[k]>=80)) S.flags.hexagon=true;
@@ -14060,6 +14103,36 @@ function keySnapHTML(){
 }
 
 /* =========================================================================
+   R112 取捨人生回顧：把這一生「拉高一條、犧牲另一條」的成長取捨具象化——
+   讀 S.tradeLog（choose() 在 R98 取捨偵測器同步記下的 {age,up,dn,ev}）列出實際做過的權衡，
+   呼應 directive#1「讓五圍真的有存在感、成長有代價」。純讀狀態、零 rng，同種子同軌跡 → 同回顧；
+   無任何取捨（舊存檔／全程無痛升值）整塊省略不報錯、零殘留。
+   ========================================================================= */
+function r112TradeoffHTML(){
+  if(!S || !Array.isArray(S.tradeLog) || S.tradeLog.length<1) return "";
+  const log=S.tradeLog.slice().sort((a,b)=>a.age-b.age);
+  // 最常被犧牲的那條屬性（同數取 ATTR 先序）——一生為了別的數值，最常拿什麼去抵帳
+  const dnCnt={}; log.forEach(x=>{ if(ATTR[x.dn]) dnCnt[x.dn]=(dnCnt[x.dn]||0)+1; });
+  let costK=null; for(const k in ATTR){ if(dnCnt[k] && (costK===null || dnCnt[k]>dnCnt[costK])) costK=k; }
+  const rows=log.slice(0,6).map(x=>{
+    const u=ATTR[x.up], d=ATTR[x.dn]; if(!u||!d) return "";
+    return `<div class="atrow"><span class="atage">${x.age} 歲</span>`
+      +`<span style="white-space:nowrap"><span style="color:${u.col}">${u.ic}${u.nm}▲${x.upv>0?'+':''}${x.upv}</span> <span class="muted">換</span> <span style="color:${d.col}">${d.ic}${d.nm}▼${x.dnv}</span></span>`
+      +`<span class="atev">${x.ev}</span></div>`;
+  }).join("");
+  const n=log.length;
+  const verdict = costK
+    ? `這一生你做了 ${n} 次『魚與熊掌』的取捨，最常被你拿去抵帳的是 ${ATTR[costK].ic}${ATTR[costK].nm}——成長從來不是免費的，每一次升值，都有另一條數值在默默買單。`
+    : `這一生你做了 ${n} 次明確的取捨，拆東牆補西牆，把資源押在最想要的那條數值上。`;
+  return `<div class="panel" style="margin-top:12px;background:var(--panel2)">
+    <h2 class="sec">⚖️ 魚與熊掌・你的取捨人生</h2>
+    <div class="muted" style="font-size:12px;margin-bottom:4px;text-align:left">每一次升值都有代價，這些是你親手簽下的帳單（共 ${n} 筆取捨）</div>
+    ${rows}
+    <div style="margin-top:6px;font-size:12.5px;text-align:left;line-height:1.7;color:var(--accent,#ffd24a)">「${verdict}」</div>
+  </div>`;
+}
+
+/* =========================================================================
    R68 屬性命運回顧：總結這一生五圍如何「主動驅動」命運——
    讀 S.flags 裡被動命運層累積的紅利/短板計數＋各屬性貢獻＋年史走勢，給一段總評。
    純讀狀態、零 rng，同種子同軌跡 → 同回顧；無觸發（極短命/全中庸）整塊省略不報錯。
@@ -14312,6 +14385,7 @@ function screenSummary(cat){
       ${attrCurveHTML()}
       ${attrTrajectoryHTML()}
       ${keySnapHTML()}
+      ${r112TradeoffHTML()}
       ${attrTurnsHTML()}
       ${r68FateHTML()}
       ${highlightsHTML()}
