@@ -376,6 +376,65 @@ ok(karmaProbe.karma === karmaProbe.base + 1,
 ok(karmaProbe.six === 6, `R16 rb_karma：破 5 上限單局拿 6 點（實際 ${karmaProbe.six}）`);
 ok(karmaProbe.ach, 'R16 成就「孟婆的白金會員」：rpGain=6 當局即解鎖並計入戰報');
 
+// ⑧b R116 業力繼承 / 命格殿：存檔遷移、業力換算公式、命格開局加成、挑戰禁用、解鎖扣業力
+const r116Probe = JSON.parse(vm.runInContext(`(function(){
+  const out = {};
+  // 1) 遷移：舊存檔無 r116 鍵 → r116Data() 就地補 {karma:0,total:0,perks:{}}，不崩
+  delete SAVE.r116; const d0 = r116Data();
+  out.migrate = !!d0 && d0.karma===0 && d0.total===0 && d0.perks && typeof d0.perks==='object' && SAVE.r116===d0;
+  // 2) 壞值修補：負數/字串/非物件一律回正
+  SAVE.r116={karma:-9, total:'x', perks:7}; const d1=r116Data();
+  out.repair = d1.karma===0 && d1.total===0 && typeof d1.perks==='object';
+  // 3) 業力換算確定性：age 90(=6) + sum 400(=4) + 新成就 2 + 稀有度 tierIdx 3 → 1+6+4+2+3 = 16
+  startGame(); S.age=90; S.attr={hp:80,int:80,apr:80,mny:80,hap:80};
+  S.newAch=['a','b']; S.rarity={tierIdx:3};
+  out.karmaFormula = r116KarmaGain();   // 期望 16
+  // 4) 早夭最低保底：什麼都很差也至少 +1
+  S.age=10; S.attr={hp:5,int:5,apr:5,mny:5,hap:5}; S.newAch=[]; S.rarity={tierIdx:0};
+  out.karmaFloor = r116KarmaGain();     // 期望 1（1 + 0 + 0 + 0 + 0）
+  // 5) 命格開局加成：同種子裸開 vs 解鎖 k_fortune（快樂+4 財富+4）→ 兩屬性各 +4
+  function birth(code, perks){
+    SAVE.r116={karma:999,total:999,perks:perks||{}};
+    rng = mulberry32(seedCodeToInt(code)); EVENTS = buildEvents(); newLife(); S.seed=code;
+    return {hap:S.attr.hap, mny:S.attr.mny, hp:S.attr.hp, r116k:(S.r116k||[]).slice(), chosen:!!S.flags.r116_chosen};
+  }
+  const bare = birth('ABCDEF', {});
+  const fort = birth('ABCDEF', {k_fortune:true});
+  out.fortuneHap = fort.hap - bare.hap;   // 期望 +4（未觸頂時）
+  out.fortuneMny = fort.mny - bare.mny;   // 期望 +4
+  out.fortuneWired = fort.r116k.indexOf('k_fortune')>=0;
+  // 6) 天選之子：開局健康 +5 且寫入 r116_chosen 旗標（特殊起始事件）
+  const chosen = birth('ABCDEF', {k_chosen:true});
+  out.chosenHp = chosen.hp - bare.hp;     // 期望 +5
+  out.chosenFlag = chosen.chosen===true && bare.chosen===false;
+  // 7) 挑戰模式禁用：命格全解鎖也不進 S.r116k（全服公平）
+  SAVE.r116={karma:999,total:999,perks:{k_compass:true,k_fortune:true,k_chosen:true,k_floor:true}};
+  startChallenge('20240101');
+  out.challengeOff = (S.r116k||[]).length===0 && !S.flags.r116_chosen;
+  // 8) 解鎖流程：karma 足夠 → 扣業力、寫入 perks；不足 → 不動
+  SAVE.r116={karma:30, total:30, perks:{}};
+  r116Unlock('k_fortune');   // cost 18
+  out.unlockOK = SAVE.r116.perks.k_fortune===true && SAVE.r116.karma===12;
+  r116Unlock('k_floor');     // cost 52 > 12 → 不動
+  out.unlockBlocked = !SAVE.r116.perks.k_floor && SAVE.r116.karma===12;
+  out.perkCount = R116_PERKS.length;
+  // 收尾：清空命格與業力，避免命格加成洩漏污染後續測試（祖產/周目等開局基準）
+  SAVE.r116={karma:0, total:0, perks:{}};
+  return JSON.stringify(out);
+})()`, sandbox));
+ok(r116Probe.migrate, 'R116 ① 遷移：舊存檔無 r116 鍵 → r116Data() 就地補 {karma,total,perks}，不崩');
+ok(r116Probe.repair, 'R116 ② 壞值修補：負數/字串/非物件一律回正');
+ok(r116Probe.karmaFormula === 16, `R116 ③ 業力換算確定性：壽命+五圍+成就+稀有度 = 16（實際 ${r116Probe.karmaFormula}）`);
+ok(r116Probe.karmaFloor === 1, `R116 ④ 早夭最低保底至少 +1（實際 ${r116Probe.karmaFloor}）`);
+ok(r116Probe.fortuneHap === 4 && r116Probe.fortuneMny === 4 && r116Probe.fortuneWired,
+  `R116 ⑤ 夙世福報開局快樂/財富各 +4（實際 hap+${r116Probe.fortuneHap} mny+${r116Probe.fortuneMny}）`);
+ok(r116Probe.chosenHp === 5 && r116Probe.chosenFlag,
+  `R116 ⑥ 天選之子開局健康 +5 並寫入 r116_chosen 旗標（特殊起始事件）`);
+ok(r116Probe.challengeOff, 'R116 ⑦ 挑戰模式禁用命格（S.r116k 為空、無天選旗標），全服公平');
+ok(r116Probe.unlockOK && r116Probe.unlockBlocked,
+  'R116 ⑧ 命格殿解鎖：業力足夠扣點寫入、不足則擋下');
+ok(r116Probe.perkCount === 4, `R116 命格共 4 項（實際 ${r116Probe.perkCount}）`);
+
 // ⑧ R16 新成就：origins10 / undertaker80 check 函式正反例；三者皆有獵人提示
 const achR16 = JSON.parse(vm.runInContext(`(function(){
   const out = {};

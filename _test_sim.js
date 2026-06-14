@@ -305,6 +305,7 @@ console.log(`R46 觸達率: 未觸發(計入門檻) ${neverCounted.length}/120 �
 const rawSave = localStorage.getItem('earthlife_save_v2');
 let lsOK = false, achUnlocked = 0, deathsOK = false, deathsGot = 0;
 let rebirthOK = false, rbTotal = 0, rbPts = 0;
+let r116OK = false, r116Total = 0;
 try {
   const parsed = JSON.parse(rawSave);
   achUnlocked = Object.keys(parsed.ach || {}).length;
@@ -318,10 +319,16 @@ try {
     && parsed.rebirth.talents && typeof parsed.rebirth.talents === 'object'
     && Array.isArray(parsed.rebirth.equipped)
     && rbTotal >= N && rbTotal <= N * 5 && rbPts === rbTotal;   // 每局至少 1 點、至多 5 點，未消費前 pts=total
+  /* R116 業力繼承：舊存檔（無 r116 鍵）載入後自動補結構，每局結算業力入帳（每局至少 1），未消費前 karma=total */
+  r116Total = (parsed.r116 && parsed.r116.total) || 0;
+  r116OK = parsed.r116 && typeof parsed.r116 === 'object'
+    && parsed.r116.perks && typeof parsed.r116.perks === 'object'
+    && r116Total >= N && parsed.r116.karma === r116Total;
 } catch (e) {}
 console.log(`localStorage 寫入: ${rawSave ? '有資料' : '無'} ｜ 結構正確: ${lsOK ? '✅' : '❌'} ｜ 累計解鎖成就: ${achUnlocked}/${chk.achTotal} ｜ plays: ${save.plays}`);
 console.log(`死法圖鑑: 總死法 ${chk.deathTotal} ｜ 收錄缺漏: ${chk.deathbookMissing.length ? chk.deathbookMissing.join(', ') : '無 ✅'} ｜ 模擬累計收集: ${deathsGot}/${chk.deathTotal} ｜ 舊存檔相容: ${deathsOK ? '✅' : '❌'}`);
 console.log(`R6 轉生: 舊存檔自動補 rebirth 結構且輪迴點入帳: ${rebirthOK ? '✅' : '❌'} ｜ ${N} 局累計 ${rbTotal} 點（pts=${rbPts}）`);
+console.log(`R116 業力繼承: 舊存檔自動補 r116 結構且業力入帳: ${r116OK ? '✅' : '❌'} ｜ ${N} 局累計 ${r116Total} 業力`);
 
 /* R23 祖產：舊存檔（無 legacy 鍵）載入後自動補結構、每局陰德入帳（每局至少 1）、
    歷代名冊 cap 10 且欄位完整（w 世數 / a 享年 / g 評級 / d 死法摘要）、未消費前 yd=ydTotal */
@@ -3664,6 +3671,6 @@ if (__errors.length) {
 
 /* 退出碼 */
 const pass = __errors.length === 0 && chk.missingScenes.length === 0 && chk.eventVisible >= 126 && chk.eventTotal >= 126 && lsOK && achUnlocked > 0
-  && chk.deathbookMissing.length === 0 && chk.deathTotal >= 17 && deathsOK && rebirthOK && legacyOK && petOK && r13OK && r17OK && r20OK && r21OK && r22OK && r24OK && r25OK && r34OK && r38OK && r41OK && r42OK && r43OK && r44OK && r45OK && r46OK && r47OK && r48OK && r49OK && r51OK && r52OK && r53OK && r54OK && r55OK && r72OK && r76OK && r77OK && r79OK && r86OK && r87OK && r92OK && r93OK && r95OK && r96OK && r108OK && r110OK && r111OK && r112OK && r113OK && r115OK;
+  && chk.deathbookMissing.length === 0 && chk.deathTotal >= 17 && deathsOK && rebirthOK && legacyOK && petOK && r13OK && r17OK && r20OK && r21OK && r22OK && r24OK && r25OK && r34OK && r38OK && r41OK && r42OK && r43OK && r44OK && r45OK && r46OK && r47OK && r48OK && r49OK && r51OK && r52OK && r53OK && r54OK && r55OK && r72OK && r76OK && r77OK && r79OK && r86OK && r87OK && r92OK && r93OK && r95OK && r96OK && r108OK && r110OK && r111OK && r112OK && r113OK && r115OK && r116OK;
 console.log('\n結果: ' + (pass ? '✅ 全數通過' : '❌ 有項目未通過'));
 process.exit(pass ? 0 : 1);

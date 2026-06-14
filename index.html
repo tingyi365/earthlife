@@ -1415,6 +1415,55 @@ function ngpSummaryHTML(){
 }
 
 /* =========================================================================
+   R116 業力繼承 / 命格殿：跨周目「靈魂點數」meta 進程（再玩一輪的長線動機）
+   與既有 轉生殿/祖產/世代/周目 各自獨立、互不疊代、互不爭奪貨幣：
+   - 業力 = 每局結算依「壽命／五圍總分／本局新成就數／R115 稀有度階級」確定性折算
+     （零 rng、誠實不偽造伺服器資料；稀有度階級越高給越多）。
+   - 在命格殿用業力解鎖「永久命格加成」——解鎖即永久生效，不必裝備、無數量上限。
+   平衡護欄（鐵律，與轉生殿/祖產同一套）：
+   ① 加成只動「開局層 base 屬性 / 開局旗標」與保底，不碰任何事件內數值與檢定公式
+   ② 挑戰/對戰/劇本局強制禁用（newLife(true) → S.r116k=[]），全服公平
+   ③ 全程零 rng 消耗——未解鎖任何命格時開局與舊版完全一致，種子序列不變
+   ④ 與轉生天賦（單屬性 +3）效果明確區隔：強化最高項／雙屬性／天命旗標序章／全項保底
+   ========================================================================= */
+const R116_PERKS = [
+  {id:"k_compass", ic:"🧭", nm:"天命羅盤", cost:8,
+   desc:"開局時最高的那項屬性再 +6——天賦點在刀口上，強的更強（與轉生天賦補單項不同，這是順勢加碼）。"},
+  {id:"k_fortune", ic:"🍀", nm:"夙世福報", cost:18,
+   desc:"開局快樂 +4、財富 +4——上輩子積的福，這輩子開局就先領兩成利息。"},
+  {id:"k_chosen",  ic:"🎁", nm:"天選之子", cost:32,
+   desc:"出生自帶『天選之子』身分：開局健康 +5，人生開場寫下一段註定不凡的序章（特殊起始事件）。"},
+  {id:"k_floor",   ic:"🌟", nm:"宿慧加持", cost:52,
+   desc:"開局每項屬性保底拉到 ≥ 38——投錯胎也有下限，不再開局就一手爛牌（全項保底，與祖墳補單項不同）。"},
+];
+const R116_MAP = {}; R116_PERKS.forEach(p=>R116_MAP[p.id]=p);
+/* 業力存檔結構：缺鍵/壞值一律就地修補（舊存檔相容鐵律，與 rebirthData 同款） */
+function r116Data(){
+  if(!SAVE.r116 || typeof SAVE.r116!=="object") SAVE.r116={karma:0, total:0, perks:{}};
+  const k=SAVE.r116;
+  if(typeof k.karma!=="number" || isNaN(k.karma) || k.karma<0) k.karma=0;
+  if(typeof k.total!=="number" || isNaN(k.total) || k.total<0) k.total=0;
+  if(!k.perks || typeof k.perks!=="object") k.perks={};
+  return k;
+}
+function r116OwnedCount(){ return Object.keys(r116Data().perks).length; }
+/* 本局是否帶著某命格（挑戰/對戰/劇本局 S.r116k=[]；舊進行中存檔無 r116k 鍵 → 一律 false） */
+function r116Active(id){ return !!(S && S.r116k && S.r116k.indexOf(id)>=0); }
+/* 業力換算：依壽命／五圍總分／本局新成就數／R115 稀有度階級確定性折算（零 rng，誠實不偽造）
+   基礎 1 + 壽命每 15 年 1 + 五圍每 100 分 1 + 本局新成就每個 1 + 稀有度階級（普通0→神話4） */
+function r116KarmaGain(){
+  const a=(S&&S.attr)||{};
+  const sum=(a.hp||0)+(a.int||0)+(a.apr||0)+(a.mny||0)+(a.hap||0);
+  let k = 1;
+  k += Math.floor((S.age||0)/15);
+  k += Math.floor(sum/100);
+  k += (S.newAch?S.newAch.length:0);
+  const tier = (S.rarity && typeof S.rarity.tierIdx==="number") ? S.rarity.tierIdx : 0;
+  k += tier;
+  return Math.max(1, k);
+}
+
+/* =========================================================================
    R49 開局天賦三選一（roguelike 起手）：開局從天賦池確定性抽 3 張供玩家選 1。
    抽選走種子雜湊（同 r41Init 取源）——零 rng 消耗、不動事件序列，
    同種子同候選（挑戰/對戰全服同三張，選哪張是玩家的事，公平不破壞）。
@@ -1969,6 +2018,15 @@ function newLife(isChallenge){
   // 未啟用時 base 與舊版完全一致。代價見 die()：啟用的這一局輪迴點與陰德折半（避免雪球破平衡）。
   const ngpTb = (!isChallenge && ngpBoostActive()) ? ngpTier() : 0;
   if(ngpTb>0){ ["hp","int","apr","mny","hap"].forEach(k=>{ base[k]=clamp(base[k]+ngpTb); }); }
+  // R116 命格加成：僅一般模式生效（挑戰/對戰禁用，全服公平）；全程零 rng 不動種子序列；
+  // 解鎖即永久生效（不必裝備）；未解鎖任何命格時 base 與舊版完全一致。
+  const k116 = r116Data();
+  const r116k = isChallenge ? [] : R116_PERKS.filter(p=>k116.perks[p.id]).map(p=>p.id);
+  const r116Notes = [];
+  if(r116k.indexOf("k_compass")>=0){ let mk="hp"; for(const kk in base){ if(base[kk]>base[mk]) mk=kk; } base[mk]=clamp(base[mk]+6); r116Notes.push(`🧭 天命羅盤：${ATTR[mk]?ATTR[mk].nm:mk} +6`); }
+  if(r116k.indexOf("k_fortune")>=0){ base.hap=clamp(base.hap+4); base.mny=clamp(base.mny+4); r116Notes.push("🍀 夙世福報：快樂 +4、財富 +4"); }
+  if(r116k.indexOf("k_chosen")>=0){ base.hp=clamp(base.hp+5); r116Notes.push("🎁 天選之子：健康 +5"); }
+  if(r116k.indexOf("k_floor")>=0){ let lifted=0; for(const kk in base){ if(base[kk]<38){ base[kk]=38; lifted++; } } r116Notes.push(lifted?`🌟 宿慧加持：${lifted} 項屬性保底拉到 38`:"🌟 宿慧加持：五圍皆達標，保底未動用"); }
   // R42 世代傳承：上一代結算時選定的傳承物在這一局開局生效（挑戰/對戰停用，全服公平）；
   // 全程零 rng 不動種子序列、同時只生效 1 件、用掉即清不疊代；
   // 沒接香火 → 開新家族（世代歸 1、家族年表重寫）；無 pending 時 base 與舊版完全一致
@@ -1987,7 +2045,7 @@ function newLife(isChallenge){
   const r35syn = R35_SYNERGY.find(x=>x.tal===talent.nm && x.org===origin.id) || null;
   if(r35syn){ applyEff(base, r35syn.eff); for(const k in base) base[k]=clamp(base[k]); }
   S = {
-    age:0, alive:true, attr:base, talent, fam, origin, quirk, rtal, lgk, era:era55.id,
+    age:0, alive:true, attr:base, talent, fam, origin, quirk, rtal, lgk, r116k, era:era55.id,
     log:[], seen:{}, flags:{}, resume:[], tl:[], lastMeme:null, deathReason:null, title:null,
     peak:Object.assign({},base), peakAge:{hp:0,int:0,apr:0,mny:0,hap:0}, newAch:[],
     low:Object.assign({},base), lowAge:{hp:0,int:0,apr:0,mny:0,hap:0},   // R25 谷底追蹤（出生即基準）
@@ -2038,6 +2096,13 @@ function newLife(isChallenge){
   }
   if(rtal.length) S.log.push(`<span class="yr">第 0 年</span> 🔄 轉生天賦生效：${rtal.map(id=>RB_MAP[id].ic+RB_MAP[id].nm).join("、")}——前世的你打錢過來了。`);
   if(lgNotes.length) S.log.push(`<span class="yr">第 0 年</span> ⛩️ 祖傳加成生效：${lgNotes.join("；")}——列祖列宗在天上集資罩你。`);
+  // R116 命格加成生效日誌；天選之子另寫一段「特殊起始事件」序章＋旗標（純記錄/旗標，零 rng）
+  if(r116Notes.length) S.log.push(`<span class="yr">第 0 年</span> 🧭 命格加成生效：${r116Notes.join("；")}——前世修來的命格在開局就替你鋪好路。`);
+  if(r116k.indexOf("k_chosen")>=0){
+    S.flags.r116_chosen=true;
+    S.log.push(`<span class="yr">第 0 年</span> 🎁 命定序章：產房外天有異象，左鄰右舍都說這囡仔『帶天命來的』——天選之子身分上身，命途註定不平凡。`);
+    tlPush("🎁", "天選之子降世——產房外天有異象，命定不凡的序章", 1);
+  }
   tlPush("🐣", `誕生於【${fam.nm}】，天賦【${talent.nm}】× 出身【${origin.nm}】，地球 Online 開服`, 1);
 }
 function applyEff(attr, eff){ if(!eff)return; for(const k in eff){ attr[k]=(attr[k]||0)+eff[k]; } }
@@ -2129,6 +2194,7 @@ function loadSave(){
     legacyData();    // R23 祖產：舊存檔缺鍵就地補上 {yd,ydTotal,perks,roster,lastMny,pickAttr}，不可炸
     dynastyData();   // R42 世代傳承：舊存檔缺鍵就地補上 {pending,lineage}，不可炸
     ngpData();       // R105 周目/NG+：舊存檔缺鍵就地補上 {cycle,boost}，不可炸
+    r116Data();      // R116 業力繼承：舊存檔缺鍵就地補上 {karma,total,perks}，不可炸
   }catch(e){ /* 存檔毀損就用預設，不讓遊戲崩潰 */ }
   return SAVE;
 }
@@ -11412,6 +11478,7 @@ function screenStart(){
         ${seasonLine}
         <button class="btn sec" onclick="screenRebirth()">🔄 轉生殿（轉生天賦 ${rbUnlockedCount()}/${REBIRTH_TALENTS.length} · ${rebirthData().pts} 點）</button>
         <button class="btn sec" onclick="screenLegacy()">⛩️ 祖祠・輪迴殿（祖傳加成 ${lgOwnedCount()}/${LEGACY_PERKS.length} · 陰德 ${legacyData().yd}）</button>
+        <button class="btn sec" onclick="screenDestiny()">🧭 命格殿（命格加成 ${r116OwnedCount()}/${R116_PERKS.length} · 業力 ${r116Data().karma}）</button>
         <div class="btnrow">
           <button class="btn sec" onclick="screenCollection()">🗃️ 收藏館 ${collStats().got}/${collStats().total}</button>
           ${(SAVE.history||[]).length?`<button class="btn sec" onclick="screenGallery()">📖 歷代 ${SAVE.history.length}</button>`:""}
@@ -13628,6 +13695,12 @@ function die(from){
   // R105 周目紅利代價：帶紅利上陣的這一局陰德同步折半（min 1），與輪迴點同一套取捨
   if(S.ngpBoost) yd = Math.max(1, Math.floor(yd*0.5));
   S.ydGain = yd; lg23.yd += yd; lg23.ydTotal += yd;
+  // ---- R116 業力結算：依壽命/五圍/本局新成就/R115 稀有度階級確定性折算（零 rng，誠實不偽造）----
+  //      所有模式皆入帳（與輪迴點同），命格加成則僅一般模式生效（newLife 已 gate）
+  const k116 = r116Data();
+  let kg = r116KarmaGain();
+  if(S.ngpBoost) kg = Math.max(1, Math.floor(kg*0.5));   // 周目紅利代價：與輪迴點/陰德同一套，折半
+  S.r116Gain = kg; k116.karma += kg; k116.total += kg;
   // 上一世財富（祖產紅包繼承用）：挑戰/對戰局不更新，跟天賦禁用同一套公平邏輯
   if(!S.challenge && !S.battle && !S.script) lg23.lastMny = a.mny||0;   // R56 劇本局鎖定財富不外溢成祖產
   // ---- R23 歷代名冊：最近 10 世一句話小傳（純記錄層，零 rng，渲染時自動生成文案）----
@@ -14788,6 +14861,8 @@ function screenSummary(cat){
       <span class="muted">輪迴第 ${SAVE.plays} 世 · 轉生天賦 ${rbUnlockedCount()}/${REBIRTH_TALENTS.length}，到「轉生殿」把點數花掉</span></div>
       <div class="origin center" style="margin-top:10px">⛩️ <b>陰德 +${S.ydGain||0}</b>　<span class="muted">可用 ${legacyData().yd} · 歷史累計 ${legacyData().ydTotal}</span><br>
       <span class="muted">這輩子的壽命、財富與成就都折成了香火——到「祖祠」立契祖傳加成（${lgOwnedCount()}/${LEGACY_PERKS.length}），蔭下一世</span></div>
+      <div class="origin center" style="margin-top:10px">🧭 <b>業力 +${S.r116Gain||0}</b>　<span class="muted">可用 ${r116Data().karma} · 歷史累計 ${r116Data().total}</span><br>
+      <span class="muted">壽命×五圍×成就×稀有度階級折成的靈魂點數——到「命格殿」解鎖永久命格加成（${r116OwnedCount()}/${R116_PERKS.length}），下一世投胎就帶著走</span></div>
       ${ngpSummaryHTML()}
       ${r42SummaryHTML()}
       ${newAchHTML()}
@@ -14810,6 +14885,7 @@ function screenSummary(cat){
         <button class="btn sec" onclick="screenResume()">📋 回顧這一生的人生履歷</button>
         <button class="btn sec" onclick="screenRebirth()">🔄 轉生殿（${rebirthData().pts} 點可花）</button>
         <button class="btn sec" onclick="screenLegacy()">⛩️ 祖祠（陰德 ${legacyData().yd} 可花）</button>
+        <button class="btn sec" onclick="screenDestiny()">🧭 命格殿（業力 ${r116Data().karma} 可花）</button>
         <div class="btnrow">
           <button class="btn sec" onclick="screenCollection()">🗃️ 收藏館 ${collStats().got}/${collStats().total}</button>
           <button class="btn sec" onclick="screenGallery()">📖 歷代 ${(SAVE.history||[]).length}</button>
@@ -15425,6 +15501,57 @@ function rebirthToggle(id){
   else { r.equipped.push(id); RB_MSG=`已裝備【${RB_MAP[id].nm}】，下一局（一般模式）開局生效。`; }
   persist();
   screenRebirth(true);
+}
+
+/* =========================================================================
+   R116 命格殿畫面：花業力解鎖永久命格加成（沿用轉生殿視覺；解鎖即生效、不必裝備）
+   ========================================================================= */
+let R116_MSG = "";
+function screenDestiny(rerender){
+  if(!rerender) snapshot();
+  const k = r116Data();
+  const rows = R116_PERKS.map(p=>{
+    const got = !!k.perks[p.id];
+    let act;
+    if(!got){
+      act = k.karma>=p.cost
+        ? `<button class="btn" style="width:auto;padding:7px 12px;font-size:12px" onclick="r116Unlock('${p.id}')">解鎖（${p.cost} 業力）</button>`
+        : `<span class="muted" style="font-size:12px;white-space:nowrap">需 ${p.cost} 業力<br>還差 ${p.cost-k.karma}</span>`;
+    } else {
+      act = `<span style="color:var(--good,#39ff88);font-size:12px;white-space:nowrap">✅ 永久生效</span>`;
+    }
+    return `<div class="achrow ${got?'got':'lock'}">
+      <span class="aic">${got?p.ic:'🔒'}</span>
+      <div style="flex:1"><b>${p.nm}</b>${got?'　<span style="color:var(--good,#39ff88);font-size:11px">【已解鎖】</span>':''}
+      <div class="muted">${p.desc}</div></div>
+      <div style="flex:0 0 auto">${act}</div>
+    </div>`;
+  }).join("");
+  $("#app").innerHTML = `
+    ${topbarHTML()}
+    ${renderMeme("baby","命格殿",`業力 ${k.karma} · 命格 ${r116OwnedCount()}/${R116_PERKS.length}`,"🧭")}
+    <div class="panel">
+      <h2 class="etitle">🧭 命格殿</h2>
+      <p class="muted">死了不是結束，是把這輩子的修行折成「<b>業力</b>」帶進下輩子。每局結算依 <b>壽命／五圍／本局新成就／稀有度階級</b> 確定性折算業力（目前可用 <b>${k.karma}</b> · 歷史累計 ${k.total}），在這裡兌換<b>永久命格加成</b>——解鎖即生效、不必裝備、無數量上限。<br>
+      命格只動「開局起手」與保底，人生主戲還是得你自己演。<br>
+      📅 <b>挑戰／對戰／劇本模式命格無效</b>——全服公平，比的是選擇不是業力資歷。</p>
+      ${R116_MSG?`<p style="color:var(--accent,#ffd24a);font-size:13px;margin:4px 0">${R116_MSG}</p>`:""}
+      <div class="achlist" style="margin-top:8px">${rows}</div>
+      <div class="choices" style="margin-top:14px">
+        <button class="btn sec" onclick="R116_MSG='';backFromGallery()">← 返回</button>
+      </div>
+    </div>
+  `;
+}
+function r116Unlock(id){
+  const k=r116Data(), p=R116_MAP[id];
+  if(!p || k.perks[id]) return;
+  if(k.karma<p.cost){ R116_MSG="業力不夠，先去多活（死）幾局攢業力。"; return screenDestiny(true); }
+  k.karma-=p.cost; k.perks[id]=true;
+  R116_MSG=`🎉 已解鎖命格【${p.nm}】！下一局（一般模式）投胎即永久生效。`;
+  persist();
+  sfxLater("ach", 120);   // R8 解鎖叮（純演出）
+  screenDestiny(true);
 }
 /* 轉生成就在解鎖天賦當下立即評估（不必等下一次死亡結算） */
 function evalRebirthAch(){
