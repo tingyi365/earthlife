@@ -18,6 +18,7 @@ docs/_*
 # === 開發過程備份 / 截圖 / 探針腳本（不開源）===
 _backup_*
 _check_*
+_make_*
 _preview_*
 _probe_*
 _retheme*

@@ -4,7 +4,8 @@
 會顯示一張**社群預覽大圖（social preview）**。設好這張圖能大幅提升點擊率，
 對「衝星」與導流到試玩頁很有幫助。
 
-本 repo 已備好現成素材：**[`promo/preview.png`](../promo/preview.png)**，可直接拿來當這張圖。
+本 repo 已備好現成素材：**[`docs/social_preview.png`](social_preview.png)**——**正好 1280×640、檔案 < 1MB，可直接上傳免壓縮**，是現在的首選。
+（另有一張高解析的 [`promo/preview.png`](../promo/preview.png) 為遊戲截圖合成版，2560×1280 約 1.8MB，需先壓縮才能上傳，詳見文末。）
 
 ---
 
@@ -18,7 +19,7 @@
 1. 打開 repo 的 **Settings**（齒輪頁籤，需要 repo 管理權限）。
 2. 在 **General**（預設第一頁）往下捲到 **Social preview** 區塊。
 3. 點 **Edit** → **Upload an image**。
-4. 選擇本 repo 的 `promo/preview.png`（先把檔案下載到本機再上傳）。
+4. 選擇本 repo 的 `docs/social_preview.png`（先把檔案下載到本機再上傳；此圖已是 1280×640、< 1MB，無需壓縮）。
 5. 存檔。完成後可用 https://www.opengraph.xyz/ 或直接把 repo 連結貼到聊天室驗證縮圖。
 
 ---
@@ -27,13 +28,15 @@
 
 GitHub social preview 的官方建議：
 
-| 項目 | 官方建議 | `promo/preview.png` 現況 |
-|---|---|---|
-| **比例** | 2:1 | ✅ **2560 × 1280（正好 2:1，比例完美）** |
-| **建議尺寸** | 1280 × 640 | 目前為 2 倍尺寸，GitHub 會自動縮放，顯示沒問題 |
-| **檔案大小上限** | **1 MB** | ⚠️ **目前約 1.8 MB，超過上限，上傳會被擋** |
+| 項目 | 官方建議 | `docs/social_preview.png`（首選） | `promo/preview.png`（截圖合成版） |
+|---|---|---|---|
+| **比例** | 2:1 | ✅ **1280 × 640（正好 2:1）** | ✅ 2560 × 1280（正好 2:1） |
+| **建議尺寸** | 1280 × 640 | ✅ **完全吻合** | 2 倍尺寸，GitHub 會自動縮放 |
+| **檔案大小上限** | **1 MB** | ✅ **約 0.5 MB，遠低於上限** | ⚠️ 約 1.8 MB，超過上限需壓縮 |
 
-### ⚠️ 上傳前需先壓縮
+> ✅ **首選 `docs/social_preview.png` 可直接上傳，以下壓縮步驟只適用想改用 `promo/preview.png` 的情況。**
+
+### ⚠️ 改用 `promo/preview.png` 才需要先壓縮
 
 因為 `promo/preview.png` 約 1.8 MB、超過 GitHub 的 1 MB 上限，**直接上傳會失敗**。
 請先擇一處理後再上傳（擇一即可）：
