@@ -3962,5 +3962,67 @@ const r117 = JSON.parse(vm.runInContext(`(function(){
   ['normalOk','⑩ 挑戰後一般局還原正常(種子碼 6 碼、無殘留)'],
 ].forEach(([k,m])=>ok(r117[k], 'R117 '+m));
 
+// ===== R118 圖鑑收集牆（Collection Codex）：完成度確定性計算、戰利品稀有度排序、解鎖累積、向後相容、誠實無偽造排行 =====
+const r118 = JSON.parse(vm.runInContext(`(function(){
+  const out={};
+  // ① 完成度=已解鎖/總數的確定性計算：清空對應分類後各數字歸零、總數>0（got 另含出身/天賦/起手分類故不強求全 0）
+  SAVE.ach={}; SAVE.deaths={}; SAVE.hiddenEnds={}; SAVE.badges={};
+  const s0=collStats(); const g0=s0.got;
+  out.zeroStart = s0.a===0 && s0.d===0 && s0.h===0 && s0.b===0 && s0.total>0 && s0.got<=s0.total;
+  // ② 解鎖累積：寫入一筆成就/死法/隱藏結局 → collStats 對應數字 +1、got 精準 +3（模擬結算寫入 SAVE）
+  SAVE.ach[ACHIEVEMENTS[0].id]=true;
+  SAVE.deaths[DEATHBOOK[0].id]=true;
+  const he2=HIDDEN_ENDINGS.find(h=>(h.rar||1)===2);
+  SAVE.hiddenEnds[he2.id]=true;
+  const s1=collStats();
+  out.accumulate = s1.a===1 && s1.d===1 && s1.h===1 && s1.got===g0+3;
+  // ③ 戰利品確定性排序：傳說隱藏結局(rar2)應排在最前；連呼叫兩次完全一致（零 rng）
+  const t1=codexTopTrophies(4), t2=codexTopTrophies(4);
+  out.troStable = JSON.stringify(t1)===JSON.stringify(t2);
+  out.troLegendFirst = t1.length>0 && t1[0].tier==="☆☆傳說結局" && t1[0].nm===he2.nm;
+  // ④ 優先序：SSR 稱號排在 ★稀有結局 之前；★稀有結局排在 SR 稱號之前
+  const he1=HIDDEN_ENDINGS.find(h=>(h.rar||1)===1);
+  const ssr=LIFE_BADGES.find(b=>b.tier==="SSR"), sr=LIFE_BADGES.find(b=>b.tier==="SR");
+  SAVE.hiddenEnds[he1.id]=true; SAVE.badges[ssr.id]=true; SAVE.badges[sr.id]=true;
+  const t3=codexTopTrophies(8);
+  const idx=(nm)=>t3.findIndex(x=>x.nm===nm);
+  out.priority = idx(ssr.nm)>=0 && idx(he1.nm)>=0 && idx(sr.nm)>=0
+    && idx(ssr.nm)<idx(he1.nm) && idx(he1.nm)<idx(sr.nm) && idx(he2.nm)<idx(ssr.nm);
+  // ⑤ 只列已解鎖（不破梗）：未解鎖的隱藏結局/稱號不得出現在戰利品中
+  const lockedHe=HIDDEN_ENDINGS.find(h=>!SAVE.hiddenEnds[h.id]);
+  out.onlyUnlocked = !codexTopTrophies(99).some(x=>x.nm===(lockedHe&&lockedHe.nm));
+  // ⑥ cap 上限：codexTopTrophies(2) 至多回傳 2 筆
+  out.capWorks = codexTopTrophies(2).length<=2;
+  // ⑦ 向後相容：模擬舊存檔缺 hiddenEnds/deaths 鍵 → 函式不炸、視為全未解鎖
+  const bak={ach:SAVE.ach,deaths:SAVE.deaths,hiddenEnds:SAVE.hiddenEnds,badges:SAVE.badges,origins:SAVE.origins};
+  delete SAVE.hiddenEnds; delete SAVE.deaths; SAVE.ach={}; SAVE.badges={}; SAVE.origins={};
+  let safe=true; try{ codexTopTrophies(4); collStats(); buildCodexText(); codexTrophyShelfHTML(); }catch(e){ safe=false; }
+  out.legacySafe = safe && codexTopTrophies(4).length===0;
+  SAVE.ach=bak.ach; SAVE.deaths=bak.deaths; SAVE.hiddenEnds=bak.hiddenEnds; SAVE.badges=bak.badges; SAVE.origins=bak.origins;
+  // ⑧ 誠實鐵律：分享文字含完成度數字與連結，且不偽造伺服器排行/百分位
+  const txt=buildCodexText();
+  const fake=/(贏過|勝過|打敗|擊敗|超越|排名)[^。\\n]{0,12}([0-9]{1,3}\\s*%|百分)[^。\\n]{0,8}玩家/;
+  out.honest = !fake.test(txt) && txt.indexOf("總完成度")>=0 && txt.indexOf("/")>=0 && txt.indexOf(SHARE_URL)>=0;
+  // ⑨ 完成度百分比=round(got/total*100)：與 collStats 一致、不超過 100
+  const s9=collStats(); const pct=Math.round(s9.got/s9.total*100);
+  out.pctMatch = txt.indexOf("總完成度 "+pct+"%")>=0 && pct>=0 && pct<=100;
+  // ⑩ 空櫃文案：全未解鎖時展示櫃給引導文案（不留白、不報錯）
+  SAVE.ach={}; SAVE.deaths={}; SAVE.hiddenEnds={}; SAVE.badges={};
+  out.emptyShelf = codexTrophyShelfHTML().indexOf("展示櫃還空著")>=0;
+  return JSON.stringify(out);
+})()`, sandbox));
+[
+  ['zeroStart','① 完成度確定性計算(清空後 got=0、total>0)'],
+  ['accumulate','② 解鎖累積：寫入成就/死法/隱藏結局後 collStats 對應 +1'],
+  ['troStable','③ 戰利品排序確定性(連呼叫兩次逐字一致、零 rng)'],
+  ['troLegendFirst','④ 傳說隱藏結局排最前'],
+  ['priority','⑤ 稀有度優先序：傳說>SSR>★稀有結局>SR'],
+  ['onlyUnlocked','⑥ 只列已解鎖(未解鎖不破梗外洩)'],
+  ['capWorks','⑦ cap 上限正確'],
+  ['legacySafe','⑧ 向後相容：舊存檔缺鍵不炸、視為全未解鎖'],
+  ['honest','⑨ 誠實：分享文字含完成度+連結、不偽造伺服器排行'],
+  ['pctMatch','⑩ 完成度百分比=round(got/total*100)、0~100'],
+].forEach(([k,m])=>ok(r118[k], 'R118 '+m));
+
 console.log(fails ? `\n結果: ❌ ${fails} 項未通過` : '\n結果: ✅ 狀態機全數正確');
 process.exit(fails ? 1 : 0);

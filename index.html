@@ -512,6 +512,18 @@
     font-size:10.5px; font-weight:800; color:#fff; text-shadow:0 1px 2px rgba(0,0,0,.85); letter-spacing:.5px;}
   .collhint{font-size:12px; color:var(--sub); margin:5px 0 0; text-align:center;}
   .collhint b{color:var(--accent,#ffd24a);}
+  /* R118 圖鑑收集牆・稀有戰利品展示櫃（純展示層，截圖炫耀用） */
+  .trophyshelf{margin:12px 0 4px; padding:10px; border:1px dashed var(--line2,#3a3f66); border-radius:12px;
+    background:linear-gradient(180deg,rgba(255,210,74,.05),rgba(139,108,255,.04));}
+  .trophyshelf.empty{font-size:11.5px; color:var(--sub); text-align:center; border-style:dashed;}
+  .trophyshelf .tslabel{font-size:12px; font-weight:900; color:var(--accent,#ffd24a); letter-spacing:.5px; margin-bottom:8px;}
+  .trophyshelf .tsrow{display:flex; gap:8px; overflow-x:auto; -webkit-overflow-scrolling:touch; padding-bottom:2px;}
+  .trophyshelf .tcard{flex:0 0 auto; min-width:96px; max-width:140px; padding:8px 10px; border:1.5px solid #555;
+    border-radius:10px; background:#13152a; display:flex; flex-direction:column; gap:2px; box-shadow:0 0 8px rgba(0,0,0,.35);}
+  .trophyshelf .tcard .tic{font-size:22px; line-height:1;}
+  .trophyshelf .tcard b{font-size:12px; font-weight:800; overflow-wrap:anywhere;}
+  .trophyshelf .tcard .ttier{font-size:9.5px; color:var(--sub); font-weight:700; letter-spacing:.3px;}
+  @media(max-width:480px){ .trophyshelf .tcard{min-width:84px;} }
   .sil{filter:grayscale(1) brightness(.5) contrast(1.1); opacity:.75;}   /* 未解鎖剪影 */
   .collnote{font-size:11px; color:#7fd7ff; margin-top:3px; opacity:.9; overflow-wrap:anywhere;}
   .collwrap{animation:m3rise .28s both;}
@@ -15261,6 +15273,52 @@ function collBarHTML(got,total){
     <span class="pct">${got} / ${total}　·　${pct}%</span></div>
     <p class="collhint">${hint}</p>`;
 }
+/* =========================================================================
+   R118 圖鑑收集牆・稀有戰利品（純讀展示層）
+   鐵律：零 rng、零狀態改動、不偽造排行；只列「已解鎖」收藏（不破梗）。
+   確定性挑選——優先序：☆☆傳說隱藏結局 > SSR稱號 > ★稀有隱藏結局 > SR稱號 > ✨稀有死法，
+   組內按各資料定義順序穩定排序，取最稀有的前 cap 筆。與 R113~R117 完全錯開。
+   ========================================================================= */
+function codexTopTrophies(cap){
+  cap = cap||4;
+  const out=[];
+  const gh=(SAVE&&SAVE.hiddenEnds)||{}, gb=(SAVE&&SAVE.badges)||{}, gd=(SAVE&&SAVE.deaths)||{};
+  const bic=(t)=>((typeof BADGE_TIERS!=="undefined"&&BADGE_TIERS[t])||{ic:"🏅"}).ic;
+  HIDDEN_ENDINGS.forEach(h=>{ if(gh[h.id] && (h.rar||1)===2) out.push({ic:h.ic, nm:h.nm, tier:"☆☆傳說結局", col:"#c9a3ff"}); });
+  LIFE_BADGES.forEach(b=>{ if(gb[b.id] && b.tier==="SSR") out.push({ic:bic("SSR"), nm:b.nm, tier:"SSR稱號", col:"#ffd24a"}); });
+  HIDDEN_ENDINGS.forEach(h=>{ if(gh[h.id] && (h.rar||1)===1) out.push({ic:h.ic, nm:h.nm, tier:"★稀有結局", col:"#ffd24a"}); });
+  LIFE_BADGES.forEach(b=>{ if(gb[b.id] && b.tier==="SR") out.push({ic:bic("SR"), nm:b.nm, tier:"SR稱號", col:"#7fd7ff"}); });
+  DEATHBOOK.forEach(d=>{ if(gd[d.id] && d.rare) out.push({ic:d.ic, nm:d.nm, tier:"✨稀有死法", col:"#ff9a4a"}); });
+  return out.slice(0, cap);
+}
+/* 收藏館頂部展示櫃 HTML：擺出最稀有的已解鎖收藏，吸睛截圖用；空櫃給引導文案不留白 */
+function codexTrophyShelfHTML(){
+  const tro=codexTopTrophies(4);
+  if(!tro.length) return `<div class="trophyshelf empty">🗄️ 展示櫃還空著——解鎖稀有死法／隱藏結局／高階稱號就會擺上來炫耀</div>`;
+  return `<div class="trophyshelf"><div class="tslabel">🏆 你的稀有戰利品（最稀有 ${tro.length} 件）</div>
+    <div class="tsrow">${tro.map(t=>
+      `<div class="tcard" style="border-color:${t.col}"><span class="tic">${t.ic}</span>
+        <b style="color:${t.col}">${t.nm}</b><span class="ttier">${t.tier}</span></div>`).join("")}</div></div>`;
+}
+/* R118 純文字圖鑑分享文案：誠實=完成度為「已解鎖數/總數」的確定性計算，無伺服器排行、無偽造百分位。
+   沿用 copyClip；數字直讀 collStats、稀有戰利品讀 codexTopTrophies（只列已解鎖）。 */
+function buildCodexText(){
+  const s=collStats();
+  const pct=s.total?Math.round(s.got/s.total*100):0, left=s.total-s.got;
+  const tro=codexTopTrophies(3);
+  const lines=[
+    "📖 我的地球 Online 人生圖鑑",
+    `🌍 總完成度 ${pct}%（全館 ${s.got}/${s.total}）`,
+    `💀 死法 ${s.d}/${DEATHBOOK.length} · 🏆 成就 ${s.a}/${ACHIEVEMENTS.length} · 🌟 隱藏結局 ${s.h}/${HIDDEN_ENDINGS.length}`,
+    `🏅 稱號 ${s.b}/${LIFE_BADGES.length} · 🎴 出身 ${s.o}/${ORIGINS.length} · 🃏 起手 ${s.k}/${R49_PERKS.length}`,
+  ];
+  if(tro.length) lines.push("🏆 稀有戰利品："+tro.map(t=>t.ic+t.nm).join(" · "));
+  lines.push(left>0?`還差 ${left} 種就全收集，換你也來追圖鑑 👇`:"全圖鑑收集完成・地表最強鬼島玩家 👑");
+  lines.push("https://"+SHARE_URL);
+  return lines.join("\n");
+}
+function copyCodexText(btn){ copyClip(buildCodexText(), btn, "✅ 圖鑑分享文字已複製"); }
+
 let COLL_TAB = "death";
 let COLL_FILTER = "all";   // R40 圖鑑篩選：all=全部 / got=已解鎖 / lock=未解鎖（純顯示層，零狀態零 rng）
 function screenCollection(tab){ snapshot(); if(tab) COLL_TAB=tab; renderCollection(); }
@@ -15409,6 +15467,7 @@ function renderCollection(){
     <div class="panel">
       <h2 class="etitle">🗃️ 人生收藏館</h2>
       ${collBarHTML(st.got, st.total)}
+      ${codexTrophyShelfHTML()}
       ${tabBar}
       <div class="collwrap">
         <h2 class="etitle" style="font-size:15px">${title}</h2>
@@ -15420,6 +15479,7 @@ function renderCollection(){
       </div>
       <div class="choices" style="margin-top:14px">
         <button class="btn" onclick="makeCollectionCard()">📊 產生圖鑑收集卡（存圖丟群炫耀進度）</button>
+        <button class="btn" onclick="copyCodexText(this)">📋 複製圖鑑分享文字（完成度＋稀有戰利品，貼群嗆人）</button>
         <button class="btn sec" onclick="backFromGallery()">← 返回</button>
       </div>
     </div>
@@ -16053,6 +16113,7 @@ function renderHofPage(st, tabBar){
     <div class="panel">
       <h2 class="etitle">🗃️ 人生收藏館</h2>
       ${collBarHTML(st.got, st.total)}
+      ${codexTrophyShelfHTML()}
       ${tabBar}
       <div class="collwrap">
         <h2 class="etitle" style="font-size:15px">📖 歷代人生名人堂</h2>
@@ -16386,6 +16447,20 @@ function makeCollectionCard(){
       y+=24;
     });
     y+=10;
+    // R118 稀有戰利品（已解鎖最稀有的前 3 件，誠實只列已解鎖；空則整段省略不留白）
+    const tro=(typeof codexTopTrophies==="function")?codexTopTrophies(3):[];
+    if(tro.length){
+      ctx.textAlign='left'; ctx.fillStyle='#ffd24a'; ctx.font='bold 14px monospace';
+      ctx.fillText('🏆 稀有戰利品', bx, y+12); y+=24;
+      tro.forEach(function(t){
+        ctx.fillStyle=t.col; ctx.font='13px monospace'; ctx.textAlign='left';
+        ctx.fillText(t.ic+' '+t.nm, bx+6, y+10);
+        ctx.fillStyle='rgba(207,211,230,0.7)'; ctx.font='11px monospace'; ctx.textAlign='right';
+        ctx.fillText(t.tier, bx+bw, y+10); ctx.textAlign='left';
+        y+=22;
+      });
+      y+=14;
+    }
     // 台味金句（lifeHash 定選，S 缺席自動退預設，零 rng）
     const q=(typeof lifeQuoteText==="function")?lifeQuoteText():'';
     if(q){ ctx.textAlign='center'; ctx.fillStyle='#ffe9a8'; ctx.font='italic 14px monospace'; ctx.fillText('「'+q+'」', W/2, y); }

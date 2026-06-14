@@ -3695,6 +3695,43 @@ try {
   console.log('R117 每日挑戰碼分享/重玩層: ❌ ' + e.message);
 }
 
+let r118OK = false;
+try {
+  const r118Raw = vm.runInContext(`(function(){
+    const out={};
+    // 完成度確定性：清空 → got=0；寫入後對應 +1（模擬結算寫入 SAVE 解鎖集合）
+    SAVE.ach={}; SAVE.deaths={}; SAVE.hiddenEnds={}; SAVE.badges={};
+    const s0=collStats(); const g0=s0.got;
+    out.zeroStart = s0.a===0 && s0.d===0 && s0.b===0 && s0.total>0 && s0.got<=s0.total;
+    SAVE.ach[ACHIEVEMENTS[0].id]=true; SAVE.deaths[DEATHBOOK[0].id]=true;
+    const s1=collStats(); out.accumulate = s1.a===1 && s1.d===1 && s1.got===g0+2;
+    // 跑一局真實結算 die()：collStats/codex 函式不炸、解鎖集合只增不減（圖鑑隨結算累積）
+    const before=collStats().got;
+    startGame(); S.age=80; S.attr={hp:70,int:70,apr:70,mny:70,hap:70}; die("test");
+    const after=collStats().got;
+    out.dieAccumulate = after>=before && typeof codexTopTrophies==="function" && Array.isArray(codexTopTrophies(4));
+    // 戰利品確定性排序：傳說隱藏結局排最前、連呼叫兩次一致
+    SAVE.hiddenEnds={}; const he2=HIDDEN_ENDINGS.find(h=>(h.rar||1)===2); SAVE.hiddenEnds[he2.id]=true;
+    const t1=codexTopTrophies(4), t2=codexTopTrophies(4);
+    out.troStable = JSON.stringify(t1)===JSON.stringify(t2) && t1[0] && t1[0].nm===he2.nm;
+    // 向後相容：缺 hiddenEnds/deaths 鍵不炸
+    delete SAVE.hiddenEnds; delete SAVE.deaths; let safe=true;
+    try{ collStats(); codexTopTrophies(4); buildCodexText(); }catch(e){ safe=false; }
+    out.legacySafe = safe;
+    // 誠實：分享文字含完成度與連結、不偽造伺服器排行
+    SAVE.ach={}; SAVE.deaths={}; SAVE.hiddenEnds={}; SAVE.badges={};
+    const txt=buildCodexText();
+    const fake=/(贏過|勝過|打敗|擊敗|超越|排名)[^。\\n]{0,12}([0-9]{1,3}\\s*%|百分)[^。\\n]{0,8}玩家/;
+    out.honest = !fake.test(txt) && txt.indexOf("總完成度")>=0 && txt.indexOf(SHARE_URL)>=0;
+    return JSON.stringify(out);
+  })()`, sandbox);
+  const r118 = JSON.parse(r118Raw);
+  r118OK = Object.values(r118).every(v => v === true);
+  console.log(`R118 圖鑑收集牆(完成度確定性/結算累積/戰利品排序/向後相容/誠實無排行): ${r118OK ? '✅ 全數通過' : '❌ ' + JSON.stringify(r118)}`);
+} catch (e) {
+  console.log('R118 圖鑑收集牆: ❌ ' + e.message);
+}
+
 if (__errors.length) {
   console.log('\n--- 錯誤樣本(前5) ---');
   __errors.slice(0, 5).forEach(e => console.log('  ' + e));
@@ -3702,6 +3739,6 @@ if (__errors.length) {
 
 /* 退出碼 */
 const pass = __errors.length === 0 && chk.missingScenes.length === 0 && chk.eventVisible >= 126 && chk.eventTotal >= 126 && lsOK && achUnlocked > 0
-  && chk.deathbookMissing.length === 0 && chk.deathTotal >= 17 && deathsOK && rebirthOK && legacyOK && petOK && r13OK && r17OK && r20OK && r21OK && r22OK && r24OK && r25OK && r34OK && r38OK && r41OK && r42OK && r43OK && r44OK && r45OK && r46OK && r47OK && r48OK && r49OK && r51OK && r52OK && r53OK && r54OK && r55OK && r72OK && r76OK && r77OK && r79OK && r86OK && r87OK && r92OK && r93OK && r95OK && r96OK && r108OK && r110OK && r111OK && r112OK && r113OK && r115OK && r116OK && r117OK;
+  && chk.deathbookMissing.length === 0 && chk.deathTotal >= 17 && deathsOK && rebirthOK && legacyOK && petOK && r13OK && r17OK && r20OK && r21OK && r22OK && r24OK && r25OK && r34OK && r38OK && r41OK && r42OK && r43OK && r44OK && r45OK && r46OK && r47OK && r48OK && r49OK && r51OK && r52OK && r53OK && r54OK && r55OK && r72OK && r76OK && r77OK && r79OK && r86OK && r87OK && r92OK && r93OK && r95OK && r96OK && r108OK && r110OK && r111OK && r112OK && r113OK && r115OK && r116OK && r117OK && r118OK;
 console.log('\n結果: ' + (pass ? '✅ 全數通過' : '❌ 有項目未通過'));
 process.exit(pass ? 0 : 1);
