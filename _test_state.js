@@ -4024,5 +4024,63 @@ const r118 = JSON.parse(vm.runInContext(`(function(){
   ['pctMatch','⑩ 完成度百分比=round(got/total*100)、0~100'],
 ].forEach(([k,m])=>ok(r118[k], 'R118 '+m));
 
+// ===== R119 人生回憶錄（Life Memoir）：依本局真實經歷自動生成可分享傳記、誠實不捏造、確定性零 rng、純呈現層不動數值 =====
+const r119 = JSON.parse(vm.runInContext(`(function(){
+  const out={};
+  startGame(); const s=S; ensureState(s); s.alive=false;
+  s.age=82; s.attr={hp:70,int:70,apr:70,mny:70,hap:70};
+  s.peak={hp:90,int:72,apr:60,mny:88,hap:70}; s.peakAge={hp:30,int:25,apr:18,mny:55,hap:40};
+  s.low={hp:40,int:50,apr:45,mny:12,hap:30};
+  s.title="地方創生頭家"; s.deathReason="壽終正寢，睡夢中安詳登出"; s.origin={id:"o1",nm:"工人家庭",ic:"🔧"};
+  s.tl=[]; tlPush("👶","出生在小鎮的清晨",1); S.age=24; tlPush("💼","拿到人生第一份工作，社畜之路開跑",1);
+  S.age=30; tlPush("💍","結婚了！單身狗識別證正式繳回",1); S.age=55; tlPush("🏠","買下人生第一間房，從此與房貸相依為命",1);
+  S.age=82;
+  // ① 生成結構：{title,age,paras} 齊備、段落>=3、含序章與收尾
+  const m1=buildMemoir();
+  out.gen = !!m1 && Array.isArray(m1.paras) && m1.paras.length>=3 && m1.age===82;
+  const full=m1.paras.join("\\n");
+  out.openFin = full.indexOf("地方創生頭家")>=0 && full.indexOf("工人家庭")>=0 && full.indexOf("壽終正寢")>=0 && full.indexOf("第 82 年")>=0;
+  // ② 真實映射：放進時間軸的事件被織進傳記；沒放的不捏造
+  out.realEvents = full.indexOf("社畜之路開跑")>=0 && full.indexOf("與房貸相依為命")>=0;
+  out.noFabricate = full.indexOf("中了樂透")<0 && full.indexOf("環遊世界")<0;
+  out.trajectory = full.indexOf("90")>=0 && full.indexOf("12")>=0;
+  // ③ 確定性 + 零 rng：連跑兩次逐字一致、不消耗種子隨機
+  let used=0; const old=rng; rng=function(){ used++; return old(); };
+  const t1=JSON.stringify(buildMemoir()); const t2=JSON.stringify(buildMemoir());
+  rng=old;
+  out.rngZero = used===0;
+  out.deterministic = t1===t2;
+  // ④ 純呈現層不動數值：生成前後 S.attr 完全不變
+  const before=JSON.stringify(S.attr); buildMemoir(); memoirHTML(); buildMemoirText();
+  out.noMutate = JSON.stringify(S.attr)===before;
+  // ⑤ 早夭/空時間軸相容：最小局不炸、仍給得出傳記
+  startGame(); const e=S; ensureState(e); e.alive=false; e.age=4; e.tl=[]; e.deathReason="夭折"; e.rarity=null;
+  let okEarly=false; try{ const em=buildMemoir(); okEarly=!!(em&&em.paras&&em.paras.length>=2); }catch(x){ okEarly=false; }
+  out.earlyDeath = okEarly;
+  // ⑥ 渲染 + 分享：面板含標題與複製鈕、文字版含享年與連結、不偽造伺服器排行
+  startGame(); const r=S; ensureState(r); r.alive=false; r.age=75; r.attr={hp:60,int:60,apr:60,mny:60,hap:60};
+  r.peak=Object.assign({},r.attr); r.low=Object.assign({},r.attr); r.title="地球路人"; r.deathReason="壽終正寢"; r.tl=[];
+  const html=memoirHTML(); const txt=buildMemoirText();
+  out.htmlOk = html.indexOf("人生回憶錄")>=0 && html.indexOf("copyMemoir")>=0;
+  out.txtOk = txt.indexOf("享年 75 歲")>=0 && txt.indexOf(SHARE_URL)>=0;
+  const fake=/(贏過|勝過|打敗|擊敗|超越|排名)[^。\\n]{0,12}([0-9]{1,3}\\s*%|百分)[^。\\n]{0,8}玩家/;
+  out.honest = !fake.test(html) && !fake.test(txt);
+  return JSON.stringify(out);
+})()`, sandbox));
+[
+  ['gen','① 生成結構：buildMemoir 回傳 {title,age,paras}、段落>=3'],
+  ['openFin','② 序章＋收尾齊備(稱號/出身/死法/享年)'],
+  ['realEvents','③ 真實映射：時間軸事件被織進傳記'],
+  ['noFabricate','④ 誠實不捏造：未發生劇情不外洩'],
+  ['trajectory','⑤ 五圍軌跡取真實 peak/low'],
+  ['rngZero','⑥ 零 rng() 消耗(不動遊戲序列)'],
+  ['deterministic','⑦ 確定性：連跑兩次逐字一致'],
+  ['noMutate','⑧ 純呈現層：生成前後 S.attr 不變'],
+  ['earlyDeath','⑨ 早夭/空時間軸相容不炸'],
+  ['htmlOk','⑩ 面板含標題與複製鈕'],
+  ['txtOk','⑪ 文字版含享年與分享連結'],
+  ['honest','⑫ 誠實鐵律：不偽造伺服器排行/百分位'],
+].forEach(([k,m])=>ok(r119[k], 'R119 '+m));
+
 console.log(fails ? `\n結果: ❌ ${fails} 項未通過` : '\n結果: ✅ 狀態機全數正確');
 process.exit(fails ? 1 : 0);

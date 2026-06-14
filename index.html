@@ -14992,6 +14992,7 @@ function screenSummary(cat){
       ${highlightsHTML()}
       ${extremesHTML()}
       ${epitaphHTML()}
+      ${memoirHTML()}
       <div class="origin center"><span class="grademedal"><span class="gm-t">本局評價</span><span class="gm-g">${grade}</span><span class="gm-s">級</span></span><br>
       <span class="muted">${GRADE_TALK[grade]||""}</span><br>
       <span class="muted">總分 ${sum} / 500　·　本帳號第 ${SAVE.plays} 隻角色</span></div>
@@ -15027,6 +15028,7 @@ function screenSummary(cat){
         <button class="btn" onclick="makeCollectionCard()">📊 圖鑑收集卡（七館進度 PNG，秀收集量炫耀）</button>
         <button class="btn" onclick="copyShareTextCard(this)">📇 複製文字版（墓誌銘＋連結，貼社群嗆人）</button>
         <button class="btn" onclick="copyTextReport(this)">📣 複製人生戰報（稱號＋名場面，貼群組嗆人）</button>
+        <button class="btn" onclick="copyMemoir(this)">📖 複製人生回憶錄（自動代筆傳記，貼社群最有感）</button>
         <button class="btn" onclick="copyShareLink()">🔗 複製比拼連結，嗆朋友</button>
         <button class="btn sec" onclick="screenTimeline()">📜 人生回顧（大事時間軸）</button>
         <button class="btn sec" onclick="screenResume()">📋 回顧這一生的人生履歷</button>
@@ -16914,6 +16916,126 @@ function epitaphHTML(){
     <h2 class="sec">🪦 墓誌銘</h2>
     <p class="epitaph" style="margin:8px 0;font-size:14px">「${epi}」</p>
     <div class="muted" style="font-size:11.5px;text-align:center">地球 Online 官方代刻 · 同一條種子，刻的永遠是同一句</div></div>`;
+}
+
+/* =========================================================================
+   R119 人生回憶錄：把本局「真實發生過」的事件、抉擇、五圍軌跡、稱號與死法，
+   織成一段台味繁中傳記敘事——只取真實經歷（S.tl 大事時間軸／S.flags／S.peak·low／
+   出身天賦／S.deathReason／S.rarity），誠實零捏造、不憑空生出沒發生的劇情。
+   全程不取種子隨機（挑句用享年確定性挑選，零 rng() 消耗、不動遊戲序列），純呈現層。
+   不同人生 → 章節數/事件/起伏全然不同，高重玩與截圖分享誘因。
+   ========================================================================= */
+const MEMOIR_STAGE_LEAD = [
+  ["說起我的囡仔時代，","回想小時候，","我的童年，","打從會走路開始，"],
+  ["讀冊的那些年，","求學的歲月，","學生時代，","背起書包以後，"],
+  ["出社會討生活以後，","踏進職場那幾年，","開始扛起人生以後，","領第一份薪水之後，"],
+  ["走到中年，","人生過了一半，","中年這一段路，","上有老下有小的年紀，"],
+  ["上了年紀以後，","到了晚年，","老了以後，","頭髮白了之後，"],
+];
+const MEMOIR_OUTRO = [
+  "這一輪，我盡力演完了。","下輩子，再來地球闖一遍吧。","謝謝這場荒誕又認真的人生。","投胎是場賭局，這把我認了。","回憶錄到此，剩下的留給孟婆那碗湯。"];
+/* 確定性挑句：同一條人生（同享年＋salt）固定選同款，零 rng，截圖可重現 */
+function memoirPick(arr, salt){
+  if(!arr||!arr.length) return "";
+  const a=(S&&S.age)||0;
+  return arr[((a+(salt||0))%arr.length+arr.length)%arr.length];
+}
+/* 把本局真實資料織成回憶錄段落陣列（純讀 S，缺鍵自動略過、誠實留白，不捏造） */
+function buildMemoir(){
+  if(!S) return null;
+  const paras=[];
+  const age=S.age||0;
+  const title=stripTags(S.title||"地球路人");
+  // ① 序章：稱號＋出身＋家世＋天賦＋怪癖＋世代（全取真實開局資料，缺者自動略過）
+  const open=[];
+  open.push(`我這一生，人稱「${title}」，活了 ${age} 個年頭。`);
+  const birth=[];
+  if(S.era && typeof R55_MAP!=="undefined" && R55_MAP[S.era]) birth.push(`生在${stripTags(R55_MAP[S.era].nm)}`);
+  if(S.origin) birth.push(`投胎抽中的是「${stripTags(S.origin.nm)}」這支籤`);
+  if(S.fam) birth.push(`長在${stripTags(S.fam.nm)}`);
+  if(birth.length) open.push(birth.join("，")+"。");
+  const gift=[];
+  if(S.talent) gift.push(`天生帶著「${stripTags(S.talent.nm)}」的命格`);
+  if(S.quirk) gift.push(`還有「${stripTags(S.quirk.nm)}」這個甩不掉的毛病`);
+  if(gift.length) open.push(gift.join("，")+"——這就是老天爺發給我的起手牌。");
+  paras.push(open.join(""));
+  // ② 各人生階段：只敘述「本局大事時間軸真實記下」的瞬間（排除死亡終點，留給收尾）
+  const tl=((S.tl)||[]).filter(x=>x && x.ic!=="💀").slice().sort((a,b)=>a.age-b.age);
+  let stageCount=0;
+  for(let si=0; si<5; si++){
+    const evs=tl.filter(x=>stageIndex(x.age)===si);
+    if(!evs.length) continue;   // 沒發生過的階段不硬掰，誠實留白
+    const lead=memoirPick(MEMOIR_STAGE_LEAD[si], si);
+    // 取至多 5 條，重要度優先（lv 高在前），再依年齡排回時序，敘事不亂跳
+    const pick=evs.slice().sort((a,b)=>(b.lv||0)-(a.lv||0)||a.age-b.age).slice(0,5).sort((a,b)=>a.age-b.age);
+    const sents=pick.map(x=>`${x.age}歲那年，${stripTags(x.txt)}`);
+    paras.push(lead+sents.join("；")+"。");
+    stageCount++;
+  }
+  if(!stageCount) paras.push("這一生來去匆匆，還沒來得及寫下幾個篇章，命運就先按了登出鍵——短歸短，也是我真真切切活過的一回。");
+  // ③ 五圍起伏軌跡（取真實 peak/low；缺鍵略過，不捏造數字）
+  if(S.peak && S.low){
+    let pk=null, lo=null;
+    for(const k in ATTR){
+      if(S.peak[k]==null||S.low[k]==null) continue;
+      if(pk===null||S.peak[k]>S.peak[pk]) pk=k;
+      if(lo===null||S.low[k]<S.low[lo]) lo=k;
+    }
+    if(pk&&lo){
+      const pkAge=(S.peakAge&&S.peakAge[pk]!=null)?`（${S.peakAge[pk]}歲）`:"";
+      paras.push(`回頭算這一生的起落，最風光時我的${ATTR[pk].nm}衝上 ${S.peak[pk]}${pkAge}，最低潮時${ATTR[lo].nm}只剩 ${S.low[lo]}——人生的 K 線，大概就長這樣。`);
+    }
+  }
+  // ④ 收尾：死法＋享年＋稀有度評級＋一句台味回望（全取真實結算資料）
+  const fin=[];
+  fin.push(`故事的最後，${stripTags(S.deathReason||"我安安靜靜地走了")}，我的地球 Online 在第 ${age} 年正式登出。`);
+  let R; try{ R=S.rarity||lifeRarity(); }catch(e){ R=null; }
+  if(R&&R.tier) fin.push(`系統替這一生蓋了章：${R.tier.ic}「${R.tier.nm}」，人生指數 ${R.score}。`);
+  fin.push(memoirPick(MEMOIR_OUTRO, age));
+  paras.push(fin.join(""));
+  return {title, age, paras};
+}
+/* 結算卡內嵌的回憶錄面板（沿用結算卡視覺，RWD 手機可讀、可截圖） */
+function memoirHTML(){
+  let m; try{ m=buildMemoir(); }catch(e){ return ""; }
+  if(!m||!m.paras||!m.paras.length) return "";
+  const body=m.paras.map(p=>`<p class="etext" style="text-align:left;font-size:13.5px;line-height:1.85;margin:9px 0;text-indent:1.6em">${p}</p>`).join("");
+  return `<div class="panel" id="memoirCard" style="margin-top:12px;background:var(--panel2)">
+    <h2 class="sec">📖 人生回憶錄</h2>
+    <div class="muted" style="font-size:11.5px;margin-bottom:6px">系統依你這一生「真實走過」的軌跡自動代筆的一篇短傳記——誠實不加戲，每段人生都不一樣，截圖丟群比比看誰的最精彩</div>
+    ${body}
+    <div style="text-align:right;margin-top:8px">
+      <button class="btn sec" style="display:inline-block;width:auto;padding:7px 14px;font-size:12.5px" onclick="copyMemoir(this)">📋 一鍵複製回憶錄</button>
+    </div>
+  </div>`;
+}
+/* 回憶錄純文字版（貼 Threads/Dcard/IG 限動／群組） */
+function buildMemoirText(){
+  const m=buildMemoir();
+  if(!m) return "";
+  const lines=[`📖《我的人生回憶錄》— 享年 ${m.age} 歲`,""];
+  m.paras.forEach(p=>{ lines.push(stripTags(p)); lines.push(""); });
+  lines.push("—— 地球 Online · 一場荒誕又認真的投胎模擬");
+  if(typeof SHARE_URL!=="undefined"&&SHARE_URL) lines.push(SHARE_URL);
+  return lines.join("\n").trim();
+}
+/* 一鍵複製回憶錄（沿用 copyTextReport 的 clipboard→legacyCopy→overlay 降級鏈） */
+function copyMemoir(btn){
+  let txt; try{ txt=buildMemoirText(); }catch(e){ alert("回憶錄生成失敗："+(e&&e.message||e)); return; }
+  const done=()=>{
+    if(!btn) return;
+    if(!btn.dataset.orig) btn.dataset.orig=btn.innerHTML;
+    btn.innerHTML="✅ 回憶錄已複製，貼上去分享吧！";
+    setTimeout(()=>{ if(btn.dataset.orig) btn.innerHTML=btn.dataset.orig; },2600);
+  };
+  const fallback=()=>{ if(legacyCopy(txt)) done(); else textReportOverlay(txt); };
+  try{
+    if(typeof navigator!=="undefined"&&navigator.clipboard&&navigator.clipboard.writeText){
+      navigator.clipboard.writeText(txt).then(done, fallback);
+      return;
+    }
+  }catch(e){}
+  fallback();
 }
 
 /* ---- 一鍵分享文字卡：純文字結算卡（含稱號/墓誌銘/享年/死法/種子碼） ---- */

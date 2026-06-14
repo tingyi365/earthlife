@@ -3732,6 +3732,64 @@ try {
   console.log('R118 圖鑑收集牆: ❌ ' + e.message);
 }
 
+/* ---- R119 人生回憶錄探針（依本局真實經歷自動生成可分享傳記；誠實不捏造、零 rng、純呈現層）----
+   ① 生成：真實死後局 buildMemoir 回傳 {title,age,paras}，段落非空且含序章＋收尾
+   ② 真實映射：時間軸放入特定事件 → 該事件文字真的出現在回憶錄（不無中生有）
+   ③ 確定性＋零 rng：同一 S 連跑兩次逐字一致、不消耗種子隨機
+   ④ 早夭/空時間軸相容：最小局不炸，仍給得出傳記（誠實留白段）
+   ⑤ 渲染＋分享：memoirHTML 含標題與複製鈕、buildMemoirText 含享年與連結、不偽造伺服器排行 */
+let r119OK = false;
+try {
+  const r119Raw = vm.runInContext(`(function(){
+    const out={};
+    startGame(); const s=S; ensureState(s); s.alive=false;
+    s.age=82; s.attr={hp:70,int:70,apr:70,mny:70,hap:70};
+    s.peak={hp:90,int:72,apr:60,mny:88,hap:70}; s.peakAge={hp:30,int:25,apr:18,mny:55,hap:40};
+    s.low={hp:40,int:50,apr:45,mny:12,hap:30}; s.lowAge={hp:70,int:10,apr:80,mny:5,hap:60};
+    s.title="地方創生頭家"; s.deathReason="壽終正寢，睡夢中安詳登出"; s.origin={id:"o1",nm:"工人家庭",ic:"🔧"};
+    s.tl=[]; tlPush("👶","出生在小鎮的清晨",1); S.age=8; tlPush("🎒","小學拿了第一張獎狀",0);
+    S.age=24; tlPush("💼","拿到人生第一份工作，社畜之路開跑",1);
+    S.age=30; tlPush("💍","結婚了！單身狗識別證正式繳回",1);
+    S.age=55; tlPush("🏠","買下人生第一間房，從此與房貸相依為命",1);
+    S.age=82;
+    const m1=buildMemoir();
+    out.gen = !!m1 && Array.isArray(m1.paras) && m1.paras.length>=3 && m1.age===82 && m1.title==="地方創生頭家";
+    const full=m1.paras.join("\\n");
+    out.hasOpen = full.indexOf("地方創生頭家")>=0 && full.indexOf("工人家庭")>=0;
+    out.hasFin = full.indexOf("壽終正寢")>=0 && full.indexOf("第 82 年")>=0;
+    // ② 真實映射：放進去的時間軸事件文字真的被織進回憶錄
+    out.realEvents = full.indexOf("社畜之路開跑")>=0 && full.indexOf("單身狗識別證正式繳回")>=0 && full.indexOf("與房貸相依為命")>=0;
+    // 不捏造：沒放進時間軸的劇情不會冒出來
+    out.noFabricate = full.indexOf("中了樂透")<0 && full.indexOf("環遊世界")<0;
+    // 五圍軌跡取真實 peak/low
+    out.trajectory = full.indexOf("90")>=0 && full.indexOf("12")>=0;
+    // ③ 確定性 + 零 rng
+    let used=0; const old=rng; rng=function(){ used++; return old(); };
+    const t1=JSON.stringify(buildMemoir()); const t2=JSON.stringify(buildMemoir());
+    rng=old;
+    out.rngZero = used===0;
+    out.deterministic = t1===t2;
+    // ④ 早夭/空時間軸相容
+    startGame(); const e=S; ensureState(e); e.alive=false; e.age=4; e.tl=[]; e.deathReason="夭折"; e.rarity=null;
+    let okEarly=false; try{ const em=buildMemoir(); okEarly=!!(em&&em.paras&&em.paras.length>=2); }catch(x){ okEarly=false; }
+    out.earlyDeath = okEarly;
+    // ⑤ 渲染 + 分享
+    startGame(); const r=S; ensureState(r); r.alive=false; r.age=75; r.attr={hp:60,int:60,apr:60,mny:60,hap:60};
+    r.peak=Object.assign({},r.attr); r.low=Object.assign({},r.attr); r.title="地球路人"; r.deathReason="壽終正寢"; r.tl=[];
+    const html=memoirHTML(); const txt=buildMemoirText();
+    out.htmlOk = html.indexOf("人生回憶錄")>=0 && html.indexOf("copyMemoir")>=0;
+    out.txtOk = txt.indexOf("享年 75 歲")>=0 && txt.indexOf(SHARE_URL)>=0;
+    const fake=/(贏過|勝過|打敗|擊敗|超越|排名)[^。\\n]{0,12}([0-9]{1,3}\\s*%|百分)[^。\\n]{0,8}玩家/;
+    out.honest = !fake.test(html) && !fake.test(txt);
+    return JSON.stringify(out);
+  })()`, sandbox);
+  const r119 = JSON.parse(r119Raw);
+  r119OK = Object.values(r119).every(v => v === true);
+  console.log(`R119 人生回憶錄(真實經歷自動生成/不捏造/確定性零rng/早夭相容/可分享): ${r119OK ? '✅ 全數通過' : '❌ ' + JSON.stringify(r119)}`);
+} catch (e) {
+  console.log('R119 人生回憶錄: ❌ ' + e.message);
+}
+
 if (__errors.length) {
   console.log('\n--- 錯誤樣本(前5) ---');
   __errors.slice(0, 5).forEach(e => console.log('  ' + e));
@@ -3739,6 +3797,6 @@ if (__errors.length) {
 
 /* 退出碼 */
 const pass = __errors.length === 0 && chk.missingScenes.length === 0 && chk.eventVisible >= 126 && chk.eventTotal >= 126 && lsOK && achUnlocked > 0
-  && chk.deathbookMissing.length === 0 && chk.deathTotal >= 17 && deathsOK && rebirthOK && legacyOK && petOK && r13OK && r17OK && r20OK && r21OK && r22OK && r24OK && r25OK && r34OK && r38OK && r41OK && r42OK && r43OK && r44OK && r45OK && r46OK && r47OK && r48OK && r49OK && r51OK && r52OK && r53OK && r54OK && r55OK && r72OK && r76OK && r77OK && r79OK && r86OK && r87OK && r92OK && r93OK && r95OK && r96OK && r108OK && r110OK && r111OK && r112OK && r113OK && r115OK && r116OK && r117OK && r118OK;
+  && chk.deathbookMissing.length === 0 && chk.deathTotal >= 17 && deathsOK && rebirthOK && legacyOK && petOK && r13OK && r17OK && r20OK && r21OK && r22OK && r24OK && r25OK && r34OK && r38OK && r41OK && r42OK && r43OK && r44OK && r45OK && r46OK && r47OK && r48OK && r49OK && r51OK && r52OK && r53OK && r54OK && r55OK && r72OK && r76OK && r77OK && r79OK && r86OK && r87OK && r92OK && r93OK && r95OK && r96OK && r108OK && r110OK && r111OK && r112OK && r113OK && r115OK && r116OK && r117OK && r118OK && r119OK;
 console.log('\n結果: ' + (pass ? '✅ 全數通過' : '❌ 有項目未通過'));
 process.exit(pass ? 0 : 1);
