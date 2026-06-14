@@ -1281,6 +1281,75 @@ function dynastyData(){
 }
 
 /* =========================================================================
+   R105 周目 / New Game+ 系統：再玩一輪的明確動機（重玩＋炫耀收集向）
+   設計與既有 轉生/祖產/世代/羈絆 各自獨立、互不疊代：
+   - cycle = 「正式輪迴次數」——完成一次正常人生（任一結局）+1；挑戰／對戰／劇本局不計（同全服公平鐵律）。
+   - 每滿 3 周目解鎖 1 階「周目紅利」里程碑（上限 4 階 = 開局每項屬性 +4 封頂），附 3 個累計周目成就接 R99 圖鑑。
+   - 周目紅利「玩家自選啟用、預設關」：未啟用時開局與舊版完全一致（種子序列零污染、零 rng）。
+     取捨／代價（避免雪球破平衡）：啟用的這一局，結算輪迴點與陰德折半——一手好開局換長線跨局貨幣。
+   存檔結構：缺鍵/壞值一律就地修補（舊存檔相容鐵律，與 rebirthData 同款）。
+   ========================================================================= */
+const NGP_MILESTONES = [
+  {cyc:3,  ic:"🐣", nm:"二周目老鳥",                 boon:"開局每項屬性 +1", txt:"孟婆湯喝到第三碗開始嫌淡——投胎的肌肉記憶有了，開局每項屬性 +1。"},
+  {cyc:6,  ic:"🐉", nm:"六道輪迴常客",               boon:"開局每項屬性 +2", txt:"地府櫃檯看到你直接喊號碼牌——熟門熟路，開局每項屬性 +2。"},
+  {cyc:9,  ic:"🧙", nm:"九世修行老靈魂",             boon:"開局每項屬性 +3", txt:"前世存款記不得，但被坑的教訓全記得——開局每項屬性 +3。"},
+  {cyc:12, ic:"🌀", nm:"十二周目・地球Online資深玩家", boon:"開局每項屬性 +4（封頂）", txt:"這片地圖你比 GM 還熟，閉著眼都知道哪關有雷——開局每項屬性 +4，到頂了，別貪。"},
+];
+function ngpData(){
+  if(!SAVE.ngp || typeof SAVE.ngp!=="object") SAVE.ngp={cycle:0, boost:false};
+  const n=SAVE.ngp;
+  if(typeof n.cycle!=="number" || isNaN(n.cycle) || n.cycle<0) n.cycle=0;
+  n.boost = !!n.boost;
+  return n;
+}
+/* 周目紅利階級：每 3 周目 +1 階、上限 4 階（cycle 3→1階、6→2階、9→3階、12→封頂4階） */
+function ngpTier(){ return Math.min(Math.floor(ngpData().cycle/3), 4); }
+/* 本局周目紅利是否真正生效（玩家有開啟 且 已解鎖至少 1 階） */
+function ngpBoostActive(){ return ngpData().boost && ngpTier()>0; }
+/* 切換周目紅利開關：在開局卡（同種子）即時重抽讓效果可見；非開局狀態僅存設定 */
+function ngpToggleBoost(){
+  const n=ngpData(); n.boost=!n.boost; persist();
+  if(S && S.age===0 && S.seed && !S.challenge && !S.battle && !S.script){
+    const code=S.seed;            // 同種子完整復現開局（buildEvents 會吃 rng，順序須與 startGame 完全一致才不 desync）
+    rng = mulberry32(seedCodeToInt(code));
+    EVENTS = buildEvents();
+    newLife(); S.seed=code; renderBirth();
+  }
+}
+/* 開局卡：周目進度＋紅利開關（只在一般局顯示，挑戰/對戰/劇本局不顯示） */
+function ngpBirthHTML(){
+  const n=ngpData(), cyc=n.cycle, tier=ngpTier();
+  const next=NGP_MILESTONES.find(m=>cyc<m.cyc);
+  const on = ngpBoostActive();
+  let body=`<div class="t" style="margin-top:8px">🔄 周目進度：第 <b>${cyc+1}</b> 周目開局中${cyc>=12?"（資深玩家認證）":""}</div>`;
+  if(tier>0){
+    body+=`<div class="muted">已解鎖周目紅利 <b>${tier} 階</b>（開局每項屬性 +${tier}）。`
+      +(on?`本局<b>已啟用</b>——代價是結算輪迴點與陰德折半。`:`本局未啟用（裸裝硬打，輪迴點陰德全額拿）。`)+`</div>`
+      +`<button class="btn sec" style="margin-top:8px;padding:8px 10px;font-size:12px" onclick="ngpToggleBoost()">${on?"🔌 關掉周目紅利（要全額輪迴點）":"⚡ 啟用周目紅利（換一手好開局，輪迴點折半）"}</button>`;
+  } else {
+    body+=`<div class="muted">還沒攢夠周目紅利。${next?`再過完 <b>${next.cyc-cyc}</b> 個正式周目，解鎖【${next.ic} ${next.nm}】：${next.boon}。`:""}挑戰／對戰／劇本局不算周目，乖乖好好過完一生才算數。</div>`;
+  }
+  return `<div class="origin" style="margin-top:8px">${body}</div>`;
+}
+/* 結算頁：周目進度回顧（玩過幾周目、解鎖什麼、本局是否計入）——強化收集與炫耀感 */
+function ngpSummaryHTML(){
+  const n=ngpData(), cyc=n.cycle;
+  const real = !S.challenge && !S.battle && !S.script;
+  const next=NGP_MILESTONES.find(m=>cyc<m.cyc);
+  const got=NGP_MILESTONES.filter(m=>cyc>=m.cyc);
+  const icons=got.map(m=>m.ic).join("")||"—";
+  const line2 = next
+    ? `距離【${next.ic} ${next.nm}】還差 <b>${next.cyc-cyc}</b> 個正式周目（${next.boon}）`
+    : `周目紅利已封頂（+4）——地球Online你打到沒里程碑可拿了，去炫耀吧`;
+  const justUp = real ? NGP_MILESTONES.find(m=>m.cyc===cyc) : null;
+  return `<div class="origin center" style="margin-top:10px">🔄 <b>周目 / New Game+</b>　<span class="muted">已完成 ${cyc} 個正式周目${real?"（本局 +1）":"（本局不計入周目）"}</span><br>`
+    +`<span class="muted">里程碑 ${got.length}/${NGP_MILESTONES.length} ${icons} · ${line2}</span>`
+    +(justUp?`<br><span class="muted">🎉 <b>解鎖【${justUp.ic} ${justUp.nm}】</b>：${justUp.txt}</span>`:"")
+    +(S.ngpBoost?`<br><span class="muted">⚡ 本局帶周目紅利上陣，輪迴點與陰德已折半——一手好開局的代價</span>`:"")
+    +`</div>`;
+}
+
+/* =========================================================================
    R49 開局天賦三選一（roguelike 起手）：開局從天賦池確定性抽 3 張供玩家選 1。
    抽選走種子雜湊（同 r41Init 取源）——零 rng 消耗、不動事件序列，
    同種子同候選（挑戰/對戰全服同三張，選哪張是玩家的事，公平不破壞）。
@@ -1828,6 +1897,11 @@ function newLife(isChallenge){
   if(lgk.indexOf("lg_wis")>=0){ base.int=clamp(base.int+3); base.hap=clamp(base.hap+3); lgNotes.push("📜 老靈魂：智力 +3、快樂 +3"); }
   if(lgk.indexOf("lg_pick")>=0){ const pk=ATTR[lg.pickAttr]?lg.pickAttr:"hp"; base[pk]=clamp(base[pk]+5); lgNotes.push(`🏷️ 祖先開過光：${ATTR[pk].nm} +5`); }
   if(lgk.indexOf("lg_min")>=0){ let mk="hp"; for(const k in base){ if(base[k]<base[mk]) mk=k; } if(base[mk]<40){ lgNotes.push(`⛩️ 祖墳冒青煙：${ATTR[mk].nm} ${base[mk]} → 40`); base[mk]=40; } }
+  // R105 周目紅利：玩家自選啟用（預設關）。啟用時開局每項屬性 +階級（每 3 周目 +1、上限 4）；
+  // 挑戰/對戰局禁用（isChallenge 同祖產/輪迴鐵律），全程零 rng 不動種子序列；
+  // 未啟用時 base 與舊版完全一致。代價見 die()：啟用的這一局輪迴點與陰德折半（避免雪球破平衡）。
+  const ngpTb = (!isChallenge && ngpBoostActive()) ? ngpTier() : 0;
+  if(ngpTb>0){ ["hp","int","apr","mny","hap"].forEach(k=>{ base[k]=clamp(base[k]+ngpTb); }); }
   // R42 世代傳承：上一代結算時選定的傳承物在這一局開局生效（挑戰/對戰停用，全服公平）；
   // 全程零 rng 不動種子序列、同時只生效 1 件、用掉即清不疊代；
   // 沒接香火 → 開新家族（世代歸 1、家族年表重寫）；無 pending 時 base 與舊版完全一致
@@ -1860,6 +1934,7 @@ function newLife(isChallenge){
   // 傳承物旗標（heir_*）只解鎖對應特殊事件，挑戰/對戰永無此旗標 → 池子不變，公平不破
   S.gen = isChallenge ? 0 : genNo42;
   S.heir = heirId42;
+  S.ngpBoost = ngpTb>0;   // R105 本局是否帶周目紅利（供 die() 結算折半代價、結算頁標示）
   if(heirId42){
     const it42 = R42_HMAP[heirId42];
     if(it42.flags) Object.assign(S.flags, it42.flags);
@@ -1972,6 +2047,7 @@ function loadSave(){
     rebirthData();   // R6 轉生：舊存檔缺鍵就地補上 {pts,total,talents,equipped}，不可炸
     legacyData();    // R23 祖產：舊存檔缺鍵就地補上 {yd,ydTotal,perks,roster,lastMny,pickAttr}，不可炸
     dynastyData();   // R42 世代傳承：舊存檔缺鍵就地補上 {pending,lineage}，不可炸
+    ngpData();       // R105 周目/NG+：舊存檔缺鍵就地補上 {cycle,boost}，不可炸
   }catch(e){ /* 存檔毀損就用預設，不讓遊戲崩潰 */ }
   return SAVE;
 }
@@ -2392,6 +2468,10 @@ const ACHIEVEMENTS = [
   {id:"r96_done", ic:"🏁", nm:"天災人生・走完一輪", desc:"從直面天災的覺悟一路走到生存結局——不管是全身而退的防災達人、與地牛共存的老台灣人、把颱風假過成日常的島民，還是與山林共生的山居者，你把這座島年年都要重來一次的天災日常，完整走完了一輪。", check:c=>!!(c.S.flags&&c.S.flags.r96_endhit), hint:"把天災支線從防災覺悟、準備取捨、強震或洪流或土石流的生存判定一路走到出現「天災結局」那一關，完整跑完一輪…"},
   {id:"r96_survivor", ic:"🛡️", nm:"防災達人・全身而退的生還者", desc:"你靠體質跟天公伯的眷顧撐過了強震與洪流，更靠腦袋跟錢提前備好了防災包、保險與補強——別人心存僥倖賭天災不會輪到自己，你卻把『有備無患』四個字活成了本能。在這座年年都要跟天災打照面的島上，能活下來靠運氣，能全身而退、家當人都保住，靠的從來不只是運氣。", check:c=>!!(c.S.flags&&c.S.flags.r96_endtype==="r96_end_survivor"), hint:"靠體質×運勢撐過強震／洪流／土石流的生存判定、再用智力×財富提前備齊防災包保險與補強、不心存僥倖，把『有備無患』走到底，才能得防災達人…"},
   {id:"r96_typhoon_king", ic:"🌀", nm:"颱風假之王・把停班停課過成日常", desc:"颱風來襲對你不是災難，是一場全島共同的儀式——盯著氣象局更新、刷縣市長放不放假的新聞、衝去賣場搶最後一包泡麵跟一籃蛋，然後窩在家邊聽風雨邊享受那份得來不易的颱風假。你把這座島最獨特的天災日常，過成了一種苦中作樂的生活美學。", check:c=>!!(c.S.flags&&c.S.flags.r96_endtype==="r96_end_typhoon"), hint:"走颱風淹水線（放颱風假、搶泡麵蛋、扛住淹水停電）到底，靠財富搶物資撐重建、靠判斷力安全撤離不溺水，把島民的颱風日常走完一輪…"},
+  /* ---- R105 周目/New Game+ 累計成就（純讀 SAVE.ngp.cycle 確定性判定，零 rng；挑戰/對戰/劇本局不計入周目）---- */
+  {id:"ngp_rookie", ic:"🔁", nm:"輪迴老鳥・孟婆認得你了", desc:"正式跑完 3 個周目——投胎投到孟婆都會隨手幫你把那碗湯加滿。在這座下輩子還想不想當台灣人都要猶豫一下的島上，你硬是回鍋了三次。", check:c=>ngpData().cycle>=3, hint:"好好過完 3 個正常人生（任一結局都算），挑戰／對戰／劇本局不計——多投幾次胎就有…"},
+  {id:"ngp_veteran", ic:"♻️", nm:"六道常客・地府 VIP", desc:"正式跑完 6 個周目——地府叫號機看到你直接跳你的號，孟婆湯改幫你準備無糖的。鬼島玩到下面都辦會員了，這份執著也是一種才華。", check:c=>ngpData().cycle>=6, hint:"累積 6 個正式周目（正常局完局），地府就把你升 VIP 了…"},
+  {id:"ngp_master", ic:"🌀", nm:"十二周目・地球Online資深玩家", desc:"正式跑完 12 個周目——這片地圖你比製作組還熟，哪關有雷、哪格踩了會痛全背在腦裡。別人在玩人生，你在刷成就，地球 Online 被你打成了肌肉記憶。", check:c=>ngpData().cycle>=12, hint:"硬是回鍋 12 個正式周目，把周目紅利點到封頂的那種狠人才拿得到…"},
 ];
 const ACH_MAP = {}; ACHIEVEMENTS.forEach(a=>ACH_MAP[a.id]=a);
 
@@ -11117,6 +11197,7 @@ function renderBirth(){
         <div class="muted">上一代留下的【${R42_HMAP[S.heir].ic} ${R42_HMAP[S.heir].nm}】已生效——${R42_HMAP[S.heir].gift}。香火在你手上，別讓族譜斷在這頁。</div>`
           :`<div class="t" style="margin-top:8px">🏠 家族第 1 代</div>
         <div class="muted">白手起家版本：沒祖產、沒家訓，只有一身膽。想開家族接力，先把這一生活出點東西再說。</div>`):""}
+        ${(!ch && !bt && !S.script)?ngpBirthHTML():""}
       </div>
       ${wishCard}
       ${r49CardHTML()}
@@ -12969,6 +13050,11 @@ function die(from){
   const grade = sum>=380?"S":sum>=320?"A":sum>=240?"B":sum>=160?"C":"D";
   S.cat=cat; S.grade=grade; S.sum=sum;   // 供分享層（分享卡 / 比拼連結）取用
   SAVE.plays = (SAVE.plays||0)+1;
+  // ---- R105 周目/New Game+：正式輪迴次數（挑戰/對戰/劇本局不計，同祖產/輪迴公平鐵律）----
+  //      在 evalAchievements 之前累加，周目成就（ngp_*）當局即可解鎖
+  const ngp105 = ngpData();
+  if(!S.challenge && !S.battle && !S.script) ngp105.cycle = (ngp105.cycle||0)+1;
+  S.ngpCycle = ngp105.cycle;   // 供結算頁顯示本局結束後的周目數
   // ---- 死法圖鑑收集（R3）：缺鍵當空集合，舊存檔不炸 ----
   if(!SAVE.deaths || typeof SAVE.deaths!=="object") SAVE.deaths={};
   S.deathId = deathId;
@@ -13047,6 +13133,8 @@ function die(from){
   if(rtActive("rb_karma")) rp+=1;
   // R49 孟婆 VIP 會員：同上再 +1、可破上限（疊加層；沒選此天賦完全不變）
   const p49rp=r49Perk(); if(p49rp && p49rp.rp) rp+=1;
+  // R105 周目紅利代價：帶紅利上陣的這一局輪迴點折半（min 1）——一手好開局換長線跨局貨幣的取捨
+  if(S.ngpBoost) rp = Math.max(1, Math.floor(rp*0.5));
   S.rpGain = rp; rb.pts += rp; rb.total += rp;
   // R16 成就「孟婆的白金會員」：rpGain 在 evalAchievements 之後才定案，這裡補評（一次性解鎖）
   if(rp>=6 && ACH_MAP.karma6 && !SAVE.ach.karma6){ SAVE.ach.karma6=true; (S.newAch=S.newAch||[]).push("karma6"); }
@@ -13057,6 +13145,8 @@ function die(from){
   if(grade==="S"||grade==="A") yd+=3; else if(grade==="B") yd+=1;
   yd += Math.min(3, (S.flags&&S.flags.r60_merit)||0);   // R60 香火陰德：當世拜拜累積的小額香火（上限 +3，仍受總額 30 上限）
   yd = Math.min(30, yd);
+  // R105 周目紅利代價：帶紅利上陣的這一局陰德同步折半（min 1），與輪迴點同一套取捨
+  if(S.ngpBoost) yd = Math.max(1, Math.floor(yd*0.5));
   S.ydGain = yd; lg23.yd += yd; lg23.ydTotal += yd;
   // 上一世財富（祖產紅包繼承用）：挑戰/對戰局不更新，跟天賦禁用同一套公平邏輯
   if(!S.challenge && !S.battle && !S.script) lg23.lastMny = a.mny||0;   // R56 劇本局鎖定財富不外溢成祖產
@@ -13965,6 +14055,7 @@ function screenSummary(cat){
       <span class="muted">輪迴第 ${SAVE.plays} 世 · 轉生天賦 ${rbUnlockedCount()}/${REBIRTH_TALENTS.length}，到「轉生殿」把點數花掉</span></div>
       <div class="origin center" style="margin-top:10px">⛩️ <b>陰德 +${S.ydGain||0}</b>　<span class="muted">可用 ${legacyData().yd} · 歷史累計 ${legacyData().ydTotal}</span><br>
       <span class="muted">這輩子的壽命、財富與成就都折成了香火——到「祖祠」立契祖傳加成（${lgOwnedCount()}/${LEGACY_PERKS.length}），蔭下一世</span></div>
+      ${ngpSummaryHTML()}
       ${r42SummaryHTML()}
       ${newAchHTML()}
       <div class="choices" style="margin-top:14px">

@@ -3536,5 +3536,74 @@ ok(r100.tflat_hit && r100.tflat_miss, 'R100 ③ he_lieflat_zen 真驅動：躺�
 ok(r100.eval, 'R100 ④ evalHiddenEndings 端到端：22K 狀態跑判定→S.hiddenEnd=he_22k、首抽 newHidden、入冊 SAVE.hiddenEnds');
 ok(r100.noRedline, 'R100 ⑤ 文案紅線：4 新結局全文無政治/暴力/仇恨字串，尺度走低薪過勞買不起房自嘲');
 
+// ============================================================================
+// R105 周目 / New Game+：存讀檔遷移、tier 階梯、紅利套用、累計計數、代價折半、周目成就
+// ============================================================================
+const r105 = JSON.parse(vm.runInContext(`(function(){
+  const out={};
+  // ① 遷移：舊存檔無 ngp 鍵 → ngpData() 就地補 {cycle:0,boost:false}，不崩
+  delete SAVE.ngp; const n0=ngpData();
+  out.migrate = !!n0 && n0.cycle===0 && n0.boost===false && SAVE.ngp===n0;
+  // 壞值修補：負 cycle 歸 0、boost 強制布林
+  SAVE.ngp={cycle:-5, boost:1}; const n1=ngpData();
+  out.repair = n1.cycle===0 && n1.boost===true;
+  // ② tier 階梯：每 3 周目 +1、上限 4
+  const tiers=[0,3,6,9,12,99].map(c=>{ SAVE.ngp={cycle:c,boost:true}; return ngpTier(); });
+  out.tier = JSON.stringify(tiers)===JSON.stringify([0,1,2,3,4,4]);
+  // ③ ngpBoostActive：要「有開 且 tier>0」才生效
+  SAVE.ngp={cycle:6, boost:true};  out.activeOn=ngpBoostActive()===true && ngpTier()===2;
+  SAVE.ngp={cycle:6, boost:false}; out.activeOff=ngpBoostActive()===false;
+  SAVE.ngp={cycle:0, boost:true};  out.activeNoTier=ngpBoostActive()===false;
+  // ④ 開局套用：同種子下，啟用 tier2 比未啟用每項屬性高 2（封頂 100 內）
+  SAVE.dynasty={pending:null,lineage:[]};
+  SAVE.ngp={cycle:6, boost:false}; startGame(); const baseA=Object.assign({},S.attr); const seed=S.seed;
+  SAVE.ngp={cycle:6, boost:true};
+  rng=mulberry32(seedCodeToInt(seed)); EVENTS=buildEvents(); newLife(); S.seed=seed;
+  out.boostApplied = S.ngpBoost===true &&
+    ['hp','int','apr','mny','hap'].every(k=>S.attr[k]===Math.max(0,Math.min(100,Math.round(baseA[k])+2)));
+  // ⑤ 累計：正常局死亡 cycle+1（並記 S.ngpCycle）；挑戰局不計
+  SAVE.ngp={cycle:6,boost:false};
+  startGame(); S.age=70; S.attr={hp:30,int:50,apr:50,mny:50,hap:50}; S.flags={}; die();
+  out.cycInc = ngpData().cycle===7 && S.ngpCycle===7;
+  SAVE.ngp={cycle:6,boost:false};
+  startGame(); S.challenge={date:'2099-01-01',attempt:1}; S.age=70; S.attr={hp:30,int:50,apr:50,mny:50,hap:50}; S.flags={}; die();
+  out.cycChallengeSkip = ngpData().cycle===6;
+  // ⑥ 紅利代價：同條件下，帶紅利的輪迴點 = floor(原本×0.5)（min 1），陰德同理
+  function runDie(boostOn){
+    SAVE.deaths={}; SAVE.ach={}; SAVE.origins={}; SAVE.badges={};
+    SAVE.dynasty={pending:null,lineage:[]}; SAVE.ngp={cycle:12, boost:boostOn};
+    startGame(); S.age=85; S.attr={hp:80,int:80,apr:80,mny:80,hap:80}; S.flags={}; die();
+    return {rp:S.rpGain, yd:S.ydGain, nb:S.ngpBoost};
+  }
+  const plain=runDie(false), boost=runDie(true);
+  out.boostPenalty = plain.nb===false && boost.nb===true
+    && boost.rp===Math.max(1,Math.floor(plain.rp*0.5))
+    && boost.yd===Math.max(1,Math.floor(plain.yd*0.5));
+  // ⑦ 周目成就：cycle≥3 解 ngp_rookie，未達門檻者仍鎖定
+  SAVE.ach={}; SAVE.deaths={}; SAVE.ngp={cycle:3,boost:false};
+  startGame(); S.age=60; S.attr={hp:50,int:50,apr:50,mny:50,hap:50}; S.flags={}; die();
+  out.ach3 = SAVE.ach.ngp_rookie===true && !SAVE.ach.ngp_veteran && !SAVE.ach.ngp_master;
+  // ⑧ 序列化往返不崩：stringify→parse 後周目欄位保值
+  SAVE.ngp={cycle:9,boost:true};
+  const parsed=JSON.parse(JSON.stringify(SAVE));
+  out.roundtrip = parsed.ngp && parsed.ngp.cycle===9 && parsed.ngp.boost===true;
+  // ⑨ HTML 不崩：開局卡 / 結算頁周目區塊可渲染
+  SAVE.ngp={cycle:9,boost:true};
+  out.html = typeof ngpBirthHTML()==='string' && ngpBirthHTML().indexOf('周目進度')>=0
+    && typeof ngpSummaryHTML()==='string' && ngpSummaryHTML().indexOf('New Game+')>=0;
+  return JSON.stringify(out);
+})()`, sandbox));
+ok(r105.migrate, 'R105 ① 周目遷移：舊存檔無 ngp 鍵 → ngpData() 就地補 {cycle:0,boost:false}，不崩');
+ok(r105.repair, 'R105 ① 壞值修補：負 cycle 歸 0、boost 強制布林');
+ok(r105.tier, 'R105 ② tier 階梯：每 3 周目 +1、上限 4（0/3/6/9/12/99→0/1/2/3/4/4）');
+ok(r105.activeOn && r105.activeOff && r105.activeNoTier, 'R105 ③ ngpBoostActive：需「有開 且 tier>0」才生效，預設關不生效');
+ok(r105.boostApplied, 'R105 ④ 開局套用：同種子下啟用 tier2 每項屬性 +2（封頂 100 內），未啟用與舊版一致');
+ok(r105.cycInc, 'R105 ⑤ 累計：正常局死亡 cycle+1 且記 S.ngpCycle');
+ok(r105.cycChallengeSkip, 'R105 ⑤ 挑戰局不計入周目（同全服公平鐵律）');
+ok(r105.boostPenalty, 'R105 ⑥ 紅利代價：帶紅利的這一局輪迴點與陰德皆折半（floor×0.5、min 1）');
+ok(r105.ach3, 'R105 ⑦ 周目成就：cycle≥3 解 ngp_rookie，未達門檻者鎖定');
+ok(r105.roundtrip, 'R105 ⑧ 序列化往返：stringify→parse 後周目欄位保值不崩');
+ok(r105.html, 'R105 ⑨ HTML 不崩：開局卡與結算頁周目區塊可渲染');
+
 console.log(fails ? `\n結果: ❌ ${fails} 項未通過` : '\n結果: ✅ 狀態機全數正確');
 process.exit(fails ? 1 : 0);
