@@ -670,6 +670,45 @@
   .wishcard .t{color:#b9a6ff;}
   .wishverdict{font-size:13px; line-height:1.7; margin-top:8px;}
   .wishverdict.win{color:var(--accent,#ffd24a);}
+
+  /* =======================================================================
+     R114 線A 呈現轉化打磨層（純 CSS/呈現，零遊戲邏輯／數值／機率）
+     ① 首屏主 CTA 脈動  ② 結算評級獎牌＋SSR/SR 稱號掃光  ③ 分享區段落感  ④ 觸控目標
+     ======================================================================= */
+  /* ① 首屏 hook：吸睛 slogan + 放大會呼吸的主 CTA，讓人秒懂並想點 */
+  .hero-slogan{font-size:13.5px; line-height:1.6; color:#ffe9a8; font-weight:700;
+    letter-spacing:.3px; margin:2px 2px 9px; text-align:center;}
+  .hero-slogan b{color:var(--accent,#ffd24a);}
+  .btn.cta{font-size:17px; font-weight:900; padding:17px 15px; letter-spacing:1px;
+    animation:m3rise .5s both, r114pulse 2.6s ease-in-out .7s infinite;}
+  .btn.cta:hover,.btn.cta:active{animation:m3rise .5s both;}  /* 互動時停脈動，避免抖動 */
+  @keyframes r114pulse{
+    0%,100%{box-shadow:0 9px 24px rgba(255,184,0,.4), inset 0 1px 0 rgba(255,255,255,.55); transform:translateY(0);}
+    50%{box-shadow:0 13px 34px rgba(255,184,0,.6), 0 0 22px rgba(255,210,74,.4), inset 0 1px 0 rgba(255,255,255,.6); transform:translateY(-1.5px);}}
+
+  /* ② 結算評級獎牌：把「X 級」做成可截圖的獎章，提升分享衝動 */
+  .grademedal{display:inline-flex; align-items:center; gap:9px; margin:2px 0 4px;
+    padding:8px 18px; border-radius:999px; border:1.5px solid var(--accent,#ffd24a);
+    background:radial-gradient(120% 120% at 50% 0,rgba(255,210,74,.2),rgba(255,210,74,.05));
+    box-shadow:0 0 20px rgba(255,210,74,.3), inset 0 1px 0 rgba(255,255,255,.12);}
+  .grademedal .gm-t{font-size:11px; letter-spacing:2px; color:var(--sub); font-weight:800;}
+  .grademedal .gm-g{font-size:27px; font-weight:900; line-height:1; color:var(--accent,#ffd24a);
+    text-shadow:0 0 14px rgba(255,210,74,.5);}
+  .grademedal .gm-s{font-size:12px; color:var(--sub); font-weight:800;}
+
+  /* ② SSR/SR 稱號牌：斜向掃光，罕見結局更醒目更想截圖（純視覺） */
+  .lbadge{position:relative; overflow:hidden;}
+  .lbSSR::after,.lbSR::after{content:""; position:absolute; top:0; left:-70%; width:55%; height:100%;
+    pointer-events:none; background:linear-gradient(105deg,transparent,rgba(255,255,255,.22),transparent);
+    animation:r19sweep 3s ease-in-out infinite;}
+
+  /* ③ 結算分享區小標：把一長串分享鈕做出段落感（純文字呈現） */
+  .sharehead{font-size:11.5px; letter-spacing:1px; color:var(--accent,#ffd24a); font-weight:800;
+    text-align:center; margin:8px 0 -2px; opacity:.92;}
+
+  /* ④ 觸控目標下限（全尺寸生效，非僅 ≤400px）：手機點得到、桌機不變樣 */
+  .btn{min-height:48px;}
+  .choice{min-height:46px;}
 </style>
 </head>
 <body>
@@ -11315,7 +11354,7 @@ function topbarHTML(){
 function screenStart(){
   const hasResume = SAVE.current && SAVE.current.alive;
   const resumeBtn = hasResume
-    ? `<button class="btn" onclick="resumeGame()">⏳ 繼續上次人生（${SAVE.current.age} 歲）</button>`
+    ? `<button class="btn cta" onclick="resumeGame()">⏳ 繼續上次人生（${SAVE.current.age} 歲）</button>`
     : "";
   const startLabel = hasResume ? "🎲 砍掉重練，抽張新角" : "🎲 抽卡投胎，登入地球";
   const achCount = Object.keys(SAVE.ach).length;
@@ -11335,10 +11374,11 @@ function screenStart(){
     ${renderMeme("baby","歡迎登入","地球 ONLINE","M3")}
     <div class="panel center">
       <h2 class="sec">史上最爛 MMORPG · 文字版</h2>
+      <p class="hero-slogan">投錯胎不能客訴，這裡<b>沒有重來鍵</b>——抽張新角投胎，看你這輩子能荒謬到哪一步。</p>
       <p class="etext">歡迎登入《地球 Online》——一款沒有重來鍵、課金也買不到快樂的開放世界遊戲。<br>出生點隨機、天賦全靠抽卡，社會總壓迫常數恆大於零。<br>逐年面對隨機事件，每個選擇都是一張<strong>梗圖</strong>，活到登出，再洗一隻新角。</p>
       <div class="choices" style="margin-top:8px">
         ${resumeBtn}
-        <button class="btn ${hasResume?'sec':''}" onclick="startGame()">${startLabel}</button>
+        <button class="btn ${hasResume?'sec':'cta'}" onclick="startGame()">${startLabel}</button>
         <button class="btn sec" onclick="startChallenge()">📅 今日挑戰 #${today}</button>
         <p class="muted" style="margin:-2px 0 2px;font-size:12px">${dailyStatus}</p>
         <button class="btn sec" onclick="screenSeedBattle()">⚔️ 種子對戰（輸入朋友的種子碼）</button>
@@ -14551,7 +14591,7 @@ function screenSummary(cat){
       ${highlightsHTML()}
       ${extremesHTML()}
       ${epitaphHTML()}
-      <div class="origin center">本局評價　<span class="t" style="font-size:22px">${grade}</span>　級<br>
+      <div class="origin center"><span class="grademedal"><span class="gm-t">本局評價</span><span class="gm-g">${grade}</span><span class="gm-s">級</span></span><br>
       <span class="muted">${GRADE_TALK[grade]||""}</span><br>
       <span class="muted">總分 ${sum} / 500　·　本帳號第 ${SAVE.plays} 隻角色</span></div>
       ${S.challenge?`<div class="origin center" style="margin-top:10px">📅 <b>今日挑戰 #${S.challenge.date}</b><br>
@@ -14576,6 +14616,7 @@ function screenSummary(cat){
         ${S.battle?`<button class="btn" onclick="startSeedBattle('${S.battle.code}')">⚔️ 不服，再戰這條種子</button>`:""}
         ${(S.script&&R56_MAP[S.script])?`<button class="btn" onclick="startScriptGame('${S.script}')">🎭 ${S.scriptDone?"再演一次":"不服，重演"}劇本【${R56_MAP[S.script].nm}】</button>`:""}
         ${(S.seed&&!S.battle&&!S.challenge&&!S.script)?`<button class="btn sec" onclick="startSeedBattle('${S.seed}')">⚔️ 拿這條種子開對戰（裸裝重打）</button>`:""}
+        <p class="sharehead">— 截圖／複製，貼回群組嗆爆同溫層 —</p>
         <button class="btn" onclick="copyVerdictCard(this)">🪪 複製人生總評卡（稱號＋金句＋數字 · 截圖貼限動）</button>
         <button class="btn" onclick="copyBragText(this,'plain')">⚡ 複製精華戰績（正經版 · 短到限動都放得下）</button>
         <button class="btn" onclick="copyBragText(this,'salty')">🌶️ 複製精華戰績（靠北版 · 貼群必引戰）</button>
