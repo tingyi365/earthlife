@@ -1451,6 +1451,7 @@ function r49Pick(id){
     S.peak=Object.assign({},S.attr); S.peakAge={hp:0,int:0,apr:0,mny:0,hap:0};
     S.low =Object.assign({},S.attr); S.lowAge ={hp:0,int:0,apr:0,mny:0,hap:0};
     S.attrHist=[[0,S.attr.hp,S.attr.int,S.attr.apr,S.attr.mny,S.attr.hap]];
+    S.attrTrajectory=[trajRow(0)];   // R106 起始屬性被改寫 → 編年史第一章重置（與 attrHist 同步）
   }
   perkUsedMap()[id]=true;
   S.log.push(`<span class="yr">第 0 年</span> 🃏 開局天賦【${p.nm}】入手——${p.fx}。${p.tier==="n"?"高風險高報酬，輪迴櫃台已自動代簽切結書。":""}`);
@@ -1839,6 +1840,7 @@ function startScriptGame(id){
     S.peak=Object.assign({},S.attr); S.peakAge={hp:0,int:0,apr:0,mny:0,hap:0};
     S.low =Object.assign({},S.attr); S.lowAge ={hp:0,int:0,apr:0,mny:0,hap:0};
     S.attrHist=[[0,S.attr.hp,S.attr.int,S.attr.apr,S.attr.mny,S.attr.hap]];
+    S.attrTrajectory=[trajRow(0)];   // R106 劇本改寫起始屬性 → 編年史第一章重置（與 attrHist 同步）
   }
   S.log.push(`<span class="yr">系統</span> ${sc.ic} 劇本挑戰【${sc.nm}】開演——${sc.rule}。通關目標：${sc.goalTxt}。`);
   tlPush(sc.ic, `接下命題劇本【${sc.nm}】——${sc.goalTxt}`, 1);
@@ -1925,6 +1927,7 @@ function newLife(isChallenge){
     peak:Object.assign({},base), peakAge:{hp:0,int:0,apr:0,mny:0,hap:0}, newAch:[],
     low:Object.assign({},base), lowAge:{hp:0,int:0,apr:0,mny:0,hap:0},   // R25 谷底追蹤（出生即基準）
     attrHist:[[0,base.hp,base.int,base.apr,base.mny,base.hap]],          // R30 屬性年史（結算曲線用，出生即第一筆）
+    attrTrajectory:[{age:0,st:0,hp:base.hp,int:base.int,apr:base.apr,mny:base.mny,hap:base.hap}], // R106 屬性編年史：以「人生五階段」為節點的里程碑快照（出生即第一章；與 R30 逐歲曲線錯開，本卡是分章節敘事）
   };
   ensureState(S);
   // R29 出身專屬旗標：新出身出生即帶身分旗標（零 rng，挑戰/對戰同種子同出身同旗標，公平不破壞）；
@@ -1989,6 +1992,16 @@ function histTick(){
   if(last && last[0]===S.age) S.attrHist[S.attrHist.length-1]=row;
   else S.attrHist.push(row);
 }
+/* R106 屬性編年史：以「人生五階段」為節點，每跨入一個新階段就把當下五圍快照一筆，
+   配合結算頁 attrTrajectoryHTML() 畫分章節長條＋台味自嘲點評。純記錄零 rng，
+   同 st 只記一次（去重），序列化往返不崩（全是純數字物件）。 */
+function trajRow(st){ const a=(S&&S.attr)||{}; return {age:(S?S.age:0), st, hp:a.hp|0, int:a.int|0, apr:a.apr|0, mny:a.mny|0, hap:a.hap|0}; }
+function trajPush(st){
+  if(!S) return;
+  if(!Array.isArray(S.attrTrajectory)) S.attrTrajectory=[];
+  if(S.attrTrajectory.some(r=>r && r.st===st)) return;   // 該階段已有快照 → 不重複
+  S.attrTrajectory.push(trajRow(st));
+}
 
 /* =========================================================================
    狀態機 helper（婚姻 / 就業 / 學歷）—— 所有事件 cond 統一用這些判斷
@@ -2006,6 +2019,7 @@ function ensureState(s){
   if(!s.seenCount) s.seenCount={};   // 各事件本局出現次數（降重複用）
   if(!s.recent)    s.recent=[];      // 最近出現過的事件 id（避免立即重播）
   if(!Array.isArray(s.attrHist)) s.attrHist=[];   // R30 屬性年史（舊存檔缺鍵 → 從載入當下開始記，曲線照常但較短）
+  if(!Array.isArray(s.attrTrajectory)) s.attrTrajectory=[];   // R106 屬性編年史里程碑快照（舊存檔缺鍵補空陣列，結算 <1 筆整塊省略不報錯）
   if(!Array.isArray(s.keySnap)) s.keySnap=[];     // R89 關鍵抉擇屬性快照（gate/sr/br 觸發即記一筆 {age,k,v,kind,won,ev}；舊存檔缺鍵補空，未觸發即空陣列零殘留）
   if(!Array.isArray(s.tl)) s.tl=[];  // R9 人生大事時間軸（當局有效，舊進行中存檔補空陣列）
   if(!s.peakAge || typeof s.peakAge!=="object") s.peakAge={};  // R15 巔峰年齡（舊進行中存檔補空，缺鍵顯示時 fallback 0）
@@ -11395,6 +11409,7 @@ function nextYear(){
   if(typeof S.stage==="undefined"){ S.stage=st; S.stageSnap=Object.assign({},S.attr); }
   if(st>S.stage){
     const finished=S.stage, snap=S.stageSnap;
+    trajPush(st);   // R106 跨入新階段 → 記下進入該章節時的五圍快照（編年史節點）
     S.stage=st; S.stageSnap=Object.assign({},S.attr); S.pendingYear=true;
     return showStageCard(finished, snap);
   }
@@ -13746,6 +13761,72 @@ function attrCurveHTML(){
 }
 
 /* =========================================================================
+   R106 屬性編年史：把一生切成「人生五階段」章節，每章一組五圍 inline SVG 長條，
+   一眼看出哪條數值在哪個階段稱王、哪條一路走下坡。直接回應使用者長期建議
+   「屬性存在感偏低、希望結算能回顧屬性軌跡」。與 R30 逐歲折線錯開——折線看連續走勢，
+   本卡看分章節的「高低形狀」，適合截圖分享。純讀 S.attrTrajectory＋謝幕值、零 rng，
+   同種子同軌跡 → 同編年史；舊存檔/快照不足（<1 筆）整塊省略不報錯，不壞檔。
+   ========================================================================= */
+const R106_TRAJ_QUIP = {
+  hp:"靠一身本錢輾過全場——別人拼規劃，你拼的是怎麼操都不倒的鐵打身體。",
+  int:"靠腦袋一路盤算——算得比人精、想得比人深，是這條線替你撐住了大局。",
+  apr:"靠這張臉開路——顏值就是你的入場券，走到哪都自帶打光師。",
+  mny:"靠鈔能力說話——鬼島很多難題不是無解，是還沒砸夠錢，數字替你擺平大半。",
+  hap:"靠快樂硬撐——數值怎麼起伏，你都有本事笑著把難關活成段子。",
+};
+const R106_STNAME = (st)=> (st>=0 && st<=4) ? (typeof STAGE_NAMES!=="undefined"?STAGE_NAMES[st]:["童年","求學","工作","中年","老年"][st]) : "謝幕";
+function attrTrajectoryHTML(){
+  if(!S || !S.attr || !Array.isArray(S.attrTrajectory) || S.attrTrajectory.length<1) return "";
+  const KEYS=["hp","int","apr","mny","hap"];
+  // 章節點：去重後的里程碑快照（依 st 排序）＋謝幕當下這一筆（st=99），組出完整生→死形狀
+  const pts=S.attrTrajectory.slice().filter(r=>r&&typeof r.st==="number").sort((a,b)=>a.st-b.st);
+  const fin={age:S.age, st:99, hp:S.attr.hp|0, int:S.attr.int|0, apr:S.attr.apr|0, mny:S.attr.mny|0, hap:S.attr.hap|0};
+  // 若最後一筆里程碑就是當前歲數（極短命剛出生即死）就不重複塞謝幕點
+  const chapters = (pts.length && pts[pts.length-1].age===S.age && pts[pts.length-1].st===99) ? pts : pts.concat([fin]);
+  if(chapters.length<2) return "";   // 至少要兩個章節才有「軌跡」可言
+  const W=320, HT=148, padX=12, padT=12, padB=24;
+  const n=chapters.length, cw=(W-2*padX)/n;     // 每章節欄寬
+  const bw=Math.max(2.4, Math.min(7, (cw-6)/5)); // 單條長條寬（5 條）
+  const Y=v=>(HT-padB - Math.max(0,Math.min(100,v))/100*(HT-padT-padB));
+  const base=HT-padB;
+  let bars="", labels="";
+  chapters.forEach((r,ci)=>{
+    const cx=padX + ci*cw + (cw - bw*5)/2;
+    KEYS.forEach((k,ki)=>{
+      const x=cx+ki*bw, v=r[k]|0, y=Y(v);
+      bars+=`<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${(bw-0.6).toFixed(1)}" height="${(base-y).toFixed(1)}" style="fill:${ATTR[k].col};opacity:.9"/>`;
+    });
+    const lx=padX + ci*cw + cw/2;
+    labels+=`<text x="${lx.toFixed(1)}" y="${HT-12}" text-anchor="middle" style="font-size:8.5px;fill:var(--muted,#999)">${R106_STNAME(r.st)}</text>`
+          + `<text x="${lx.toFixed(1)}" y="${HT-3}" text-anchor="middle" style="font-size:7px;fill:var(--muted,#999);opacity:.7">${r.age}歲</text>`;
+  });
+  // ── 台味點評：①一生主旋律屬性（各章平均最高）②升/降最劇烈的屬性（首章→謝幕） ──
+  const avg={}, first=chapters[0], lastc=chapters[chapters.length-1];
+  KEYS.forEach(k=>{ avg[k]=chapters.reduce((s,r)=>s+(r[k]|0),0)/chapters.length; });
+  let defK=KEYS[0]; KEYS.forEach(k=>{ if(avg[k]>avg[defK]) defK=k; });
+  let riseK=KEYS[0], fallK=KEYS[0];
+  KEYS.forEach(k=>{ const d=(lastc[k]|0)-(first[k]|0);
+    if(d>((lastc[riseK]|0)-(first[riseK]|0))) riseK=k;
+    if(d<((lastc[fallK]|0)-(first[fallK]|0))) fallK=k; });
+  const riseD=(lastc[riseK]|0)-(first[riseK]|0), fallD=(lastc[fallK]|0)-(first[fallK]|0);
+  let line2;
+  if(fallD<=-15) line2=`不過 ${ATTR[fallK].ic}${ATTR[fallK].nm} 一路走下坡（出生 ${first[fallK]|0} → 謝幕 ${lastc[fallK]|0}，蒸發 ${-fallD} 點）——歲月這把鈍刀，磨的就是它。`;
+  else if(riseD>=15) line2=`${ATTR[riseK].ic}${ATTR[riseK].nm} 倒是越活越猛（出生 ${first[riseK]|0} → 謝幕 ${lastc[riseK]|0}，多賺 ${riseD} 點）——大器晚成本人，沒在跟你開玩笑。`;
+  else line2=`五條線從生到死都沒大起大落，整張編年史平得像一條橫盤——穩，也是一種活法。`;
+  const legend=KEYS.map(k=>`<span style="font-size:11px;margin:0 4px;white-space:nowrap"><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:${ATTR[k].col};margin-right:3px"></span>${ATTR[k].ic}${ATTR[k].nm}</span>`).join("");
+  return `<div class="panel" style="margin-top:12px;background:var(--panel2)">
+    <h2 class="sec">🧬 屬性編年史・五階段軌跡</h2>
+    <div class="muted" style="font-size:12px;margin-bottom:4px;text-align:center">把一生切成章節，看你的五圍在哪一段稱王、哪一段崩盤</div>
+    <svg viewBox="0 0 ${W} ${HT}" style="width:100%;max-width:${W}px;display:block;margin:0 auto" role="img" aria-label="人生各階段五項屬性長條圖">
+      <line x1="${padX}" y1="${Y(50)}" x2="${W-padX}" y2="${Y(50)}" style="stroke:var(--line,#555);stroke-width:.6;stroke-dasharray:3 3;opacity:.4"/>
+      ${bars}${labels}
+    </svg>
+    <div style="text-align:center;margin-top:4px">${legend}</div>
+    <div class="arcsum" style="margin-top:8px;font-size:12.5px;line-height:1.7;text-align:left;opacity:.95">📖 <b>一生主旋律：${ATTR[defK].ic}${ATTR[defK].nm}</b>——${R106_TRAJ_QUIP[defK]}<br>🎢 ${line2}</div>
+  </div>`;
+}
+
+/* =========================================================================
    R89 關鍵抉擇屬性快照：把這一生靠屬性門檻/檢定/分流做的關鍵決定攤開，
    每筆記「第幾歲、靠哪項屬性（值多少）、贏了還是翻車、什麼事件」。
    純讀 S.keySnap（choose 當下記錄）、零 rng 消耗；同種子同軌跡 → 同回顧。
@@ -14032,6 +14113,7 @@ function screenSummary(cat){
       ${attrReviewHTML()}
       ${bondReviewHTML()}
       ${attrCurveHTML()}
+      ${attrTrajectoryHTML()}
       ${keySnapHTML()}
       ${attrTurnsHTML()}
       ${r68FateHTML()}

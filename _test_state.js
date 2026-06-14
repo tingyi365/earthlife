@@ -3605,5 +3605,51 @@ ok(r105.ach3, 'R105 ⑦ 周目成就：cycle≥3 解 ngp_rookie，未達門檻�
 ok(r105.roundtrip, 'R105 ⑧ 序列化往返：stringify→parse 後周目欄位保值不崩');
 ok(r105.html, 'R105 ⑨ HTML 不崩：開局卡與結算頁周目區塊可渲染');
 
+// ============================================================================
+// R106 屬性編年史：里程碑軌跡記錄（trajPush 去重/階段節點）、序列化往返、HTML 不崩、舊存檔相容
+// ============================================================================
+const r106 = JSON.parse(vm.runInContext(`(function(){
+  const out={};
+  // ① 出生即第一章：startGame 後 attrTrajectory 有 1 筆 st:0 age:0，五圍鍵齊備且為數字
+  startGame();
+  const t0=S.attrTrajectory;
+  out.birth = Array.isArray(t0) && t0.length===1 && t0[0].st===0 && t0[0].age===0
+    && ['hp','int','apr','mny','hap'].every(k=>typeof t0[0][k]==='number');
+  // ② trajPush 去重：同 st 只記一次；不同 st 才增列
+  trajPush(0); out.dedupSame = S.attrTrajectory.length===1;          // st0 已存在 → 不重複
+  S.age=15; S.attr.int=70; trajPush(1); out.pushNew = S.attrTrajectory.length===2 && S.attrTrajectory[1].st===1 && S.attrTrajectory[1].age===15;
+  trajPush(1); out.dedupAgain = S.attrTrajectory.length===2;          // st1 再 push → 仍不重複
+  // ③ 節點快照保值：第二章記下的 int 應是 push 當下的 70
+  out.snapVal = S.attrTrajectory[1].int===70;
+  // ④ 序列化往返不崩：stringify→parse 後每章 st/age/五圍保值
+  const parsed=JSON.parse(JSON.stringify(S.attrTrajectory));
+  out.roundtrip = parsed.length===S.attrTrajectory.length
+    && parsed.every((r,i)=>r.st===S.attrTrajectory[i].st && r.age===S.attrTrajectory[i].age
+        && ['hp','int','apr','mny','hap'].every(k=>r[k]===S.attrTrajectory[i][k]));
+  // ⑤ HTML 不崩：有 ≥1 里程碑＋謝幕點 → 渲染含標題/SVG/長條/點評
+  S.age=68; S.attr={hp:40,int:70,apr:50,mny:30,hap:55};
+  const h=attrTrajectoryHTML();
+  out.html = typeof h==='string' && h.indexOf('屬性編年史')>=0 && h.indexOf('<svg')>=0
+    && h.indexOf('<rect')>=0 && h.indexOf('主旋律')>=0;
+  // ⑥ 不足兩章節整塊省略不報錯（空軌跡 → 只剩謝幕 1 章 → 回空字串）
+  S.attrTrajectory=[]; out.skipEmpty = attrTrajectoryHTML()==='';
+  // ⑦ 舊存檔相容：缺鍵 save 經 ensureState 補空陣列，且不注入其它 r106 旗標
+  const old={flags:{employed:true},attr:{hp:50,int:50,apr:50,mny:50,hap:50},age:40,alive:true,seen:{}};
+  ensureState(old);
+  out.compat = Array.isArray(old.attrTrajectory) && old.attrTrajectory.length===0
+    && Object.keys(old.flags).every(k=>k.indexOf('r106')!==0);
+  // ⑧ 零汙染：軌跡不寫進 S.flags（純獨立結構）
+  startGame(); out.clean = Object.keys(S.flags).every(k=>k.indexOf('traj')<0 && k.indexOf('r106')!==0);
+  return JSON.stringify(out);
+})()`, sandbox));
+ok(r106.birth, 'R106 ① 出生即第一章：startGame 後 attrTrajectory 有 1 筆 st:0 age:0，五圍鍵齊備為數字');
+ok(r106.dedupSame && r106.pushNew && r106.dedupAgain, 'R106 ② trajPush 去重：同階段只記一次、跨新階段才增列里程碑');
+ok(r106.snapVal, 'R106 ③ 節點快照保值：跨階段記下的是 push 當下的五圍值');
+ok(r106.roundtrip, 'R106 ④ 序列化往返：stringify→parse 後每章 st/age/五圍保值不崩');
+ok(r106.html, 'R106 ⑤ HTML 不崩：有里程碑＋謝幕點→渲染含標題/SVG/長條/主旋律點評');
+ok(r106.skipEmpty, 'R106 ⑥ 不足兩章節整塊省略：空軌跡→回空字串不報錯');
+ok(r106.compat, 'R106 ⑦ 舊存檔相容：缺鍵 save 經 ensureState 補空陣列、不注入 r106 旗標');
+ok(r106.clean, 'R106 ⑧ 零汙染：軌跡為獨立結構，不寫進 S.flags');
+
 console.log(fails ? `\n結果: ❌ ${fails} 項未通過` : '\n結果: ✅ 狀態機全數正確');
 process.exit(fails ? 1 : 0);
