@@ -4082,5 +4082,73 @@ const r119 = JSON.parse(vm.runInContext(`(function(){
   ['honest','⑫ 誠實鐵律：不偽造伺服器排行/百分位'],
 ].forEach(([k,m])=>ok(r119[k], 'R119 '+m));
 
+// ===== R123 台味人生人格鑑定・一句定生死分享卡：確定性單一原型/衍生特質/稀有度估算/純呈現層不動數值/誠實不偽造統計 =====
+const r123 = JSON.parse(vm.runInContext(`(function(){
+  const out={};
+  // 場景①：航海王梭哈背債局 → 應命中賭性高、原型走賭徒/背債系
+  startGame(); const s=S; ensureState(s); s.alive=false;
+  s.age=55; s.attr={hp:40,int:60,apr:50,mny:25,hap:45};
+  s.flags=Object.assign(s.flags||{},{r122_in:true,r122_path:"sailor",r122_endtype:"r122_end_debtgrad"});
+  const p1=buildPersona();
+  out.struct = !!p1 && typeof p1.nm==="string" && !!p1.id && typeof p1.rar==="number" && p1.traits && typeof p1.traits.gamble==="number";
+  out.single = R123_PERSONAS.filter(x=>{ try{ return !!x.when(Object.assign({hp:0,int:0,apr:0,mny:0,hap:0},s.attr),s.flags,r123Traits(),s.age);}catch(e){return false;} }).length>=1;
+  out.gambleRoute = p1.id==="debtgrad" || p1.id==="godtrader" || p1.traits.gamble>=40;
+  // 確定性：連跑兩次逐字一致、零 rng 消耗
+  let used=0; const old=rng; rng=function(){ used++; return old(); };
+  const a1=JSON.stringify(buildPersona()), a2=JSON.stringify(buildPersona());
+  const ht1=personaHTML(), ht2=personaHTML(), tx1=buildPersonaText(), tx2=buildPersonaText();
+  rng=old;
+  out.rngZero = used===0;
+  out.deterministic = a1===a2 && ht1===ht2 && tx1===tx2;
+  // 純呈現層：生成前後 S.attr / S.flags 完全不變
+  const beforeA=JSON.stringify(S.attr), beforeF=JSON.stringify(S.flags);
+  buildPersona(); personaHTML(); buildPersonaText(); r123Traits();
+  out.noMutate = JSON.stringify(S.attr)===beforeA && JSON.stringify(S.flags)===beforeF;
+  // 衍生特質皆 0~100 整數
+  const tr=r123Traits();
+  out.traitRange = [tr.liver,tr.lazy,tr.gamble,tr.loser].every(v=>Number.isInteger(v)&&v>=0&&v<=100);
+  // 場景②：五圍全頂 → 人生勝利組（最優先命中、單一標籤）
+  startGame(); const w=S; ensureState(w); w.alive=false; w.age=80; w.attr={hp:80,int:80,apr:80,mny:85,hap:80}; w.flags={};
+  out.winner = buildPersona().id==="winner";
+  // 場景③：爆肝局 → 肝指數高、命中肝帝
+  startGame(); const lv=S; ensureState(lv); lv.alive=false; lv.age=58; lv.attr={hp:35,int:65,apr:50,mny:75,hap:50};
+  lv.flags={qkLiverOn:true,bigco:true}; lv.seen=Object.assign(lv.seen||{},{overtime:true});
+  const pl=buildPersona();
+  out.liverKing = pl.id==="liverking" && pl.traits.liver>=55;
+  // 場景④：空旗標平凡局 → 保底命中平凡打工人（人人有原型，不漏接）
+  startGame(); const cm=S; ensureState(cm); cm.alive=false; cm.age=70; cm.attr={hp:55,int:55,apr:55,mny:55,hap:55}; cm.flags={};
+  out.fallback = !!buildPersona().nm;
+  // 渲染 + 分享：面板含標籤與複製鈕、文字版含遊戲連結與標籤
+  startGame(); const r=S; ensureState(r); r.alive=false; r.age=60; r.attr={hp:60,int:60,apr:60,mny:60,hap:60}; r.flags={r122_in:true,r122_path:"saver"};
+  const html=personaHTML(), txt=buildPersonaText(); const pp=buildPersona();
+  out.htmlOk = html.indexOf("台味人生人格鑑定")>=0 && html.indexOf("copyPersona")>=0 && html.indexOf(pp.nm)>=0;
+  out.txtOk = txt.indexOf(pp.nm)>=0 && txt.indexOf(SHARE_URL)>=0 && txt.indexOf("人格鑑定")>=0;
+  // 誠實：標稀有度為「估算」、且不偽造「贏過/打敗 X% 玩家」式伺服器統計
+  out.honestEstimate = html.indexOf("估算")>=0;
+  const fake=/(贏過|勝過|打敗|擊敗|超越|排名)[^。\\n]{0,12}([0-9]{1,3}\\s*%|百分)[^。\\n]{0,8}玩家/;
+  out.honest = !fake.test(html) && !fake.test(txt);
+  // 缺 S（無局）相容不炸
+  let okNull=true; try{ S=null; if(buildPersona()!==null) okNull=false; if(personaHTML()!=="") okNull=false; }catch(e){ okNull=false; }
+  out.nullSafe = okNull;
+  return JSON.stringify(out);
+})()`, sandbox));
+[
+  ['struct','① 生成結構：buildPersona 回傳 {id,nm,desc,rar,traits}'],
+  ['single','② 至少一原型命中(優先序定生死、單一標籤)'],
+  ['gambleRoute','③ 真實對應：航海王背債局命中賭徒系/賭性高'],
+  ['rngZero','④ 零 rng() 消耗(不動遊戲序列)'],
+  ['deterministic','⑤ 確定性：連跑兩次卡/HTML/文字逐字一致'],
+  ['noMutate','⑥ 純呈現層：生成前後 S.attr/S.flags 不變'],
+  ['traitRange','⑦ 衍生特質皆 0~100 整數(肝/躺/賭/魯)'],
+  ['winner','⑧ 五圍全頂命中「人生勝利組」(優先序正確)'],
+  ['liverKing','⑨ 爆肝局命中「爆肝過勞肝帝」且肝指數高'],
+  ['fallback','⑩ 保底原型：空旗標平凡局必有單一標籤(不漏接)'],
+  ['htmlOk','⑪ 面板含標題/標籤/複製鈕'],
+  ['txtOk','⑫ 文字版含標籤與分享連結'],
+  ['honestEstimate','⑬ 稀有度誠實標示為「估算」'],
+  ['honest','⑭ 誠實鐵律：不偽造伺服器排行/百分位'],
+  ['nullSafe','⑮ 無局(S=null)相容不炸'],
+].forEach(([k,m])=>ok(r123[k], 'R123 '+m));
+
 console.log(fails ? `\n結果: ❌ ${fails} 項未通過` : '\n結果: ✅ 狀態機全數正確');
 process.exit(fails ? 1 : 0);

@@ -15367,6 +15367,7 @@ function screenSummary(cat){
       ${extremesHTML()}
       ${epitaphHTML()}
       ${memoirHTML()}
+      ${personaHTML()}
       <div class="origin center"><span class="grademedal"><span class="gm-t">本局評價</span><span class="gm-g">${grade}</span><span class="gm-s">級</span></span><br>
       <span class="muted">${GRADE_TALK[grade]||""}</span><br>
       <span class="muted">總分 ${sum} / 500　·　本帳號第 ${SAVE.plays} 隻角色</span></div>
@@ -17400,6 +17401,141 @@ function copyMemoir(btn){
     if(!btn) return;
     if(!btn.dataset.orig) btn.dataset.orig=btn.innerHTML;
     btn.innerHTML="✅ 回憶錄已複製，貼上去分享吧！";
+    setTimeout(()=>{ if(btn.dataset.orig) btn.innerHTML=btn.dataset.orig; },2600);
+  };
+  const fallback=()=>{ if(legacyCopy(txt)) done(); else textReportOverlay(txt); };
+  try{
+    if(typeof navigator!=="undefined"&&navigator.clipboard&&navigator.clipboard.writeText){
+      navigator.clipboard.writeText(txt).then(done, fallback);
+      return;
+    }
+  }catch(e){}
+  fallback();
+}
+
+/* =========================================================================
+   R123 台味人生人格鑑定・一句定生死分享卡
+   讀「本局已結束」的真實結算資料（五圍最終值 S.attr／既有旗標 S.flags：肝鐵人·
+   月光·靠爸·養生·躺平·創業·網紅·課金·被詐·R122 股海三分流與結局等／死法／年齡），
+   用確定性純函式（零 rng、不碰 sim/state 序列）演算出「單一台味人格原型標籤」＋
+   衍生特質（肝指數/躺平度/賭性/魯蛇值）＋誠實標示的稀有度估算＋一鍵複製分享文。
+   與 R118 圖鑑牆、R119 長篇回憶錄不同：R123 是『單句人格定性』的截圖分享卡。
+   全程純呈現層：只讀不寫，連跑逐字一致。
+   ========================================================================= */
+/* 衍生特質：四條 0~100 的確定性指標，全由 S.attr＋既有旗標推算，零 rng */
+function r123Traits(){
+  const a=(S&&S.attr)||{hp:0,int:0,apr:0,mny:0,hap:0};
+  const f=(S&&S.flags)||{}, seen=(S&&S.seen)||{};
+  const cl=v=>Math.max(0,Math.min(100,Math.round(v)));
+  // 肝指數：爆肝換錢的程度（肝鐵人/創業/大公司加班＋高財低健）
+  const liver = cl((f.qkLiverOn?34:0)+(f.startup?20:0)+(f.bigco?14:0)+(seen.overtime?12:0)+Math.max(0,(a.mny||0)-58)*0.6+Math.max(0,52-(a.hp||0))*0.55);
+  // 躺平度：與地心引力握手言和的程度（躺平次數/月光＋低財高樂，扣掉爆肝與創業）
+  const lazy  = cl((Math.min(f.lazy||0,5))*13+(f.qkMoonOn?16:0)+Math.max(0,42-(a.mny||0))*0.5+Math.max(0,(a.hap||0)-68)*0.35-(f.startup?22:0)-(f.qkLiverOn?16:0));
+  // 賭性：投機梭哈傾向（R122 航海王/賭神/背債/韭菜＋課金鯨魚/被詐）
+  const gamble= cl((f.r122_path==="sailor"?38:0)+(f.r122_endtype==="r122_end_godtrader"?26:0)+(f.r122_endtype==="r122_end_debtgrad"?24:0)+(f.r122_endtype==="r122_end_leek"?14:0)+(f.whale?16:0)+(f.scammed?10:0)+(f.r122_path==="saver"?6:0));
+  // 魯蛇值：人生不如意的綜合值（財/樂/貌偏低＋好人卡/被詐/破產，高財折抵）
+  const loser = cl(Math.max(0,255-((a.mny||0)+(a.hap||0)+(a.apr||0)))*0.32+(f.goodguy?14:0)+(f.scammed?10:0)+((f.bankrupt||f.startup_failed)?14:0)-Math.max(0,(a.mny||0)-72)*0.6);
+  return {liver,lazy,gamble,loser};
+}
+/* 人格原型表：條件由上而下優先比對，第一個命中即定生死（確定性、單一標籤、誠實對應本局）。
+   rar=該原型「觸發條件」的稀有度估算（誠實標示為估算，非真實伺服器統計）。最後一筆為保底。 */
+const R123_PERSONAS = [
+  {id:"winner",  ic:"👑", nm:"人生勝利組",        rar:6,  desc:"五圍開外掛、財富快樂雙頂標，別人努力的終點是你的起點——這把投胎直接抽到 SSR。",
+   when:(a,f,t,age)=>a.mny>=75 && a.hap>=68 && a.hp>=60},
+  {id:"godtrader",ic:"🎰", nm:"當沖賭神・在地傳奇", rar:3,  desc:"梭哈梭到封神，K 線在你眼裡會發光，營業員把你當神拜——人生開了外掛，可惜不能存檔。",
+   when:(a,f,t,age)=>f.r122_endtype==="r122_end_godtrader"},
+  {id:"debtgrad", ic:"💀", nm:"航海王畢業・背債住套房", rar:7, desc:"all in 的時候有多帥，畢業的時候就有多痛，從航海王變成背債仔，套房裡只剩對帳單陪你。",
+   when:(a,f,t,age)=>f.r122_endtype==="r122_end_debtgrad" || (t.gamble>=55 && a.mny<=35)},
+  {id:"leek",     ic:"🥬", nm:"韭菜畢業生",        rar:12, desc:"群組老師喊進你就追高，飆股變壁紙、學費繳好繳滿，唯一的畢業證書是一張慘綠對帳單。",
+   when:(a,f,t,age)=>f.r122_endtype==="r122_end_leek" || (f.scammed && a.mny<=40)},
+  {id:"liverking",ic:"🔋", nm:"爆肝過勞肝帝",      rar:14, desc:"用肝換錢換到最後一刻，財報漂亮、體檢報告紅字也漂亮——錢是賺到了，命是借來的。",
+   when:(a,f,t,age)=>t.liver>=55 || (f.qkLiverOn && a.hp<=48)},
+  {id:"fire",     ic:"🏝️", nm:"FIRE 提早退休族",   rar:5,  desc:"不上班不焦慮，被動收入自己長腳，年紀輕輕就把鬧鐘砸了——這才是真正的人生贏家。",
+   when:(a,f,t,age)=>f.r122_endtype==="r122_end_fire"},
+  {id:"saver",    ic:"🛟", nm:"存股穩健複利族",    rar:16, desc:"不賭不梭哈，定期定額慢慢滾，無聊是無聊了點，但戶頭數字會替你慢慢說話。",
+   when:(a,f,t,age)=>f.r122_path==="saver" || f.r122_endtype==="r122_end_smallsave"},
+  {id:"parasite", ic:"🍼", nm:"啃老月光族",        rar:13, desc:"戶頭餘額是都市傳說，月底準時歸零，靠爸與月光雙修，理財 App 已對你發出求救訊號。",
+   when:(a,f,t,age)=>(f.qkMoonOn||f.qkDadCut) && a.mny<=48},
+  {id:"health",   ic:"🥦", nm:"養生長壽仙",        rar:10, desc:"把養生當宗教在拜，同學會上大家都老了只有你被時間客氣對待——活得久，才是最後的贏。",
+   when:(a,f,t,age)=>f.qkHealthOn || (a.hp>=78 && age>=80)},
+  {id:"slasher",  ic:"🛠️", nm:"斜槓鬼島倖存者",    rar:11, desc:"創業、網紅、接案樣樣來，在鬼島的夾縫裡硬是把自己活成一支隊伍，累但沒在怕。",
+   when:(a,f,t,age)=>f.startup || f.influencer || f.ipo},
+  {id:"lazyzen",  ic:"🦥", nm:"躺平佛系魯蛇",      rar:15, desc:"與地心引力握手言和，凡事差不多就好，躺著看世界運轉——快樂是真的，沒錢也是真的。",
+   when:(a,f,t,age)=>t.lazy>=52 || (f.lazy||0)>=3},
+  {id:"loser",    ic:"😮‍💨", nm:"鬼島魯蛇本蛇",      rar:18, desc:"努力過、被現實電過，錢沒留住、好人卡集滿——這座島上最普通的辛酸，被你活成了完整版。",
+   when:(a,f,t,age)=>t.loser>=58},
+  {id:"solo",     ic:"🕊️", nm:"母胎單身瀟灑客",    rar:9,  desc:"一輩子沒繳過單身狗識別證，孤獨是自由的稅，一個人也把日子過得有聲有色。",
+   when:(a,f,t,age)=>age>=65 && !f.married},
+  {id:"common",   ic:"🧑‍💼", nm:"平凡鬼島打工人",    rar:35, desc:"沒大富大貴也沒翻車，準時上下班、準時繳稅——鬼島最普通、也最堅韌的那種人，就是你。",
+   when:(a,f,t,age)=>true},
+];
+/* 演算單一人格原型（第一個命中即回傳；含衍生特質與稀有度估算），純讀 S、零 rng */
+function buildPersona(){
+  if(!S) return null;
+  const a=Object.assign({hp:0,int:0,apr:0,mny:0,hap:0},S.attr||{});
+  const f=S.flags||{}, t=r123Traits(), age=S.age||0;
+  let p=R123_PERSONAS[R123_PERSONAS.length-1];
+  for(const cand of R123_PERSONAS){ let ok=false; try{ ok=!!cand.when(a,f,t,age); }catch(e){ ok=false; } if(ok){ p=cand; break; } }
+  return {id:p.id, ic:p.ic, nm:p.nm, desc:p.desc, rar:p.rar, traits:t, age};
+}
+/* 單條特質長條（沿用結算卡視覺、不引外部圖庫，截圖友善） */
+function r123Bar(label, ic, val){
+  const v=Math.max(0,Math.min(100,val|0));
+  return `<div style="display:flex;align-items:center;gap:8px;margin:5px 0;font-size:12.5px">
+    <span style="min-width:74px">${ic} ${label}</span>
+    <span style="flex:1;height:11px;background:var(--panel);border-radius:6px;overflow:hidden;display:inline-block">
+      <span style="display:block;height:100%;width:${v}%;background:linear-gradient(90deg,var(--accent,#ffd24a),#ff7a59);border-radius:6px"></span>
+    </span>
+    <span style="min-width:30px;text-align:right;font-weight:700">${v}</span></div>`;
+}
+/* 結算卡內嵌的人格鑑定面板（截圖友善、RWD 手機可讀） */
+function personaHTML(){
+  let p; try{ p=buildPersona(); }catch(e){ return ""; }
+  if(!p) return "";
+  const t=p.traits;
+  return `<div class="panel" id="personaCard" style="margin-top:12px;background:var(--panel2);border:1px solid var(--accent,#ffd24a)">
+    <h2 class="sec">🧬 台味人生人格鑑定</h2>
+    <div class="muted" style="font-size:11.5px;margin-bottom:8px">系統依你這一生「真實走過」的軌跡，一句定生死——同一條人生，鑑定永遠是同一款</div>
+    <div style="text-align:center;margin:10px 0">
+      <div style="font-size:40px;line-height:1.1">${p.ic}</div>
+      <div style="font-size:22px;font-weight:800;letter-spacing:1px;color:var(--accent,#ffd24a);margin:4px 0">${p.nm}</div>
+      <div class="etext" style="font-size:13px;line-height:1.7;text-align:center;margin:6px auto;max-width:420px">${p.desc}</div>
+    </div>
+    <div style="margin:10px 0">
+      ${r123Bar("肝指數","🔋",t.liver)}
+      ${r123Bar("躺平度","🦥",t.lazy)}
+      ${r123Bar("賭性","🎲",t.gamble)}
+      ${r123Bar("魯蛇值","😮‍💨",t.loser)}
+    </div>
+    <div class="muted" style="font-size:11.5px;text-align:center;margin:8px 0 2px">🎲 全台估計僅約 <b style="color:var(--accent,#ffd24a)">${p.rar}%</b> 玩家走出這種人生<br><span style="font-size:10.5px">（依本局觸發條件估算，非真實伺服器統計）</span></div>
+    <div style="text-align:right;margin-top:8px">
+      <button class="btn sec" style="display:inline-block;width:auto;padding:7px 14px;font-size:12.5px" onclick="copyPersona(this)">📋 複製人格鑑定卡</button>
+    </div>
+  </div>`;
+}
+/* 人格鑑定純文字版（貼 Threads/Dcard/IG 限動／群組，含標籤＋人格描述＋遊戲連結） */
+function buildPersonaText(){
+  const p=buildPersona();
+  if(!p) return "";
+  const t=p.traits;
+  const lines=[
+    `🧬 台味人生人格鑑定`,
+    `我這輩子是【${p.ic} ${p.nm}】`,
+    p.desc,
+    `📊 肝指數 ${t.liver}｜躺平度 ${t.lazy}｜賭性 ${t.gamble}｜魯蛇值 ${t.loser}`,
+    `🎲 全台估計僅約 ${p.rar}% 玩家走出這種人生（觸發條件估算）`,
+    `—— 地球 Online · 一場荒誕又認真的投胎模擬`,
+  ];
+  if(typeof SHARE_URL!=="undefined"&&SHARE_URL) lines.push(SHARE_URL);
+  return lines.join("\n").trim();
+}
+/* 一鍵複製人格卡（沿用 clipboard→legacyCopy→overlay 降級鏈） */
+function copyPersona(btn){
+  let txt; try{ txt=buildPersonaText(); }catch(e){ alert("人格鑑定生成失敗："+(e&&e.message||e)); return; }
+  const done=()=>{
+    if(!btn) return;
+    if(!btn.dataset.orig) btn.dataset.orig=btn.innerHTML;
+    btn.innerHTML="✅ 人格卡已複製，貼上去讓朋友對號入座！";
     setTimeout(()=>{ if(btn.dataset.orig) btn.innerHTML=btn.dataset.orig; },2600);
   };
   const fallback=()=>{ if(legacyCopy(txt)) done(); else textReportOverlay(txt); };
