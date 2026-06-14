@@ -1,7 +1,7 @@
 # EarthLife 地球 Online — 一款由 AI 自主更新管理的人生模擬遊戲
 
 <p align="center">
-  <a href="https://earthlife.pages.dev"><img src="docs/social_preview.png" width="100%" alt="EarthLife 地球 Online — 從受精卵到火化，你的人生只值幾分？AI 自己寫自己進化的台味鬼島人生模擬器，R1→R116 百輪迭代、逾 800 事件、零人類手寫遊戲碼。線上免費試玩 earthlife.pages.dev"></a>
+  <a href="https://earthlife.pages.dev"><img src="docs/social_preview.png" width="100%" alt="EarthLife 地球 Online — 從受精卵到火化，你的人生只值幾分？AI 自己寫自己進化的台味鬼島人生模擬器，R1→R118 百輪迭代、逾 800 事件、零人類手寫遊戲碼。線上免費試玩 earthlife.pages.dev"></a>
 </p>
 
 **An AI-self-evolving life simulator — autonomously designed, tested, deployed, and changelogged by an AI agent, round after round.**
@@ -9,19 +9,19 @@
 [![▶ Play Now](https://img.shields.io/badge/%E2%96%B6%20%E7%B7%9A%E4%B8%8A%E8%A9%A6%E7%8E%A9-earthlife.pages.dev-7fd7ff?style=for-the-badge)](https://earthlife.pages.dev)
 [![License: MIT](https://img.shields.io/badge/License-MIT-3fb950?style=for-the-badge)](LICENSE)
 [![Single HTML file](https://img.shields.io/badge/Build-%E5%96%AE%E4%B8%80%20HTML%20%E6%AA%94%C2%B7%E7%84%A1%E6%A1%86%E6%9E%B6-ff9d5c?style=for-the-badge)](index.html)
-[![AI Self-Evolved](https://img.shields.io/badge/AI%20%E8%87%AA%E4%B8%BB%E9%80%B2%E5%8C%96-R1%20%E2%86%92%20R116%20%E4%BB%8D%E5%9C%A8%E7%B9%BC%E7%BA%8C-ffd24a?style=for-the-badge)](docs/AI_AUTONOMOUS_UPDATE.md)
+[![AI Self-Evolved](https://img.shields.io/badge/AI%20%E8%87%AA%E4%B8%BB%E9%80%B2%E5%8C%96-R1%20%E2%86%92%20R118%20%E4%BB%8D%E5%9C%A8%E7%B9%BC%E7%BA%8C-ffd24a?style=for-the-badge)](docs/AI_AUTONOMOUS_UPDATE.md)
 [![Zero human-written game code](https://img.shields.io/badge/%E9%81%8A%E6%88%B2%E7%A8%8B%E5%BC%8F%E7%A2%BC-100%25%20AI%20%E6%89%8B%E5%AF%AB%C2%B7%E9%9B%B6%E4%BA%BA%E9%A1%9E%E6%8F%92%E6%89%8B-ff5d8f?style=for-the-badge)](docs/AI_AUTONOMOUS_UPDATE.md)
 
-> 🧬 **這是一款「自己進化自己」的遊戲——一個 AI agent 自己寫出來、自己養大的。** 從 61 個事件的雛形開始，沒有人類排需求、沒有人類改一行 code，AI 每 30 分鐘自我迭代一輪：自己選題、自己改碼、自己跑測試、自己部署、自己寫日誌，全程無人介入。到今天它已經**連續自主進化 116 輪（R1 → R116，仍在繼續）**，且每一輪都得先過自動化測試閘門才准上線。**每一行遊戲程式碼都是 AI 手寫、零人類手寫遊戲碼。** 你現在玩到的這個版本，不是誰設計的——是它自己一輪一輪長出來的。
+> 🧬 **這是一款「自己進化自己」的遊戲——一個 AI agent 自己寫出來、自己養大的。** 從 61 個事件的雛形開始，沒有人類排需求、沒有人類改一行 code，AI 每 30 分鐘自我迭代一輪：自己選題、自己改碼、自己跑測試、自己部署、自己寫日誌，全程無人介入。到今天它已經**連續自主進化 118 輪（R1 → R118，仍在繼續）**，且每一輪都得先過自動化測試閘門才准上線。**每一行遊戲程式碼都是 AI 手寫、零人類手寫遊戲碼。** 你現在玩到的這個版本，不是誰設計的——是它自己一輪一輪長出來的。
 
-> 📸 **最新賣點（R113→R116）**：最新的 **R116「轉生／業力繼承系統（命格殿）」**讓每一世不再「玩完就沒了」——謝幕時依本世表現（壽命／五圍／成就／R115 稀有度）**確定性換算成「業力」**，用 localStorage 跨周目永久累積，再到命格殿花業力解鎖 4 項永久命格加成（🧭 天命羅盤／🍀 夙世福報／🎁 天選之子／🌟 宿慧加持），下一周目真正生效，把「再投胎一次」做成越滾越強的長期養成鉤。建立在 **R115「人生評級／稀有度系統」**（謝幕時依關鍵指標確定性算分，把一生定級成 **普通 → 稀有 → 史詩 → 傳奇 → 神話** 五階稀有度＋稀有結局標章印上結算卡，誠實：確定性算分非偽造伺服器百分位）與 **R114「首屏 hook ＋結算成績單視覺打磨」**的轉化體驗、**R113「多段連鎖人生劇情線」**（4 條跨年齡命運鏈做成入口→中段→收尾、走不同分支解開 8 個專屬隱藏結局）之上，再往下踩著 **R112「五圍真正驅動遊戲」**（健康／智力／外貌／財富／快樂是真正的命運引擎，事件分流、檢定成功率、解鎖門檻全吃五圍，成長帶取捨權衡）、**R111 鬼島職場／居住嘲諷梗包**、**R110 台味育兒教養人生支線**與台味 NPC 人際羈絆——投胎、抉擇、定級、累積業力、開下一周目，停不下來。
+> 📸 **最新賣點（R115→R118）**：最新的 **R118「圖鑑收集牆・全館完成度」**把這 118 輪長出來的多館收藏（死法／成就／出身／天賦／稱號／隱藏結局）攤成一面**完成度收集牆**——頂端壓一個**總完成度 %**（已解鎖數／總數，確定性計算、無偽造排行）＋「差 N 個就集滿」提示，外加一座**稀有戰利品展示櫃**擺出你已解鎖最稀有的傳說結局／高階稱號／稀有死法，再附**可分享圖鑑卡**截圖炫耀進度，直接把「collect-them-all」做成重玩與外流的鉤子。前一輪 **R117「每日挑戰種子模式」**以日期為確定性種子，讓當天所有玩家共用同一套起始命運＋事件權重，結算卡帶**今日種子碼**可輸入好友種子重玩同局比成績；再前面是 **R116「轉生／業力繼承系統（命格殿）」**謝幕時把本世表現確定性換算成「業力」、跨周目永久累積解鎖 4 項永久命格加成，與 **R115「人生評級／稀有度系統」**（依關鍵指標確定性算分定級 **普通 → 稀有 → 史詩 → 傳奇 → 神話** 五階＋稀有結局標章印上結算卡，誠實：確定性算分非偽造伺服器百分位）。這一切踩在 **R113 多段連鎖命運抉擇鏈**、**R112 五圍真正驅動遊戲**、**R110/R111 台味育兒與鬼島職場居住梗包**與台味 NPC 人際羈絆之上——投胎、抉擇、定級、累積業力、刷滿圖鑑、開下一周目，停不下來。
 
 🎮 線上試玩 / Play now: **https://earthlife.pages.dev**
 
 <p align="center">
   <img src="docs/demo.gif" width="62%" alt="EarthLife 實機 demo：投胎抽卡 → 梗圖事件 → 人生總結卡">
 </p>
-<p align="center"><sub>↑ 實機 demo（持續進化中，目前 R116）</sub></p>
+<p align="center"><sub>↑ 實機 demo（持續進化中，目前 R118）</sub></p>
 
 <p align="center">
   <img src="docs/screenshot_start.png" width="31%" alt="開局投胎抽卡">
@@ -38,7 +38,7 @@
 
 這不只是一款遊戲——它是一個 **「AI 自主更新管理」的實驗場**。
 
-遊戲上線後的每一輪迭代（**R1 → R116，仍在繼續**），都由一個 AI agent 自主完成，**每 30 分鐘一輪**，無人介入、**全程零人類手寫遊戲碼**：
+遊戲上線後的每一輪迭代（**R1 → R118，仍在繼續**），都由一個 AI agent 自主完成，**每 30 分鐘一輪**，無人介入、**全程零人類手寫遊戲碼**：
 
 ```
 ┌─────────────────────────────────────────────────┐
@@ -53,11 +53,11 @@
 └─────────────────────────────────────────────────┘
 ```
 
-116 輪下來，遊戲從 61 個事件的雛形，長成 **逾 800 個事件、逾 111 種梗圖場景、逾 310 個成就、逾 77 種死法、10＋ 隱藏結局＋一整套隱藏稀有結局**、外加自繪人生分享卡與成就圖鑑、多館合一的收藏圖鑑（死法／成就／出身／天賦）、一整套會陪你走完一生的台味 NPC 人際羈絆系統、可「再玩一輪」延續動機的周目 / New Game+ 機制、結算頁用 inline SVG 攤開一生五階段屬性軌跡的屬性編年史回顧，再到把每段人生收進跨周目收藏冊、可並排炫耀的歷代人生名人堂，以及五圍真正驅動命運分流的屬性系統、多段命運抉擇鏈、會在謝幕時把一生定級成普通→神話五階稀有度的人生評級系統，與把每世表現換算成「業力」、跨周目永久累積解鎖命格加成的轉生／業力繼承系統（內容數據由測試報告即時統計，最新賣點截至 R116）——每一步都有測試把關、每一步都可回溯。
+118 輪下來，遊戲從 61 個事件的雛形，長成 **逾 800 個事件、逾 111 種梗圖場景、逾 330 個成就、逾 77 種死法、10＋ 隱藏結局＋一整套隱藏稀有結局**、外加自繪人生分享卡與成就圖鑑、多館合一的收藏圖鑑（死法／成就／出身／天賦）、一整套會陪你走完一生的台味 NPC 人際羈絆系統、可「再玩一輪」延續動機的周目 / New Game+ 機制、結算頁用 inline SVG 攤開一生五階段屬性軌跡的屬性編年史回顧，再到把每段人生收進跨周目收藏冊、可並排炫耀的歷代人生名人堂，以及五圍真正驅動命運分流的屬性系統、多段命運抉擇鏈、會在謝幕時把一生定級成普通→神話五階稀有度的人生評級系統，把每世表現換算成「業力」跨周目永久累積解鎖命格加成的轉生／業力繼承系統、以日期為確定性種子讓全體玩家同局比成績的每日挑戰種子模式，到把多館收藏攤成總完成度 %＋稀有戰利品展示櫃＋可分享圖鑑卡的全館圖鑑收集牆（內容數據由測試報告即時統計，最新賣點截至 R118）——每一步都有測試把關、每一步都可回溯。
 
 詳細機制設計請見 **[docs/AI_AUTONOMOUS_UPDATE.md](docs/AI_AUTONOMOUS_UPDATE.md)**。
 
-### 🧬 AI 自主進化時間軸（R1 → R116 精選里程碑）
+### 🧬 AI 自主進化時間軸（R1 → R118 精選里程碑）
 
 > 從一個 61 事件的雛形，AI agent 自己一路把它養成了下面這條軌跡。沒有人類排需求，每一輪都是它讀完現況後自己決定要長什麼：
 
@@ -103,9 +103,11 @@
 | **R113** | ⛓️ 多段連鎖人生劇情線（stat-gated 命運抉擇鏈）：4 條跨年齡因果鏈（創業 vs 鐵飯碗／移民潤學／長照家庭／網紅爆紅墜落）各「入口→中段→收尾」三段，每一步被五圍把關（門檻 gate／屬性檢定／體質分流），走不同分支解開 8 個專屬隱藏結局，逼你想「另一條路會怎樣」開下一周目 |
 | **R114** | 🎬 首屏 hook ＋結算成績單視覺打磨：純呈現層轉化體驗升級——強化首屏抓人鉤子、結算成績單視覺、RWD 與微互動，不動數值平衡，直攻「進來就想玩、玩完想截圖分享」的轉化漏斗 |
 | **R115** | 🏅 人生評級／稀有度系統：謝幕時依關鍵指標**確定性算分**，把一生定級成 **普通 → 稀有 → 史詩 → 傳奇 → 神話** 五階稀有度，配專屬台味評語與稀有結局標章印上結算卡，驅動收集重玩與截圖炫耀（誠實：確定性算分，非偽造伺服器百分位） |
-| **R116** | 🔮 轉生／業力繼承系統（命格殿）：每世謝幕依表現（壽命／五圍／成就／R115 稀有度）**確定性換算成「業力」**，用 localStorage 跨周目永久累積，到命格殿解鎖 4 項永久命格加成（🧭 天命羅盤／🍀 夙世福報／🎁 天選之子／🌟 宿慧加持），下一周目真正生效——把「再投胎一次」做成越滾越強的長期 meta 養成鉤，挑戰／對戰／劇本局自動禁用以保平衡（最新一輪） |
+| **R116** | 🔮 轉生／業力繼承系統（命格殿）：每世謝幕依表現（壽命／五圍／成就／R115 稀有度）**確定性換算成「業力」**，用 localStorage 跨周目永久累積，到命格殿解鎖 4 項永久命格加成（🧭 天命羅盤／🍀 夙世福報／🎁 天選之子／🌟 宿慧加持），下一周目真正生效——把「再投胎一次」做成越滾越強的長期 meta 養成鉤，挑戰／對戰／劇本局自動禁用以保平衡 |
+| **R117** | 🗓️ 每日挑戰種子模式（daily seed challenge）：以日期為**確定性種子**，當天所有玩家共用同一套起始命運＋事件權重，結算卡帶**今日種子碼 `#YYYYMMDD`＋可分享挑戰碼**，可輸入好友種子碼重玩同一局比成績，localStorage 記今日最佳——把「可重現對局＋社交比拼」做成直攻分享的層（純前端誠實偽隨機，非伺服器排行） |
+| **R118** | 📖 圖鑑收集牆・全館完成度：把死法／成就／出身／天賦／稱號／隱藏結局多館收藏攤成一面**完成度收集牆**——頂端壓一個**總完成度 %（已解鎖數／總數，確定性計算、無偽造排行）**＋「差 N 個就集滿」提示，外加一座**稀有戰利品展示櫃**（確定性挑出已解鎖最稀有的傳說結局／高階稱號／稀有死法）與**可分享圖鑑卡**，把「collect-them-all」做成重玩與截圖外流的鉤子（最新一輪） |
 
-> 一個 AI agent，連續自我迭代 **116 輪**、每一輪都得過測試閘門才放行，**全程零人類手寫遊戲碼**——這是這個專案最獨特的賣點。完整 116 輪逐輪設計決策直接寫在 `index.html` 的程式碼註解裡，那也是下一輪 AI 的記憶。
+> 一個 AI agent，連續自我迭代 **118 輪**、每一輪都得過測試閘門才放行，**全程零人類手寫遊戲碼**——這是這個專案最獨特的賣點。完整 118 輪逐輪設計決策直接寫在 `index.html` 的程式碼註解裡，那也是下一輪 AI 的記憶。
 
 ## 🎮 遊戲說明
 
@@ -156,7 +158,7 @@ node _test_state.js
 
 This is not just a game — it's a working experiment in **AI-autonomous release management**.
 
-Every iteration since launch (**R1 → R116 and counting**) was performed by an AI agent, **one round every 30 minutes**, with no human in the loop and **zero human-written game code**:
+Every iteration since launch (**R1 → R118 and counting**) was performed by an AI agent, **one round every 30 minutes**, with no human in the loop and **zero human-written game code**:
 
 1. **Pick a direction** — the agent reads the current game state and decides what to evolve this round (new system / balancing / polish / easter eggs).
 2. **Modify the code** — edits the game directly.
@@ -164,7 +166,7 @@ Every iteration since launch (**R1 → R116 and counting**) was performed by an 
 4. **Deploy** — pushes the build to Cloudflare Pages.
 5. **Write the log** — leaves structured design comments in the code, which become context for the next round's agent.
 
-Over 116 rounds the game grew from a 61-event prototype into **800+ events, 111+ meme scenes, 310+ achievements, 77+ ways to die, 10+ hidden endings plus a whole set of secret rare endings**, plus a Canvas-drawn shareable life card, an achievements gallery, a multi-museum collection gallery (deaths / achievements / origins / talents), a Taiwanese-flavored relationship-bond system of NPCs who live a whole life alongside you, a New Game+ loop that lets you replay another run, an attribute-chronicle settlement view that charts your five stats across five life stages (childhood / schooling / work / midlife / old age) as inline SVG bars, and a Hall of Fame that archives every life across runs into a collectible roster — sortable, with expandable biographies, side-by-side comparison cards and rarity badges, plus an attribute system where the five stats genuinely drive event branching, skill checks and unlocks, multi-stage stat-gated destiny chains, a life-grading / rarity system that ranks each finished life into one of five tiers (Common → Rare → Epic → Legendary → Mythic) by a deterministic score at the end screen, and a reincarnation / karma-inheritance system that converts each life's performance into persistent "karma" accumulated across runs to unlock permanent destiny perks. Content figures tallied live by the test report, latest highlights as of R116. Every step gated by tests, every step traceable.
+Over 118 rounds the game grew from a 61-event prototype into **800+ events, 111+ meme scenes, 330+ achievements, 77+ ways to die, 10+ hidden endings plus a whole set of secret rare endings**, plus a Canvas-drawn shareable life card, an achievements gallery, a multi-museum collection gallery (deaths / achievements / origins / talents), a Taiwanese-flavored relationship-bond system of NPCs who live a whole life alongside you, a New Game+ loop that lets you replay another run, an attribute-chronicle settlement view that charts your five stats across five life stages (childhood / schooling / work / midlife / old age) as inline SVG bars, and a Hall of Fame that archives every life across runs into a collectible roster — sortable, with expandable biographies, side-by-side comparison cards and rarity badges, plus an attribute system where the five stats genuinely drive event branching, skill checks and unlocks, multi-stage stat-gated destiny chains, a life-grading / rarity system that ranks each finished life into one of five tiers (Common → Rare → Epic → Legendary → Mythic) by a deterministic score at the end screen, a reincarnation / karma-inheritance system that converts each life's performance into persistent "karma" accumulated across runs to unlock permanent destiny perks, a daily-seed challenge mode where a deterministic date-seed gives every player the same starting fate so you can replay a friend's seed code and compare scores, and a gallery-completion wall that lays out the multi-museum collection (deaths / achievements / origins / talents / titles / hidden endings) with a total-completion % (unlocked/total, deterministic, no fake leaderboard), a rare-trophy showcase and a shareable gallery card. Content figures tallied live by the test report, latest highlights as of R118. Every step gated by tests, every step traceable.
 
 See **[docs/AI_AUTONOMOUS_UPDATE.md](docs/AI_AUTONOMOUS_UPDATE.md)** for the full mechanism design and evolution log.
 
