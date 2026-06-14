@@ -3664,6 +3664,37 @@ try {
   console.log('R115 人生評級／稀有度: ❌ ' + e.message);
 }
 
+/* ---- R117 每日挑戰碼分享/重玩層探針（編碼雙射/確定性種子/誠實/不破壞一般局）----
+   ① 日期⇄碼雙射可逆；② 同一日期不論純碼或 EL 碼開局必同(出身/五圍)；
+   ③ 防呆：亂碼/6碼種子碼一律 null，不搶種子對戰路；④ 誠實：不偽造伺服器百分位；
+   ⑤ 不破壞一般局：挑戰碼開局/結束後 startGame 仍正常、rng 還原 */
+let r117OK = false;
+try {
+  const r117Raw = vm.runInContext(`(function(){
+    const out={};
+    const dates=["20260614","20200101","20991231","20240229"];
+    out.roundtrip = dates.every(d=>parseDailyCode(dailyToCode(d))===d);
+    out.rejectJunk = parseDailyCode("K7PQ2X")===null && parseDailyCode("亂碼")===null && parseDailyCode("20261340")===null && parseDailyCode("")===null;
+    // 確定性：兩種等價碼開局逐字一致
+    startChallengeByCode("20260614"); const a1=JSON.stringify({o:S.origin&&S.origin.id, attr:S.attr});
+    startChallengeByCode(dailyToCode("20260614")); const a2=JSON.stringify({o:S.origin&&S.origin.id, attr:S.attr});
+    out.deterministic = a1===a2 && S.challenge && S.challenge.date==="20260614" && !S.battle;
+    // 誠實鐵律
+    S.alive=false; S.age=72; S.attr={hp:55,int:55,apr:55,mny:55,hap:55};
+    const card=r117ChallengeCardHTML(275), share=dailyShareText();
+    const fake=/(贏過|勝過|打敗|擊敗|超越)[^。]{0,12}([0-9]{1,3}\\s*%|百分)[^。]{0,6}玩家/;
+    out.honest = !fake.test(card) && !fake.test(share) && card.indexOf("今日種子")>=0 && share.indexOf("挑戰碼")>=0;
+    // 不破壞一般局：結束後 startGame 正常、rng 還原成種子局(6 碼)
+    startGame(); out.normalOk = !S.challenge && !S.battle && typeof S.seed==="string" && S.seed.length===6;
+    return JSON.stringify(out);
+  })()`, sandbox);
+  const r117 = JSON.parse(r117Raw);
+  r117OK = Object.values(r117).every(v => v === true);
+  console.log(`R117 每日挑戰碼分享/重玩層(日期⇄碼雙射/確定性種子/防呆/誠實/不破壞一般局): ${r117OK ? '✅ 全數通過' : '❌ ' + JSON.stringify(r117)}`);
+} catch (e) {
+  console.log('R117 每日挑戰碼分享/重玩層: ❌ ' + e.message);
+}
+
 if (__errors.length) {
   console.log('\n--- 錯誤樣本(前5) ---');
   __errors.slice(0, 5).forEach(e => console.log('  ' + e));
@@ -3671,6 +3702,6 @@ if (__errors.length) {
 
 /* 退出碼 */
 const pass = __errors.length === 0 && chk.missingScenes.length === 0 && chk.eventVisible >= 126 && chk.eventTotal >= 126 && lsOK && achUnlocked > 0
-  && chk.deathbookMissing.length === 0 && chk.deathTotal >= 17 && deathsOK && rebirthOK && legacyOK && petOK && r13OK && r17OK && r20OK && r21OK && r22OK && r24OK && r25OK && r34OK && r38OK && r41OK && r42OK && r43OK && r44OK && r45OK && r46OK && r47OK && r48OK && r49OK && r51OK && r52OK && r53OK && r54OK && r55OK && r72OK && r76OK && r77OK && r79OK && r86OK && r87OK && r92OK && r93OK && r95OK && r96OK && r108OK && r110OK && r111OK && r112OK && r113OK && r115OK && r116OK;
+  && chk.deathbookMissing.length === 0 && chk.deathTotal >= 17 && deathsOK && rebirthOK && legacyOK && petOK && r13OK && r17OK && r20OK && r21OK && r22OK && r24OK && r25OK && r34OK && r38OK && r41OK && r42OK && r43OK && r44OK && r45OK && r46OK && r47OK && r48OK && r49OK && r51OK && r52OK && r53OK && r54OK && r55OK && r72OK && r76OK && r77OK && r79OK && r86OK && r87OK && r92OK && r93OK && r95OK && r96OK && r108OK && r110OK && r111OK && r112OK && r113OK && r115OK && r116OK && r117OK;
 console.log('\n結果: ' + (pass ? '✅ 全數通過' : '❌ 有項目未通過'));
 process.exit(pass ? 0 : 1);

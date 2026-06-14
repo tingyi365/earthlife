@@ -11473,6 +11473,7 @@ function screenStart(){
         <button class="btn ${hasResume?'sec':'cta'}" onclick="startGame()">${startLabel}</button>
         <button class="btn sec" onclick="startChallenge()">📅 今日挑戰 #${today}</button>
         <p class="muted" style="margin:-2px 0 2px;font-size:12px">${dailyStatus}</p>
+        <button class="btn sec" onclick="screenDailyCode()">🎟️ 輸入挑戰碼 · 重玩好友的同一局</button>
         <button class="btn sec" onclick="screenSeedBattle()">⚔️ 種子對戰（輸入朋友的種子碼）</button>
         <button class="btn sec" onclick="screenScripts()">🎭 劇本挑戰（命題開局 · 徽章 ${r56BadgeCount()}/${R56_SCRIPTS.length}）</button>
         ${seasonLine}
@@ -11618,6 +11619,141 @@ function screenSeedBattle(){
       ${rows?`<h2 class="sec" style="margin-top:16px">📜 對戰過的種子</h2><div class="histlist">${rows}</div>`:`<p class="muted" style="margin-top:14px;font-size:12px">還沒打過任何種子——先去一般局拿一條自己的種子碼，或跟朋友要一條。</p>`}
     </div>
     <footer>同種子 = 同一個人生 · 活得比朋友爛沒藉口</footer>
+  `;
+}
+
+/* =========================================================================
+   R117 每日挑戰碼分享/重玩層：把 R4「今日挑戰」的日期種子包成可分享、可輸入
+   重玩的「挑戰碼」，橋接 每日挑戰 ↔ 跨日重玩同一局。
+   鐵律：
+   - 完全沿用 startChallenge(date) 的日期種子路徑（mulberry32(date)、dailyRec(date)
+     最佳成績存檔），不新增隨機源、不消耗 rng 序列、不動既有數值平衡。
+   - 與 R14 種子對戰（6 碼種子碼）路徑各走各的：挑戰碼是「某一天的日期」，
+     格式（8 碼日期 或 EL 前綴 base36）與 6 碼種子碼互不重疊，輸入解析互不搶路。
+   - 與 R113 命運鏈／R114 首屏結算／R115 稀有度／R116 轉生業力 共存不衝突：
+     挑戰碼只決定種子，稀有度/結算卡/業力照常依該局結果計算（挑戰局照舊禁用天賦/業力）。
+   - 誠實鐵律：純前端確定性偽隨機。同種子大家命運相同，比的是你的選擇；
+     禁止偽造伺服器排行榜/真實玩家百分位，文案一律據實。 */
+function validDailyDate(d){
+  if(!/^\d{8}$/.test(String(d))) return false;
+  const y=+String(d).slice(0,4), m=+String(d).slice(4,6), day=+String(d).slice(6,8);
+  return y>=2000 && y<=2099 && m>=1 && m<=12 && day>=1 && day<=31;
+}
+/* 日期(YYYYMMDD) → 挑戰碼："EL" + base36(日期整數) 大寫。雙射、可逆、純確定性、零 rng。 */
+function dailyToCode(date){
+  if(!validDailyDate(date)) return "";
+  return "EL" + parseInt(date,10).toString(36).toUpperCase();
+}
+/* 解析挑戰碼：接受 8 碼純日期、或 EL 前綴 base36 碼（大小寫/空白/連字號/#/底線不敏感）。
+   還原成合法 YYYYMMDD 才回傳，否則 null（防呆給梗）。6 碼種子碼一律落 null，不搶路。 */
+function parseDailyCode(raw){
+  const s = String(raw==null?"":raw).toUpperCase().replace(/[\s\-_#]/g,"");
+  if(/^\d{8}$/.test(s)) return validDailyDate(s) ? s : null;
+  if(s.indexOf("EL")===0){
+    const body = s.slice(2).replace(/[^0-9A-Z]/g,"");
+    if(!body) return null;
+    const n = parseInt(body,36);
+    if(!isFinite(n) || n<=0) return null;
+    const d = String(n);
+    return validDailyDate(d) ? d : null;
+  }
+  return null;
+}
+/* 防呆：非法挑戰碼的梗訊息（純 UI，用 Math.random 不吃種子序列） */
+const DAILY_CODE_ERRS = [
+  "🛸 宇宙管理局回報：查無此挑戰日。挑戰碼是 8 碼日期（如 20260614）或 EL 開頭的碼——去抄朋友結算卡上那行「挑戰碼」，貼整串即可。",
+  "🤔 這串不是挑戰碼喔。結算卡「📅 今日種子 #YYYYMMDD」下面那行就是碼，複製整串貼過來就好。",
+  "🐱 偵測到貓踩鍵盤。正版格式：8 碼日期 或 EL+一串英數，空格符號我會自動吃掉——貼上就行，貓打不出來的。",
+];
+function dailyCodeError(){
+  const msg = DAILY_CODE_ERRS[Math.floor(Math.random()*DAILY_CODE_ERRS.length)];
+  const el = (typeof document!=="undefined") && document.querySelector("#dcerr");
+  if(el){ el.innerHTML = `<div class="origin" style="margin-top:10px;border-color:#ff5d73"><div class="muted">${msg}</div></div>`; }
+  else alert(msg.replace(/^[^\s]+\s/,""));
+}
+/* 用挑戰碼開局：解析出日期 → 沿用 R4 日期種子路徑開同一條命運 */
+function startChallengeByCode(raw){
+  const date = parseDailyCode(raw);
+  if(!date){ dailyCodeError(); return; }
+  startChallenge(date);
+}
+function startDailyCodeFromInput(){
+  const el = (typeof document!=="undefined") && document.querySelector("#dcinput");
+  startChallengeByCode(el ? el.value : "");
+}
+/* 通用複製到剪貼簿（沿用 R14 copyVerdictCard 的 navigator.clipboard→legacyCopy→overlay 降級鏈）*/
+function copyClip(txt, btn, okMsg){
+  const done=()=>{ if(!btn) return; if(!btn.dataset.orig) btn.dataset.orig=btn.innerHTML; btn.innerHTML=okMsg||"✅ 已複製"; setTimeout(()=>{ if(btn.dataset.orig) btn.innerHTML=btn.dataset.orig; },2400); };
+  const fallback=()=>{ let ok=false; try{ ok=legacyCopy(txt); }catch(e){} if(ok) done(); else { try{ textReportOverlay(txt); }catch(e){} } };
+  try{ if(typeof navigator!=="undefined"&&navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(txt).then(done, fallback); return; } }catch(e){}
+  fallback();
+}
+/* 每日挑戰成績分享文字（含挑戰碼，誠實不偽造百分位） */
+function dailyShareText(){
+  const ch=S.challenge; if(!ch) return "";
+  const a=S.attr, sum=a.hp+a.int+a.apr+a.mny+a.hap, grade=curGrade();
+  const tierNm = (S.rarity&&S.rarity.tier&&S.rarity.tier.nm) || "";
+  return [
+    `📅【地球Online 今日挑戰 #${ch.date}】`,
+    `🎟️ 挑戰碼：${dailyToCode(ch.date)}`,
+    `我這條命：享年 ${S.age} · 總分 ${sum} · ${grade} 級${tierNm?` · ${tierNm}`:""}`,
+    `同種子大家命運相同，比的是你的選擇。`,
+    `👉 開「今日挑戰」或貼這串挑戰碼來活同一條命 → https://${SHARE_URL}`,
+  ].join("\n");
+}
+function copyDailyCode(btn){
+  const ch=S.challenge; if(!ch) return;
+  copyClip(dailyToCode(ch.date), btn, "✅ 挑戰碼已複製，丟給朋友開同一局！");
+  try{ SAVE.sharecards=(SAVE.sharecards||0)+1; if(!SAVE.ach.sharecard){ SAVE.ach.sharecard=true; recFound("a","sharecard",{w:SAVE.plays||0}); } persist(); }catch(e){}
+}
+function copyDailyScore(btn){
+  let txt; try{ txt=dailyShareText(); }catch(e){ return; }
+  copyClip(txt, btn, "✅ 成績已複製，貼去群組嗆同種子的人！");
+  try{ SAVE.sharecards=(SAVE.sharecards||0)+1; if(!SAVE.ach.sharecard){ SAVE.ach.sharecard=true; recFound("a","sharecard",{w:SAVE.plays||0}); } persist(); }catch(e){}
+}
+/* 結算卡每日挑戰碼面板：今日種子＋挑戰碼＋本局vs今日最佳＋複製/重玩入口 */
+function r117ChallengeCardHTML(sum){
+  const ch=S.challenge; if(!ch) return "";
+  const d=ch.date, code=dailyToCode(d);
+  const best=((SAVE.daily||{})[d]||{}).best||sum;
+  const cmp = best<=sum
+    ? `🏆 本局 <b>${sum}</b> 分 ＝ 今日最佳（你就是這個種子的標竿）`
+    : `本局 <b>${sum}</b> 分 · 今日最佳 <b>${best}</b> 分（還差 ${best-sum} 分，不服再戰）`;
+  return `<div class="origin center" style="margin-top:10px">📅 <b>今日種子 #${d}</b>　·　第 ${ch.attempt} 次嘗試<br>
+    <span class="muted">${cmp}</span><br>
+    <span class="muted" style="font-size:12px">🎟️ 挑戰碼 <b style="letter-spacing:2px;color:#9fffd0">${code}</b>　·　同種子大家命運相同，比的是你的選擇（純單機確定性種子，無伺服器排行）</span>
+    <div class="choices" style="margin-top:8px">
+      <button class="btn sec" onclick="copyDailyCode(this)">🎟️ 複製挑戰碼（丟朋友開同一局）</button>
+      <button class="btn sec" onclick="copyDailyScore(this)">📣 複製成績（含碼＋分數，貼群嗆）</button>
+    </div>
+    <input id="dcinput" maxlength="14" placeholder="貼好友挑戰碼 重玩同一局" autocomplete="off"
+      style="width:100%;max-width:300px;box-sizing:border-box;margin-top:8px;background:#11131f;color:#9fffd0;border:1px solid #39ff88;border-radius:8px;font:bold 15px monospace;letter-spacing:2px;text-transform:uppercase;text-align:center;padding:10px"
+      onkeydown="if(event.key==='Enter')startDailyCodeFromInput()">
+    <div id="dcerr"></div>
+    <button class="btn sec" style="margin-top:6px" onclick="startDailyCodeFromInput()">🔁 用這串碼開同一局</button>
+  </div>`;
+}
+/* 挑戰碼重玩入口頁：貼上好友分享的每日挑戰碼，開同一條日期種子的命 */
+function screenDailyCode(){
+  const today=taipeiDateStr();
+  $("#app").innerHTML = `
+    ${topbarHTML()}
+    ${renderMeme("luck","挑戰碼重玩","同一天 同一條命運","🎟️")}
+    <div class="panel center">
+      <h2 class="etitle">🎟️ 輸入挑戰碼 · 重玩同一局</h2>
+      <p class="etext">把朋友結算卡上那行「挑戰碼」貼進來，系統幫你開一局<b>跟他完全相同的命運種子</b>——同出身、同起始五圍、同事件序列。<br>同種子大家命運相同，比的是你的選擇。</p>
+      <p class="muted" style="font-size:12px">挑戰碼＝某一天的日期種子（8 碼日期如 ${today}，或 EL 開頭的碼皆可）· 規則同每日挑戰：🔄 轉生天賦強制停用、全服公平 · 純單機確定性種子，無伺服器排行</p>
+      <input id="dcinput" maxlength="14" placeholder="貼挑戰碼，例：${dailyToCode(today)}" autocomplete="off"
+        style="width:100%;max-width:340px;box-sizing:border-box;background:#11131f;color:#9fffd0;border:1px solid #39ff88;border-radius:8px;font:bold 18px monospace;letter-spacing:3px;text-transform:uppercase;text-align:center;padding:12px"
+        onkeydown="if(event.key==='Enter')startDailyCodeFromInput()">
+      <div id="dcerr"></div>
+      <div class="choices" style="margin-top:12px">
+        <button class="btn" onclick="startDailyCodeFromInput()">🎟️ 開局，活進這條種子</button>
+        <button class="btn sec" onclick="startChallenge()">📅 直接打今日挑戰 #${today}</button>
+        <button class="btn sec" onclick="screenStart()">← 返回主選單</button>
+      </div>
+    </div>
+    <footer>同種子 = 同一條命運 · 比的是你的選擇，不是運氣</footer>
   `;
 }
 
@@ -14847,8 +14983,7 @@ function screenSummary(cat){
       <div class="origin center"><span class="grademedal"><span class="gm-t">本局評價</span><span class="gm-g">${grade}</span><span class="gm-s">級</span></span><br>
       <span class="muted">${GRADE_TALK[grade]||""}</span><br>
       <span class="muted">總分 ${sum} / 500　·　本帳號第 ${SAVE.plays} 隻角色</span></div>
-      ${S.challenge?`<div class="origin center" style="margin-top:10px">📅 <b>今日挑戰 #${S.challenge.date}</b><br>
-      <span class="muted">第 ${S.challenge.attempt} 次嘗試 · 本次總分 <b>${sum}</b> · 今日最高 <b>${(SAVE.daily[S.challenge.date]||{}).best||sum}</b></span></div>`:""}
+      ${S.challenge?r117ChallengeCardHTML(sum):""}
       ${S.battle?`<div class="origin center" style="margin-top:10px">⚔️ <b>種子對戰 #${S.battle.code}</b><br>
       <span class="muted">對戰第 ${S.battle.attempt} 次嘗試 · 本次總分 <b>${sum}</b> · 個人最佳 <b>${((SAVE.seedpb||{})[S.battle.code]||{}).best||sum}</b></span><br>
       <span class="muted">把戰報丟回群組，看對手敢不敢接著打。</span></div>`:""}
@@ -14867,7 +15002,7 @@ function screenSummary(cat){
       ${r42SummaryHTML()}
       ${newAchHTML()}
       <div class="choices" style="margin-top:14px">
-        ${S.challenge?`<button class="btn" onclick="startChallenge()">📅 不服，再戰今日種子</button>`:""}
+        ${S.challenge?`<button class="btn" onclick="startChallenge('${S.challenge.date}')">📅 不服，再戰這個種子 #${S.challenge.date}</button>`:""}
         ${S.battle?`<button class="btn" onclick="startSeedBattle('${S.battle.code}')">⚔️ 不服，再戰這條種子</button>`:""}
         ${(S.script&&R56_MAP[S.script])?`<button class="btn" onclick="startScriptGame('${S.script}')">🎭 ${S.scriptDone?"再演一次":"不服，重演"}劇本【${R56_MAP[S.script].nm}】</button>`:""}
         ${(S.seed&&!S.battle&&!S.challenge&&!S.script)?`<button class="btn sec" onclick="startSeedBattle('${S.seed}')">⚔️ 拿這條種子開對戰（裸裝重打）</button>`:""}

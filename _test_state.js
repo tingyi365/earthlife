@@ -3917,5 +3917,50 @@ ok(r112.srWin && r112.srLose, 'R112 ⑦ sr 魅力檢定：95 必過(connwin)／1
 ok(r112.ach && r112.summaryShown && r112.summaryHidden, 'R112 ⑧ 成就確定性不誤觸＋取捨人生結算回顧（有取捨才渲染、空則省略）');
 ok(r112.compat && r112.clean, 'R112 ⑨ 舊存檔相容（補 tradeLog 空陣列）＋乾淨局零 r112 殘留');
 
+// ===== R117 每日挑戰碼分享/重玩層：日期⇄碼雙射、防呆、確定性種子、最佳成績存檔、誠實無偽造百分位 =====
+const r117 = JSON.parse(vm.runInContext(`(function(){
+  const out={};
+  // ① 編碼雙射：合法日期 → 碼 → 還原回同一日期（含閏年 2/29、上下界）
+  const dates=["20260614","20200101","20991231","20240229"];
+  out.roundtrip = dates.every(d=>parseDailyCode(dailyToCode(d))===d);
+  out.codePrefix = dates.every(d=>dailyToCode(d).indexOf("EL")===0);
+  // ② 純 8 碼日期輸入也接受；空白/連字號/#/小寫一律容錯
+  out.acceptRaw = parseDailyCode("20260614")==="20260614";
+  const low="el"+(20260614).toString(36);
+  out.tolerant = parseDailyCode(" "+low+" ")==="20260614" && parseDailyCode("#20260614")==="20260614" && parseDailyCode("EL-"+(20260614).toString(36).toUpperCase())==="20260614";
+  // ③ 防呆：亂碼/非法日期/6碼種子碼/空字串一律 null（不與種子對戰 6 碼路徑搶路）
+  out.rejectJunk = parseDailyCode("貓踩鍵盤")===null && parseDailyCode("K7PQ2X")===null
+    && parseDailyCode("20261332")===null && parseDailyCode("")===null && parseDailyCode("99999999")===null && parseDailyCode("19990101")===null;
+  // ④ 確定性：純日期碼 vs EL base36 碼 開兩局 → 開局出身/五圍/日期逐字一致
+  startChallengeByCode("20260614"); const a1=JSON.stringify({o:S.origin&&S.origin.id, attr:S.attr, d:S.challenge.date});
+  startChallengeByCode("EL"+(20260614).toString(36).toUpperCase()); const a2=JSON.stringify({o:S.origin&&S.origin.id, attr:S.attr, d:S.challenge.date});
+  out.deterministic = a1===a2;
+  // ⑤ 走 R4 日期種子路徑：S.challenge.date 正確、無 S.battle 混入
+  out.challengePath = !!(S.challenge && S.challenge.date==="20260614" && !S.battle);
+  // ⑥ 最佳成績沿用 dailyRec(date) 存檔（同日多次取最高）
+  const rec=dailyRec("20260614"); rec.best=0; rec.best=Math.max(rec.best,120); rec.best=Math.max(rec.best,90);
+  out.bestKeepMax = dailyRec("20260614").best===120;
+  // ⑦ 誠實鐵律：碼面板/分享文案含挑戰碼且不得偽造伺服器百分位
+  startChallengeByCode("20260614"); S.alive=false; S.age=70; S.attr={hp:60,int:60,apr:60,mny:60,hap:60};
+  const card=r117ChallengeCardHTML(300), share=dailyShareText();
+  const fake=/(贏過|勝過|打敗|擊敗|超越)[^。]{0,12}([0-9]{1,3}\\s*%|百分)[^。]{0,6}玩家/;
+  out.honest = !fake.test(card) && !fake.test(share) && card.indexOf("挑戰碼")>=0 && card.indexOf("今日種子")>=0 && share.indexOf("挑戰碼")>=0;
+  // ⑧ 挑戰後一般局還原：startGame 仍跑、種子碼 6 碼、無 challenge 殘留
+  startGame(); out.normalOk = !S.challenge && typeof S.seed==="string" && S.seed.length===6;
+  return JSON.stringify(out);
+})()`, sandbox));
+[
+  ['roundtrip','① 日期⇄挑戰碼雙射可逆(含閏年/上下界)'],
+  ['codePrefix','② 挑戰碼一律 EL 前綴(與 6 碼種子碼形態互斥)'],
+  ['acceptRaw','③ 接受純 8 碼日期輸入'],
+  ['tolerant','④ 空白/連字號/#/大小寫容錯'],
+  ['rejectJunk','⑤ 防呆：亂碼/非法日期/6碼種子碼/越界年份一律 null'],
+  ['deterministic','⑥ 純日期碼與 EL 碼開兩局 開局出身/五圍逐字一致'],
+  ['challengePath','⑦ 走 R4 日期種子路徑(S.challenge.date 正確、無 battle 混入)'],
+  ['bestKeepMax','⑧ 最佳成績沿用 dailyRec(date) 取最高'],
+  ['honest','⑨ 誠實：碼面板/分享文案含挑戰碼且不偽造伺服器百分位'],
+  ['normalOk','⑩ 挑戰後一般局還原正常(種子碼 6 碼、無殘留)'],
+].forEach(([k,m])=>ok(r117[k], 'R117 '+m));
+
 console.log(fails ? `\n結果: ❌ ${fails} 項未通過` : '\n結果: ✅ 狀態機全數正確');
 process.exit(fails ? 1 : 0);
