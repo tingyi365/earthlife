@@ -2058,6 +2058,7 @@ function loadSave(){
     if(!SAVE.perkUsed || typeof SAVE.perkUsed!=="object") SAVE.perkUsed={}; // R49 開局天賦收集（選用過）：缺鍵當空集合
     if(!SAVE.careerSeen || typeof SAVE.careerSeen!=="object") SAVE.careerSeen={}; // R50 職業路線收集：缺鍵當空集合
     if(!SAVE.scriptBadges || typeof SAVE.scriptBadges!=="object") SAVE.scriptBadges={}; // R56 劇本徽章：缺鍵當空集合，舊存檔不炸
+    if(!Array.isArray(SAVE.hof)) SAVE.hof=[]; // R108 歷代人生名人堂：跨周目人生收藏冊，缺鍵當空陣列，舊存檔不崩
     rebirthData();   // R6 轉生：舊存檔缺鍵就地補上 {pts,total,talents,equipped}，不可炸
     legacyData();    // R23 祖產：舊存檔缺鍵就地補上 {yd,ydTotal,perks,roster,lastMny,pickAttr}，不可炸
     dynastyData();   // R42 世代傳承：舊存檔缺鍵就地補上 {pending,lineage}，不可炸
@@ -2486,6 +2487,9 @@ const ACHIEVEMENTS = [
   {id:"ngp_rookie", ic:"🔁", nm:"輪迴老鳥・孟婆認得你了", desc:"正式跑完 3 個周目——投胎投到孟婆都會隨手幫你把那碗湯加滿。在這座下輩子還想不想當台灣人都要猶豫一下的島上，你硬是回鍋了三次。", check:c=>ngpData().cycle>=3, hint:"好好過完 3 個正常人生（任一結局都算），挑戰／對戰／劇本局不計——多投幾次胎就有…"},
   {id:"ngp_veteran", ic:"♻️", nm:"六道常客・地府 VIP", desc:"正式跑完 6 個周目——地府叫號機看到你直接跳你的號，孟婆湯改幫你準備無糖的。鬼島玩到下面都辦會員了，這份執著也是一種才華。", check:c=>ngpData().cycle>=6, hint:"累積 6 個正式周目（正常局完局），地府就把你升 VIP 了…"},
   {id:"ngp_master", ic:"🌀", nm:"十二周目・地球Online資深玩家", desc:"正式跑完 12 個周目——這片地圖你比製作組還熟，哪關有雷、哪格踩了會痛全背在腦裡。別人在玩人生，你在刷成就，地球 Online 被你打成了肌肉記憶。", check:c=>ngpData().cycle>=12, hint:"硬是回鍋 12 個正式周目，把周目紅利點到封頂的那種狠人才拿得到…"},
+  /* ---- R108 歷代人生名人堂連動成就（純讀 SAVE.hof 確定性判定，零 rng；hofPush 在 die() 寫入後當局補評，舊存檔/空名人堂永不誤觸）---- */
+  {id:"hof_collector", ic:"📖", nm:"名人堂常駐戶口・歷代收藏家", desc:"名人堂裡躺著你 10 段以上的人生——有風光的、有淒慘的、有早夭的，整本翻過去就是一部你的輪迴血淚史。地府檔案室都幫你開了專屬抽屜，這份執著本身就是一種成就。", check:c=>(SAVE.hof||[]).length>=10, hint:"好好完成 10 段以上的人生（挑戰／對戰／劇本局不入冊），讓名人堂收藏冊存滿十筆…"},
+  {id:"hof_godandhell", ic:"⚖️", nm:"天堂地獄一線牽・神慘同框", desc:"名人堂裡同時供著一段封神人生（高分結局）與一段慘到谷底的人生——你親手活出了人生的兩個極端，神壇跟谷底都插了你的旗。這座島最公平的地方就是：誰都有機會大起，也誰都躲不過大落。", check:c=>{const h=SAVE.hof||[]; return h.some(r=>(r.score||0)>=350||r.grade==="S")&&h.some(r=>(r.score||0)<=150||r.grade==="D");}, hint:"名人堂裡要同時收藏一段「封神（S級或高分）」與一段「慘澹（D級或低分）」的人生才解得開…"},
 ];
 const ACH_MAP = {}; ACHIEVEMENTS.forEach(a=>ACH_MAP[a.id]=a);
 
@@ -13211,6 +13215,10 @@ function die(from){
     rng = Math.random;
     EVENTS = EVENTS_BASE;
   }
+  // ---- R108 歷代人生名人堂：把這段人生摘要寫入跨周目持久收藏冊（挑戰/對戰/劇本局不入冊，同全服公平鐵律）----
+  //      hofPush 內部建檔＋容量上限淘汰；寫入後當局補評名人堂連動成就（比照 karma6 一次性補評模式）
+  hofPush();
+  hofEvalAch();
   SAVE.current = null;       // 人生結束，清掉進行中存檔
   persist();
 
@@ -14436,10 +14444,13 @@ function renderCollection(){
     ["badge","🏅","稱號",st.b,LIFE_BADGES.length],
     ["hidden","🌟","結局",st.h,HIDDEN_ENDINGS.length],
     ["perk","🃏","起手",st.k,R49_PERKS.length],
+    ["hof","📖","名人堂",(SAVE.hof||[]).length, (typeof HOF_CAP!=="undefined"?HOF_CAP:50)],
   ];
   const tabBar = `<div class="colltabs">${tabs.map(([k,ic,nm,g,t])=>
     `<button class="ctab ${COLL_TAB===k?'on':''}" onclick="collTab('${k}')">
       <span class="ci">${ic}</span><span class="cn">${nm}</span><span class="cc">${g}/${t}</span></button>`).join("")}</div>`;
+  // R108 名人堂分頁：自走專屬版面（可排序/展開傳記/對比卡），不套既有圖鑑 filter/grouping
+  if(COLL_TAB==="hof"){ renderHofPage(st, tabBar); return; }
   let title, sub, got, total, rows, extra="", items;
   if(COLL_TAB==="ach"){
     title="🏆 成就牆"; sub="跨輪迴累計解鎖。未解鎖的只給剪影和一句線索，自己活出來。";
@@ -14996,6 +15007,264 @@ function wrapText(ctx,text,x,y,maxW,lineH,max){
   if(line) ctx.fillText(line,x,y);
   return y+lineH;
 }
+/* =========================================================================
+   R108 歷代人生名人堂（Hall of Fame）：跨周目人生收藏冊 + 名人堂分頁 + 歷代對比分享卡
+   ─ 純前端、零外部依賴、零 rng；資料存 SAVE.hof（loadSave 缺鍵補空陣列，舊存檔不崩）
+   ─ die() 結算時 hofPush() 寫入一筆人生摘要（容量上限 50、超量淘汰最低分）
+   ========================================================================= */
+const HOF_CAP = 50;                       // 收藏冊容量上限（超過淘汰最低分，防 localStorage 無限膨脹）
+const HOF_RARE_NM = ["普通","稀有","特殊","傳說"];
+const HOF_RARE_IC = ["","✨","🌟","💎"];
+let HOF_SORT = "score";                    // 名人堂排序：score / recent / age（純顯示層）
+let HOF_OPEN = -1;                         // 展開中的人生（SAVE.hof 的索引；-1=全收合）
+function hofNow(){ try{ return (typeof Date!=="undefined"&&Date.now)?Date.now():0; }catch(e){ return 0; } }
+function hofEsc(s){ return String(s==null?"":s).replace(/[<>&]/g,c=>({"<":"&lt;",">":"&gt;","&":"&amp;"}[c])); }
+function hofDateStr(t){ try{ if(!t) return ""; const d=new Date(t); const p=n=>(n<10?"0":"")+n; return d.getFullYear()+"/"+p(d.getMonth()+1)+"/"+p(d.getDate()); }catch(e){ return ""; } }
+/* 稀有度分級（純讀 die() 已定案的 S.hiddenEnd / S.deathId）：3 隱藏結局 / 2 特殊壽終 / 1 稀有死法 / 0 普通 */
+function hofRarity(){
+  try{
+    if(S.hiddenEnd) return 3;
+    const id=S.deathId||"";
+    if(id && typeof SPECIAL_DEATHS!=="undefined" && SPECIAL_DEATHS[id]) return 2;
+    if(id && typeof DEATHBOOK!=="undefined"){ const d=DEATHBOOK.find(x=>x.id===id); if(d&&d.rare) return 1; }
+  }catch(e){}
+  return 0;
+}
+/* die() 內呼叫：把這段人生摘要寫入跨周目收藏冊（挑戰/對戰/劇本局不入冊，同全服公平鐵律）＋容量上限淘汰 */
+function hofPush(){
+  try{
+    if(!Array.isArray(SAVE.hof)) SAVE.hof=[];
+    if(!S || S.challenge || S.battle || S.script) return;
+    const a=S.attr||{}, pk=S.peak||{};
+    const num=(v,f)=>typeof v==="number"?v:f;
+    const peak={
+      hp:num(pk.hp,num(a.hp,0)),  int:num(pk.int,num(a.int,0)), apr:num(pk.apr,num(a.apr,0)),
+      mny:num(pk.mny,num(a.mny,0)), hap:num(pk.hap,num(a.hap,0)),
+    };
+    let ach=[];
+    try{
+      if(S.newAch&&S.newAch.length) ach=S.newAch.slice(0,2).map(id=>(ACH_MAP[id]&&ACH_MAP[id].nm)||"").filter(Boolean);
+      if(!ach.length && typeof qualifiedAch==="function") ach=qualifiedAch().slice().reverse().slice(0,2).map(x=>x.nm);
+    }catch(e){}
+    const era=(S.era&&typeof R55_MAP!=="undefined"&&R55_MAP[S.era])?R55_MAP[S.era].nm:"";
+    const rec={
+      t: hofNow(),
+      end: (stripTags(S.title||"")||"地球路人").slice(0,40),
+      rare: hofRarity(),
+      score: num(S.sum, (num(a.hp,0)+num(a.int,0)+num(a.apr,0)+num(a.mny,0)+num(a.hap,0))),
+      grade: S.grade||"D",
+      age: num(S.age,0),
+      era: era,
+      death: (stripTags(S.deathReason||"")||"死因不明").slice(0,44),
+      peak: peak,
+      ach: ach,
+    };
+    SAVE.hof.push(rec);
+    while(SAVE.hof.length>HOF_CAP){
+      let mi=0;
+      for(let i=1;i<SAVE.hof.length;i++){
+        const A=SAVE.hof[i], B=SAVE.hof[mi];
+        if((A.score||0)<(B.score||0) || ((A.score||0)===(B.score||0)&&(A.t||0)<(B.t||0))) mi=i;
+      }
+      SAVE.hof.splice(mi,1);
+    }
+  }catch(e){}
+}
+/* die() 內 hofPush 後呼叫：名人堂連動成就當局補評（比照 karma6 一次性補評，避免 evalAchievements 早一步漏算當局這筆） */
+function hofEvalAch(){
+  try{
+    if(!SAVE.ach||typeof SAVE.ach!=="object") SAVE.ach={};
+    ["hof_collector","hof_godandhell"].forEach(id=>{
+      const ax=ACH_MAP[id]; if(!ax) return;
+      let ok=false; try{ ok=!!ax.check({S, sum:S.sum, grade:S.grade, age:S.age, cat:S.cat}); }catch(e){ ok=false; }
+      if(ok && !SAVE.ach[id]){
+        SAVE.ach[id]=true; (S.newAch=S.newAch||[]).push(id);
+        try{ if(typeof recFound==="function") recFound("a",id,{w:SAVE.plays||0,a:S.age,t:stripTags(S.title||"")}); }catch(e){}
+      }
+    });
+  }catch(e){}
+}
+/* 名人堂榮譽標記：回傳 best/worst/rare/recent 在 SAVE.hof 的索引（空冊回 -1） */
+function hofMedals(){
+  const h=SAVE.hof||[]; const m={best:-1,worst:-1,rare:-1,recent:-1};
+  h.forEach((r,i)=>{
+    if(m.best<0 || (r.score||0)>(h[m.best].score||0)) m.best=i;
+    if(m.worst<0 || (r.score||0)<(h[m.worst].score||0)) m.worst=i;
+    if(m.rare<0 || (r.rare||0)>(h[m.rare].rare||0) || ((r.rare||0)===(h[m.rare].rare||0)&&(r.score||0)>(h[m.rare].score||0))) m.rare=i;
+    if(m.recent<0 || (r.t||0)>(h[m.recent].t||0)) m.recent=i;
+  });
+  return m;
+}
+function hofToggle(i){ HOF_OPEN = (HOF_OPEN===i ? -1 : i); renderCollection(); }
+function hofSetSort(s){ HOF_SORT=s; renderCollection(); }
+/* 單筆人生傳記列（可展開看完整摘要） */
+function hofRowHTML(r, idx, med){
+  const open=HOF_OPEN===idx;
+  const medals=(med.best===idx?"🏆":"")+(med.worst===idx?"💀":"")+((med.rare===idx&&(r.rare||0)>0)?"⭐":"");
+  const rIc=HOF_RARE_IC[r.rare||0]||"";
+  const gradeCol={S:"#ffd24a",A:"#7fd7ff",B:"#9fffd0",C:"#cfd3e6",D:"#9aa0b5"}[r.grade]||"#cfd3e6";
+  const sub=`<span style="color:${gradeCol}">${hofEsc(r.grade)}級 ${r.score|0} 分</span> · 享年 ${r.age|0}${r.era?` · ${hofEsc(r.era)}`:""}`;
+  const peak=r.peak||{};
+  const detail = open ? `<div class="collnote" style="margin-top:6px">
+      <div>☠ 死因：${hofEsc(r.death)}</div>
+      <div style="margin-top:3px">📈 屬性峰值：${["hp","int","apr","mny","hap"].map(k=>`${ATTR[k].ic}${peak[k]|0}`).join("　")}</div>
+      ${r.ach&&r.ach.length?`<div style="margin-top:3px">🏆 代表成就：${r.ach.map(hofEsc).join("、")}</div>`:""}
+      ${(r.rare||0)>0?`<div style="margin-top:3px">${rIc} 稀有度：${HOF_RARE_NM[r.rare]}結局</div>`:""}
+      ${r.t?`<div class="muted" style="margin-top:3px">🕒 完成於 ${hofDateStr(r.t)}</div>`:""}
+    </div>` : "";
+  return `<div class="achrow got" style="cursor:pointer" onclick="hofToggle(${idx})">
+    <span class="aic">${rIc||"🪦"}</span>
+    <div style="flex:1;min-width:0">
+      <b>${hofEsc(r.end)}</b> ${medals?`<span style="font-size:13px">${medals}</span>`:""}
+      <div class="muted">${sub}</div>
+      ${detail}
+    </div>
+    <span class="muted" style="font-size:12px;align-self:flex-start">${open?"▲":"▼"}</span>
+  </div>`;
+}
+/* 名人堂分頁（沿用收藏館外殼與 tabBar，不破壞既有版面）。empty 給空狀態引導語、舊玩家不崩。 */
+function renderHofPage(st, tabBar){
+  const h=SAVE.hof||[];
+  const med=hofMedals();
+  const order=h.map((r,i)=>({r,i}));
+  if(HOF_SORT==="recent") order.sort((x,y)=>(y.r.t||0)-(x.r.t||0) || (y.r.score||0)-(x.r.score||0));
+  else if(HOF_SORT==="age") order.sort((x,y)=>(y.r.age||0)-(x.r.age||0) || (y.r.score||0)-(x.r.score||0));
+  else order.sort((x,y)=>(y.r.score||0)-(x.r.score||0) || (y.r.age||0)-(x.r.age||0));
+  const sortBtn=(k,nm)=>`<button class="cfbtn ${HOF_SORT===k?'on':''}" onclick="hofSetSort('${k}')">${nm}</button>`;
+  let inner;
+  if(!h.length){
+    inner=`<div class="collempty">📖 名人堂還空空如也——這裡會自動收藏你每一段走完的人生（最多 ${HOF_CAP} 筆）。<br>去投個胎、活一輪、登出一次，第一筆傳記就會被刻進來：最高分掛 🏆、最慘記 💀、最稀有結局插 ⭐，集滿 10 段還有成就等你。</div>`;
+  }else{
+    const rows=order.map(o=>hofRowHTML(o.r,o.i,med)).join("");
+    inner=`<div class="collfilter">${sortBtn("score","🏆 依分數")}${sortBtn("recent","🕒 依最近")}${sortBtn("age","⏳ 依享年")}</div>
+      <div class="achlist" style="margin-top:10px">${rows}</div>`;
+  }
+  const compareBtn = h.length>=1
+    ? `<button class="btn" onclick="hofCompareCard()">🆚 產生歷代人生對比卡（最佳／最慘／最近並排存圖）</button>` : "";
+  $("#app").innerHTML = `
+    ${topbarHTML()}
+    ${renderMeme("luck","名人堂",`歷代收藏 ${h.length} / ${HOF_CAP}`,"📖")}
+    <div class="panel">
+      <h2 class="etitle">🗃️ 人生收藏館</h2>
+      ${collBarHTML(st.got, st.total)}
+      ${tabBar}
+      <div class="collwrap">
+        <h2 class="etitle" style="font-size:15px">📖 歷代人生名人堂</h2>
+        <p class="muted" style="margin:0 0 4px">跨周目持久收藏你每一段走完的人生（最多 ${HOF_CAP} 筆，滿了自動淘汰最低分）。🏆最高分 · 💀最慘 · ⭐最稀有結局，點任一筆展開看完整傳記。</p>
+        ${inner}
+      </div>
+      <div class="choices" style="margin-top:14px">
+        ${compareBtn}
+        <button class="btn sec" onclick="backFromGallery()">← 返回</button>
+      </div>
+    </div>
+  `;
+}
+/* 台味落差點評（純門檻、零 rng）：依最高/最慘分差出梗 */
+function hofTaunt(best, worst){
+  const sp=(best.score||0)-(worst.score||0);
+  if(sp>=250) return "同一個靈魂活出天堂跟地獄，這落差連隔壁老王看了都搖頭。";
+  if(sp>=150) return "最高那段風光得意、最慘那段見不得人——人生就是大起大落才夠味。";
+  if(sp>=60)  return "起伏不算大，穩穩當當混了好幾輪，鬼島資深老司機了。";
+  return "每一輪分數都差不多——你這人生穩定到孟婆都記得你的口味。";
+}
+/* 對比卡選樣：最佳 / 最慘 / 最近，三段盡量取不同人生（不足三段用其餘補位） */
+function hofComparePick(){
+  const h=SAVE.hof||[]; if(!h.length) return [];
+  const med=hofMedals();
+  const picks=[]; const used=new Set();
+  const add=(i,tag)=>{ if(i>=0 && h[i] && !used.has(i)){ used.add(i); picks.push({r:h[i],tag:tag}); } };
+  add(med.best,"🏆 最高分"); add(med.worst,"💀 最慘"); add(med.recent,"🕒 最近一段");
+  for(let i=h.length-1;i>=0 && picks.length<3;i--) add(i,"📖 歷代");
+  return picks.slice(0,3);
+}
+function hofCompareText(picks){
+  const L=["📖 我的地球 Online 歷代人生名人堂"];
+  picks.forEach(p=>{ const r=p.r;
+    L.push(`${p.tag}｜${r.end}　${r.grade}級 ${r.score|0}分 · 享年${r.age|0}${r.era?" · "+r.era:""}　☠${r.death}`);
+  });
+  const best=picks[0]&&picks[0].r;
+  const worst=picks.reduce((m,p)=>(!m||(p.r.score||0)<(m.score||0))?p.r:m, null);
+  if(best&&worst) L.push("👉 "+hofTaunt(best,worst));
+  L.push("你能活得比我慘嗎？ https://"+SHARE_URL);
+  return L.join("\n");
+}
+/* 歷代人生對比卡（Canvas → PNG，沿用既有分享卡機制，零外部庫）：最佳/最慘/最近並排成一張可下載圖 */
+function hofCompareCard(){
+  try{
+    const picks=hofComparePick();
+    if(!picks.length){ alert("名人堂還沒有人生可以對比，先去活一輪登出一次吧"); return; }
+    const dpr=(typeof window!=="undefined"&&window.devicePixelRatio)||1;
+    const cols=picks.length, colW=300, pad=24, gap=18;
+    const W=pad*2 + colW*cols + gap*(cols-1), H=640;
+    const cv=document.createElement('canvas');
+    cv.width=W*dpr; cv.height=H*dpr; cv.style.width=W+"px"; cv.style.height=H+"px";
+    const ctx=cv.getContext('2d'); ctx.scale(dpr,dpr);
+    const g=ctx.createLinearGradient(0,0,0,H); g.addColorStop(0,'#1b1b2f'); g.addColorStop(1,'#0c0c16');
+    ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+    ctx.strokeStyle='#39ff88'; ctx.lineWidth=4; ctx.strokeRect(10,10,W-20,H-20);
+    ctx.textAlign='center';
+    ctx.fillStyle='#7fffc4'; ctx.font='bold 22px monospace'; ctx.fillText('地球 ONLINE · 歷代人生名人堂', W/2, 46);
+    ctx.fillStyle='#9fb4ff'; ctx.font='13px monospace'; ctx.fillText('Hall of Fame · 同一個靈魂，不同的人生', W/2, 68);
+    const gradeCol={S:'#ffd24a',A:'#7fd7ff',B:'#9fffd0',C:'#cfd3e6',D:'#9aa0b5'};
+    picks.forEach((p,ci)=>{
+      const r=p.r, x0=pad+ci*(colW+gap), cx=x0+colW/2;
+      ctx.fillStyle='rgba(255,255,255,0.04)'; ctx.fillRect(x0,86,colW,H-176);
+      ctx.strokeStyle='rgba(255,255,255,0.12)'; ctx.lineWidth=1; ctx.strokeRect(x0+.5,86.5,colW,H-176);
+      let y=112; ctx.textAlign='center';
+      ctx.fillStyle='#ffd24a'; ctx.font='bold 16px monospace'; ctx.fillText(p.tag, cx, y); y+=30;
+      ctx.fillStyle='#ffffff'; ctx.font='bold 17px monospace';
+      y=wrapText(ctx, r.end||'地球路人', cx, y, colW-24, 22, 2)+6;
+      ctx.fillStyle=gradeCol[r.grade]||'#cfd3e6'; ctx.font='15px monospace';
+      ctx.fillText(`${r.grade} 級 · ${r.score|0} 分`, cx, y); y+=22;
+      ctx.fillStyle='#9fb4ff'; ctx.font='12px monospace';
+      ctx.fillText(`享年 ${r.age|0}${r.era?' · '+r.era:''}`, cx, y); y+=16;
+      if((r.rare||0)>0){ ctx.fillStyle='#ffe9a8'; ctx.font='12px monospace'; ctx.fillText(`${HOF_RARE_IC[r.rare]} ${HOF_RARE_NM[r.rare]}結局`, cx, y); y+=18; } else y+=4;
+      ctx.textAlign='left'; const bx=x0+16, bw=colW-32;
+      ["hp","int","apr","mny","hap"].forEach(k=>{
+        const v=Math.max(0,Math.min(100,(r.peak&&r.peak[k])||0));
+        ctx.fillStyle='#cfd3e6'; ctx.font='11px monospace'; ctx.fillText(ATTR[k].ic, bx, y+10);
+        const tx=bx+24, tw=bw-24-30;
+        ctx.fillStyle='rgba(255,255,255,0.10)'; ctx.fillRect(tx,y+1,tw,11);
+        ctx.fillStyle=ATTRCOL[k]||'#888'; ctx.fillRect(tx,y+1,tw*v/100,11);
+        ctx.fillStyle='#fff'; ctx.font='10px monospace'; ctx.textAlign='right'; ctx.fillText(String((r.peak&&r.peak[k])||0), bx+bw, y+10); ctx.textAlign='left';
+        y+=17;
+      });
+      y+=6;
+      ctx.fillStyle='#ff9aa8'; ctx.font='11px monospace';
+      wrapText(ctx, '☠ '+(r.death||'死因不明'), x0+14, y+4, colW-26, 15, 3);
+    });
+    const best=picks[0].r, worst=picks.reduce((m,p)=>(p.r.score||0)<(m.score||0)?p.r:m, picks[0].r);
+    ctx.textAlign='center'; ctx.fillStyle='#ffe9a8'; ctx.font='italic 14px monospace';
+    wrapText(ctx, '「'+hofTaunt(best,worst)+'」', W/2, H-80, W-80, 19, 2);
+    ctx.fillStyle='#ffd24a'; ctx.font='bold 16px monospace'; ctx.fillText('你能活得比他慘嗎？', W/2, H-44);
+    ctx.fillStyle='#7fffc4'; ctx.font='13px monospace'; ctx.fillText('▶ '+SHARE_URL, W/2, H-22);
+    showHofOverlay(cv.toDataURL('image/png'), hofCompareText(picks));
+  }catch(e){ alert("對比卡生成失敗："+(e&&e.message||e)); }
+}
+function showHofOverlay(dataUrl, text){
+  closeShareOverlay();
+  const ov=document.createElement('div'); ov.id='shareov';
+  ov.setAttribute('style','position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.88);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:18px;gap:12px;overflow:auto;');
+  ov.innerHTML=
+    '<div style="color:#9fffd0;font:13px monospace;text-align:center">歷代人生對比卡 · 長按或下載存圖，文字摘要可一鍵複製 👇</div>'+
+    '<img src="'+dataUrl+'" style="max-width:96%;max-height:60vh;border:2px solid #39ff88;border-radius:8px">'+
+    '<div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center">'+
+      '<a href="'+dataUrl+'" download="earthlife_hof.png" style="background:#39ff88;color:#08110a;font:bold 14px monospace;padding:11px 18px;border-radius:8px;text-decoration:none">⬇️ 下載 PNG</a>'+
+      '<button onclick="hofCopyCompare(this)" style="background:#ffd24a;color:#1a1400;font:bold 14px monospace;padding:11px 18px;border:0;border-radius:8px;cursor:pointer">📋 複製文字摘要</button>'+
+      '<button onclick="closeShareOverlay()" style="background:#333;color:#fff;font:14px monospace;padding:11px 18px;border:0;border-radius:8px;cursor:pointer">關閉</button>'+
+    '</div>';
+  ov.dataset.hoftext=text||"";
+  document.body.appendChild(ov);
+}
+function hofCopyCompare(btn){
+  const ov=document.getElementById('shareov'); const txt=(ov&&ov.dataset&&ov.dataset.hoftext)||"";
+  const done=()=>{ if(!btn) return; if(!btn.dataset.orig) btn.dataset.orig=btn.innerHTML; btn.innerHTML="✅ 已複製，貼去群組炫耀"; setTimeout(()=>{ if(btn.dataset.orig) btn.innerHTML=btn.dataset.orig; },2200); };
+  const fallback=()=>{ if(legacyCopy(txt)) done(); else alert(txt); };
+  try{ if(typeof navigator!=="undefined"&&navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(txt).then(done,fallback); return; } }catch(e){}
+  fallback();
+}
+
 function makeShareCard(){
   try{
     if(!S){ alert("沒有可分享的人生資料"); return; }

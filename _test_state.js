@@ -3651,5 +3651,83 @@ ok(r106.skipEmpty, 'R106 ⑥ 不足兩章節整塊省略：空軌跡→回空字
 ok(r106.compat, 'R106 ⑦ 舊存檔相容：缺鍵 save 經 ensureState 補空陣列、不注入 r106 旗標');
 ok(r106.clean, 'R106 ⑧ 零汙染：軌跡為獨立結構，不寫進 S.flags');
 
+// ============================================================================
+// R108 歷代人生名人堂：hofPush 寫入/容量上限淘汰/稀有度/序列化往返/榮譽標記/
+//   連動成就/空狀態不崩/有資料渲染/挑戰局不入冊/舊存檔相容
+// ============================================================================
+const r108 = JSON.parse(vm.runInContext(`(function(){
+  const out={};
+  const appHTML=()=>document.querySelector('#app').innerHTML;
+  // ① 預設/舊存檔相容：清掉 hof 鍵後 loadSave → 補成陣列
+  SAVE.hof=undefined; loadSave(); out.def = Array.isArray(SAVE.hof);
+  // ② hofPush 寫入：建構一段人生 → 收藏冊 +1、稱號去標籤、峰值/時間/欄位齊備
+  SAVE.hof=[]; startGame();
+  S.age=72; S.sum=360; S.grade="A"; S.title="<b>傳奇阿伯</b>"; S.deathReason="壽終正寢";
+  S.deathId="peaceful"; S.peak={hp:90,int:80,apr:70,mny:88,hap:75}; S.era=null; S.newAch=[];
+  S.challenge=null; S.battle=null; S.script=null;
+  hofPush();
+  const r=SAVE.hof[0];
+  out.write = SAVE.hof.length===1 && r.score===360 && r.grade==="A" && r.age===72
+    && r.end.indexOf("<")<0 && r.end.indexOf("傳奇阿伯")>=0
+    && r.peak && r.peak.mny===88 && typeof r.t==="number" && Array.isArray(r.ach);
+  // ③ 稀有度：peaceful 屬 SPECIAL_DEATHS → rare=2；隱藏結局 → 3；普通死法 → 0
+  out.rarePeaceful = r.rare===2;
+  S.hiddenEnd="someHidden"; out.rareHidden = hofRarity()===3; S.hiddenEnd=null;
+  S.deathId="hp_0"; out.rareNormal = hofRarity()===0 || hofRarity()===1; // 視 DEATHBOOK 標記
+  S.deathId="peaceful";
+  // ④ 挑戰/對戰/劇本局不入冊
+  const before=SAVE.hof.length; S.challenge={date:"x"}; hofPush(); out.skipChallenge = SAVE.hof.length===before; S.challenge=null;
+  // ⑤ 容量上限淘汰最低分：透過 hofPush 連灌 60 段遞增分數 → 封頂 50、最低分被淘汰、最高分仍在
+  SAVE.hof=[]; startGame(); S.challenge=null; S.battle=null; S.script=null;
+  S.peak={hp:50,int:50,apr:50,mny:50,hap:50}; S.deathId=""; S.hiddenEnd=null; S.newAch=[]; S.era=null;
+  for(let i=0;i<60;i++){ S.sum=i+10; S.grade="C"; S.age=40; S.title="人生"+i; S.deathReason="d"+i; hofPush(); }
+  const scores=SAVE.hof.map(x=>x.score);
+  out.cap = SAVE.hof.length===50 && Math.min.apply(null,scores)>=20 && Math.max.apply(null,scores)===69;
+  // ⑥ 序列化往返：stringify→parse 後每筆分數/稱號/峰值保值不崩
+  const parsed=JSON.parse(JSON.stringify(SAVE.hof));
+  out.roundtrip = parsed.length===SAVE.hof.length
+    && parsed.every((x,i)=>x.score===SAVE.hof[i].score && x.end===SAVE.hof[i].end && x.peak.mny===SAVE.hof[i].peak.mny);
+  // ⑦ 榮譽標記 + 對比卡選樣：best/worst 正確、picks 去重且 1~3 筆
+  const med=hofMedals();
+  out.medals = SAVE.hof[med.best].score===69 && SAVE.hof[med.worst].score===20 && med.recent>=0;
+  const picks=hofComparePick();
+  const ids=picks.map(p=>p.r); const uniq={}; ids.forEach(x=>{uniq[ids.indexOf(x)]=1;});
+  out.picks = picks.length>=1 && picks.length<=3 && Object.keys(uniq).length===picks.length;
+  out.cmpText = hofCompareText(picks).indexOf("名人堂")>=0;
+  // ⑧ 名人堂連動成就：滿 10 段 + 同時有 S 級神局與 D 級慘局 → hofEvalAch 解鎖兩成就
+  SAVE.ach={}; SAVE.hof=[];
+  for(let i=0;i<10;i++) SAVE.hof.push({t:i,end:"x"+i,rare:0,score:120,grade:"B",age:50,era:"",death:"d",peak:{hp:1,int:1,apr:1,mny:1,hap:1},ach:[]});
+  SAVE.hof[0]={t:0,end:"神",rare:3,score:400,grade:"S",age:88,era:"",death:"d",peak:{hp:1,int:1,apr:1,mny:1,hap:1},ach:[]};
+  SAVE.hof[1]={t:1,end:"慘",rare:0,score:90,grade:"D",age:20,era:"",death:"d",peak:{hp:1,int:1,apr:1,mny:1,hap:1},ach:[]};
+  S.newAch=[]; S.sum=200; S.grade="B"; S.age=50; S.cat="old";
+  hofEvalAch();
+  out.ach = SAVE.ach.hof_collector===true && SAVE.ach.hof_godandhell===true
+    && S.newAch.indexOf("hof_collector")>=0 && !!ACH_MAP.hof_collector && !!ACH_MAP.hof_godandhell;
+  // 未達門檻不誤觸（少於 10 段、或缺神/慘其一）
+  SAVE.ach={}; SAVE.hof=[{t:0,end:"a",rare:0,score:200,grade:"B",age:50,era:"",death:"d",peak:{},ach:[]}];
+  S.newAch=[]; hofEvalAch();
+  out.achNoFalse = !SAVE.ach.hof_collector && !SAVE.ach.hof_godandhell;
+  // ⑨ 空名人堂渲染不崩 + 空狀態引導語
+  out.empty=false; try{ SAVE.hof=[]; collTab("hof"); out.empty = appHTML().indexOf("名人堂還空空如也")>=0; }catch(e){ out.emptyErr=String(e&&e.message||e); }
+  // ⑩ 有資料渲染不崩：含標題/榮譽標記🏆/排序鈕/對比卡按鈕
+  out.render=false; try{
+    SAVE.hof=[{t:1,end:"阿明",rare:2,score:360,grade:"A",age:80,era:"民國",death:"壽終",peak:{hp:90,int:80,apr:70,mny:88,hap:75},ach:["五邊形戰士"]},
+              {t:2,end:"阿慘",rare:0,score:120,grade:"D",age:25,era:"",death:"車禍",peak:{hp:10,int:20,apr:30,mny:5,hap:15},ach:[]}];
+    collTab("hof"); const h2=appHTML();
+    out.render = h2.indexOf("歷代人生名人堂")>=0 && h2.indexOf("🏆")>=0 && h2.indexOf("依分數")>=0 && h2.indexOf("hofCompareCard")>=0;
+  }catch(e){ out.renderErr=String(e&&e.message||e); }
+  return JSON.stringify(out);
+})()`, sandbox));
+ok(r108.def, 'R108 ① 舊存檔相容：缺 hof 鍵 loadSave 補成空陣列，不崩');
+ok(r108.write, 'R108 ② hofPush 寫入：人生摘要入冊、稱號去標籤、峰值/時間/欄位齊備');
+ok(r108.rarePeaceful && r108.rareHidden && r108.rareNormal, 'R108 ③ 稀有度分級：壽終=2／隱藏結局=3／一般死法=0~1');
+ok(r108.skipChallenge, 'R108 ④ 挑戰/對戰/劇本局不入名人堂（全服公平鐵律）');
+ok(r108.cap, 'R108 ⑤ 容量上限：超過 50 筆淘汰最低分，最高分保留');
+ok(r108.roundtrip, 'R108 ⑥ 序列化往返：stringify→parse 後分數/稱號/峰值保值不崩');
+ok(r108.medals && r108.picks && r108.cmpText, 'R108 ⑦ 榮譽標記+對比卡選樣：best/worst 正確、picks 去重 1~3 筆、文字摘要可生成');
+ok(r108.ach && r108.achNoFalse, 'R108 ⑧ 連動成就：滿 10 段+神慘同框解鎖兩成就，未達門檻不誤觸');
+ok(r108.empty, 'R108 ⑨ 空名人堂渲染不崩，顯示空狀態引導語' + (r108.emptyErr?(' ['+r108.emptyErr+']'):''));
+ok(r108.render, 'R108 ⑩ 有資料渲染不崩：含標題/🏆榮譽標記/排序鈕/對比卡按鈕' + (r108.renderErr?(' ['+r108.renderErr+']'):''));
+
 console.log(fails ? `\n結果: ❌ ${fails} 項未通過` : '\n結果: ✅ 狀態機全數正確');
 process.exit(fails ? 1 : 0);

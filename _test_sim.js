@@ -3233,6 +3233,35 @@ try {
   console.log('R96 台味天災生存人生支線: ❌ ' + e.message);
 }
 
+// ========================================================================
+// R108 歷代人生名人堂：跑完數百局後 SAVE.hof 應有資料、未超上限、欄位完整、
+//   分數合理、序列化往返不崩；舊存檔（預埋的 old save 無 hof 鍵）載入後仍為陣列
+// ========================================================================
+let r108OK = false;
+try {
+  const r108 = JSON.parse(vm.runInContext(`(function(){
+    const out={};
+    const h=SAVE.hof;
+    out.exists = Array.isArray(h);                          // 舊存檔無 hof 鍵也補成陣列（相容）
+    out.populated = out.exists && h.length>0;               // 數百局正常人生後確有收藏
+    out.cap = out.exists && h.length<=50;                   // 容量上限不超過 50
+    out.fields = out.exists && h.length>0 && h.every(function(r){
+      return typeof r.score==='number' && typeof r.age==='number' && typeof r.grade==='string'
+        && typeof r.end==='string' && r.end.indexOf('<')<0
+        && r.peak && ['hp','int','apr','mny','hap'].every(function(k){return typeof r.peak[k]==='number';})
+        && Array.isArray(r.ach) && typeof r.rare==='number' && r.rare>=0 && r.rare<=3;
+    });
+    out.scoreSane = out.exists && h.every(function(r){ return r.score>=0 && r.score<=500; });
+    out.roundtrip = out.exists && JSON.parse(JSON.stringify(h)).length===h.length;
+    out.medals = (function(){ var m=hofMedals(); return !h.length || (m.best>=0 && m.worst>=0); })();
+    return JSON.stringify(out);
+  })()`, sandbox));
+  r108OK = Object.values(r108).every(v => v === true);
+  console.log('R108 歷代人生名人堂(跨周目收藏/上限/欄位/序列化/舊檔相容): ' + (r108OK ? '✅ 全數通過' : '❌ ' + JSON.stringify(r108)));
+} catch (e) {
+  console.log('R108 歷代人生名人堂: ❌ ' + e.message);
+}
+
 if (__errors.length) {
   console.log('\n--- 錯誤樣本(前5) ---');
   __errors.slice(0, 5).forEach(e => console.log('  ' + e));
@@ -3240,6 +3269,6 @@ if (__errors.length) {
 
 /* 退出碼 */
 const pass = __errors.length === 0 && chk.missingScenes.length === 0 && chk.eventVisible >= 126 && chk.eventTotal >= 126 && lsOK && achUnlocked > 0
-  && chk.deathbookMissing.length === 0 && chk.deathTotal >= 17 && deathsOK && rebirthOK && legacyOK && petOK && r13OK && r17OK && r20OK && r21OK && r22OK && r24OK && r25OK && r34OK && r38OK && r41OK && r42OK && r43OK && r44OK && r45OK && r46OK && r47OK && r48OK && r49OK && r51OK && r52OK && r53OK && r54OK && r55OK && r72OK && r76OK && r77OK && r79OK && r86OK && r87OK && r92OK && r93OK && r95OK && r96OK;
+  && chk.deathbookMissing.length === 0 && chk.deathTotal >= 17 && deathsOK && rebirthOK && legacyOK && petOK && r13OK && r17OK && r20OK && r21OK && r22OK && r24OK && r25OK && r34OK && r38OK && r41OK && r42OK && r43OK && r44OK && r45OK && r46OK && r47OK && r48OK && r49OK && r51OK && r52OK && r53OK && r54OK && r55OK && r72OK && r76OK && r77OK && r79OK && r86OK && r87OK && r92OK && r93OK && r95OK && r96OK && r108OK;
 console.log('\n結果: ' + (pass ? '✅ 全數通過' : '❌ 有項目未通過'));
 process.exit(pass ? 0 : 1);
