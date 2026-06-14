@@ -3729,5 +3729,47 @@ ok(r108.ach && r108.achNoFalse, 'R108 ⑧ 連動成就：滿 10 段+神慘同框
 ok(r108.empty, 'R108 ⑨ 空名人堂渲染不崩，顯示空狀態引導語' + (r108.emptyErr?(' ['+r108.emptyErr+']'):''));
 ok(r108.render, 'R108 ⑩ 有資料渲染不崩：含標題/🏆榮譽標記/排序鈕/對比卡按鈕' + (r108.renderErr?(' ['+r108.renderErr+']'):''));
 
+// ===== R110 台味育兒教養人生支線：cond gating + 屬性/旗標雙驅動分流 + 死法/成就/舊存檔相容 =====
+const r110 = JSON.parse(vm.runInContext(`(function(){
+  const out={};
+  function fresh(age,fl,attr){ startGame(); const s=S; s.flags=Object.assign({haskid:true},fl||{}); ensureState(s); s.seen={}; s.alive=true; if(age!=null)s.age=age; if(attr)Object.assign(s.attr,attr); return s; }
+  /* ① cond gating：haskid 才進池、無 haskid 不進、once 已踏不再進 */
+  let s=fresh(40,{}); out.kidIn = eligible().some(e=>e.id==='r110_tiger') && eligible().some(e=>e.id==='r110_grand');
+  startGame(); s=S; s.flags={}; ensureState(s); s.seen={}; s.age=40;
+  out.noKidGated = !eligible().some(e=>['r110_newborn','r110_tiger','r110_grand','r110_repay'].includes(e.id));
+  s=fresh(40,{r110_eduset:true}); out.onceGated = !eligible().some(e=>e.id==='r110_tiger');
+  /* ② 養兒防老開獎：屬性＋旗標雙驅動確定性分流（連跑 3 次同值、零裸 rng 翻不了門檻） */
+  function repay(fl,attr){ s=fresh(60,fl,attr); showEvent(EVENTS.find(e=>e.id==='r110_repay')); choose(0); return s.flags; }
+  out.filial = [0,0,0].every(()=>!!repay({r110_adaptive:true},{int:80,hap:80}).r110_filial);
+  out.leech  = [0,0,0].every(()=>!!repay({r110_helimode:true,r110_spoil:true},{int:30,hap:30}).r110_leech);
+  out.neutral= [0,0,0].every(()=>{const f=repay({},{int:40,hap:40}); return !f.r110_filial && !f.r110_leech;});
+  /* ③ tigerpush 陪讀爆肝死：hp<=14 確定性觸發 tigerburn、門檻外活路立 helimode */
+  s=fresh(40,{}); s.attr.hp=12; showEvent(EVENTS.find(e=>e.id==='r110_tiger')); choose(0);
+  out.tigerDie = S.flags.specialDeath==='tigerburn';
+  s=fresh(40,{}); s.attr.hp=80; showEvent(EVENTS.find(e=>e.id==='r110_tiger')); choose(0);
+  out.tigerLive = !S.flags.specialDeath && S.flags.r110_helimode===true;
+  /* ④ 死法收錄 + 成就確定性不誤觸 */
+  out.deathReg = !!SPECIAL_DEATHS.tigerburn && DEATHBOOK.some(d=>d.id==='tigerburn'&&d.rare===true&&d.hint&&d.reason);
+  out.ach = ACH_MAP.r110_helicopter.check({S:{flags:{r110_helimode:true}}})
+         && ACH_MAP.r110_filialwin.check({S:{flags:{r110_filial:true}}})
+         && ACH_MAP.r110_leechkid.check({S:{flags:{r110_leech:true}}})
+         && !ACH_MAP.r110_helicopter.check({S:{flags:{}}})
+         && !ACH_MAP.r110_filialwin.check({S:{flags:{}}});
+  /* ⑤ 舊存檔相容：缺 r110 旗標的 save 經 ensureState 不崩、不注入 r110 旗標 */
+  const old={flags:{haskid:true},attr:{hp:50,int:50,apr:50,mny:50,hap:50},age:40,alive:true}; ensureState(old);
+  out.compat = Object.keys(old.flags).every(k=>k.indexOf('r110')!==0);
+  startGame(); s=S; out.clean = Object.keys(s.flags||{}).every(k=>k.indexOf('r110')!==0);
+  return JSON.stringify(out);
+})()`, sandbox));
+ok(r110.kidIn && r110.noKidGated && r110.onceGated, 'R110 ① 育兒鏈 cond gating：haskid 進池／無 haskid 不進／once 已踏不重播');
+ok(r110.filial, 'R110 ② 養兒防老分流：適性引導＋高身教(智力/快樂) 確定性養出孝順成材（連跑 3 次同值）');
+ok(r110.leech, 'R110 ③ 養兒防老分流：直升機高壓＋隔代溺愛＋疏於身教 確定性養出啃老不肖');
+ok(r110.neutral, 'R110 ④ 養兒防老分流：教養分中間值 → 平凡中性票（不誤觸 filial/leech）');
+ok(r110.tigerDie, 'R110 ⑤ 陪讀爆肝死：虎爸虎媽全力雞娃 hp≤14 確定性觸發 tigerburn');
+ok(r110.tigerLive, 'R110 ⑥ 陪讀活路：hp 充足撐過軍備競賽、立 helimode 直升機父母旗標');
+ok(r110.deathReg, 'R110 ⑦ tigerburn 收錄 SPECIAL_DEATHS＋死法圖鑑（rare＋提示＋reason）');
+ok(r110.ach, 'R110 ⑧ 連動成就確定性：直升機父母／養出人才／養出啃老蟲解鎖且不誤觸');
+ok(r110.compat && r110.clean, 'R110 ⑨ 舊存檔相容＋乾淨局零 r110 殘留');
+
 console.log(fails ? `\n結果: ❌ ${fails} 項未通過` : '\n結果: ✅ 狀態機全數正確');
 process.exit(fails ? 1 : 0);

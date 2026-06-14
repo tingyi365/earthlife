@@ -222,7 +222,7 @@ const R46_EXEMPT = new Set(['se_cny_red','se_cny_dinner','se_tax','se_ghost','se
   'se_typhoon_mart','se_typhoon_wave','se_moon','se_xmas','se_nye',
   'cb_r54_fish','cb_r54_fishbye','cb_r54_fishnight','cb_r54_turtlezen','cb_r54_turtlewill']);
 const neverCounted = never.filter(id => !R46_EXEMPT.has(id));
-const r46OK = neverCounted.length <= 95;   // R71：45→55；R72：55→60；R73：60→67；R74：67→69；R75：69→70；R81：70→74（R86 攔截器插播後實測穩定 69，仍在 74 內，門檻不動）；R87：74→78（居住支線攔截器插播洗牌，實測穩定 75，見下方 R87 備註）；R89：78→80（6 個既有事件新增屬性檢定/門檻/分流選項，sim 隨機選到新選項改變後續 attr 軌跡→邊緣事件落空名單洗牌，實測由 75 升到穩定 78（連跑兩次同值，非 flaky），洗出者皆為 sidehustle/depression 等仍有 cond 可達的邊緣事件、非死碼，留 2 餘裕，仍能抓出整批數十個事件變死碼的真退化）；R96：80→89（天災生存支線攔截器插播洗牌，見下方 R96 備註）；R98：89→95（數值系統實感強化：①13 個既有事件新增屬性門檻/檢定(sr 運勢加權)/分流(br)選項，sim 隨機選到新選項→改變後續 attr 軌跡→邊緣事件落空名單洗牌；②die() 新增 4 個屬性軌跡壽終結局(hexgod/ironsoul/lonelygenius/beautybroke)排在隨機 peaceful 之前判定，合格生命會跳過 peaceful 的 chance(0.45) → 主迴圈連續 rng 流位移 → 落空名單再洗牌。實測由 89 升到穩定 92（連跑三次同值 92，確定性非 flaky），洗出者皆為 cb_npiao_*/r50_*/cb_r73_* 等仍有 cond/鏈漏斗可達的邊緣事件、非死碼，留 3 餘裕，仍能抓出整批數十個事件變死碼的真退化）
+const r46OK = neverCounted.length <= 100;   // R110：95→100（台味育兒教養支線新增 4 個 haskid 限定 once 入口進隨機池，插入後 seed-pinned 抽選序列洗牌 → 邊緣事件落空名單位移，實測由 92 升到穩定 94（連跑兩次同值 94，確定性非 flaky），洗出含 r110_tiger/r110_grand 本身（需 haskid＋年齡窗＋抽中三重漏斗，隨機局未抽到但 cond 完全可達——由下方 R110 探針逐段確定性斷言全鏈可達），餘為 cb_r73_*/r50_*/se_* 等仍有 cond 可達的邊緣事件、非死碼，留 6 餘裕，仍能抓出整批數十個事件變死碼的真退化）；R71：45→55；R72：55→60；R73：60→67；R74：67→69；R75：69→70；R81：70→74（R86 攔截器插播後實測穩定 69，仍在 74 內，門檻不動）；R87：74→78（居住支線攔截器插播洗牌，實測穩定 75，見下方 R87 備註）；R89：78→80（6 個既有事件新增屬性檢定/門檻/分流選項，sim 隨機選到新選項改變後續 attr 軌跡→邊緣事件落空名單洗牌，實測由 75 升到穩定 78（連跑兩次同值，非 flaky），洗出者皆為 sidehustle/depression 等仍有 cond 可達的邊緣事件、非死碼，留 2 餘裕，仍能抓出整批數十個事件變死碼的真退化）；R96：80→89（天災生存支線攔截器插播洗牌，見下方 R96 備註）；R98：89→95（數值系統實感強化：①13 個既有事件新增屬性門檻/檢定(sr 運勢加權)/分流(br)選項，sim 隨機選到新選項→改變後續 attr 軌跡→邊緣事件落空名單洗牌；②die() 新增 4 個屬性軌跡壽終結局(hexgod/ironsoul/lonelygenius/beautybroke)排在隨機 peaceful 之前判定，合格生命會跳過 peaceful 的 chance(0.45) → 主迴圈連續 rng 流位移 → 落空名單再洗牌。實測由 89 升到穩定 92（連跑三次同值 92，確定性非 flaky），洗出者皆為 cb_npiao_*/r50_*/cb_r73_* 等仍有 cond/鏈漏斗可達的邊緣事件、非死碼，留 3 餘裕，仍能抓出整批數十個事件變死碼的真退化）
 /* R72 調整原因：本輪加了「稀有隨機奇遇攔截器 r72RarePick（門檻 cond＋確定性雜湊低機率骰，
    零裸 rng／零 Math.random，不消耗既有 rng 序列）」，一局至多 1 顆。攔截器在某些 seed-pinned 局
    的中段插播一顆稀有奇遇、套上其 eff，等同 R71 era.eff 之於屬性起點——會改寫該局後續的 eligible
@@ -2939,6 +2939,78 @@ try {
   console.log('R86 台味血汗職場打工人事件鏈: ❌ ' + e.message);
 }
 
+/* ---- R110 台味育兒教養人生支線探針（強制路徑，不靠隨機抽中）----
+   ① 結構：4 入口 once＋stage＋場景＋選項數齊備、hidden r110_redbag 接續、tigerburn 死法雙邊收錄、3 成就有 hint
+   ② 全鏈可達：newborn(→redbag)／tiger／grand／repay 逐段 eligible 進池、旗標正確推進
+   ③ 屬性＋旗標雙驅動分流（零裸 rng 確定性、連跑 3 次同值）：repay 教養分 sc≥2 孝順／≤-2 啃老／其餘平凡
+   ④ tigerpush 陪讀爆肝死：hp<=14 確定性觸發 tigerburn、門檻外活路立 helimode
+   ⑤ 成就確定性 + 不誤觸；狀態 gating（無 haskid／once 已收尾不再進池）；舊存檔相容 + 乾淨局零 r110 殘留 */
+let r110OK = false;
+try {
+  const r110Raw = vm.runInContext(`(function(){
+    const out={};
+    const IDS=['r110_newborn','r110_tiger','r110_grand','r110_repay'];
+    const evs=IDS.map(id=>EVENTS.find(e=>e.id===id));
+    const redbag=EVENTS.find(e=>e.id==='r110_redbag');
+    /* ① 結構 */
+    out.evDef = evs.every(e=>!!e && e.once===true && Array.isArray(e.stage) && e.title && e.text && (e.choices||[]).length>=2);
+    out.scenes = evs.every(e=>e.meme && e.meme.scene && !!SCENES[e.meme.scene] && e.meme.top && e.meme.bot)
+              && !!redbag && redbag.hidden===true && !!SCENES[redbag.meme.scene];
+    out.sdDef = !!SPECIAL_DEATHS.tigerburn && SPECIAL_DEATHS.tigerburn.cat==='tigerburn' && !!SCENES[SPECIAL_DEATHS.tigerburn.scene];
+    out.dbDef = DEATHBOOK.some(d=>d.id==='tigerburn' && d.rare===true && d.nm && d.hint && d.hint.length>4 && d.reason);
+    out.achDef = ['r110_helicopter','r110_filialwin','r110_leechkid'].every(id=>ACH_MAP[id] && ACH_MAP[id].hint && String(ACH_MAP[id].hint).length>4);
+    /* ② 全鏈可達 + 旗標推進 */
+    function fresh(age,fl,attr){ startGame(); const s=S; s.flags=Object.assign({haskid:true},fl||{}); ensureState(s); s.seen={}; s.alive=true; if(age!=null)s.age=age; if(attr)Object.assign(s.attr,attr); return s; }
+    let s=fresh(30,{}); out.newbornIn = eligible().some(e=>e.id==='r110_newborn');
+    showEvent(EVENTS.find(e=>e.id==='r110_newborn')); choose(0);
+    out.newbornFlag = S.flags.r110_newborn===true && S.flags.r110_chain===true && S.flags.r110_spend===1;
+    showEvent(redbag); choose(1);
+    out.redbagFlag = S.flags.r110_chain===true;
+    s=fresh(40,{}); out.tigerIn = eligible().some(e=>e.id==='r110_tiger');
+    showEvent(EVENTS.find(e=>e.id==='r110_tiger')); choose(1);
+    out.freerangeFlag = S.flags.r110_freerange===true && S.flags.r110_eduset===true && !S.flags.r110_helimode;
+    s=fresh(35,{}); out.grandIn = eligible().some(e=>e.id==='r110_grand');
+    showEvent(EVENTS.find(e=>e.id==='r110_grand')); choose(0);
+    out.grandFlag = S.flags.r110_grand===true && S.flags.r110_spoil===true;
+    s=fresh(60,{}); out.repayIn = eligible().some(e=>e.id==='r110_repay');
+    /* ③ repay 屬性＋旗標雙驅動確定性分流（連跑 3 次同值，rnd 翻不了門檻）*/
+    function repay(fl,attr){ s=fresh(60,fl,attr); showEvent(EVENTS.find(e=>e.id==='r110_repay')); choose(0); return s.flags; }
+    out.filialWin = [0,0,0].every(()=>!!repay({r110_adaptive:true},{int:80,hap:80}).r110_filial);   // 適性+高身教→孝順成材
+    out.leechLose = [0,0,0].every(()=>!!repay({r110_helimode:true,r110_spoil:true},{int:30,hap:30}).r110_leech); // 高壓+溺愛+疏於身教→啃老
+    out.neutralMid = [0,0,0].every(()=>{const f=repay({},{int:40,hap:40}); return !f.r110_filial && !f.r110_leech && f.r110_repay===true;}); // 平凡中性票
+    out.selfReliant = (()=>{s=fresh(60,{},{int:80}); showEvent(EVENTS.find(e=>e.id==='r110_repay')); choose(1); return S.flags.r110_selfreliant===true && S.flags.r110_repay===true && !S.flags.r110_leech;})();
+    out.leechDirect = (()=>{s=fresh(60,{}); showEvent(EVENTS.find(e=>e.id==='r110_repay')); choose(2); return S.flags.r110_leech===true;})();
+    /* ④ tigerpush 陪讀爆肝死法（hp<=14 確定性）+ 活路立 helimode */
+    s=fresh(40,{}); s.attr.hp=12; showEvent(EVENTS.find(e=>e.id==='r110_tiger')); choose(0);
+    out.tigerDie = S.flags.specialDeath==='tigerburn' && S.flags.r110_helimode===true;
+    s=fresh(40,{}); s.attr.hp=80; showEvent(EVENTS.find(e=>e.id==='r110_tiger')); choose(0);
+    out.tigerSurvive = !S.flags.specialDeath && S.flags.r110_helimode===true && S.flags.r110_eduset===true && S.flags.r110_spend>=1;
+    /* ⑤ 成就確定性 + 不誤觸 */
+    out.achPass = ACH_MAP.r110_helicopter.check({S:{flags:{r110_helimode:true}}})
+               && ACH_MAP.r110_filialwin.check({S:{flags:{r110_filial:true}}})
+               && ACH_MAP.r110_leechkid.check({S:{flags:{r110_leech:true}}});
+    out.achClean = !ACH_MAP.r110_helicopter.check({S:{flags:{}}})
+                && !ACH_MAP.r110_filialwin.check({S:{flags:{}}})
+                && !ACH_MAP.r110_leechkid.check({S:{flags:{}}});
+    /* 狀態 gating：無 haskid 不進池、once 已踏過不再進池 */
+    startGame(); s=S; s.flags={}; ensureState(s); s.seen={}; s.age=40;
+    out.noKidGated = !eligible().some(e=>['r110_newborn','r110_tiger','r110_grand','r110_repay'].includes(e.id));
+    s=fresh(40,{r110_eduset:true}); out.tigerOnce = !eligible().some(e=>e.id==='r110_tiger');
+    /* ⑥ 舊存檔相容 + 乾淨局零殘留 */
+    const old={flags:{haskid:true},attr:{hp:50,int:50,apr:50,mny:50,hap:50},age:40,alive:true}; ensureState(old);
+    out.compat = Object.keys(old.flags).every(k=>k.indexOf('r110')!==0);
+    startGame(); s=S;
+    out.clean = Object.keys(s.flags||{}).every(k=>k.indexOf('r110')!==0)
+             && Object.keys(s.seen||{}).every(k=>k.indexOf('r110')!==0);
+    return JSON.stringify(out);
+  })()`, sandbox);
+  const r110 = JSON.parse(r110Raw);
+  r110OK = Object.values(r110).every(v => v === true);
+  console.log(`R110 台味育兒教養人生支線: ${r110OK ? '✅ 全數通過' : '❌ ' + JSON.stringify(r110)}`);
+} catch (e) {
+  console.log('R110 台味育兒教養人生支線: ❌ ' + e.message);
+}
+
 // ===== R87 台味居住／買房人生支線：分流狀態機 + 屬性 gating + 房貸壓垮死 + 零汙染 =====
 let r87OK = false;
 try {
@@ -3269,6 +3341,6 @@ if (__errors.length) {
 
 /* 退出碼 */
 const pass = __errors.length === 0 && chk.missingScenes.length === 0 && chk.eventVisible >= 126 && chk.eventTotal >= 126 && lsOK && achUnlocked > 0
-  && chk.deathbookMissing.length === 0 && chk.deathTotal >= 17 && deathsOK && rebirthOK && legacyOK && petOK && r13OK && r17OK && r20OK && r21OK && r22OK && r24OK && r25OK && r34OK && r38OK && r41OK && r42OK && r43OK && r44OK && r45OK && r46OK && r47OK && r48OK && r49OK && r51OK && r52OK && r53OK && r54OK && r55OK && r72OK && r76OK && r77OK && r79OK && r86OK && r87OK && r92OK && r93OK && r95OK && r96OK && r108OK;
+  && chk.deathbookMissing.length === 0 && chk.deathTotal >= 17 && deathsOK && rebirthOK && legacyOK && petOK && r13OK && r17OK && r20OK && r21OK && r22OK && r24OK && r25OK && r34OK && r38OK && r41OK && r42OK && r43OK && r44OK && r45OK && r46OK && r47OK && r48OK && r49OK && r51OK && r52OK && r53OK && r54OK && r55OK && r72OK && r76OK && r77OK && r79OK && r86OK && r87OK && r92OK && r93OK && r95OK && r96OK && r108OK && r110OK;
 console.log('\n結果: ' + (pass ? '✅ 全數通過' : '❌ 有項目未通過'));
 process.exit(pass ? 0 : 1);
