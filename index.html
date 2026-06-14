@@ -426,7 +426,11 @@
   @keyframes m3blink{0%,100%{opacity:1;}50%{opacity:.32;}}
   /* ---------- R8 手感與演出：音效鈕 / 死亡演出 / 大幅變化閃光（純視覺，零平衡影響） ---------- */
   .sfxbtn{width:auto; flex:0 0 auto; padding:7px 9px; font-size:14px; line-height:1;
-    border-radius:10px; margin-left:7px; letter-spacing:0;}
+    border-radius:10px; margin-left:7px; letter-spacing:0; white-space:nowrap;}
+  /* R121 靜音時：輕脈動光暈邀請開啟沉浸式音效（明顯但不突兀，尊重 reduce-motion） */
+  .sfxbtn.muted{ animation:r121sfxpulse 2.6s ease-in-out infinite; }
+  @keyframes r121sfxpulse{ 0%,100%{ box-shadow:0 0 0 0 rgba(124,138,255,0);} 50%{ box-shadow:0 0 0 3px rgba(124,138,255,.30);} }
+  @media (prefers-reduced-motion:reduce){ .sfxbtn.muted{ animation:none; } }
   /* 死亡瞬間：整個畫面短暫震動 */
   body.r8shake .app{animation:r8shake .55s both;}
   @keyframes r8shake{
@@ -747,6 +751,58 @@
   /* ④ 觸控目標下限（全尺寸生效，非僅 ≤400px）：手機點得到、桌機不變樣 */
   .btn{min-height:48px;}
   .choice{min-height:46px;}
+
+  /* =======================================================================
+     R120 沉浸式氛圍層（純 CSS／呈現，零遊戲邏輯／數值／機率／序列影響）
+     ① 分齡動態視覺主題（童年暖亮→晚年沉靜冷色，平滑漸變）
+     ② 關鍵事件＋死亡戲劇化（標題打字機掃入／內文淡入／死亡暗角儀式）
+     ③ 數值微反饋補強（既有 floatnum/statd/chg/rollStats 之外加數字顏色閃動）
+     ======================================================================= */
+  /* ① 分齡氛圍：固定全螢幕柔光底層，依人生階段切換主色。
+        用 @property 註冊可動畫色彩變數 → 階段切換時長 transition 平滑漸變（不支援的瀏覽器自動退化為瞬切，不影響可玩性）。 */
+  @property --atm1{ syntax:'<color>'; inherits:true; initial-value:transparent; }
+  @property --atm2{ syntax:'<color>'; inherits:true; initial-value:transparent; }
+  body{ --atm1:transparent; --atm2:transparent;
+    transition:--atm1 1.2s ease, --atm2 1.2s ease; }
+  body::before{ content:""; position:fixed; inset:0; z-index:0; pointer-events:none;
+    background:
+      radial-gradient(1100px 720px at 50% -8%, var(--atm1) 0%, transparent 60%),
+      radial-gradient(900px 620px at 14% 6%, var(--atm2) 0%, transparent 56%);
+    transition:filter 1.2s ease; }
+  .app{ position:relative; z-index:1; }   /* 內容浮在氛圍層之上 */
+  /* 六階主色：童年暖亮 → 少年清新 → 青年鮮明 → 壯年沉穩 → 中年內斂 → 晚年沉靜冷色 */
+  body.atm0{ --atm1:rgba(255,196,120,.30); --atm2:rgba(255,150,95,.20); }   /* 童年 */
+  body.atm1{ --atm1:rgba(120,228,180,.26); --atm2:rgba(110,200,255,.16); }  /* 少年 */
+  body.atm2{ --atm1:rgba(120,178,255,.26); --atm2:rgba(162,120,255,.18); }  /* 青年 */
+  body.atm3{ --atm1:rgba(150,128,255,.24); --atm2:rgba(255,198,110,.13); }  /* 壯年 */
+  body.atm4{ --atm1:rgba(122,140,190,.22); --atm2:rgba(200,160,120,.13); }  /* 中年 */
+  body.atm5{ --atm1:rgba(92,120,172,.27); --atm2:rgba(70,90,140,.20); }     /* 晚年 */
+  /* 死亡：氛圍底層去暖、壓暗、輕微去飽和，肅穆收尾 */
+  body.atm-death{ --atm1:rgba(74,84,124,.34); --atm2:rgba(42,48,82,.30); }
+  body.atm-death::before{ filter:grayscale(.4) brightness(.8); }
+
+  /* ② 關鍵事件登場戲劇化（僅彩蛋/關鍵抉擇/連鎖，純 CSS 不改任何文字內容）：
+        標題以 clip-path steps 打字機掃入、內文延遲淡入浮現。可立即點選略過（動畫非阻擋）。 */
+  .panel.ev-egg .etitle,.panel.ev-key .etitle{ animation:m3rise .45s both, r120type .62s steps(20,end) both; }
+  .panel.ev-egg .etext,.panel.ev-key .etext,.panel.ev-chain .etext{ animation:r120fadein .55s ease .32s both; }
+  @keyframes r120type{ from{clip-path:inset(0 100% 0 0);} to{clip-path:inset(0 0 0 0);} }
+  @keyframes r120fadein{ from{opacity:0; transform:translateY(7px);} to{opacity:1; transform:translateY(0);} }
+
+  /* ② 死亡儀式感收尾：緩降冷色暗角（覆蓋全屏、不擋操作），結算面板肅穆升起。
+        暗角為獨立固定層，不在 #app 內，故會停留在結算頁；開新局時由 JS 移除。 */
+  .r120vignette{ position:fixed; inset:0; z-index:997; pointer-events:none;
+    background:radial-gradient(circle at 50% 45%, transparent 24%, rgba(6,8,18,.5) 76%, rgba(4,5,12,.8) 100%);
+    animation:r120veil 1.7s ease-out both; }
+  @keyframes r120veil{ 0%{opacity:0;} 32%{opacity:1;} 100%{opacity:.62;} }
+  .panel.deadend{ animation:m3rise .45s both, r120solemn 1.15s ease both; }
+  @keyframes r120solemn{ from{filter:brightness(.58) saturate(.7);} to{filter:brightness(1) saturate(1);} }
+
+  /* ③ 數值微反饋補強：變動數字本身瞬間閃色（承接既有 .stat.chg 縮放與 floatnum 浮字）。
+        無 fill-mode → 動畫結束後回歸 .danger/.peak 等靜態色，不蓋掉常駐配色。 */
+  .stat.chg.up .vl{ animation:r120vlup .7s ease; }
+  .stat.chg.dn .vl{ animation:r120vldn .7s ease; }
+  @keyframes r120vlup{ 0%{color:var(--ink);} 32%{color:var(--good); text-shadow:0 0 10px rgba(61,220,151,.6);} 100%{color:var(--ink); text-shadow:none;} }
+  @keyframes r120vldn{ 0%{color:var(--ink);} 32%{color:var(--bad); text-shadow:0 0 10px rgba(255,107,125,.6);} 100%{color:var(--ink); text-shadow:none;} }
 </style>
 </head>
 <body>
@@ -815,8 +871,8 @@ const rnd = (a,b)=>a+Math.floor(rng()*(b-a+1));
    無 window/AudioContext 環境（node 測試）全部自動靜默略過。
    ========================================================================= */
 const SFX_KEY = "earthlife_sfx_on";
-let SFX_ON = true;   // 預設開啟；舊存檔/無此鍵 → 維持開啟，不可炸
-try{ if(typeof localStorage!=="undefined" && localStorage.getItem(SFX_KEY)==="0") SFX_ON=false; }catch(e){}
+let SFX_ON = false;  // R121 預設靜音（避開瀏覽器 autoplay 阻擋與騷擾）；僅當使用者曾明確開啟（localStorage="1"）才預設開
+try{ if(typeof localStorage!=="undefined" && localStorage.getItem(SFX_KEY)==="1") SFX_ON=true; }catch(e){}
 let __actx = null;
 function sfxCtx(){
   try{
@@ -870,10 +926,80 @@ function sfxPlay(name){
 function sfxLater(name, ms){
   try{ if(typeof setTimeout==="function") setTimeout(()=>sfxPlay(name), ms); }catch(e){}
 }
+/* =========================================================================
+   R121 分齡 ambient 氛圍音層（聽覺軸）：WebAudio 即時合成的極輕背景和聲，
+   隨人生階段（童年/少年/青年/壯年/中年/晚年，沿用 r120Stage 六分段）切換基調，
+   克制不吵、可關、預設靜音。零外部音檔/CDN、零 rng/pick/chance/rnd（不消耗遊戲
+   隨機序列，種子一致性完全不受影響）。無 window/AudioContext 環境（node 測試）全程靜默略過。
+   ========================================================================= */
+let __ambStage = -1;     // 目前 ambient 階段（-1=未啟動）
+let __ambNodes = null;   // 當前發聲節點集合，切換時淡出回收
+/* 六階基調：童年明亮高揚 → 晚年靜謐低沉；和聲=基頻+五度（中年改四度更溫厚），緩 LFO 做呼吸起伏 */
+const AMB_STAGES = [
+  {base:330, type:"sine",     g:.020, harm:1.5,  lfo:0.17},  // 0 童年
+  {base:294, type:"sine",     g:.019, harm:1.5,  lfo:0.14},  // 1 少年
+  {base:247, type:"triangle", g:.018, harm:1.5,  lfo:0.12},  // 2 青年
+  {base:196, type:"sine",     g:.017, harm:1.5,  lfo:0.10},  // 3 壯年
+  {base:165, type:"triangle", g:.016, harm:1.33, lfo:0.08},  // 4 中年（四度更柔）
+  {base:131, type:"sine",     g:.015, harm:1.5,  lfo:0.06},  // 5 晚年
+];
+function sfxAmbStop(fade){
+  try{
+    const n=__ambNodes; if(!n) return; __ambNodes=null;
+    const ctx=__actx; if(!ctx) return;
+    const t=ctx.currentTime, fd=fade||.6;
+    try{ n.env.gain.cancelScheduledValues(t); n.env.gain.setValueAtTime(Math.max(.0001,n.env.gain.value||.0001), t);
+         n.env.gain.exponentialRampToValueAtTime(.0001, t+fd); }catch(e){}
+    const stopAt=t+fd+.06;
+    try{ (n.oscs||[]).forEach(o=>{ try{o.stop(stopAt);}catch(e){} }); if(n.lfo){ try{n.lfo.stop(stopAt);}catch(e){} } }catch(e){}
+  }catch(e){}
+}
+function sfxAmbStart(idx){
+  if(!SFX_ON) return;
+  const ctx=sfxCtx(); if(!ctx || ctx.state!=="running") return;
+  const cfg=AMB_STAGES[idx]||AMB_STAGES[0];
+  try{
+    const t=ctx.currentTime;
+    const env=ctx.createGain();    env.gain.setValueAtTime(.0001, t); env.connect(ctx.destination);
+    const breath=ctx.createGain(); breath.gain.setValueAtTime(.78, t); breath.connect(env);  // 受 LFO 調變做呼吸起伏
+    const o1=ctx.createOscillator(); o1.type=cfg.type; o1.frequency.setValueAtTime(cfg.base, t);
+    const o2=ctx.createOscillator(); o2.type=cfg.type; o2.frequency.setValueAtTime(cfg.base*cfg.harm, t);
+    const g2=ctx.createGain(); g2.gain.setValueAtTime(.42, t);   // 五度/四度音量壓低，底色乾淨不混濁
+    o1.connect(breath); o2.connect(g2); g2.connect(breath);
+    const lfo=ctx.createOscillator(); lfo.type="sine"; lfo.frequency.setValueAtTime(cfg.lfo, t);
+    const lfoG=ctx.createGain(); lfoG.gain.setValueAtTime(.16, t); lfo.connect(lfoG); lfoG.connect(breath.gain);
+    env.gain.exponentialRampToValueAtTime(cfg.g, t+1.8);   // 緩緩淡入，不突兀
+    o1.start(t); o2.start(t); lfo.start(t);
+    __ambNodes={env, oscs:[o1,o2], lfo};
+  }catch(e){ /* ambient 失敗不影響遊戲 */ }
+}
+/* 依當前 S 更新 ambient（每個遊戲畫面渲染時呼叫，與 R120 視覺氛圍並行）。
+   AudioContext 尚未被使用者互動喚醒（state!=="running"）時先不發聲，首次互動後下次渲染自動補上。 */
+function updateAmbient(){
+  try{
+    if(typeof window==="undefined") return;
+    if(!SFX_ON){ if(__ambNodes) sfxAmbStop(.4); __ambStage=-1; return; }
+    if(typeof S==="undefined" || !S || S.alive===false){ if(__ambNodes) sfxAmbStop(.9); __ambStage=-1; return; }
+    const ctx=sfxCtx(); if(!ctx || ctx.state!=="running") return;
+    const st=r120Stage(S.age);
+    if(st!==__ambStage || !__ambNodes){
+      __ambStage=st;
+      sfxAmbStop(.7);
+      try{ if(typeof setTimeout==="function") setTimeout(()=>{ if(SFX_ON && __ambStage===st) sfxAmbStart(st); }, 140); }catch(e){}
+    }
+  }catch(e){}
+}
+function stopAmbient(){ try{ sfxAmbStop(.5); __ambStage=-1; }catch(e){} }
 function toggleSfx(btn){
   SFX_ON=!SFX_ON;
   try{ if(typeof localStorage!=="undefined") localStorage.setItem(SFX_KEY, SFX_ON?"1":"0"); }catch(e){}
-  if(btn) btn.textContent = SFX_ON?"🔊":"🔇";
+  if(btn){
+    btn.textContent = SFX_ON?"🔇":"🔊 開啟音效";
+    btn.title = SFX_ON?"音效開啟中（點此靜音）":"目前靜音（點此開啟沉浸式音效）";
+    try{ if(btn.classList) btn.classList.toggle("muted", !SFX_ON); }catch(e){}
+  }
+  if(SFX_ON){ try{ sfxCtx(); sfxPlay("click"); }catch(e){} updateAmbient(); }
+  else { stopAmbient(); }
 }
 /* 全域按鈕點擊音 + 首次互動喚醒 AudioContext（測試 stub 無 addEventListener 自動略過） */
 try{
@@ -899,6 +1025,44 @@ function deathFX(rare){
     f.className="deathflash "+(rare?"rare":"norm");
     document.body.appendChild(f);
     setTimeout(()=>{ if(f.parentNode) f.parentNode.removeChild(f); }, 1000);
+  }catch(e){ /* 視覺效果失敗不影響遊戲 */ }
+}
+
+/* =========================================================================
+   R120 沉浸式氛圍層（純呈現；無 DOM／測試環境自動略過，零遊戲邏輯／序列影響）
+   依當前人生階段切換 body 視覺主題、死亡時加肅穆暗角，不碰任何數值/抽選/結局。
+   ========================================================================= */
+/* 六階人生視覺主題：童年/少年/青年/壯年/中年/晚年（純視覺分段，與遊戲 stageIndex 無關，不影響邏輯） */
+function r120Stage(age){ age=age||0; return age<=12?0 : age<=18?1 : age<=30?2 : age<=45?3 : age<=62?4 : 5; }
+function rm120Veil(){ try{ const v=document.getElementById("r120veil"); if(v&&v.parentNode) v.parentNode.removeChild(v); }catch(e){} }
+/* 依當前 S 狀態套用分齡氛圍主題（在每個遊戲畫面渲染時呼叫；無 body/classList 自動略過） */
+function applyAtmosphere(){
+  try{
+    if(typeof document==="undefined" || !document.body || !document.body.classList) return;
+    const cl=document.body.classList;
+    for(let i=0;i<6;i++) cl.remove("atm"+i);
+    if(typeof S==="undefined" || !S){ cl.remove("atm-death"); rm120Veil(); return; }
+    cl.add("atm"+r120Stage(S.age));
+    if(S.alive===false){ cl.add("atm-death"); }
+    else { cl.remove("atm-death"); rm120Veil(); }
+  }catch(e){ /* 氛圍純視覺，失敗不影響遊戲 */ }
+}
+/* 選單/開新局：清空氛圍主題回中性（無 DOM 自動略過） */
+function resetAtmosphere(){
+  try{
+    if(typeof document==="undefined" || !document.body || !document.body.classList) return;
+    const cl=document.body.classList;
+    for(let i=0;i<6;i++) cl.remove("atm"+i);
+    cl.remove("atm-death"); rm120Veil();
+  }catch(e){}
+}
+/* 死亡儀式：緩降冷色暗角（固定層、不擋操作、可立即點過）。配合 deathFX 的快閃，做出有重量的收尾。 */
+function deathCeremony(){
+  try{
+    if(typeof document==="undefined" || !document.body || typeof document.createElement!=="function") return;
+    rm120Veil();
+    const v=document.createElement("div"); v.id="r120veil"; v.className="r120vignette";
+    document.body.appendChild(v);
   }catch(e){ /* 視覺效果失敗不影響遊戲 */ }
 }
 
@@ -11387,6 +11551,8 @@ function effWeight(e){
    渲染：主畫面
    ========================================================================= */
 function statsHTML(){
+  applyAtmosphere();   // R120 分齡氛圍主題：每個遊戲畫面渲染時依當前年齡平滑切換背景主色（純視覺，無 DOM 自動略過）
+  updateAmbient();     // R121 分齡 ambient 氛圍音：與視覺同步，依當前人生階段切換背景和聲（預設靜音/無 window 自動略過）
   const prev = (S && S.prevAttr) || null;   // 僅在「選擇結果」那一幕有值 → 觸發高亮+滾動
   let h=`<div class="stats">`;
   for(const k in ATTR){
@@ -11450,12 +11616,14 @@ function topbarHTML(){
     ${lowwarn}
     ${resumeBtn}
     <div class="agebox" ${resumeBtn?'':'style="margin-left:auto"'}><b>${age}</b><span> 歲</span></div>
-    <button class="btn sec sfxbtn" onclick="toggleSfx(this)" title="音效開關">${SFX_ON?"🔊":"🔇"}</button>
+    <button class="btn sec sfxbtn${SFX_ON?"":" muted"}" onclick="toggleSfx(this)" title="${SFX_ON?"音效開啟中（點此靜音）":"目前靜音（點此開啟沉浸式音效）"}">${SFX_ON?"🔇":"🔊 開啟音效"}</button>
   </div>`;
 }
 
 /* 開始畫面 */
 function screenStart(){
+  resetAtmosphere();   // R120 回主選單清空分齡氛圍與死亡暗角，回到中性背景
+  stopAmbient();       // R121 回主選單淡出 ambient 氛圍音，回到安靜
   const hasResume = SAVE.current && SAVE.current.alive;
   const resumeBtn = hasResume
     ? `<button class="btn cta" onclick="resumeGame()">⏳ 繼續上次人生（${SAVE.current.age} 歲）</button>`
@@ -13907,6 +14075,9 @@ function die(from){
   // R8 死亡演出：低沉音 + 畫面震動 + 依死法稀有度閃色（稀有=金、一般=暗紅；純演出）
   sfxPlay("death");
   deathFX(!!sd || cat==="peaceful");
+  applyAtmosphere();   // R120 切晚年/死亡冷色主題（S.alive 已為 false → 套肅穆暗色）
+  updateAmbient();     // R121 死亡：淡出 ambient 氛圍音（S.alive=false → 緩緩歸於寂靜，襯死亡演出）
+  deathCeremony();     // R120 緩降暗角儀式感收尾（純視覺，可立即點過）
 
   screenSummary(cat);
 }
