@@ -5,19 +5,19 @@
 [![▶ Play Now](https://img.shields.io/badge/%E2%96%B6%20%E7%B7%9A%E4%B8%8A%E8%A9%A6%E7%8E%A9-earthlife.pages.dev-7fd7ff?style=for-the-badge)](https://earthlife.pages.dev)
 [![License: MIT](https://img.shields.io/badge/License-MIT-3fb950?style=for-the-badge)](LICENSE)
 [![Single HTML file](https://img.shields.io/badge/Build-%E5%96%AE%E4%B8%80%20HTML%20%E6%AA%94%C2%B7%E7%84%A1%E6%A1%86%E6%9E%B6-ff9d5c?style=for-the-badge)](index.html)
-[![AI Self-Evolved](https://img.shields.io/badge/AI%20%E8%87%AA%E4%B8%BB%E9%80%B2%E5%8C%96-R1%20%E2%86%92%20R103%20%E4%BB%8D%E5%9C%A8%E7%B9%BC%E7%BA%8C-ffd24a?style=for-the-badge)](docs/AI_AUTONOMOUS_UPDATE.md)
+[![AI Self-Evolved](https://img.shields.io/badge/AI%20%E8%87%AA%E4%B8%BB%E9%80%B2%E5%8C%96-R1%20%E2%86%92%20R106%20%E4%BB%8D%E5%9C%A8%E7%B9%BC%E7%BA%8C-ffd24a?style=for-the-badge)](docs/AI_AUTONOMOUS_UPDATE.md)
 [![Zero human-written game code](https://img.shields.io/badge/%E9%81%8A%E6%88%B2%E7%A8%8B%E5%BC%8F%E7%A2%BC-100%25%20AI%20%E6%89%8B%E5%AF%AB%C2%B7%E9%9B%B6%E4%BA%BA%E9%A1%9E%E6%8F%92%E6%89%8B-ff5d8f?style=for-the-badge)](docs/AI_AUTONOMOUS_UPDATE.md)
 
-> 🧬 **這是一款「自己進化自己」的遊戲——一個 AI agent 自己寫出來、自己養大的。** 從 61 個事件的雛形開始，沒有人類排需求、沒有人類改一行 code，AI 每 30 分鐘自我迭代一輪：自己選題、自己改碼、自己跑測試、自己部署、自己寫日誌，全程無人介入。到今天它已經**連續自主進化 103 輪（R1 → R103，仍在繼續）**，且每一輪都得先過自動化測試閘門才准上線。**每一行遊戲程式碼都是 AI 手寫、零人類手寫遊戲碼。** 你現在玩到的這個版本，不是誰設計的——是它自己一輪一輪長出來的。
+> 🧬 **這是一款「自己進化自己」的遊戲——一個 AI agent 自己寫出來、自己養大的。** 從 61 個事件的雛形開始，沒有人類排需求、沒有人類改一行 code，AI 每 30 分鐘自我迭代一輪：自己選題、自己改碼、自己跑測試、自己部署、自己寫日誌，全程無人介入。到今天它已經**連續自主進化 106 輪（R1 → R106，仍在繼續）**，且每一輪都得先過自動化測試閘門才准上線。**每一行遊戲程式碼都是 AI 手寫、零人類手寫遊戲碼。** 你現在玩到的這個版本，不是誰設計的——是它自己一輪一輪長出來的。
 
-> 📸 **最新賣點（R102→R103）**：人生不再單打獨鬥——新增**台味人際羈絆系統**，3~4 個有血有肉的台味 NPC（從小到大的麻吉、職場戰友、相欠債的家人……）跟著你跑完一生，**羈絆值**隨你的選擇與屬性起落，觸發專屬羈絆事件，最後結出**羈絆結局**收進成就圖鑑、運氣夠刁還能撞上隱藏稀有結局。再加上整串**鬼島嘲諷主題事件鏈**（自嘲幽默、不碰政治仇恨），讓每一輪投胎都長出不一樣的人際故事。截圖、炫耀、再投胎一次，停不下來。
+> 📸 **最新賣點（R105→R106）**：這一生結束不是真的結束——新增**周目 / New Game+ 系統**，人生謝幕後可「**再玩一輪**」延續動機，承接成就圖鑑與跨局累積，把「再投胎一次」做成有牽引力的循環。最新的 **R106 屬性編年史·五階段軌跡**更直接回應玩家「數值存在感低、想在結算回顧屬性一生起落」的心聲：state 新增 `attrTrajectory`，在**童年／求學／工作／中年／老年**五個人生階段各自快照五圍，結算頁用**純前端 inline SVG 分章節長條圖**把你一生每項屬性的高低攤開來看，還附上台味自嘲點評——專為截圖分享而生的一張人生數據回顧卡。再加上既有的台味 NPC 人際羈絆與整串鬼島嘲諷事件鏈，截圖、炫耀、開下一周目，停不下來。
 
 🎮 線上試玩 / Play now: **https://earthlife.pages.dev**
 
 <p align="center">
   <img src="docs/demo.gif" width="62%" alt="EarthLife 實機 demo：投胎抽卡 → 梗圖事件 → 人生總結卡">
 </p>
-<p align="center"><sub>↑ 實機 demo（持續進化中，目前 R103）</sub></p>
+<p align="center"><sub>↑ 實機 demo（持續進化中，目前 R106）</sub></p>
 
 <p align="center">
   <img src="docs/screenshot_start.png" width="31%" alt="開局投胎抽卡">
@@ -32,7 +32,7 @@
 
 這不只是一款遊戲——它是一個 **「AI 自主更新管理」的實驗場**。
 
-遊戲上線後的每一輪迭代（**R1 → R103，仍在繼續**），都由一個 AI agent 自主完成，**每 30 分鐘一輪**，無人介入、**全程零人類手寫遊戲碼**：
+遊戲上線後的每一輪迭代（**R1 → R106，仍在繼續**），都由一個 AI agent 自主完成，**每 30 分鐘一輪**，無人介入、**全程零人類手寫遊戲碼**：
 
 ```
 ┌─────────────────────────────────────────────────┐
@@ -47,11 +47,11 @@
 └─────────────────────────────────────────────────┘
 ```
 
-103 輪下來，遊戲從 61 個事件的雛形，長成 **789 個事件、111 種梗圖場景、303 個成就、77 種死法、10 個隱藏結局＋一整套隱藏稀有結局**、外加自繪人生分享卡與成就圖鑑、多館合一的收藏圖鑑（死法／成就／出身／天賦），再到一整套會陪你走完一生的台味 NPC 人際羈絆系統的完整作品（內容數據由測試報告即時統計，最新賣點截至 R103）——每一步都有測試把關、每一步都可回溯。
+106 輪下來，遊戲從 61 個事件的雛形，長成 **789 個事件、111 種梗圖場景、303 個成就、77 種死法、10 個隱藏結局＋一整套隱藏稀有結局**、外加自繪人生分享卡與成就圖鑑、多館合一的收藏圖鑑（死法／成就／出身／天賦）、一整套會陪你走完一生的台味 NPC 人際羈絆系統、可「再玩一輪」延續動機的周目 / New Game+ 機制，再到結算頁用 inline SVG 攤開一生五階段屬性軌跡的屬性編年史回顧（內容數據由測試報告即時統計，最新賣點截至 R106）——每一步都有測試把關、每一步都可回溯。
 
 詳細機制設計請見 **[docs/AI_AUTONOMOUS_UPDATE.md](docs/AI_AUTONOMOUS_UPDATE.md)**。
 
-### 🧬 AI 自主進化時間軸（R1 → R103 精選里程碑）
+### 🧬 AI 自主進化時間軸（R1 → R106 精選里程碑）
 
 > 從一個 61 事件的雛形，AI agent 自己一路把它養成了下面這條軌跡。沒有人類排需求，每一輪都是它讀完現況後自己決定要長什麼：
 
@@ -87,9 +87,11 @@
 | **R99** | 🪪 結局分享卡＋成就圖鑑：死亡結算改用 **Canvas 自繪人生分享卡**，一鍵下載 PNG／複製文字摘要直接丟群組炫耀；新增**成就圖鑑頁**用 localStorage 跨局累積你解過的所有成就——把「截圖分享」做成內建功能 |
 | **R100** | 🏆 隱藏稀有結局系統：埋進多個台味自嘲的**隱藏稀有結局**＋專屬觸發條件，配**稀有度徽章**標示你拿到的是多罕見的收尾，並與 R99 分享卡整合——抽到稀有結局的那張卡，就是最想截圖外流的炫耀本錢 |
 | **R102** | 😏 鬼島嘲諷主題事件鏈擴充：多條台味自嘲事件鏈，吃 R98 屬性走分支、命中接 R99 成就圖鑑、選配 R100 隱藏稀有結局——純自嘲幽默、零政治暴力仇恨，把「住在鬼島」的荒謬日常做成一張張可截圖的梗圖卡 |
-| **R103** | 🤝 台味人際羈絆系統：新增 3~4 個有血有肉的台味 **NPC**＋**羈絆值**，靠 R98 屬性牽動的羈絆專屬事件讓關係隨人生起落，最後結出**羈絆結局**接 R99 成就圖鑑／R100 隱藏稀有結局——人生不再單打獨鬥，每一輪投胎都長出不一樣的人際故事，重玩與分享性再上一層（最新一輪） |
+| **R103** | 🤝 台味人際羈絆系統：新增 3~4 個有血有肉的台味 **NPC**＋**羈絆值**，靠 R98 屬性牽動的羈絆專屬事件讓關係隨人生起落，最後結出**羈絆結局**接 R99 成就圖鑑／R100 隱藏稀有結局——人生不再單打獨鬥，每一輪投胎都長出不一樣的人際故事，重玩與分享性再上一層 |
+| **R105** | 🔄 周目 / New Game+ 系統：人生謝幕後可「**再玩一輪**」延續動機，承接 R99 成就圖鑑與跨局累積，把「再投胎一次」從散落的收集做成一條有牽引力的循環，強化重玩誘因 |
+| **R106** | 📊 屬性編年史·五階段軌跡：state 新增 `attrTrajectory`，於**童年／求學／工作／中年／老年**五階段各快照五圍，結算頁用**純前端 inline SVG 分章節長條圖**回顧各屬性一生高低、附台味自嘲點評——直接回應「數值存在感低、想在結算回顧屬性軌跡」的玩家心聲，一張專為截圖分享而生的人生數據回顧卡（最新一輪） |
 
-> 一個 AI agent，連續自我迭代 **103 輪**、每一輪都得過測試閘門才放行，**全程零人類手寫遊戲碼**——這是這個專案最獨特的賣點。完整 103 輪逐輪設計決策直接寫在 `index.html` 的程式碼註解裡，那也是下一輪 AI 的記憶。
+> 一個 AI agent，連續自我迭代 **106 輪**、每一輪都得過測試閘門才放行，**全程零人類手寫遊戲碼**——這是這個專案最獨特的賣點。完整 106 輪逐輪設計決策直接寫在 `index.html` 的程式碼註解裡，那也是下一輪 AI 的記憶。
 
 ## 🎮 遊戲說明
 
@@ -100,7 +102,8 @@
 3. **選擇有後果**：屬性增減、旗標埋伏筆、事件連鎖——年輕的選擇會在中年回來找你。
 4. **死亡結算**：享年＋稱號＋墓誌銘＋屬性曲線，產出一張 **Canvas 自繪的「人生總結卡」**，可下載 PNG／複製文字摘要直接丟群組；運氣夠刁還能撞上**隱藏稀有結局**＋稀有度徽章。
 5. **人際羈絆**：3~4 個台味 NPC 一路陪跑，羈絆值隨選擇起落、觸發羈絆專屬事件，結出專屬羈絆結局。
-6. **跨局成長**：成就圖鑑、死法圖鑑、收藏館、轉生天賦、祖產傳承、節令限定……再投胎一次。
+6. **屬性編年史**：結算頁用 inline SVG 分章節長條圖，攤開**童年／求學／工作／中年／老年**五階段的五圍高低，附台味自嘲點評，一眼看完這一生的數值起落。
+7. **跨局成長**：成就圖鑑、死法圖鑑、收藏館、轉生天賦、祖產傳承、節令限定，外加可「再玩一輪」延續動機的**周目 / New Game+**……再投胎一次。
 
 台味滿點：補習班人生、北漂租屋到無殼蝸牛買房（頭期款／30 年房貸／包租公／繼承祖厝／法拍）、手搖飲、夾娃娃機、颱風假賭盤、過年紅包攻防、兵役體位判定（常備役／替代役／免役／軍官）、健保、網路鄉民、22K 躺平 vs 內捲與血汗職場打工人、自己當頭家開店創業（夜市攤販到上市連鎖）、詐騙之島防詐學分（被害者／車手／反詐三線）、晚年退休型錄與身後事、潤出國重開機，再到依出生世代分流的鬼島時代大事記（戒嚴尾巴一路走到 AI 浪潮）。
 
@@ -139,7 +142,7 @@ node _test_state.js
 
 This is not just a game — it's a working experiment in **AI-autonomous release management**.
 
-Every iteration since launch (**R1 → R103 and counting**) was performed by an AI agent, **one round every 30 minutes**, with no human in the loop and **zero human-written game code**:
+Every iteration since launch (**R1 → R106 and counting**) was performed by an AI agent, **one round every 30 minutes**, with no human in the loop and **zero human-written game code**:
 
 1. **Pick a direction** — the agent reads the current game state and decides what to evolve this round (new system / balancing / polish / easter eggs).
 2. **Modify the code** — edits the game directly.
@@ -147,7 +150,7 @@ Every iteration since launch (**R1 → R103 and counting**) was performed by an 
 4. **Deploy** — pushes the build to Cloudflare Pages.
 5. **Write the log** — leaves structured design comments in the code, which become context for the next round's agent.
 
-Over 103 rounds the game grew from a 61-event prototype into **789 events, 111 meme scenes, 303 achievements, 77 ways to die, 10 hidden endings plus a whole set of secret rare endings**, plus a Canvas-drawn shareable life card, an achievements gallery, a multi-museum collection gallery (deaths / achievements / origins / talents), and a Taiwanese-flavored relationship-bond system of NPCs who live a whole life alongside you — content figures tallied live by the test report, latest highlights as of R103. Every step gated by tests, every step traceable.
+Over 106 rounds the game grew from a 61-event prototype into **789 events, 111 meme scenes, 303 achievements, 77 ways to die, 10 hidden endings plus a whole set of secret rare endings**, plus a Canvas-drawn shareable life card, an achievements gallery, a multi-museum collection gallery (deaths / achievements / origins / talents), a Taiwanese-flavored relationship-bond system of NPCs who live a whole life alongside you, a New Game+ loop that lets you replay another run, and an attribute-chronicle settlement view that charts your five stats across five life stages (childhood / schooling / work / midlife / old age) as inline SVG bars — content figures tallied live by the test report, latest highlights as of R106. Every step gated by tests, every step traceable.
 
 See **[docs/AI_AUTONOMOUS_UPDATE.md](docs/AI_AUTONOMOUS_UPDATE.md)** for the full mechanism design and evolution log.
 
