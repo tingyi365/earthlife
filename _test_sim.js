@@ -3790,6 +3790,109 @@ try {
   console.log('R119 人生回憶錄: ❌ ' + e.message);
 }
 
+/* ---- R122 台味股海浮沉・投機理財人生支線探針（強制路徑，不靠隨機抽中）----
+   ① 結構：r122_hook 入口＋r122_saver/r122_sailor/r122_skip 三分流抉擇＋6 結局皆 hidden+once+meme/scene 有效；
+      死法 margincall/daytradedeath 進 SPECIAL_DEATHS/DEATHBOOK/場景有效；成就 7 個 hint 齊備
+   ② 攔截器 r122StockPick：入口雜湊閘＋成年窗口 gating、3 分流各設 r122path+step:1+r122_in、進鏈依 path/step 確定性返節點、
+      step:2 落地 r122_endtype/r122_endhit
+   ③ 屬性真驅動分支（財富×智力×運勢要真有用有權衡）：saver int sr（選對→FIRE／追高殺低→小確幸）、sailor mny sr（扛住→賭神／
+      套牢→背債），同屬性必同結果（sr 上下限不被 rnd 翻盤）
+   ④ 融資/當沖搏命死法：sailor 硬凹選項 hp≤14 確定性兩種死法（本金薄 margincall／本金尚可 daytradedeath）、活路依本金分流；
+      r122EndingId 6 選 1 結局計分正確
+   ⑤ 零汙染：乾淨開局無 r122 旗標、舊存檔 ensureState 不補 r122 鍵；回顧卡未踏進(無 r122_in)整段省略 */
+let r122OK = false;
+try {
+  const r122Raw = vm.runInContext(`(function(){
+    const out={}; const f=id=>EVENTS.find(e=>e.id===id);
+    /* ① 結構 */
+    const ids=['r122_hook','r122_saver','r122_sailor','r122_skip','r122_end_fire','r122_end_smallsave','r122_end_leek','r122_end_godtrader','r122_end_debtgrad','r122_end_fixdep'];
+    out.struct = ids.every(id=>{const e=f(id);return e&&e.hidden&&e.once&&e.r122node&&e.meme&&SCENES[e.meme.scene]&&(e.choices||[]).length>=2;});
+    out.hiddenAll = ids.every(id=>f(id).hidden===true);
+    out.death = !!SPECIAL_DEATHS.margincall && !!SCENES[SPECIAL_DEATHS.margincall.scene]
+      && !!SPECIAL_DEATHS.daytradedeath && !!SCENES[SPECIAL_DEATHS.daytradedeath.scene]
+      && DEATHBOOK.some(d=>d.id==='margincall'&&d.reason&&d.hint)
+      && DEATHBOOK.some(d=>d.id==='daytradedeath'&&d.reason&&d.hint);
+    out.achDef = ['r122_in','r122_done','r122_fire','r122_godtrader','r122_debtgrad','r122_leek','r122_fixdep']
+      .every(id=>ACH_MAP[id]&&ACH_MAP[id].hint&&String(ACH_MAP[id].hint).length>4);
+    /* ② 攔截器：入口 gating + 三分流 + 進鏈節點 + 結局落地 */
+    function fresh(age,fl,attr){ startGame(); const s=S; s.flags=fl||{}; ensureState(s); s.seen={}; s.alive=true; if(age!=null)s.age=age; if(attr)Object.assign(s.attr,attr); return s; }
+    const _rollOrig=r122Roll;
+    let s=fresh(40,{}); r122Roll=function(){return 0.1;};   out.entryOK = !!r122StockPick() && r122StockPick().id==='r122_hook';   // 窗口內+乾淨+閘命中→入口
+    s=fresh(40,{}); r122Roll=function(){return 0.9;};        out.gateMiss = r122StockPick()===null;                                 // 閘落空→不插播、零殘留
+    r122Roll=function(){return 0.1;};
+    s=fresh(18,{}); out.gateYoung = r122StockPick()===null;                                        // 18歲未成年（窗口外）
+    s=fresh(70,{}); out.gateOld   = r122StockPick()===null;                                        // 70歲超出窗口
+    s=fresh(40,{r122step:99}); out.gateDone = r122StockPick()===null;                              // 已收尾不再插播
+    r122Roll=_rollOrig;
+    /* 三分流：踏進入口三選項各立 path+step:1+r122_in；第4選項直接收尾 */
+    function pick0(idx){ s=fresh(40,{}); showEvent(f('r122_hook')); choose(idx); return s.flags; }
+    out.splitSaver  = (g=>g.r122path==='saver' &&g.r122step===1&&!!g.r122_in)(pick0(0));
+    out.splitSailor = (g=>g.r122path==='sailor'&&g.r122step===1&&!!g.r122_in)(pick0(1));
+    out.splitSkip   = (g=>g.r122path==='skip'  &&g.r122step===1&&!!g.r122_in)(pick0(2));
+    out.splitNone   = (g=>g.r122step===99&&!g.r122path&&!g.r122_in)(pick0(3));
+    /* 進鏈：step1 依 path 返對應抉擇節點 */
+    s=fresh(40,{r122step:1,r122path:'saver'});  out.nodeSaver =(r122StockPick()||{}).id==='r122_saver';
+    s=fresh(40,{r122step:1,r122path:'sailor'}); out.nodeSailor=(r122StockPick()||{}).id==='r122_sailor';
+    s=fresh(40,{r122step:1,r122path:'skip'});   out.nodeSkip  =(r122StockPick()||{}).id==='r122_skip';
+    /* step2 落地結局型別 + r122_endhit */
+    s=fresh(40,{r122step:2,r122path:'saver',r122w_int:true}); const e2=r122StockPick();
+    out.endLand = e2 && e2.id==='r122_end_fire' && s.flags.r122_endtype==='r122_end_fire' && s.flags.r122_endhit===true;
+    /* 被割韭菜結局順手點亮 scammed 相容旗標 */
+    s=fresh(40,{r122step:2,r122path:'saver',r122_scammed:true}); const e3=r122StockPick();
+    out.leekCompat = e3 && e3.id==='r122_end_leek' && s.flags.scammed===true;
+    /* ③ 屬性驅動分支：sr 同屬性必同結果（連跑 3 次確認 rnd 翻不了上下限） */
+    function chain1(path,attr,idx){ s=fresh(40,{r122step:1,r122path:path}); Object.assign(s.attr,attr); const ev=r122StockPick(); showEvent(ev); choose(idx); return s.flags; }
+    out.saverWin = [0,0,0].every(()=>!!chain1('saver',{int:100},0).r122w_int);     // int 高→選對標的
+    out.saverLose= [0,0,0].every(()=>!chain1('saver',{int:10},0).r122w_int);       // int 低→追高殺低
+    out.saverScam= !!chain1('saver',{int:50},1).r122_scammed;                      // 平選項跟明牌→被割
+    out.sailorWin = [0,0,0].every(()=>!!chain1('sailor',{mny:100,hp:80},0).r122w_mny);  // mny 高→扛住賭對
+    out.sailorLose= [0,0,0].every(()=>!chain1('sailor',{mny:10,hp:80},0).r122w_mny);    // mny 低→套牢
+    out.skipDiehard = !!chain1('skip',{int:50},0).r122_diehard;                    // 鐵齒不進場
+    out.attrDriven = out.saverWin && out.saverLose && out.sailorWin && out.sailorLose;  // 財富×智力真驅動成敗
+    /* ④ 融資/當沖搏命死法：sailor 硬凹選項 hp≤14 確定性兩種死法（本金薄/本金尚可分流），門檻外活路依本金分流 */
+    s=fresh(40,{r122step:1,r122path:'sailor'}); s.attr.hp=10; s.attr.mny=10; showEvent(f('r122_sailor')); choose(1);
+    out.marginDeath = s.flags.specialDeath==='margincall';                         // 本金薄→融資斷頭抑鬱離世
+    s=fresh(40,{r122step:1,r122path:'sailor'}); s.attr.hp=10; s.attr.mny=50; showEvent(f('r122_sailor')); choose(1);
+    out.daytradeDeath = s.flags.specialDeath==='daytradedeath';                    // 本金尚可→當沖爆肝猝死
+    s=fresh(40,{r122step:1,r122path:'sailor'}); s.attr.hp=80; s.attr.mny=80; showEvent(f('r122_sailor')); choose(1);
+    out.allinWin = !s.flags.specialDeath && !!s.flags.r122w_mny && !!s.flags.r122_daytrader;  // 身體行+本多→賭贏
+    s=fresh(40,{r122step:1,r122path:'sailor'}); s.attr.hp=80; s.attr.mny=20; showEvent(f('r122_sailor')); choose(1);
+    out.allinLose = !s.flags.specialDeath && !s.flags.r122w_mny;                   // 身體行但本薄→賭輸套牢
+    /* r122EndingId 6 選 1 結局計分（依 path＋檢定/詐騙旗標） */
+    out.endId = r122EndingId({r122path:'saver',r122w_int:true})==='r122_end_fire'
+      && r122EndingId({r122path:'saver'})==='r122_end_smallsave'
+      && r122EndingId({r122path:'saver',r122_scammed:true})==='r122_end_leek'
+      && r122EndingId({r122path:'sailor',r122w_mny:true})==='r122_end_godtrader'
+      && r122EndingId({r122path:'sailor'})==='r122_end_debtgrad'
+      && r122EndingId({r122path:'skip'})==='r122_end_fixdep'
+      && r122EndingId({})==='r122_end_smallsave';   // 防呆
+    /* 成就確定性 + 不誤觸 */
+    out.achPass = ACH_MAP.r122_fire.check({S:{flags:{r122_endtype:'r122_end_fire'}},age:50})
+      && ACH_MAP.r122_godtrader.check({S:{flags:{r122_endtype:'r122_end_godtrader'}},age:45})
+      && ACH_MAP.r122_done.check({S:{flags:{r122_endhit:true}},age:50})
+      && ACH_MAP.r122_in.check({S:{flags:{r122_in:true}},age:30});
+    out.achClean = !ACH_MAP.r122_fire.check({S:{flags:{}},age:30})
+      && !ACH_MAP.r122_debtgrad.check({S:{flags:{r122_endtype:'r122_end_fire'}},age:45})
+      && !ACH_MAP.r122_in.check({S:{flags:{}},age:30});
+    /* 隱藏稀有結局 he_stockzen 條件確定性 */
+    const hz=HIDDEN_ENDINGS.find(h=>h.id==='he_stockzen');
+    out.hiddenEnd = !!hz && hz.chk({flags:{r122_endtype:'r122_end_fire'},attr:{mny:85},age:82})===true
+      && hz.chk({flags:{r122_endtype:'r122_end_fire'},attr:{mny:60},age:82})===false;
+    /* ⑤ 零汙染 + 舊存檔相容 + 回顧卡省略 */
+    startGame(); s=S; out.cleanStart = Object.keys(s.flags||{}).every(k=>k.indexOf('r122')!==0);
+    const old={flags:{employed:true},attr:{hp:50,int:50,apr:50,mny:50,hap:50},age:40,alive:true}; ensureState(old);
+    out.compat = Object.keys(old.flags).every(k=>k.indexOf('r122')!==0);
+    startGame(); s=S; s.flags={}; out.reviewSkip = r122StockReviewHTML()==='';
+    s.flags={r122_in:true,r122path:'saver',r122_endtype:'r122_end_fire'}; out.reviewShow = r122StockReviewHTML().indexOf('股海浮沉戰績')>=0;
+    return JSON.stringify(out);
+  })()`, sandbox);
+  const r122 = JSON.parse(r122Raw);
+  r122OK = Object.values(r122).every(v => v === true);
+  console.log(`R122 台味股海浮沉・投機理財人生支線: ${r122OK ? '✅ 全數通過' : '❌ ' + JSON.stringify(r122)}`);
+} catch (e) {
+  console.log('R122 台味股海浮沉・投機理財人生支線: ❌ ' + e.message);
+}
+
 if (__errors.length) {
   console.log('\n--- 錯誤樣本(前5) ---');
   __errors.slice(0, 5).forEach(e => console.log('  ' + e));
@@ -3797,6 +3900,6 @@ if (__errors.length) {
 
 /* 退出碼 */
 const pass = __errors.length === 0 && chk.missingScenes.length === 0 && chk.eventVisible >= 126 && chk.eventTotal >= 126 && lsOK && achUnlocked > 0
-  && chk.deathbookMissing.length === 0 && chk.deathTotal >= 17 && deathsOK && rebirthOK && legacyOK && petOK && r13OK && r17OK && r20OK && r21OK && r22OK && r24OK && r25OK && r34OK && r38OK && r41OK && r42OK && r43OK && r44OK && r45OK && r46OK && r47OK && r48OK && r49OK && r51OK && r52OK && r53OK && r54OK && r55OK && r72OK && r76OK && r77OK && r79OK && r86OK && r87OK && r92OK && r93OK && r95OK && r96OK && r108OK && r110OK && r111OK && r112OK && r113OK && r115OK && r116OK && r117OK && r118OK && r119OK;
+  && chk.deathbookMissing.length === 0 && chk.deathTotal >= 17 && deathsOK && rebirthOK && legacyOK && petOK && r13OK && r17OK && r20OK && r21OK && r22OK && r24OK && r25OK && r34OK && r38OK && r41OK && r42OK && r43OK && r44OK && r45OK && r46OK && r47OK && r48OK && r49OK && r51OK && r52OK && r53OK && r54OK && r55OK && r72OK && r76OK && r77OK && r79OK && r86OK && r87OK && r92OK && r93OK && r95OK && r96OK && r108OK && r110OK && r111OK && r112OK && r113OK && r115OK && r116OK && r117OK && r118OK && r119OK && r122OK;
 console.log('\n結果: ' + (pass ? '✅ 全數通過' : '❌ 有項目未通過'));
 process.exit(pass ? 0 : 1);
