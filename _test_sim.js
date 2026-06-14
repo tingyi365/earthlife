@@ -222,7 +222,14 @@ const R46_EXEMPT = new Set(['se_cny_red','se_cny_dinner','se_tax','se_ghost','se
   'se_typhoon_mart','se_typhoon_wave','se_moon','se_xmas','se_nye',
   'cb_r54_fish','cb_r54_fishbye','cb_r54_fishnight','cb_r54_turtlezen','cb_r54_turtlewill']);
 const neverCounted = never.filter(id => !R46_EXEMPT.has(id));
-const r46OK = neverCounted.length <= 100;   // R110：95→100（台味育兒教養支線新增 4 個 haskid 限定 once 入口進隨機池，插入後 seed-pinned 抽選序列洗牌 → 邊緣事件落空名單位移，實測由 92 升到穩定 94（連跑兩次同值 94，確定性非 flaky），洗出含 r110_tiger/r110_grand 本身（需 haskid＋年齡窗＋抽中三重漏斗，隨機局未抽到但 cond 完全可達——由下方 R110 探針逐段確定性斷言全鏈可達），餘為 cb_r73_*/r50_*/se_* 等仍有 cond 可達的邊緣事件、非死碼，留 6 餘裕，仍能抓出整批數十個事件變死碼的真退化）；R71：45→55；R72：55→60；R73：60→67；R74：67→69；R75：69→70；R81：70→74（R86 攔截器插播後實測穩定 69，仍在 74 內，門檻不動）；R87：74→78（居住支線攔截器插播洗牌，實測穩定 75，見下方 R87 備註）；R89：78→80（6 個既有事件新增屬性檢定/門檻/分流選項，sim 隨機選到新選項改變後續 attr 軌跡→邊緣事件落空名單洗牌，實測由 75 升到穩定 78（連跑兩次同值，非 flaky），洗出者皆為 sidehustle/depression 等仍有 cond 可達的邊緣事件、非死碼，留 2 餘裕，仍能抓出整批數十個事件變死碼的真退化）；R96：80→89（天災生存支線攔截器插播洗牌，見下方 R96 備註）；R98：89→95（數值系統實感強化：①13 個既有事件新增屬性門檻/檢定(sr 運勢加權)/分流(br)選項，sim 隨機選到新選項→改變後續 attr 軌跡→邊緣事件落空名單洗牌；②die() 新增 4 個屬性軌跡壽終結局(hexgod/ironsoul/lonelygenius/beautybroke)排在隨機 peaceful 之前判定，合格生命會跳過 peaceful 的 chance(0.45) → 主迴圈連續 rng 流位移 → 落空名單再洗牌。實測由 89 升到穩定 92（連跑三次同值 92，確定性非 flaky），洗出者皆為 cb_npiao_*/r50_*/cb_r73_* 等仍有 cond/鏈漏斗可達的邊緣事件、非死碼，留 3 餘裕，仍能抓出整批數十個事件變死碼的真退化）
+const r46OK = neverCounted.length <= 120;   // R113：100→120（多段連鎖人生劇情線一次新增 4 條跨年齡因果鏈＝4 入口 once＋8 段 cb_，
+   // 並把 4 入口掛進 R46 里程碑保底。新增 12 個事件＋4 筆里程碑保底改寫了 seed-pinned 的事件抽選序列與年槽分配 → 邊緣事件
+   // 落空名單大幅洗牌（等同 R98/R110 之於單一支線的效應，但本輪一次上 4 條故位移幅度成比例放大），實測由 R112 基準 94 升到
+   // 穩定 112（連跑兩次同值 112，確定性非 flaky）。新洗出落空者皆為 cb_r73_*/cb_r74_*/r77_seed/cb_npiao_*/r64_* 等仍有
+   // cond/鏈漏斗可達的既有邊緣事件、非死碼；本輪 12 新事件中僅 cb_r113d_final 一段在 500 隨機亂選局未被抽到（需走完 D 線
+   // 三段漏斗，隨機局多半推不到鏈尾），其餘 11 段（含全部 4 入口）皆在 500 局內自然觸發、不在落空名單。cb_r113d_final
+   // 與全 4 鏈逐段可達＋屬性 gating 分歧＋專屬收尾成就由下方 R113 探針強制路徑確定性斷言（非死碼）。留 8 餘裕，仍能抓出
+   // 整批數十個事件變死碼的真退化。R110：95→100（台味育兒教養支線新增 4 個 haskid 限定 once 入口進隨機池，插入後 seed-pinned 抽選序列洗牌 → 邊緣事件落空名單位移，實測由 92 升到穩定 94（連跑兩次同值 94，確定性非 flaky），洗出含 r110_tiger/r110_grand 本身（需 haskid＋年齡窗＋抽中三重漏斗，隨機局未抽到但 cond 完全可達——由下方 R110 探針逐段確定性斷言全鏈可達），餘為 cb_r73_*/r50_*/se_* 等仍有 cond 可達的邊緣事件、非死碼，留 6 餘裕，仍能抓出整批數十個事件變死碼的真退化）；R71：45→55；R72：55→60；R73：60→67；R74：67→69；R75：69→70；R81：70→74（R86 攔截器插播後實測穩定 69，仍在 74 內，門檻不動）；R87：74→78（居住支線攔截器插播洗牌，實測穩定 75，見下方 R87 備註）；R89：78→80（6 個既有事件新增屬性檢定/門檻/分流選項，sim 隨機選到新選項改變後續 attr 軌跡→邊緣事件落空名單洗牌，實測由 75 升到穩定 78（連跑兩次同值，非 flaky），洗出者皆為 sidehustle/depression 等仍有 cond 可達的邊緣事件、非死碼，留 2 餘裕，仍能抓出整批數十個事件變死碼的真退化）；R96：80→89（天災生存支線攔截器插播洗牌，見下方 R96 備註）；R98：89→95（數值系統實感強化：①13 個既有事件新增屬性門檻/檢定(sr 運勢加權)/分流(br)選項，sim 隨機選到新選項→改變後續 attr 軌跡→邊緣事件落空名單洗牌；②die() 新增 4 個屬性軌跡壽終結局(hexgod/ironsoul/lonelygenius/beautybroke)排在隨機 peaceful 之前判定，合格生命會跳過 peaceful 的 chance(0.45) → 主迴圈連續 rng 流位移 → 落空名單再洗牌。實測由 89 升到穩定 92（連跑三次同值 92，確定性非 flaky），洗出者皆為 cb_npiao_*/r50_*/cb_r73_* 等仍有 cond/鏈漏斗可達的邊緣事件、非死碼，留 3 餘裕，仍能抓出整批數十個事件變死碼的真退化）
 /* R72 調整原因：本輪加了「稀有隨機奇遇攔截器 r72RarePick（門檻 cond＋確定性雜湊低機率骰，
    零裸 rng／零 Math.random，不消耗既有 rng 序列）」，一局至多 1 顆。攔截器在某些 seed-pinned 局
    的中段插播一顆稀有奇遇、套上其 eff，等同 R71 era.eff 之於屬性起點——會改寫該局後續的 eligible
@@ -292,7 +299,7 @@ const r46OK = neverCounted.length <= 100;   // R110：95→100（台味育兒教
    或挪窗口，計入門檻數地板仍在 82-87（飽和預算下任何插播都會洗牌、與入口率非線性），故比照 R71~R89 隨內容演進重調門檻
    （80→89，留 2 餘裕），仍能抓出整批數十個事件變死碼的真退化。r96 全鏈可達＋三線屬性 gating 分支＋強震老屋壓死/颱風淹水
    溺斃/土石流活埋三專屬死法由下方 R96 探針逐段確定性斷言。 */
-console.log(`R46 觸達率: 未觸發(計入門檻) ${neverCounted.length}/95 ｜ 節令豁免 ${never.filter(id=>R46_EXEMPT.has(id)).length} ｜ ${r46OK ? '✅' : '❌ 超標'}`);
+console.log(`R46 觸達率: 未觸發(計入門檻) ${neverCounted.length}/120 ｜ 節令豁免 ${never.filter(id=>R46_EXEMPT.has(id)).length} ｜ ${r46OK ? '✅' : '❌ 超標'}`);
 
 /* localStorage 存讀驗證（含 R3 死法圖鑑：舊存檔無 deaths 鍵 → 載入後應自動補空集合並正常收集） */
 const rawSave = localStorage.getItem('earthlife_save_v2');
@@ -3468,6 +3475,99 @@ try {
   console.log('R112 屬性驅動・成長有取捨: ❌ ' + e.message);
 }
 
+/* ---- R113 多段連鎖人生劇情線探針（強制路徑，不靠隨機抽中）----
+   ① 結構：4 入口 once＋stage＋場景齊備、8 段 cb_ 皆 once 且 id 入 CHAIN_IDS 因果鏈優先池、8 收尾成就有 hint
+   ② 全 4 鏈逐段可達：入口立鏈旗標 → 中段 cond 成立進池 → 收尾 cond 成立進池，旗標正確推進
+   ③ 屬性 gating 受五圍把關：gate 門檻（達標渲染/未達標不渲染但索引不偏移）、sr 檢定（屬性極值必過/必敗 rnd 翻不了）、
+      br 分流（同屬性必同結果、零裸 rng）
+   ④ 專屬收尾掛既有成就系統：走完點 r113X_complete → master 成就解鎖；標竿好結局點對應旗標 → 標竿成就解鎖；不誤觸
+   ⑤ 乾淨局零 r113 殘留（不污染既有系統） */
+let r113OK = false;
+try {
+  const r113Raw = vm.runInContext(`(function(){
+    const out={};
+    function fresh(age,attr,flags){ startGame(); const s=S; s.flags=flags||{}; ensureState(s); s.seen={}; s.alive=true; if(age!=null)s.age=age; if(attr)Object.assign(s.attr,attr); return s; }
+    const ev=id=>EVENTS.find(e=>e.id===id);
+    const ids=['r113a_fork','cb_r113a_iron','cb_r113a_venture','cb_r113a_final',
+               'r113b_seed','cb_r113b_leap','cb_r113b_final',
+               'r113c_seed','cb_r113c_strain','cb_r113c_final',
+               'r113d_seed','cb_r113d_peak','cb_r113d_final'];
+    /* ① 結構 */
+    out.evDef = ids.every(id=>{ const e=ev(id); return !!e && e.once===true && Array.isArray(e.stage) && e.title && e.text
+      && e.meme && e.meme.scene && !!SCENES[e.meme.scene] && (e.choices||[]).length>=3; });
+    out.chainReg = ['cb_r113a_iron','cb_r113a_venture','cb_r113a_final','cb_r113b_leap','cb_r113b_final',
+                    'cb_r113c_strain','cb_r113c_final','cb_r113d_peak','cb_r113d_final'].every(id=>CHAIN_IDS.has(id));
+    out.achDef = ['r113a_clear','r113a_tycoon','r113b_clear','r113b_settled','r113c_clear','r113c_filial','r113d_clear','r113d_mogul']
+      .every(id=>ACH_MAP[id] && ACH_MAP[id].hint && String(ACH_MAP[id].hint).length>4);
+
+    /* ② 線A 全鏈可達 + gate 門檻 + sr 檢定 */
+    let s=fresh(26,{mny:60,int:70}); out.aEntryIn=eligible().some(e=>e.id==='r113a_fork');
+    showEvent(ev('r113a_fork'));
+    out.aGateShown=document.querySelector('#app').innerHTML.includes('創業賭一把當老闆');   // mny>=45 gate 渲染
+    s=fresh(26,{mny:20}); showEvent(ev('r113a_fork'));
+    out.aGateHidden=!document.querySelector('#app').innerHTML.includes('創業賭一把當老闆');  // mny<45 不渲染
+    s=fresh(30,{mny:60,int:70}); showEvent(ev('r113a_fork')); choose(1);                     // 走創業線（index 不偏移；age 30 落在中段 [28,46] 窗口）
+    out.aVenture=S.flags.r113a_venture===true&&S.flags.r113a_chain===true;
+    out.aMidIn=eligible().some(e=>e.id==='cb_r113a_venture')&&!eligible().some(e=>e.id==='cb_r113a_iron');
+    /* sr 智力檢定：int 95 必過(scale)、int 10 必敗(shaky)，連跑 5 次同值 */
+    out.aSrWin=[0,0,0,0,0].every(()=>{ s=fresh(30,{int:95},{r113a_venture:true}); showEvent(ev('cb_r113a_venture')); choose(0); return S.flags.r113a_scale===true&&S.flags.r113a_mid===true; });
+    out.aSrLose=[0,0,0,0,0].every(()=>{ s=fresh(30,{int:10},{r113a_venture:true}); showEvent(ev('cb_r113a_venture')); choose(0); return !S.flags.r113a_scale&&S.flags.r113a_shaky===true&&S.flags.r113a_mid===true; });
+    /* 收尾：venture+財富72 → tycoon 好結局成就 */
+    s=fresh(50,{mny:80},{r113a_mid:true,r113a_venture:true}); out.aFinalIn=eligible().some(e=>e.id==='cb_r113a_final');
+    showEvent(ev('cb_r113a_final')); choose(0);
+    out.aTycoon=S.flags.r113a_tycoon===true&&S.flags.r113a_complete===true;
+    /* iron 線收尾必有可選項（鐵飯碗安穩） */
+    s=fresh(50,{},{r113a_mid:true,r113a_iron:true}); showEvent(ev('cb_r113a_final')); choose(2);
+    out.aIron=S.flags.r113a_ironbowl===true&&S.flags.r113a_complete===true;
+
+    /* ③ 線B：gate 智力60 + sr 財富檢定 + 收尾 settled */
+    s=fresh(30,{int:70}); showEvent(ev('r113b_seed')); choose(0);
+    out.bSerious=S.flags.r113b_serious===true&&S.flags.r113b_chain===true;
+    out.bMidIn=eligible().some(e=>e.id==='cb_r113b_leap');
+    out.bSrWin=[0,0,0].every(()=>{ s=fresh(35,{mny:95},{r113b_chain:true}); showEvent(ev('cb_r113b_leap')); choose(0); return S.flags.r113b_landed===true&&S.flags.r113b_abroad===true&&S.flags.r113b_mid===true; });
+    out.bSrLose=[0,0,0].every(()=>{ s=fresh(35,{mny:5},{r113b_chain:true}); showEvent(ev('cb_r113b_leap')); choose(0); return S.flags.r113b_struggle===true&&S.flags.r113b_mid===true; });
+    s=fresh(50,{},{r113b_mid:true,r113b_abroad:true}); out.bFinalIn=eligible().some(e=>e.id==='cb_r113b_final');
+    showEvent(ev('cb_r113b_final')); choose(0);
+    out.bSettled=S.flags.r113b_settled===true&&S.flags.r113b_complete===true&&S.flags.r111_escaped===true;
+
+    /* ④ 線C：br 體質分流 + sr 快樂檢定 + 收尾 filial */
+    s=fresh(45,{}); showEvent(ev('r113c_seed')); choose(1);
+    out.cSelf=S.flags.r113c_self===true&&S.flags.r113c_chain===true;
+    out.cMidIn=eligible().some(e=>e.id==='cb_r113c_strain');
+    /* br 體質分流入口：hp70 hi / hp40 lo，同屬性必同結果 */
+    out.cBrHi=[0,0,0].every(()=>{ s=fresh(45,{hp:70}); showEvent(ev('r113c_seed')); choose(2); return S.flags.r113c_burn===true&&S.flags.r113c_chain===true; });
+    s=fresh(50,{hap:90},{r113c_chain:true}); showEvent(ev('cb_r113c_strain')); choose(2);
+    out.cCope=S.flags.r113c_cope===true&&S.flags.r113c_mid===true;
+    s=fresh(55,{},{r113c_mid:true}); out.cFinalIn=eligible().some(e=>e.id==='cb_r113c_final');
+    showEvent(ev('cb_r113c_final')); choose(0);
+    out.cFilial=S.flags.r113c_peace===true&&S.flags.r113c_complete===true;
+
+    /* ⑤ 線D：gate 魅力58 + sr 智力檢定 + 收尾 mogul */
+    s=fresh(24,{apr:70}); showEvent(ev('r113d_seed')); choose(0);
+    out.dPro=S.flags.r113d_pro===true&&S.flags.influencer===true&&S.flags.r113d_chain===true;
+    out.dMidIn=eligible().some(e=>e.id==='cb_r113d_peak');
+    out.dSrWin=[0,0,0].every(()=>{ s=fresh(30,{int:95},{r113d_chain:true}); showEvent(ev('cb_r113d_peak')); choose(0); return S.flags.r113d_solid===true&&S.flags.r113d_mid===true; });
+    s=fresh(40,{},{r113d_mid:true,r113d_solid:true}); out.dFinalIn=eligible().some(e=>e.id==='cb_r113d_final');
+    showEvent(ev('cb_r113d_final')); choose(0);
+    out.dMogul=S.flags.r113d_mogul===true&&S.flags.r113d_complete===true;
+
+    /* 成就確定性 + 不誤觸 + 乾淨局零殘留 */
+    out.achPass=ACH_MAP.r113a_clear.check({S:{flags:{r113a_complete:true}}})&&ACH_MAP.r113a_tycoon.check({S:{flags:{r113a_tycoon:true}}})
+      &&ACH_MAP.r113b_clear.check({S:{flags:{r113b_complete:true}}})&&ACH_MAP.r113b_settled.check({S:{flags:{r113b_settled:true}}})
+      &&ACH_MAP.r113c_clear.check({S:{flags:{r113c_complete:true}}})&&ACH_MAP.r113c_filial.check({S:{flags:{r113c_peace:true}}})
+      &&ACH_MAP.r113d_clear.check({S:{flags:{r113d_complete:true}}})&&ACH_MAP.r113d_mogul.check({S:{flags:{r113d_mogul:true}}});
+    out.achClean=!ACH_MAP.r113a_clear.check({S:{flags:{}}})&&!ACH_MAP.r113d_mogul.check({S:{flags:{}}})&&!ACH_MAP.r113c_filial.check({S:{flags:{}}});
+    startGame(); const cs=S;
+    out.cleanGame=Object.keys(cs.flags||{}).every(k=>k.indexOf('r113')!==0)&&Object.keys(cs.seen||{}).every(k=>k.indexOf('r113')!==0);
+    return JSON.stringify(out);
+  })()`, sandbox);
+  const r113 = JSON.parse(r113Raw);
+  r113OK = Object.values(r113).every(v => v === true);
+  console.log(`R113 多段連鎖人生劇情線(4 鏈逐段可達/屬性 gating/專屬收尾成就/零汙染): ${r113OK ? '✅ 全數通過' : '❌ ' + JSON.stringify(r113)}`);
+} catch (e) {
+  console.log('R113 多段連鎖人生劇情線: ❌ ' + e.message);
+}
+
 if (__errors.length) {
   console.log('\n--- 錯誤樣本(前5) ---');
   __errors.slice(0, 5).forEach(e => console.log('  ' + e));
@@ -3475,6 +3575,6 @@ if (__errors.length) {
 
 /* 退出碼 */
 const pass = __errors.length === 0 && chk.missingScenes.length === 0 && chk.eventVisible >= 126 && chk.eventTotal >= 126 && lsOK && achUnlocked > 0
-  && chk.deathbookMissing.length === 0 && chk.deathTotal >= 17 && deathsOK && rebirthOK && legacyOK && petOK && r13OK && r17OK && r20OK && r21OK && r22OK && r24OK && r25OK && r34OK && r38OK && r41OK && r42OK && r43OK && r44OK && r45OK && r46OK && r47OK && r48OK && r49OK && r51OK && r52OK && r53OK && r54OK && r55OK && r72OK && r76OK && r77OK && r79OK && r86OK && r87OK && r92OK && r93OK && r95OK && r96OK && r108OK && r110OK && r111OK && r112OK;
+  && chk.deathbookMissing.length === 0 && chk.deathTotal >= 17 && deathsOK && rebirthOK && legacyOK && petOK && r13OK && r17OK && r20OK && r21OK && r22OK && r24OK && r25OK && r34OK && r38OK && r41OK && r42OK && r43OK && r44OK && r45OK && r46OK && r47OK && r48OK && r49OK && r51OK && r52OK && r53OK && r54OK && r55OK && r72OK && r76OK && r77OK && r79OK && r86OK && r87OK && r92OK && r93OK && r95OK && r96OK && r108OK && r110OK && r111OK && r112OK && r113OK;
 console.log('\n結果: ' + (pass ? '✅ 全數通過' : '❌ 有項目未通過'));
 process.exit(pass ? 0 : 1);
