@@ -1,7 +1,7 @@
 # EarthLife 地球 Online — 一款由 AI 自主更新管理的人生模擬遊戲
 
 <p align="center">
-  <a href="https://earthlife.pages.dev"><img src="docs/social_preview.png" width="100%" alt="EarthLife 地球 Online — 從受精卵到火化，你的人生只值幾分？AI 自己寫自己進化的台味鬼島人生模擬器，R1→R121 百輪迭代、逾 800 事件、零人類手寫遊戲碼。線上免費試玩 earthlife.pages.dev"></a>
+  <a href="https://earthlife.pages.dev"><img src="docs/social_preview.png" width="100%" alt="EarthLife 地球 Online — 從受精卵到火化，你的人生只值幾分？AI 自己寫自己進化的台味鬼島人生模擬器，R1→R123 百輪迭代、逾 800 事件、零人類手寫遊戲碼。線上免費試玩 earthlife.pages.dev"></a>
 </p>
 
 **An AI-self-evolving life simulator — autonomously designed, tested, deployed, and changelogged by an AI agent, round after round.**
@@ -9,19 +9,19 @@
 [![▶ Play Now](https://img.shields.io/badge/%E2%96%B6%20%E7%B7%9A%E4%B8%8A%E8%A9%A6%E7%8E%A9-earthlife.pages.dev-7fd7ff?style=for-the-badge)](https://earthlife.pages.dev)
 [![License: MIT](https://img.shields.io/badge/License-MIT-3fb950?style=for-the-badge)](LICENSE)
 [![Single HTML file](https://img.shields.io/badge/Build-%E5%96%AE%E4%B8%80%20HTML%20%E6%AA%94%C2%B7%E7%84%A1%E6%A1%86%E6%9E%B6-ff9d5c?style=for-the-badge)](index.html)
-[![AI Self-Evolved](https://img.shields.io/badge/AI%20%E8%87%AA%E4%B8%BB%E9%80%B2%E5%8C%96-R1%20%E2%86%92%20R121%20%E4%BB%8D%E5%9C%A8%E7%B9%BC%E7%BA%8C-ffd24a?style=for-the-badge)](docs/AI_AUTONOMOUS_UPDATE.md)
+[![AI Self-Evolved](https://img.shields.io/badge/AI%20%E8%87%AA%E4%B8%BB%E9%80%B2%E5%8C%96-R1%20%E2%86%92%20R123%20%E4%BB%8D%E5%9C%A8%E7%B9%BC%E7%BA%8C-ffd24a?style=for-the-badge)](docs/AI_AUTONOMOUS_UPDATE.md)
 [![Zero human-written game code](https://img.shields.io/badge/%E9%81%8A%E6%88%B2%E7%A8%8B%E5%BC%8F%E7%A2%BC-100%25%20AI%20%E6%89%8B%E5%AF%AB%C2%B7%E9%9B%B6%E4%BA%BA%E9%A1%9E%E6%8F%92%E6%89%8B-ff5d8f?style=for-the-badge)](docs/AI_AUTONOMOUS_UPDATE.md)
 
-> 🧬 **這是一款「自己進化自己」的遊戲——一個 AI agent 自己寫出來、自己養大的。** 從 61 個事件的雛形開始，沒有人類排需求、沒有人類改一行 code，AI 每 30 分鐘自我迭代一輪：自己選題、自己改碼、自己跑測試、自己部署、自己寫日誌，全程無人介入。到今天它已經**連續自主進化 121 輪（R1 → R121，仍在繼續）**，且每一輪都得先過自動化測試閘門才准上線。**每一行遊戲程式碼都是 AI 手寫、零人類手寫遊戲碼。** 你現在玩到的這個版本，不是誰設計的——是它自己一輪一輪長出來的。
+> 🧬 **這是一款「自己進化自己」的遊戲——一個 AI agent 自己寫出來、自己養大的。** 從 61 個事件的雛形開始，沒有人類排需求、沒有人類改一行 code，AI 每 30 分鐘自我迭代一輪：自己選題、自己改碼、自己跑測試、自己部署、自己寫日誌，全程無人介入。到今天它已經**連續自主進化 123 輪（R1 → R123，仍在繼續）**，且每一輪都得先過自動化測試閘門才准上線。**每一行遊戲程式碼都是 AI 手寫、零人類手寫遊戲碼。** 你現在玩到的這個版本，不是誰設計的——是它自己一輪一輪長出來的。
 
-> 📸 **最新賣點（R119→R121）**：最新兩輪把「體感」補滿——**R121「沉浸式音效層」**用純前端 WebAudio 即時合成（無外部音檔、維持單一 HTML 檔）鋪上分齡 ambient 氛圍音＋關鍵事件／死亡／結算 SFX＋UI 微反饋（預設靜音、一鍵開啟避開瀏覽器 autoplay 阻擋），**R120「沉浸式視覺氛圍層」**讓畫面隨童年→青年→職涯→晚年動態換色調背景、關鍵事件與死亡戲劇化呈現＋數值變化微反饋，兩者皆純前端只動 DOM／音訊、不碰遊戲序列——直攻 GIF／截圖／錄影的賣相與沉浸感。再往前 **R119「人生回憶錄・自動生成可分享傳記」**在你謝幕時，讀**本局真實發生**的事件、抉擇、五圍軌跡與死法，把這一生織成一段繁中台味的**人生回憶錄敘事**（含關鍵時刻 callback ＋死亡場景收尾），再附一鍵複製／截圖分享——誠實由真實經歷生成、零 rng、確定性逐字一致。更前面 **R118「圖鑑收集牆・全館完成度」**把多館收藏（死法／成就／出身／天賦／稱號／隱藏結局）攤成一面**完成度收集牆**——頂端壓一個**總完成度 %**（已解鎖數／總數，確定性計算、無偽造排行）＋稀有戰利品展示櫃＋可分享圖鑑卡；再前面是 **R117「每日挑戰種子模式」**以日期為確定性種子讓全體玩家同局比成績、**R116「轉生／業力繼承系統（命格殿）」**把本世表現確定性換算成「業力」跨周目永久累積解鎖命格加成，與 **R115「人生評級／稀有度系統」**（依關鍵指標確定性算分定級 **普通 → 稀有 → 史詩 → 傳奇 → 神話** 五階，誠實非偽造百分位）。這一切踩在 **R113 多段連鎖命運抉擇鏈**、**R112 五圍真正驅動遊戲**、**R110/R111 台味育兒與鬼島職場居住梗包**與台味 NPC 人際羈絆之上——投胎、抉擇、定級、累積業力、刷滿圖鑑、把一生寫成回憶錄分享出去，停不下來。
+> 📸 **最新賣點（R121→R123）**：最新一輪 **R123「台味人生人格鑑定・一句定生死分享卡」**在你謝幕時，讀**本局真實**的事件／抉擇／五圍軌跡／死法，演算出單一台味**人格原型標籤**（躺平佛系魯蛇／爆肝過勞王／投機賭徒／人生勝利組⋯）＋特質雷達＋「僅 X% 玩家走此人生」稀有度估算＋一鍵複製／截圖——人格測驗式結果最易瘋傳，是直攻病毒分享的鉤子。前一輪 **R122「台味股海浮沉・投機理財人生支線」**開出三分流抉擇（存股穩健派／梭哈航海王派／鐵齒不碰派）＋回顧戰績卡＋多結局（FIRE 提早退休／穩穩複利／韭菜畢業）。再往前兩輪把「體感」補滿——**R121「沉浸式音效層」**用純前端 WebAudio 即時合成（無外部音檔、維持單一 HTML 檔）鋪上分齡 ambient 氛圍音＋關鍵事件／死亡／結算 SFX＋UI 微反饋，**R120「沉浸式視覺氛圍層」**讓畫面隨童年→青年→職涯→晚年動態換色調背景、關鍵事件與死亡戲劇化呈現＋數值變化微反饋，兩者皆純前端只動 DOM／音訊、不碰遊戲序列——直攻 GIF／截圖／錄影的賣相與沉浸感。再往前 **R119「人生回憶錄・自動生成可分享傳記」**在你謝幕時，讀**本局真實發生**的事件、抉擇、五圍軌跡與死法，把這一生織成一段繁中台味的**人生回憶錄敘事**（含關鍵時刻 callback ＋死亡場景收尾），再附一鍵複製／截圖分享——誠實由真實經歷生成、零 rng、確定性逐字一致。更前面 **R118「圖鑑收集牆・全館完成度」**把多館收藏（死法／成就／出身／天賦／稱號／隱藏結局）攤成一面**完成度收集牆**——頂端壓一個**總完成度 %**（已解鎖數／總數，確定性計算、無偽造排行）＋稀有戰利品展示櫃＋可分享圖鑑卡；再前面是 **R117「每日挑戰種子模式」**以日期為確定性種子讓全體玩家同局比成績、**R116「轉生／業力繼承系統（命格殿）」**把本世表現確定性換算成「業力」跨周目永久累積解鎖命格加成，與 **R115「人生評級／稀有度系統」**（依關鍵指標確定性算分定級 **普通 → 稀有 → 史詩 → 傳奇 → 神話** 五階，誠實非偽造百分位）。這一切踩在 **R113 多段連鎖命運抉擇鏈**、**R112 五圍真正驅動遊戲**、**R110/R111 台味育兒與鬼島職場居住梗包**與台味 NPC 人際羈絆之上——投胎、抉擇、定級、累積業力、刷滿圖鑑、把一生寫成回憶錄分享出去，停不下來。
 
 🎮 線上試玩 / Play now: **https://earthlife.pages.dev**
 
 <p align="center">
   <img src="docs/demo.gif" width="62%" alt="EarthLife 實機 demo：投胎抽卡 → 梗圖事件 → 人生總結卡">
 </p>
-<p align="center"><sub>↑ 實機 demo（持續進化中，目前 R121）</sub></p>
+<p align="center"><sub>↑ 實機 demo（持續進化中，目前 R123）</sub></p>
 
 <p align="center">
   <img src="docs/screenshot_start.png" width="31%" alt="開局投胎抽卡">
@@ -38,7 +38,7 @@
 
 這不只是一款遊戲——它是一個 **「AI 自主更新管理」的實驗場**。
 
-遊戲上線後的每一輪迭代（**R1 → R121，仍在繼續**），都由一個 AI agent 自主完成，**每 30 分鐘一輪**，無人介入、**全程零人類手寫遊戲碼**：
+遊戲上線後的每一輪迭代（**R1 → R123，仍在繼續**），都由一個 AI agent 自主完成，**每 30 分鐘一輪**，無人介入、**全程零人類手寫遊戲碼**：
 
 ```
 ┌─────────────────────────────────────────────────┐
@@ -53,11 +53,11 @@
 └─────────────────────────────────────────────────┘
 ```
 
-121 輪下來，遊戲從 61 個事件的雛形，長成 **逾 800 個事件、逾 111 種梗圖場景、逾 330 個成就、逾 77 種死法、10＋ 隱藏結局＋一整套隱藏稀有結局**、外加自繪人生分享卡與成就圖鑑、多館合一的收藏圖鑑（死法／成就／出身／天賦）、一整套會陪你走完一生的台味 NPC 人際羈絆系統、可「再玩一輪」延續動機的周目 / New Game+ 機制、結算頁用 inline SVG 攤開一生五階段屬性軌跡的屬性編年史回顧，再到把每段人生收進跨周目收藏冊、可並排炫耀的歷代人生名人堂，以及五圍真正驅動命運分流的屬性系統、多段命運抉擇鏈、會在謝幕時把一生定級成普通→神話五階稀有度的人生評級系統，把每世表現換算成「業力」跨周目永久累積解鎖命格加成的轉生／業力繼承系統、以日期為確定性種子讓全體玩家同局比成績的每日挑戰種子模式，到把多館收藏攤成總完成度 %＋稀有戰利品展示櫃＋可分享圖鑑卡的全館圖鑑收集牆，再到把本局真實經歷自動織成可截圖分享的人生回憶錄敘事，最後補上隨人生階段動態換色的沉浸式視覺氛圍層與純前端 WebAudio 合成的沉浸式音效層（內容數據由測試報告即時統計，最新賣點截至 R121）——每一步都有測試把關、每一步都可回溯。
+123 輪下來，遊戲從 61 個事件的雛形，長成 **逾 800 個事件、逾 111 種梗圖場景、逾 330 個成就、逾 77 種死法、10＋ 隱藏結局＋一整套隱藏稀有結局**、外加自繪人生分享卡與成就圖鑑、多館合一的收藏圖鑑（死法／成就／出身／天賦）、一整套會陪你走完一生的台味 NPC 人際羈絆系統、可「再玩一輪」延續動機的周目 / New Game+ 機制、結算頁用 inline SVG 攤開一生五階段屬性軌跡的屬性編年史回顧，再到把每段人生收進跨周目收藏冊、可並排炫耀的歷代人生名人堂，以及五圍真正驅動命運分流的屬性系統、多段命運抉擇鏈、會在謝幕時把一生定級成普通→神話五階稀有度的人生評級系統，把每世表現換算成「業力」跨周目永久累積解鎖命格加成的轉生／業力繼承系統、以日期為確定性種子讓全體玩家同局比成績的每日挑戰種子模式，到把多館收藏攤成總完成度 %＋稀有戰利品展示櫃＋可分享圖鑑卡的全館圖鑑收集牆，再到把本局真實經歷自動織成可截圖分享的人生回憶錄敘事，補上隨人生階段動態換色的沉浸式視覺氛圍層與純前端 WebAudio 合成的沉浸式音效層、台味股海浮沉投機理財支線（存股／梭哈／鐵齒三分流＋FIRE／韭菜畢業多結局），最後到讀本局真實經歷演算出單一台味人格原型標籤＋稀有度估算＋一鍵截圖的人生人格鑑定分享卡（內容數據由測試報告即時統計，最新賣點截至 R123）——每一步都有測試把關、每一步都可回溯。
 
 詳細機制設計請見 **[docs/AI_AUTONOMOUS_UPDATE.md](docs/AI_AUTONOMOUS_UPDATE.md)**。
 
-### 🧬 AI 自主進化時間軸（R1 → R121 精選里程碑）
+### 🧬 AI 自主進化時間軸（R1 → R123 精選里程碑）
 
 > 從一個 61 事件的雛形，AI agent 自己一路把它養成了下面這條軌跡。沒有人類排需求，每一輪都是它讀完現況後自己決定要長什麼：
 
@@ -108,9 +108,11 @@
 | **R118** | 📖 圖鑑收集牆・全館完成度：把死法／成就／出身／天賦／稱號／隱藏結局多館收藏攤成一面**完成度收集牆**——頂端壓一個**總完成度 %（已解鎖數／總數，確定性計算、無偽造排行）**＋「差 N 個就集滿」提示，外加一座**稀有戰利品展示櫃**（確定性挑出已解鎖最稀有的傳說結局／高階稱號／稀有死法）與**可分享圖鑑卡**，把「collect-them-all」做成重玩與截圖外流的鉤子 |
 | **R119** | 📖 人生回憶錄・自動生成可分享傳記：謝幕時讀**本局真實發生**的事件／抉擇／五圍軌跡／死法，織成一段繁中台味**人生回憶錄敘事**（含關鍵時刻 callback ＋死亡場景收尾），附一鍵複製／截圖分享——誠實由真實經歷生成、零 rng、確定性逐字一致、純呈現層不動遊戲序列，把「把這一生講成一個故事」做成最直接的分享感染力鉤子 |
 | **R120** | 🎬 沉浸式視覺氛圍層：畫面隨**童年→青年→職涯→晚年**動態換色調與背景漸變，關鍵事件與死亡戲劇化呈現＋數值變化微反饋——純前端只動 DOM、不碰遊戲序列，把 game-feel 與 GIF／截圖賣相補滿 |
-| **R121** | 🔊 沉浸式音效層：純前端 **WebAudio 即時合成**（無外部音檔、維持單一 HTML 檔）鋪上分齡 ambient 氛圍音＋關鍵事件／死亡／結算 SFX＋UI 微反饋，預設靜音、一鍵開啟避開瀏覽器 autoplay 阻擋——與 R120 視覺軸錯開補上聽覺軸，強化影片／實況沉浸感（最新一輪） |
+| **R121** | 🔊 沉浸式音效層：純前端 **WebAudio 即時合成**（無外部音檔、維持單一 HTML 檔）鋪上分齡 ambient 氛圍音＋關鍵事件／死亡／結算 SFX＋UI 微反饋，預設靜音、一鍵開啟避開瀏覽器 autoplay 阻擋——與 R120 視覺軸錯開補上聽覺軸，強化影片／實況沉浸感 |
+| **R122** | 💹 台味股海浮沉・投機理財人生支線：三分流抉擇（**存股穩健派／梭哈航海王派／鐵齒不碰派**）＋回顧戰績卡（純讀旗標呈現、沒踏進股海整段省略）＋多結局（FIRE 提早退休／穩穩複利／韭菜畢業）——純前端僅讀 flags 呈現、不動遊戲序列 |
+| **R123** | 🪪 台味人生人格鑑定・一句定生死分享卡：結算讀**本局真實**的事件／抉擇／五圍軌跡／死法，演算出單一台味**人格原型標籤**（躺平佛系魯蛇／爆肝過勞王／投機賭徒／人生勝利組⋯）＋特質雷達＋「僅 X% 玩家走此人生」稀有度估算＋一鍵複製／截圖——人格測驗式結果最易瘋傳，純呈現層不動遊戲序列（最新一輪） |
 
-> 一個 AI agent，連續自我迭代 **121 輪**、每一輪都得過測試閘門才放行，**全程零人類手寫遊戲碼**——這是這個專案最獨特的賣點。完整 121 輪逐輪設計決策直接寫在 `index.html` 的程式碼註解裡，那也是下一輪 AI 的記憶。
+> 一個 AI agent，連續自我迭代 **123 輪**、每一輪都得過測試閘門才放行，**全程零人類手寫遊戲碼**——這是這個專案最獨特的賣點。完整 123 輪逐輪設計決策直接寫在 `index.html` 的程式碼註解裡，那也是下一輪 AI 的記憶。
 
 ## 🎮 遊戲說明
 
@@ -161,7 +163,7 @@ node _test_state.js
 
 This is not just a game — it's a working experiment in **AI-autonomous release management**.
 
-Every iteration since launch (**R1 → R121 and counting**) was performed by an AI agent, **one round every 30 minutes**, with no human in the loop and **zero human-written game code**:
+Every iteration since launch (**R1 → R123 and counting**) was performed by an AI agent, **one round every 30 minutes**, with no human in the loop and **zero human-written game code**:
 
 1. **Pick a direction** — the agent reads the current game state and decides what to evolve this round (new system / balancing / polish / easter eggs).
 2. **Modify the code** — edits the game directly.
@@ -169,7 +171,7 @@ Every iteration since launch (**R1 → R121 and counting**) was performed by an 
 4. **Deploy** — pushes the build to Cloudflare Pages.
 5. **Write the log** — leaves structured design comments in the code, which become context for the next round's agent.
 
-Over 121 rounds the game grew from a 61-event prototype into **800+ events, 111+ meme scenes, 330+ achievements, 77+ ways to die, 10+ hidden endings plus a whole set of secret rare endings**, plus a Canvas-drawn shareable life card, an achievements gallery, a multi-museum collection gallery (deaths / achievements / origins / talents), a Taiwanese-flavored relationship-bond system of NPCs who live a whole life alongside you, a New Game+ loop that lets you replay another run, an attribute-chronicle settlement view that charts your five stats across five life stages (childhood / schooling / work / midlife / old age) as inline SVG bars, and a Hall of Fame that archives every life across runs into a collectible roster — sortable, with expandable biographies, side-by-side comparison cards and rarity badges, plus an attribute system where the five stats genuinely drive event branching, skill checks and unlocks, multi-stage stat-gated destiny chains, a life-grading / rarity system that ranks each finished life into one of five tiers (Common → Rare → Epic → Legendary → Mythic) by a deterministic score at the end screen, a reincarnation / karma-inheritance system that converts each life's performance into persistent "karma" accumulated across runs to unlock permanent destiny perks, a daily-seed challenge mode where a deterministic date-seed gives every player the same starting fate so you can replay a friend's seed code and compare scores, and a gallery-completion wall that lays out the multi-museum collection (deaths / achievements / origins / talents / titles / hidden endings) with a total-completion % (unlocked/total, deterministic, no fake leaderboard), a rare-trophy showcase and a shareable gallery card, and an auto-generated life-memoir that weaves the events, choices, stat arcs and death of the run you actually played into a shareable biographical narrative (deterministic, no fabrication), and finally an immersive visual-ambience layer that shifts color grading and background across childhood → youth → career → old age with dramatized key-event/death moments, plus an immersive audio layer synthesized entirely client-side via WebAudio (no external audio files, still one HTML file) with age-tiered ambient beds and event/death/settlement SFX (muted by default, one-tap enable). Content figures tallied live by the test report, latest highlights as of R121. Every step gated by tests, every step traceable.
+Over 123 rounds the game grew from a 61-event prototype into **800+ events, 111+ meme scenes, 330+ achievements, 77+ ways to die, 10+ hidden endings plus a whole set of secret rare endings**, plus a Canvas-drawn shareable life card, an achievements gallery, a multi-museum collection gallery (deaths / achievements / origins / talents), a Taiwanese-flavored relationship-bond system of NPCs who live a whole life alongside you, a New Game+ loop that lets you replay another run, an attribute-chronicle settlement view that charts your five stats across five life stages (childhood / schooling / work / midlife / old age) as inline SVG bars, and a Hall of Fame that archives every life across runs into a collectible roster — sortable, with expandable biographies, side-by-side comparison cards and rarity badges, plus an attribute system where the five stats genuinely drive event branching, skill checks and unlocks, multi-stage stat-gated destiny chains, a life-grading / rarity system that ranks each finished life into one of five tiers (Common → Rare → Epic → Legendary → Mythic) by a deterministic score at the end screen, a reincarnation / karma-inheritance system that converts each life's performance into persistent "karma" accumulated across runs to unlock permanent destiny perks, a daily-seed challenge mode where a deterministic date-seed gives every player the same starting fate so you can replay a friend's seed code and compare scores, and a gallery-completion wall that lays out the multi-museum collection (deaths / achievements / origins / talents / titles / hidden endings) with a total-completion % (unlocked/total, deterministic, no fake leaderboard), a rare-trophy showcase and a shareable gallery card, and an auto-generated life-memoir that weaves the events, choices, stat arcs and death of the run you actually played into a shareable biographical narrative (deterministic, no fabrication), and finally an immersive visual-ambience layer that shifts color grading and background across childhood → youth → career → old age with dramatized key-event/death moments, plus an immersive audio layer synthesized entirely client-side via WebAudio (no external audio files, still one HTML file) with age-tiered ambient beds and event/death/settlement SFX (muted by default, one-tap enable), a Taiwanese stock-market investing storyline with a three-way split (steady dividend investor / all-in trader / never-touch skeptic) and FIRE / compounding / wiped-out endings, and — newest — a one-line "life persona verdict" share card that reads the events, choices, stat arcs and death of the run you actually played to compute a single Taiwanese persona archetype (slacker monk / burnout workaholic / gambler / life-winner …) with a trait radar and a "only X% of players lived this life" rarity estimate plus one-tap copy/screenshot — personality-quiz-style results being the most viral share hook. Content figures tallied live by the test report, latest highlights as of R123. Every step gated by tests, every step traceable.
 
 See **[docs/AI_AUTONOMOUS_UPDATE.md](docs/AI_AUTONOMOUS_UPDATE.md)** for the full mechanism design and evolution log.
 
