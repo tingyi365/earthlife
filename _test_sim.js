@@ -3011,6 +3011,74 @@ try {
   console.log('R110 台味育兒教養人生支線: ❌ ' + e.message);
 }
 
+/* ---- R111 台味鬼島嘲諷職場/居住梗包探針（強制路徑，不靠隨機抽中）----
+   ① 結構：3 入口 once＋stage＋場景＋選項數齊備、hidden r111_landlord 接續、emptypie 死法雙邊收錄、3 成就有 hint
+   ② 全鏈可達（不限 haskid）：rent(→landlord)／commute／pie／escape 逐段 eligible 進池、旗標正確推進
+   ③ overtime 畫餅過勞死：含淚信餅 hp<=14 確定性觸發 emptypie、門檻外活路立 pieslave
+   ④ settle 鬼島生存總結算：屬性＋旗標雙驅動確定性分流（零裸 rng、連跑 3 次同值）潤出國/被榨乾/認命中性
+   ⑤ 成就確定性 + 不誤觸；狀態 gating（once 已踏不再進池）；舊存檔相容 + 乾淨局零 r111 殘留 */
+let r111OK = false;
+try {
+  const r111Raw = vm.runInContext(`(function(){
+    const out={};
+    const IDS=['r111_rent','r111_commute','r111_pie','r111_escape'];
+    const evs=IDS.map(id=>EVENTS.find(e=>e.id===id));
+    const landlord=EVENTS.find(e=>e.id==='r111_landlord');
+    /* ① 結構 */
+    out.evDef = evs.every(e=>!!e && e.once===true && Array.isArray(e.stage) && e.title && e.text && (e.choices||[]).length>=2);
+    out.scenes = evs.every(e=>e.meme && e.meme.scene && !!SCENES[e.meme.scene] && e.meme.top && e.meme.bot)
+              && !!landlord && landlord.hidden===true && !!SCENES[landlord.meme.scene];
+    out.sdDef = !!SPECIAL_DEATHS.emptypie && SPECIAL_DEATHS.emptypie.cat==='emptypie' && !!SCENES[SPECIAL_DEATHS.emptypie.scene];
+    out.dbDef = DEATHBOOK.some(d=>d.id==='emptypie' && d.rare===true && d.nm && d.hint && d.hint.length>4 && d.reason);
+    out.achDef = ['r111_escapewin','r111_islander','r111_rooftop'].every(id=>ACH_MAP[id] && ACH_MAP[id].hint && String(ACH_MAP[id].hint).length>4);
+    /* ② 全鏈可達（不限 haskid）+ 旗標推進 */
+    function fresh(age,fl,attr){ startGame(); const s=S; s.flags=Object.assign({},fl||{}); ensureState(s); s.seen={}; s.alive=true; if(age!=null)s.age=age; if(attr)Object.assign(s.attr,attr); return s; }
+    let s=fresh(30,{}); out.rentIn = eligible().some(e=>e.id==='r111_rent');
+    showEvent(EVENTS.find(e=>e.id==='r111_rent')); choose(0);
+    out.rentFlag = S.flags.r111_rent===true && S.flags.r111_chain===true && S.flags.r111_tinroof===true && S.flags.r111_renthell===true;
+    showEvent(landlord); choose(0);
+    out.landlordFlag = S.flags.r111_chain===true && S.flags.r111_renthell===true;
+    s=fresh(35,{}); out.commuteIn = eligible().some(e=>e.id==='r111_commute');
+    showEvent(EVENTS.find(e=>e.id==='r111_commute')); choose(0);
+    out.commuteFlag = S.flags.r111_commute===true && S.flags.r111_scooter===true && S.flags.r111_commutehell===true;
+    s=fresh(35,{}); out.pieIn = eligible().some(e=>e.id==='r111_pie');
+    s=fresh(50,{}); out.escapeIn = eligible().some(e=>e.id==='r111_escape');
+    /* ③ overtime 畫餅過勞死（hp<=14 確定性）+ 活路立 pieslave */
+    s=fresh(35,{}); s.attr.hp=12; showEvent(EVENTS.find(e=>e.id==='r111_pie')); choose(0);
+    out.pieDie = S.flags.specialDeath==='emptypie' && S.flags.r111_pieslave===true;
+    s=fresh(35,{}); s.attr.hp=80; showEvent(EVENTS.find(e=>e.id==='r111_pie')); choose(0);
+    out.pieSurvive = !S.flags.specialDeath && S.flags.r111_pieslave===true && S.flags.r111_pie===true;
+    /* ④ settle 屬性＋旗標雙驅動確定性分流（連跑 3 次同值，rnd 翻不了門檻）*/
+    function settle(fl,attr){ s=fresh(50,fl,attr); showEvent(EVENTS.find(e=>e.id==='r111_escape')); choose(0); return s.flags; }
+    out.escapedWin = [0,0,0].every(()=>!!settle({r111_owner:true,r111_smartcommute:true,r111_seepie:true},{mny:40,int:40,hap:40}).r111_escaped); // sc=4 → 潤出國
+    out.drainedLose = [0,0,0].every(()=>!!settle({r111_tinroof:true,r111_scooter:true,r111_pieslave:true},{mny:40,int:40,hap:40}).r111_drained); // sc=-4 → 被榨乾
+    out.neutralMid = [0,0,0].every(()=>{const f=settle({},{mny:40,int:40,hap:40}); return !f.r111_escaped && !f.r111_drained && f.r111_escape===true;}); // 中性票
+    out.escapeDirect = (()=>{s=fresh(50,{},{mny:85}); showEvent(EVENTS.find(e=>e.id==='r111_escape')); choose(1); return S.flags.r111_escaped===true && S.flags.r111_escape===true;})(); // 財富 gate 直接潤
+    /* ⑤ 成就確定性 + 不誤觸 */
+    out.achPass = ACH_MAP.r111_escapewin.check({S:{flags:{r111_escaped:true}}})
+               && ACH_MAP.r111_islander.check({S:{flags:{r111_renthell:true,r111_commutehell:true,r111_pieslave:true}}})
+               && ACH_MAP.r111_rooftop.check({S:{flags:{r111_tinroof:true}}});
+    out.achClean = !ACH_MAP.r111_escapewin.check({S:{flags:{}}})
+                && !ACH_MAP.r111_islander.check({S:{flags:{r111_renthell:true}}})   // 只集一苦不誤觸
+                && !ACH_MAP.r111_rooftop.check({S:{flags:{}}});
+    /* 狀態 gating：once 已踏過不再進池 */
+    s=fresh(30,{r111_rent:true}); out.rentOnce = !eligible().some(e=>e.id==='r111_rent');
+    s=fresh(50,{r111_escape:true}); out.escapeOnce = !eligible().some(e=>e.id==='r111_escape');
+    /* ⑥ 舊存檔相容 + 乾淨局零殘留 */
+    const old={flags:{},attr:{hp:50,int:50,apr:50,mny:50,hap:50},age:40,alive:true}; ensureState(old);
+    out.compat = Object.keys(old.flags).every(k=>k.indexOf('r111')!==0);
+    startGame(); s=S;
+    out.clean = Object.keys(s.flags||{}).every(k=>k.indexOf('r111')!==0)
+             && Object.keys(s.seen||{}).every(k=>k.indexOf('r111')!==0);
+    return JSON.stringify(out);
+  })()`, sandbox);
+  const r111 = JSON.parse(r111Raw);
+  r111OK = Object.values(r111).every(v => v === true);
+  console.log(`R111 台味鬼島嘲諷職場/居住梗包: ${r111OK ? '✅ 全數通過' : '❌ ' + JSON.stringify(r111)}`);
+} catch (e) {
+  console.log('R111 台味鬼島嘲諷職場/居住梗包: ❌ ' + e.message);
+}
+
 // ===== R87 台味居住／買房人生支線：分流狀態機 + 屬性 gating + 房貸壓垮死 + 零汙染 =====
 let r87OK = false;
 try {
@@ -3341,6 +3409,6 @@ if (__errors.length) {
 
 /* 退出碼 */
 const pass = __errors.length === 0 && chk.missingScenes.length === 0 && chk.eventVisible >= 126 && chk.eventTotal >= 126 && lsOK && achUnlocked > 0
-  && chk.deathbookMissing.length === 0 && chk.deathTotal >= 17 && deathsOK && rebirthOK && legacyOK && petOK && r13OK && r17OK && r20OK && r21OK && r22OK && r24OK && r25OK && r34OK && r38OK && r41OK && r42OK && r43OK && r44OK && r45OK && r46OK && r47OK && r48OK && r49OK && r51OK && r52OK && r53OK && r54OK && r55OK && r72OK && r76OK && r77OK && r79OK && r86OK && r87OK && r92OK && r93OK && r95OK && r96OK && r108OK && r110OK;
+  && chk.deathbookMissing.length === 0 && chk.deathTotal >= 17 && deathsOK && rebirthOK && legacyOK && petOK && r13OK && r17OK && r20OK && r21OK && r22OK && r24OK && r25OK && r34OK && r38OK && r41OK && r42OK && r43OK && r44OK && r45OK && r46OK && r47OK && r48OK && r49OK && r51OK && r52OK && r53OK && r54OK && r55OK && r72OK && r76OK && r77OK && r79OK && r86OK && r87OK && r92OK && r93OK && r95OK && r96OK && r108OK && r110OK && r111OK;
 console.log('\n結果: ' + (pass ? '✅ 全數通過' : '❌ 有項目未通過'));
 process.exit(pass ? 0 : 1);

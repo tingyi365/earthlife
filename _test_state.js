@@ -3771,5 +3771,46 @@ ok(r110.deathReg, 'R110 ⑦ tigerburn 收錄 SPECIAL_DEATHS＋死法圖鑑（rar
 ok(r110.ach, 'R110 ⑧ 連動成就確定性：直升機父母／養出人才／養出啃老蟲解鎖且不誤觸');
 ok(r110.compat && r110.clean, 'R110 ⑨ 舊存檔相容＋乾淨局零 r110 殘留');
 
+// ===== R111 台味鬼島嘲諷職場/居住梗包：cond gating + 屬性/旗標雙驅動分流 + 死法/成就/舊存檔相容 =====
+const r111 = JSON.parse(vm.runInContext(`(function(){
+  const out={};
+  function fresh(age,fl,attr){ startGame(); const s=S; s.flags=Object.assign({},fl||{}); ensureState(s); s.seen={}; s.alive=true; if(age!=null)s.age=age; if(attr)Object.assign(s.attr,attr); return s; }
+  /* ① cond gating：不限 haskid 皆進池、once 已踏不再進 */
+  let s=fresh(30,{}); out.entryIn = eligible().some(e=>e.id==='r111_rent') && eligible().some(e=>e.id==='r111_commute') && eligible().some(e=>e.id==='r111_pie');
+  s=fresh(50,{}); out.escapeIn = eligible().some(e=>e.id==='r111_escape');
+  s=fresh(30,{r111_rent:true}); out.onceGated = !eligible().some(e=>e.id==='r111_rent');
+  /* ② 鬼島生存總結算：屬性＋旗標雙驅動確定性分流（連跑 3 次同值、零裸 rng 翻不了門檻） */
+  function settle(fl,attr){ s=fresh(50,fl,attr); showEvent(EVENTS.find(e=>e.id==='r111_escape')); choose(0); return s.flags; }
+  out.escaped = [0,0,0].every(()=>!!settle({r111_owner:true,r111_smartcommute:true,r111_seepie:true},{mny:40,int:40,hap:40}).r111_escaped);
+  out.drained = [0,0,0].every(()=>!!settle({r111_tinroof:true,r111_scooter:true,r111_pieslave:true},{mny:40,int:40,hap:40}).r111_drained);
+  out.neutral = [0,0,0].every(()=>{const f=settle({},{mny:40,int:40,hap:40}); return !f.r111_escaped && !f.r111_drained;});
+  /* ③ 畫餅過勞死：含淚信餅 hp≤14 確定性觸發 emptypie、門檻外活路立 pieslave */
+  s=fresh(35,{}); s.attr.hp=12; showEvent(EVENTS.find(e=>e.id==='r111_pie')); choose(0);
+  out.pieDie = S.flags.specialDeath==='emptypie';
+  s=fresh(35,{}); s.attr.hp=80; showEvent(EVENTS.find(e=>e.id==='r111_pie')); choose(0);
+  out.pieLive = !S.flags.specialDeath && S.flags.r111_pieslave===true;
+  /* ④ 死法收錄 + 成就確定性不誤觸 */
+  out.deathReg = !!SPECIAL_DEATHS.emptypie && DEATHBOOK.some(d=>d.id==='emptypie'&&d.rare===true&&d.hint&&d.reason);
+  out.ach = ACH_MAP.r111_escapewin.check({S:{flags:{r111_escaped:true}}})
+         && ACH_MAP.r111_islander.check({S:{flags:{r111_renthell:true,r111_commutehell:true,r111_pieslave:true}}})
+         && ACH_MAP.r111_rooftop.check({S:{flags:{r111_tinroof:true}}})
+         && !ACH_MAP.r111_escapewin.check({S:{flags:{}}})
+         && !ACH_MAP.r111_islander.check({S:{flags:{r111_renthell:true}}});
+  /* ⑤ 舊存檔相容：缺 r111 旗標的 save 經 ensureState 不崩、不注入 r111 旗標 */
+  const old={flags:{},attr:{hp:50,int:50,apr:50,mny:50,hap:50},age:40,alive:true}; ensureState(old);
+  out.compat = Object.keys(old.flags).every(k=>k.indexOf('r111')!==0);
+  startGame(); s=S; out.clean = Object.keys(s.flags||{}).every(k=>k.indexOf('r111')!==0);
+  return JSON.stringify(out);
+})()`, sandbox));
+ok(r111.entryIn && r111.escapeIn && r111.onceGated, 'R111 ① 鬼島梗包 cond gating：三入口＋晚年結算皆進池（不限 haskid）／once 已踏不重播');
+ok(r111.escaped, 'R111 ② 生存結算分流：有窩＋砍通勤＋看穿畫餅 確定性潤出國（連跑 3 次同值）');
+ok(r111.drained, 'R111 ③ 生存結算分流：頂加＋肉包鐵＋吞餅社畜 確定性被鬼島榨乾');
+ok(r111.neutral, 'R111 ④ 生存結算分流：旗標中間值 → 認命中性票（不誤觸 escaped/drained）');
+ok(r111.pieDie, 'R111 ⑤ 畫餅過勞死：含淚信餅無償加班 hp≤14 確定性觸發 emptypie');
+ok(r111.pieLive, 'R111 ⑥ 畫餅活路：hp 充足撐過、立 pieslave 吞餅社畜旗標');
+ok(r111.deathReg, 'R111 ⑦ emptypie 收錄 SPECIAL_DEATHS＋死法圖鑑（rare＋提示＋reason）');
+ok(r111.ach, 'R111 ⑧ 連動成就確定性：逃離鬼島／集滿三苦／頂加蒸籠解鎖且不誤觸');
+ok(r111.compat && r111.clean, 'R111 ⑨ 舊存檔相容＋乾淨局零 r111 殘留');
+
 console.log(fails ? `\n結果: ❌ ${fails} 項未通過` : '\n結果: ✅ 狀態機全數正確');
 process.exit(fails ? 1 : 0);
