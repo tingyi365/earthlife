@@ -706,6 +706,32 @@
   .sharehead{font-size:11.5px; letter-spacing:1px; color:var(--accent,#ffd24a); font-weight:800;
     text-align:center; margin:8px 0 -2px; opacity:.92;}
 
+  /* =======================================================================
+     R115 人生稀有度徽章：結算卡截圖賣點。五階（普通/稀有/史詩/傳奇/神話）
+     各自配色（CSS 變數 --rc 主色 / --rg 光暈），確定性算分（單機，無真實玩家排名）。
+     ======================================================================= */
+  .r115wrap{margin:16px 0 6px; text-align:center;}
+  .r115badge{display:inline-flex; flex-direction:column; align-items:center; gap:2px;
+    padding:12px 28px; border-radius:16px; border:2px solid var(--rc,#9fb0c0);
+    background:radial-gradient(135% 135% at 50% 0,var(--rg,rgba(159,176,192,.22)),rgba(0,0,0,.14));
+    box-shadow:0 0 26px var(--rg,rgba(159,176,192,.3)), inset 0 1px 0 rgba(255,255,255,.14);
+    position:relative; overflow:hidden;}
+  .r115badge .r115-k{font-size:10.5px; letter-spacing:3px; color:var(--sub); font-weight:800;}
+  .r115badge .r115-t{font-size:31px; font-weight:900; line-height:1.06; color:var(--rc,#9fb0c0);
+    text-shadow:0 0 16px var(--rg,rgba(159,176,192,.55)); letter-spacing:4px;}
+  .r115badge .r115-s{font-size:11px; color:var(--sub); font-weight:700; letter-spacing:1px; opacity:.9;}
+  /* 傳奇/神話：斜向掃光更醒目更想截圖（沿用 r19sweep 純視覺） */
+  .r115-legend::after,.r115-myth::after{content:""; position:absolute; top:0; left:-70%; width:55%; height:100%;
+    pointer-events:none; background:linear-gradient(105deg,transparent,rgba(255,255,255,.3),transparent);
+    animation:r19sweep 2.6s ease-in-out infinite;}
+  .r115-myth{animation:r115mythpulse 2.8s ease-in-out infinite;}
+  @keyframes r115mythpulse{0%,100%{box-shadow:0 0 26px rgba(255,210,74,.42), inset 0 1px 0 rgba(255,255,255,.2);}
+    50%{box-shadow:0 0 42px rgba(255,210,74,.72), 0 0 18px rgba(255,180,0,.5), inset 0 1px 0 rgba(255,255,255,.26);}}
+  .r115quip{font-size:13.5px; line-height:1.6; color:#ffe9a8; font-weight:700; margin:10px 6px 2px;}
+  .r115hi{font-size:12px; line-height:1.75; color:var(--sub); margin:5px 8px 0;}
+  .r115hi b{color:var(--accent,#ffd24a); font-weight:800;}
+  .r115note{font-size:10.5px; color:var(--sub); opacity:.72; margin:6px 8px 0; letter-spacing:.3px;}
+
   /* ④ 觸控目標下限（全尺寸生效，非僅 ≤400px）：手機點得到、桌機不變樣 */
   .btn{min-height:48px;}
   .choice{min-height:46px;}
@@ -13570,6 +13596,9 @@ function die(from){
   //      依賴的 S.sum/S.wishDone/S.gen/r43 旗標都已在上方定案；舊存檔缺 hiddenEnds 鍵自動補空）----
   evalHiddenEndings();
   S.newAch = evalAchievements(cat, sum, grade);
+  // ---- R115 人生稀有度：依本局關鍵指標確定性算分→映射 5 階（純讀 S，零 rng）；
+  //      在隱藏結局/志向/緣分鏈旗標都已定案後算，供結算卡與分享層取用，舊存檔早夭一律可算 ----
+  try{ S.rarity = lifeRarity(); }catch(e){ S.rarity = null; }
   // R9 時間軸：本局新解鎖成就補進終點（最多 3 條，避免洗版）
   (S.newAch||[]).slice(0,3).forEach(id=>{ const ax=ACH_MAP[id]; if(ax) tlPush("🏆", `解鎖成就【${ax.nm}】`, 1); });
   // ---- R6 輪迴點結算：基礎 1 + 評價（B +1 / A·S +2）+ 新成就 +1 + 新死法 +1 + 新出身 +1，上限 5 ----
@@ -14527,6 +14556,156 @@ const GRADE_TALK = {
   C:"半棄坑帳號，登入獎勵都懶得領",
   D:"出生就被系統 ban，純體驗版人生",
 };
+/* =========================================================================
+   R115 人生稀有度／評級系統：結算卡截圖賣點。
+   ① lifeRarity()：依本局關鍵指標（最終五圍／本局達標成就數／壽命／屬性巔峰／
+      稀有死法／隱藏結局／志向達成／命運鏈完成數）以「確定性公式」算總分 —— 純讀 S，
+      零 rng / 零 Math.random，同一局必得同一分。
+   ② 總分映射 5 階稀有度（普通／稀有／史詩／傳奇／神話）；門檻刻意拉高讓傳奇/神話
+      確實罕見、需特定極致條件才達成，給玩家追求目標。
+   ③ 誠實鐵律：禁止偽造「贏過 X% 玩家」伺服器百分位。只呈現單機確定性評分的階級，
+      明示無真實玩家排名數據。
+   ========================================================================= */
+/* 門檻刻意拉高：一般／被動人生（依模擬中位數約 120）落在「普通」，史詩以上需稀有死法／
+   隱藏結局／志向達成等特殊收尾撐分，傳奇／神話更要五圍拉滿＋多重命運鏈才達得到（理論滿分約 278）。 */
+const R115_TIERS = [
+  {key:"common", nm:"普通", ic:"⚪", col:"#9fb0c0", glow:"rgba(159,176,192,.30)", min:0,   cls:""},
+  {key:"rare",   nm:"稀有", ic:"🔵", col:"#4aa8ff", glow:"rgba(74,168,255,.34)",  min:130, cls:""},
+  {key:"epic",   nm:"史詩", ic:"🟣", col:"#c07bff", glow:"rgba(192,123,255,.36)", min:170, cls:""},
+  {key:"legend", nm:"傳奇", ic:"🟠", col:"#ff9b3d", glow:"rgba(255,155,61,.4)",   min:210, cls:"r115-legend"},
+  {key:"myth",   nm:"神話", ic:"🌟", col:"#ffd24a", glow:"rgba(255,210,74,.45)",  min:245, cls:"r115-myth"},
+];
+/* 玩法風格旗（依一生最高屬性，純查 S.peak/S.attr，零 rng） */
+const R115_DOM = {hp:"鐵骨體質流", int:"智力爆表流", apr:"顏值變現流", mny:"鈔能力流", hap:"快樂至上流"};
+/* 階級×風格台味評語池（同一生用 lifeHash 確定挑一句；鬼島自嘲但不踩政治/仇恨） */
+const R115_QUIP = {
+  common:[
+    "地球 Online 體驗服玩家，這條命中規中矩——沒搶到頭香，也沒墊到吊車尾。",
+    "標準鬼島市民一枚：上班下班繳稅繳保費，平凡到連系統都懶得記住你。",
+    "路人甲的人生模板，重開一隻說不定能洗出更稀有的命格。",
+    "及格邊緣登出，孟婆看了笑而不語：『下次，加油喔。』",
+  ],
+  rare:[
+    "比路人多了點故事，這條命勉強有資格截圖貼限動討幾個讚。",
+    "稀有度開出藍光——鬼島生存戰，你算是有打出一點名堂的。",
+    "不算頂尖但確實有亮點，貼回群組還能嘴個兩句。",
+    "藍色品質登出，韭菜界裡也算小有名氣的那種韭菜。",
+  ],
+  epic:[
+    "史詩級人生，這條命的劇情夠你寫一篇靠北版限動了。",
+    "紫光乍現——你把鬼島活成了爽文，路人只能抬頭仰望。",
+    "達到史詩稀有度，這隻號建議截圖存證、傳家供著。",
+    "別人在演路人，你在演主角，史詩認證、童叟無欺。",
+  ],
+  legend:[
+    "傳奇等級！這條命已經不是重開能複製的了，橘光直接閃瞎同溫層。",
+    "鬼島傳說本人——這隻號掛上拍賣場，怕是要標出天價。",
+    "傳奇品質登出：你不是在玩地球 Online，是地球 Online 在玩你（而且它輸了）。",
+    "達成傳奇，孟婆親自端湯加碼：『大大，下輩子還賞臉再來嗎？』",
+  ],
+  myth:[
+    "神話級人生！本局確定性評分的天花板——入土前先截圖，留給後人膜拜。",
+    "金光衝天的神話稀有度，你把鬼島整個打穿了，系統都不知道該怎麼結算你。",
+    "傳說中的神話登出：這不是運氣，是把每一個數值都點到極致的偏執。",
+    "神話認證——地球 Online 開服以來的理論最強路徑，居然真的被你走出來了。",
+  ],
+};
+/* 本局確定性稀有度評分：純讀 S，零 rng。回傳 {score, tier, tierIdx, dom, parts} */
+function lifeRarity(){
+  const a=(S&&S.attr)||{};
+  const f=(S&&S.flags)||{};
+  const pk=(S&&S.peak)||{};
+  const sum=(a.hp||0)+(a.int||0)+(a.apr||0)+(a.mny||0)+(a.hap||0);
+  const parts={};
+  let score=0;
+  // 主幹：五圍總分 0~500 → 0~100
+  parts.attr = Math.round(sum/5);
+  score += parts.attr;
+  // 本局實際達標成就數（含隱藏，純看這一局）：每個 4 分，上限 60（要 15 個才滿）
+  let achN=0; try{ achN=qualifiedAch().length; }catch(e){}
+  parts.achN = achN;
+  parts.ach = Math.min(60, achN*4);
+  score += parts.ach;
+  // 壽命：超過 70 歲每年 0.6 分，上限 24（活到 110 滿格）
+  parts.life = Math.min(24, Math.round(Math.max(0,(S.age||0)-70)*0.6));
+  score += parts.life;
+  // 屬性巔峰額外加成（一生養成的極致；上限合計 30）
+  let peakB=0;
+  if(((pk.mny!=null?pk.mny:a.mny)||0)>=90) peakB+=8;
+  if(((pk.hp !=null?pk.hp :a.hp )||0)>=90) peakB+=6;
+  if(((pk.int!=null?pk.int:a.int)||0)>=95) peakB+=6;
+  if(((pk.apr!=null?pk.apr:a.apr)||0)>=95) peakB+=5;
+  if(((pk.hap!=null?pk.hap:a.hap)||0)>=90) peakB+=5;
+  parts.peak = Math.min(30, peakB);
+  score += parts.peak;
+  // 沒有短板：死時五圍全 >=60 → +10
+  parts.balance = ["hp","int","apr","mny","hap"].every(k=>(a[k]||0)>=60) ? 10 : 0;
+  score += parts.balance;
+  // 稀有/特殊死法（含 R36/R98 軌跡結局與所有 SPECIAL_DEATHS）→ +14
+  const rareDeath = !!(S.deathId && typeof SPECIAL_DEATHS!=="undefined" && SPECIAL_DEATHS[S.deathId]);
+  parts.rareDeath = rareDeath ? 14 : 0;
+  score += parts.rareDeath;
+  // 隱藏結局（本局命中數）：每個 8 分，上限 16
+  const hidN = (S.hiddenHits&&S.hiddenHits.length)||0;
+  parts.hidN = hidN;
+  parts.hidden = Math.min(16, hidN*8);
+  score += parts.hidden;
+  // 人生志向達成 → +8
+  parts.wish = S.wishDone ? 8 : 0;
+  score += parts.wish;
+  // 命運鏈／緣分線完成數（R43 緣分 3 + R113 命運抉擇鏈 4）：每條 4 分，上限 16
+  let chains=0;
+  ["r43_cmfin","r43_rvfin","r43_ftfin",
+   "r113a_complete","r113b_complete","r113c_complete","r113d_complete"].forEach(k=>{ if(f[k]) chains++; });
+  parts.chainN = chains;
+  parts.chain = Math.min(16, chains*4);
+  score += parts.chain;
+  score = Math.round(score);
+  // 映射階級（由高往低找第一個達門檻者）
+  let tierIdx=0;
+  for(let i=R115_TIERS.length-1;i>=0;i--){ if(score>=R115_TIERS[i].min){ tierIdx=i; break; } }
+  // 主導屬性（一生巔峰最高者；同分取 ATTR 先序）
+  let dom=null;
+  for(const k in ATTR){
+    const v=(pk[k]!=null?pk[k]:a[k])||0;
+    if(dom===null || v>((pk[dom]!=null?pk[dom]:a[dom])||0)) dom=k;
+  }
+  return {score, tier:R115_TIERS[tierIdx], tierIdx, dom, parts};
+}
+/* 結算卡稀有度面板（純呈現；舊存檔/早夭一律可算，零 rng）。memeCard 同家族視覺，截圖賣點 */
+function r115RarityHTML(){
+  let R; try{ R = S.rarity || lifeRarity(); }catch(e){ return ""; }
+  if(!R || !R.tier) return "";
+  const t=R.tier, a=(S&&S.attr)||{};
+  const quipPool = R115_QUIP[t.key]||R115_QUIP.common;
+  let quip = quipPool.length ? quipPool[lifeHash("r115quip")%quipPool.length] : "";
+  if(R.dom && R115_DOM[R.dom]) quip += `（玩法定調：<b style="color:${t.col}">${R115_DOM[R.dom]}</b>）`;
+  // 亮點摘要
+  const hi=[];
+  if(R.dom && ATTR[R.dom]){
+    const pkv=(S.peak&&S.peak[R.dom]!=null)?S.peak[R.dom]:a[R.dom];
+    hi.push(`最罩屬性 <b>${ATTR[R.dom].ic}${ATTR[R.dom].nm} ${pkv}</b>`);
+  }
+  if(R.parts.achN) hi.push(`本局達標成就 <b>${R.parts.achN}</b> 個`);
+  hi.push(`享年 <b>${S.age||0}</b> 歲`);
+  const sd = (S.deathId && typeof SPECIAL_DEATHS!=="undefined" && SPECIAL_DEATHS[S.deathId]) ? SPECIAL_DEATHS[S.deathId] : null;
+  if(sd && (sd.title||sd.nm)) hi.push(`稀有結局 <b>${stripTags(sd.title||sd.nm)}</b>`);
+  if(S.hiddenEnd && typeof HE_MAP!=="undefined" && HE_MAP[S.hiddenEnd]) hi.push(`隱藏結局 <b>${stripTags(HE_MAP[S.hiddenEnd].nm)}</b>`);
+  if(S.wishDone && S.wishId && typeof R41_MAP!=="undefined" && R41_MAP[S.wishId]) hi.push(`志向達成 <b>${stripTags(R41_MAP[S.wishId].nm)}</b>`);
+  if(R.parts.chainN) hi.push(`命運鏈完成 <b>${R.parts.chainN}</b> 條`);
+  return `
+    <div class="r115wrap">
+      <div class="r115badge ${t.cls}" style="--rc:${t.col};--rg:${t.glow}">
+        <span class="r115-k">人 生 評 級</span>
+        <span class="r115-t">${t.ic} ${t.nm}</span>
+        <span class="r115-s">人生指數 ${R.score}（單機確定性評分）</span>
+      </div>
+      <p class="r115quip">${quip}</p>
+      <p class="r115hi">${hi.join("　·　")}</p>
+      <p class="r115note">★ 依本局關鍵指標確定性算分 · 同一局必得同一階級 · 純單機分數，<b>無</b>真實玩家排名數據</p>
+    </div>`;
+}
+
 function screenSummary(cat){
   const a=S.attr;
   const sum=a.hp+a.int+a.apr+a.mny+a.hap;
@@ -14555,6 +14734,7 @@ function screenSummary(cat){
     </div>
     <div class="panel center">
       <h2 class="etitle${rareDeath?' raretitle':''}">🪦 角色已登出 · 本局結算${rareSpk}</h2>
+      ${r115RarityHTML()}
       ${badgeBannerHTML()}
       ${r69VerdictCardHTML()}
       ${r48HiddenHTML()}
@@ -15732,7 +15912,7 @@ function hofCopyCompare(btn){
 function makeShareCard(){
   try{
     if(!S){ alert("沒有可分享的人生資料"); return; }
-    const W=540,H=1190;   /* R59：加高容納年代職業列＋墓誌銘；R99：再加高放台味金句＋跨局圖鑑收集進度 */
+    const W=540,H=1224;   /* R59：加高容納年代職業列＋墓誌銘；R99：再加高放台味金句＋跨局圖鑑收集進度；R115：再加高放人生評級徽章 */
     const dpr=(typeof window!=="undefined"&&window.devicePixelRatio)||1;
     const cv=document.createElement('canvas');
     cv.width=W*dpr; cv.height=H*dpr; cv.style.width=W+"px"; cv.style.height=H+"px";
@@ -15761,6 +15941,20 @@ function makeShareCard(){
     // 享年 + 評級
     ctx.fillStyle='#ffd24a'; ctx.font='20px monospace';
     ctx.fillText(`享年 ${S.age} 歲　·　${grade} 級（${sum}/500）`, W/2, y); y+=30;
+
+    // R115 人生評級／稀有度徽章（單機確定性評分；早夭/舊局一律可算，零 rng）
+    try{
+      const _R = S.rarity || lifeRarity();
+      if(_R && _R.tier){
+        const tw2=W-150, tx2=75;
+        ctx.fillStyle=_R.tier.col; ctx.globalAlpha=0.16; ctx.fillRect(tx2, y-2, tw2, 30); ctx.globalAlpha=1;
+        ctx.strokeStyle=_R.tier.col; ctx.lineWidth=1.5; ctx.strokeRect(tx2, y-2, tw2, 30);
+        ctx.fillStyle=_R.tier.col; ctx.font='bold 17px monospace';
+        ctx.fillText(`${_R.tier.ic} 人生評級・${_R.tier.nm}`, W/2, y+18); y+=44;
+        ctx.fillStyle='#9fb4ff'; ctx.font='12px monospace';
+        ctx.fillText(`人生指數 ${_R.score} · 單機確定性評分（無真實玩家排名）`, W/2, y); y+=24;
+      }
+    }catch(e){}
 
     // R59 年代 × 職業（缺鍵自動省略，舊存檔/早夭局不炸）
     const r59era=(S.era&&R55_MAP[S.era])?(R55_MAP[S.era].ic+" "+R55_MAP[S.era].nm):"";
@@ -16393,6 +16587,9 @@ function buildShareText(){
   const lines=[
     "🪦【地球Online 人生結算卡】",
   ];
+  // R115 人生評級／稀有度（單機確定性評分，無真實玩家排名；早夭/舊局一律可算，零 rng）
+  let _R; try{ _R = S.rarity || lifeRarity(); }catch(e){ _R=null; }
+  if(_R && _R.tier) lines.push(`${_R.tier.ic} 人生評級：${_R.tier.nm}（人生指數 ${_R.score}・單機算分）`);
   if(b) lines.push(`🏅 人生稱號：【${b.tier}】${b.nm}`);
   lines.push(
     `👤 稱號：${stripTags(S.title||"地球路人")}`,

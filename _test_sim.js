@@ -3568,6 +3568,95 @@ try {
   console.log('R113 多段連鎖人生劇情線: ❌ ' + e.message);
 }
 
+/* ---- R115 人生評級／稀有度系統探針（確定性算分→5 階；誠實不偽造百分位）----
+   ① 結構：R115_TIERS 5 階、min 嚴格遞增、key/nm/col 齊備且互異；R115_QUIP 5 池非空
+   ② 確定性：同一 S 連算兩次 score/階級逐字一致；lifeRarity 零 rng 消耗
+   ③ 單調映射：刻意墊底的命 → 普通；刻意拉滿的命 → 神話；門檻邊界 score>=min 落對階
+   ④ 渲染：r115RarityHTML 含階級名＋人生指數＋誠實註記；buildShareText 帶評級行
+   ⑤ 誠實鐵律：結算卡與分享文案皆「不得」出現偽造伺服器百分位字樣（贏過/勝過/打敗 X% 玩家） */
+let r115OK = false;
+try {
+  const r115Raw = vm.runInContext(`(function(){
+    const out={};
+    /* ① 結構 */
+    out.tierCount = Array.isArray(R115_TIERS) && R115_TIERS.length===5;
+    let asc=true; for(let i=1;i<R115_TIERS.length;i++){ if(!(R115_TIERS[i].min>R115_TIERS[i-1].min)) asc=false; }
+    out.tierAsc = asc && R115_TIERS[0].min===0;
+    out.tierFields = R115_TIERS.every(t=>t.key&&t.nm&&t.col&&t.ic);
+    const nms=R115_TIERS.map(t=>t.nm), keys=R115_TIERS.map(t=>t.key);
+    out.tierUniq = new Set(nms).size===5 && new Set(keys).size===5;
+    out.tierNames = JSON.stringify(nms)===JSON.stringify(["普通","稀有","史詩","傳奇","神話"]);
+    out.quipPools = keys.every(k=>Array.isArray(R115_QUIP[k]) && R115_QUIP[k].length>0);
+
+    function setup(o){
+      startGame(); const s=S; ensureState(s); s.seen={}; s.alive=false; s.bonds=s.bonds||{};
+      Object.assign(s.attr, o.attr||{});
+      s.age=o.age!=null?o.age:75; s.cat=o.cat||"old"; s.deathId=o.deathId||"old_0";
+      s.flags=o.flags||{}; s.peak=o.peak||Object.assign({},s.attr); s.low=o.low||Object.assign({},s.attr);
+      s.hiddenHits=o.hiddenHits||[]; s.hiddenEnd=o.hiddenEnd||null; s.wishDone=!!o.wishDone; s.wishId=o.wishId||null;
+      s.title=o.title||"地球路人"; s.deathReason=o.deathReason||"壽終正寢"; s.sum=null; s.rarity=null;
+      return s;
+    }
+    /* ② 確定性 + 零 rng */
+    setup({attr:{hp:70,int:70,apr:70,mny:70,hap:70}, age:88});
+    let used=0; const old=rng; rng=function(){ used++; return old(); };
+    const R1=lifeRarity(); const R2=lifeRarity();
+    rng=old;
+    out.rngZero = used===0;
+    out.deterministic = R1.score===R2.score && R1.tier.key===R2.tier.key;
+    out.scoreIsNum = typeof R1.score==="number" && isFinite(R1.score);
+
+    /* ③ 單調映射：墊底 → 普通 */
+    setup({attr:{hp:8,int:8,apr:8,mny:8,hap:8}, age:18, cat:"accident", deathId:"accident_0"});
+    out.floorCommon = lifeRarity().tier.key==="common";
+    /* 拉滿 → 神話：滿五圍＋稀有死法＋隱藏結局＋志向＋多命運鏈＋高齡 */
+    const sd=Object.keys(SPECIAL_DEATHS)[0];
+    setup({attr:{hp:100,int:100,apr:100,mny:100,hap:100}, age:108, deathId:sd,
+      peak:{hp:100,int:100,apr:100,mny:100,hap:100},
+      hiddenHits:["x","y"], hiddenEnd:(HIDDEN_ENDINGS[0]&&HIDDEN_ENDINGS[0].id)||null, wishDone:true,
+      flags:{r43_cmfin:true,r43_rvfin:true,r43_ftfin:true,r113a_complete:true,r113b_complete:true,r113c_complete:true,r113d_complete:true}});
+    const maxR=lifeRarity();
+    out.maxMyth = maxR.tier.key==="myth" && maxR.score>=R115_TIERS[4].min;
+    /* 中庸命分數介於墊底與拉滿之間 */
+    setup({attr:{hp:8,int:8,apr:8,mny:8,hap:8}, age:18, cat:"accident", deathId:"accident_0"});
+    const lo=lifeRarity().score;
+    setup({attr:{hp:70,int:70,apr:70,mny:70,hap:70}, age:88}); const mid=lifeRarity().score;
+    out.scoreMonotone = lo < mid && mid < maxR.score;
+    /* 門檻邊界：人造分數落在 tier.min 應對到該階（用 tierForScore 邏輯複算） */
+    function tierOf(sc){ let idx=0; for(let i=R115_TIERS.length-1;i>=0;i--){ if(sc>=R115_TIERS[i].min){ idx=i; break; } } return idx; }
+    out.boundary = R115_TIERS.every((t,i)=>tierOf(t.min)===i && (i===0||tierOf(t.min-1)===i-1));
+
+    /* ④ 渲染：結算卡稀有度面板 + 誠實註記 */
+    setup({attr:{hp:90,int:90,apr:90,mny:90,hap:90}, age:95, deathId:sd, peak:{hp:95,int:95,apr:95,mny:95,hap:95}});
+    S.rarity=lifeRarity();
+    const html=r115RarityHTML();
+    out.htmlBadge = html.includes("人 生 評 級") && R115_TIERS.some(t=>html.includes(t.nm)) && html.includes("人生指數");
+    out.htmlHonest = html.includes("無") && html.includes("真實玩家排名");
+    /* 分享文字卡帶評級行 */
+    const txt=buildShareText();
+    out.shareHasRarity = txt.includes("人生評級") && txt.includes("人生指數") && txt.includes("單機算分");
+
+    /* ⑤ 誠實鐵律：不得偽造伺服器百分位（任何「贏過/勝過/打敗 ... % 玩家」字樣） */
+    const fake=/(贏過|勝過|打敗|擊敗|超越)[^。]{0,12}([0-9]{1,3}\\s*%|百分)[^。]{0,6}玩家/;
+    out.noFakePercentileHtml = !fake.test(html);
+    out.noFakePercentileTxt = !fake.test(txt);
+
+    /* ⑥ 舊存檔/早夭相容：最小 S 不炸、回傳合法階級 */
+    startGame(); const cs=S; ensureState(cs); cs.alive=false; cs.age=3; cs.cat="accident"; cs.deathId="accident_0"; cs.rarity=null;
+    let okEarly=false; try{ const er=lifeRarity(); okEarly=!!(er&&er.tier&&er.tier.key); }catch(e){ okEarly=false; }
+    out.earlyDeath = okEarly;
+    /* 乾淨局零殘留（R115 不新增 S 旗標、不污染 flags/seen） */
+    startGame(); const gs=S;
+    out.cleanGame = Object.keys(gs.flags||{}).every(k=>k.indexOf('r115')!==0) && Object.keys(gs.seen||{}).every(k=>k.indexOf('r115')!==0);
+    return JSON.stringify(out);
+  })()`, sandbox);
+  const r115 = JSON.parse(r115Raw);
+  r115OK = Object.values(r115).every(v => v === true);
+  console.log(`R115 人生評級／稀有度(5 階確定性算分/單調映射/誠實不偽造百分位/渲染/相容): ${r115OK ? '✅ 全數通過' : '❌ ' + JSON.stringify(r115)}`);
+} catch (e) {
+  console.log('R115 人生評級／稀有度: ❌ ' + e.message);
+}
+
 if (__errors.length) {
   console.log('\n--- 錯誤樣本(前5) ---');
   __errors.slice(0, 5).forEach(e => console.log('  ' + e));
@@ -3575,6 +3664,6 @@ if (__errors.length) {
 
 /* 退出碼 */
 const pass = __errors.length === 0 && chk.missingScenes.length === 0 && chk.eventVisible >= 126 && chk.eventTotal >= 126 && lsOK && achUnlocked > 0
-  && chk.deathbookMissing.length === 0 && chk.deathTotal >= 17 && deathsOK && rebirthOK && legacyOK && petOK && r13OK && r17OK && r20OK && r21OK && r22OK && r24OK && r25OK && r34OK && r38OK && r41OK && r42OK && r43OK && r44OK && r45OK && r46OK && r47OK && r48OK && r49OK && r51OK && r52OK && r53OK && r54OK && r55OK && r72OK && r76OK && r77OK && r79OK && r86OK && r87OK && r92OK && r93OK && r95OK && r96OK && r108OK && r110OK && r111OK && r112OK && r113OK;
+  && chk.deathbookMissing.length === 0 && chk.deathTotal >= 17 && deathsOK && rebirthOK && legacyOK && petOK && r13OK && r17OK && r20OK && r21OK && r22OK && r24OK && r25OK && r34OK && r38OK && r41OK && r42OK && r43OK && r44OK && r45OK && r46OK && r47OK && r48OK && r49OK && r51OK && r52OK && r53OK && r54OK && r55OK && r72OK && r76OK && r77OK && r79OK && r86OK && r87OK && r92OK && r93OK && r95OK && r96OK && r108OK && r110OK && r111OK && r112OK && r113OK && r115OK;
 console.log('\n結果: ' + (pass ? '✅ 全數通過' : '❌ 有項目未通過'));
 process.exit(pass ? 0 : 1);
