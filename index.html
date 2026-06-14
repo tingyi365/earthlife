@@ -1936,6 +1936,9 @@ function ensureState(s){
   if(!s.peakAge || typeof s.peakAge!=="object") s.peakAge={};  // R15 巔峰年齡（舊進行中存檔補空，缺鍵顯示時 fallback 0）
   if(!s.low || typeof s.low!=="object") s.low={};              // R25 谷底值（舊進行中存檔補空，缺鍵顯示時 fallback 謝幕值）
   if(!s.lowAge || typeof s.lowAge!=="object") s.lowAge={};     // R25 谷底年齡
+  // R103 人際羈絆值：4 個台味 NPC 各一條羈絆（舊存檔缺鍵補空物件、缺單一 NPC 鍵補 0，載入不崩、行為同舊版）
+  if(!s.bonds || typeof s.bonds!=="object") s.bonds={};
+  ["boss","troll","bro","lover"].forEach(k=>{ if(typeof s.bonds[k]!=="number") s.bonds[k]=0; });
 }
 const isMarried  = (s)=> s.flags && s.flags.marital==="married";
 const isSingle   = (s)=> !s.flags || s.flags.marital!=="married";          // 含 single/divorced/widowed
@@ -2295,6 +2298,11 @@ const ACHIEVEMENTS = [
   {id:"r102_road_survivor", ic:"🚸", nm:"行人地獄全身而退", desc:"在號稱『行人地獄』的斑馬線上被三寶逼到牆角，最後靠蒐證檢舉、認命退場或當街捍衛路權收尾——你替全島行人守住了一點尊嚴。", check:c=>!!(c.S.flags&&c.S.flags.r102_road_done), hint:"綠燈在這座島只是參考用的…被右轉車逼停那次，把後續處理完才算數…"},
   {id:"r102_inflation_survivor", ic:"🥚", nm:"蛋荒時代生存家", desc:"在萬物齊漲、唯獨薪水跪著的年代，靠搶蛋、改食譜或鈔能力撐過蛋荒——通膨怪獸沒能擊垮你的餐桌。", check:c=>!!(c.S.flags&&c.S.flags.r102_egg_done), hint:"早餐店那句『蛋漲價囉』揭開序幕…站在空蕩蕩的蛋櫃前做出抉擇才解得開…"},
   {id:"r102_pie_critic", ic:"🥧", nm:"老闆畫餅鑑賞大師", desc:"完整見證一場『明年上市分紅』從畫餅到跳票的全過程——你終於修成正果，能一眼看穿大餅裡到底有沒有餡。", check:c=>!!(c.S.flags&&c.S.flags.r102_pie_done), hint:"全員大會上那張畫得比月亮還圓的餅…撐到隔年尾牙看它跳票，這門課才修完…"},
+  /* ---- R103 台味人際羈絆系統成就（接 R99 圖鑑；純讀 S.bonds／羈絆鏈旗標，零 rng；未遇 NPC 的局永不誤觸）---- */
+  {id:"r103_soulmate", ic:"🤝", nm:"靈魂摯友・生死之交", desc:"把神隊友阿肥的羈絆一路養到生死之交（60＋）——那個專案爆炸第一個跳出來扛、慶功又把功勞讓給你的兄弟，你也用同樣的義氣回敬了他一輩子。", check:c=>bondOf(c.S,"bro")>=60, hint:"那個會在深夜默默留下來陪你補洞的神隊友…把功勞分給他、不背叛他，一次次把你們的交情養到頂…"},
+  {id:"r103_social", ic:"🫂", nm:"人緣勝利組", desc:"同一輩子裡，慣老闆、酸民、神隊友、恐怖情人——這座島丟給你的難搞關係，至少有三段被你經營成麻吉（35＋）。八面玲瓏，是真本事。", check:c=>R103_NPCS.filter(n=>bondOf(c.S,n.k)>=35).length>=3, hint:"老闆、酸民、神隊友、恐怖情人都是會反覆登場的人…一輩子至少把其中三段羈絆都養到『麻吉』等級…"},
+  {id:"r103_lonewolf", ic:"🐺", nm:"邊緣孤狼・一個人也能活", desc:"老闆、酸民、神隊友、情人都遇過，卻一段都沒留住——謝幕時四段羈絆全數歸零或結怨。孤獨不是罪，是你選的活法。", check:c=>{ const f=c.S.flags||{}; const met=R103_NPCS.some(n=>f["r103_met_"+n.k]); return met && R103_NPCS.every(n=>bondOf(c.S,n.k)<=0); }, hint:"這幾個會反覆登場的 NPC 你都遇過，卻把每一段羈絆都放到歸零或結怨…一個人走完一生…"},
+  {id:"r103_bond_chain", ic:"💞", nm:"羈絆養成大師", desc:"把羈絆養到門檻會解鎖那個 NPC 的專屬橋段——你一輩子走完了其中至少三段專屬劇情，堪稱這座島的人際關係收藏家。", check:c=>{ const f=c.S.flags||{}; return [f.r103_boss_done,f.r103_bro_done,f.r103_lover_done,f.r103_troll_done].filter(Boolean).length>=3; }, hint:"羈絆跨過門檻會觸發專屬事件（達哥收乾兒子／阿肥揪創業／寶貝逼定下來／嘴秋揪合作）…走完其中三段…"},
   {id:"r70a_unicorn", ic:"🦄", nm:"創業上岸・無中生有", desc:"在頭家夢分歧鏈選自己創業，撐過跑三點半的歲月，最後成功上岸買房定居——你把『無中生有』四個字活成了真的。", check:c=>!!(c.S.flags&&c.S.flags.r70a_unicorn), hint:"分歧鏈裡選自己創業的人，中段擴張或被收購（或在三點半跳票邊緣硬撐活下來），末段才走得到買房上岸…"},
   {id:"r70a_freebird", ic:"🕊️", nm:"社畜跳船・自由業真男人", desc:"當年領死薪水的你中途跳船去接案，多年後接出口碑、開了自己的工作室——上班族眼裡那種『自由業』，自由是真的，業也真的有在接。", check:c=>!!(c.S.flags&&c.S.flags.r70a_freebird), hint:"分歧鏈選領死薪水當社畜的人，中段選擇安靜離職跳船接案，末段把工作室掛牌做起來…"},
   {id:"r70a_clear", ic:"🧭", nm:"頭家夢・全鏈結業", desc:"從老家那通電話一路走到人生期末考，把頭家夢（或死薪水）這條三段分歧鏈完整走完——接、創、領，無論哪條路你都活出了答案。", check:c=>!!(c.S.flags&&c.S.flags.r70a_done), hint:"老家的店要收那年做出選擇後，把中段、末段兩道抉擇都接著走完，整條頭家分歧鏈一站不漏…"},
@@ -2624,6 +2632,87 @@ function seasonKeysOf(dateStr){            // dateStr = "YYYYMMDD" → 該日生
 function activeSeasonKeys(){
   const d = (typeof S!=="undefined" && S && S.challenge && S.challenge.date) ? S.challenge.date : taipeiDateStr();
   return seasonKeysOf(d);
+}
+
+/* =========================================================================
+   R103 台味人際羈絆系統：3~4 個會反覆登場的台味 NPC，各自一條可累積／可衰退的羈絆值
+   （存進 S.bonds，舊存檔由 ensureState 補空、缺鍵自動補 0，載入不崩）。
+   - 羈絆由人生事件選擇升降（choose() 讀 c.bond／分流 out.bond，純加減零 rng）。
+   - 疏於經營會自然淡掉：r103BondTick() 每四歲把各段羈絆往 0 收一格（確定性、零 rng）。
+   - 羈絆跨過門檻 → r103BondPick() 確定性插播專屬事件（hidden，不進隨機池、不計落空），
+     吃 R98 屬性系統（int／apr／hp／mny 真的驅動分支與成敗）、落旗標接 R99 成就／R100 稀有結局。
+   - 結算 bondReviewHTML() 秀本世幾段關係的最終羈絆狀態（可截圖分享）。
+   尺度走台味自嘲幽默，零政治／暴力／仇恨／真實人物影射。
+   ========================================================================= */
+const R103_NPCS = [
+  {k:"boss",  ic:"💼",   nm:"鐵血慣老闆 達哥", role:"慣老闆"},
+  {k:"troll", ic:"💬",   nm:"鍵盤酸民 嘴秋",   role:"酸民網友"},
+  {k:"bro",   ic:"🤝",   nm:"神隊友 阿肥",      role:"好同事"},
+  {k:"lover", ic:"❤️‍🔥", nm:"黏TT情人 寶貝",   role:"恐怖情人"},
+];
+const R103_MAP = Object.fromEntries(R103_NPCS.map(n=>[n.k,n]));
+/* 羈絆分級（純查值零 rng）：≥60 生死之交、≥35 麻吉、≥15 點頭之交、≥1 普通、≤0 漸行漸遠／結怨 */
+const R103_TIERS = [
+  {min:60,   ic:"💞", nm:"生死之交"},
+  {min:35,   ic:"😎", nm:"麻吉"},
+  {min:15,   ic:"🙂", nm:"點頭之交"},
+  {min:1,    ic:"😐", nm:"普通認識"},
+  {min:-999, ic:"💢", nm:"漸行漸遠"},
+];
+function bondTier(v){ v=v||0; for(const t of R103_TIERS){ if(v>=t.min) return t; } return R103_TIERS[R103_TIERS.length-1]; }
+const bondOf = (s,k)=> (s&&s.bonds&&typeof s.bonds[k]==="number")?s.bonds[k]:0;
+function adjBond(k, d){
+  if(!S) return;
+  if(!S.bonds || typeof S.bonds!=="object") S.bonds={};
+  if(typeof S.bonds[k]!=="number") S.bonds[k]=0;
+  S.bonds[k]=Math.max(-40, Math.min(100, S.bonds[k]+(d||0)));
+}
+/* 自然淡化：每四歲各段羈絆往 0 收一格（人際關係疏於經營就淡；確定性、零 rng） */
+function r103BondTick(){
+  if(!S || !S.bonds || (S.age%4)!==0) return;
+  for(const k in S.bonds){ const v=S.bonds[k]; if(v>0) S.bonds[k]=v-1; else if(v<0) S.bonds[k]=v+1; }
+}
+/* 羈絆專屬事件確定性插播：某 NPC 羈絆跨門檻且專屬事件未觸發 → 回傳對應 hidden 事件（零 rng；
+   hidden 不進隨機池、不計落空，純靠本 picker 觸發，比照 R81/R86/R93 攔截器） */
+function r103BondPick(){
+  if(!S || !S.alive || !S.bonds || !S.flags || !S.seen) return null;
+  const gates=[
+    {k:"boss",  need:35, id:"r103_boss_heir",   done:"r103_boss_done",  ok:()=>isEmployed(S)&&S.age>=26},
+    {k:"bro",   need:40, id:"r103_bro_startup", done:"r103_bro_done",   ok:()=>S.age>=24},
+    {k:"lover", need:40, id:"r103_lover_vow",   done:"r103_lover_done",  ok:()=>S.age>=22},
+    {k:"troll", need:35, id:"r103_troll_team",  done:"r103_troll_done",  ok:()=>S.age>=18},
+  ];
+  for(const g of gates){
+    if((S.bonds[g.k]||0)>=g.need && !S.flags[g.done] && !S.seen[g.id] && g.ok()){
+      const ev = (typeof EVENTS!=="undefined") && EVENTS.find(e=>e.id===g.id);
+      if(ev) return ev;
+    }
+  }
+  return null;
+}
+/* 結算：本世幾段關係的最終羈絆狀態（純讀 S.bonds 零 rng，可截圖分享） */
+function bondReviewHTML(){
+  if(!S || !S.bonds) return "";
+  const shown = R103_NPCS.filter(n=> (S.bonds[n.k]||0)!==0 || (S.flags&&S.flags["r103_met_"+n.k]));
+  if(!shown.length) return "";
+  const rows = shown.map(n=>{
+    const v=S.bonds[n.k]||0, t=bondTier(v), pct=Math.max(0,Math.min(100,v));
+    const col = v>=60?"#ff7ab8" : v>=35?"#ffd24a" : v>=1?"#7ad0ff" : "#9aa3ad";
+    return `<div style="margin:7px 0">
+      <div style="display:flex;justify-content:space-between;font-size:13px;gap:8px">
+        <span>${n.ic} <b>${n.nm}</b> <span class="muted">（${n.role}）</span></span>
+        <span style="color:${col};white-space:nowrap">${t.ic}${t.nm}　${v}</span></div>
+      <div style="height:6px;border-radius:4px;background:rgba(255,255,255,.08);margin-top:3px;overflow:hidden">
+        <div style="height:100%;width:${pct}%;background:${col};opacity:.85"></div></div></div>`;
+  }).join("");
+  const top = shown.slice().sort((a,b)=>(S.bonds[b.k]||0)-(S.bonds[a.k]||0))[0];
+  const tv=S.bonds[top.k]||0;
+  const quip = tv>=60?`這輩子最深的一段是 ${top.ic}${top.nm}——人生在世，能有一個這樣的羈絆，就不算白活。`
+            : tv>=15?`走得最近的是 ${top.ic}${top.nm}，緣分這種事，濃淡都是命。`
+            : `來來去去的人不少，真正留住的卻沒幾個——你這輩子的人際存摺，餘額有點冷清。`;
+  return `<div class="panel" style="margin-top:12px;background:var(--panel2)">
+    <h2 class="sec">🫂 人際羈絆回顧</h2>${rows}
+    <div class="muted" style="font-size:12.5px;margin-top:8px;line-height:1.7">${quip}</div></div>`;
 }
 
 /* =========================================================================
@@ -9994,6 +10083,99 @@ function buildEvents(){ return [
         lose:{eff:{hap:-8,mny:-3,hp:-3}, res:"😮‍💨 你又賭了一把，結果不意外——上市還是沒影、分紅還是傳說，這次連尾牙都從五星飯店改成公司茶水間吃便當。你終於認清：相信慣老闆畫的餅，輸的永遠是把青春押下去的那個人。早知如此，去年就該走的。"}},
         flags:{r102_pie_done:true}},
     ]},
+
+  /* ===================== R103 台味人際羈絆系統事件 =====================
+     4 個會反覆登場的台味 NPC「羈絆養成」事件（非 once，會重複出現累積／衰退羈絆，
+     選項用 c.bond 升降羈絆、c.flags 記 r103_met_<k> 供結算露出；吃 R98 屬性 gate）。
+     ＋4 條「羈絆專屬」hidden 事件（羈絆跨門檻由 r103BondPick 確定性插播，吃 R98 屬性分支、
+     落旗標接 R99 成就 r103_*／R100 稀有結局 he_soulmate/he_social_king）。
+     走台味自嘲幽默，零政治／暴力／仇恨／真實人物影射。 */
+
+  /* ── NPC1 慣老闆 達哥（反覆登場；拍馬屁扛責→羈絆漲、看穿打太極→微降、嗆回去→大降）── */
+  {id:"r103_boss", stage:[24,60], w:1.5, cond:s=>isEmployed(s),
+   title:"達哥又把你叫進辦公室", text:"直屬老闆『達哥』又拍著你的肩膀開始畫餅了：『公司就靠你這種人才撐著，這個案子你多扛一點，年底我一定記得你。』——這套『我把你當自己人』的話術，他一年講十二遍，凍薪倒是凍得比誰都實在。要不要繼續陪他演這齣？",
+   meme:{scene:"mock", top:"我把你當自己人", bot:"自己人怎麼好意思談加薪", tag:"職場"},
+   choices:[
+     {label:"扛下來、再奉承兩句，把『被器重』收進口袋", eff:{hp:-3,hap:-2,mny:1}, bond:{boss:9}, flags:{r103_met_boss:true}, res:"你笑著把鍋接下、順口拍了兩記馬屁，達哥滿意地點頭，從此把你列為『自己人』第一順位。代價是你的肝又薄了一層、加班費依舊是傳說——但在達哥心裡，你的份量是真的越來越重了。"},
+     {label:'<i class="gtag">🧠智力60+</i> 笑著打太極，餅照收、班照準時下', eff:{int:3,hap:2}, cond:s=>s.attr.int>=60, gate:true, bond:{boss:-3}, flags:{r103_met_boss:true}, res:"🧠 你聽過太多次這套說詞，臉上配合點頭、心裡早把它歸檔到『免費脫口秀』。該做的做完、五點半準時消失，達哥的器重你笑納，賣命就免了。他私下嘀咕你『不夠拚』，你心想：拚命跟拚腦，從來是兩回事。"},
+     {label:"當場頂回去：『達哥，記得我不如記得加薪』", eff:{hap:5,hp:-1,mny:-1}, bond:{boss:-9}, flags:{r103_met_boss:true,r103_boss_clash:true}, res:"你忍無可忍把話挑明，辦公室空氣瞬間凝結。達哥臉色一沉，從此把你列入『不識相』名單，好處輪不到、雜事先想到你。一句真話換來一身針對——但那口憋了三年的氣，總算吐出來了。"},
+   ]},
+
+  /* ── NPC2 酸民 嘴秋（反覆登場；理性互嗆→從敵變損友羈絆漲、封鎖→降、玻璃心對線→漲但傷身）── */
+  {id:"r103_troll", stage:[16,70], w:1.4, cond:s=>s.age>=16,
+   title:"留言區的嘴秋又出現了", text:"你發了則貼文，常駐酸民『嘴秋』照例第一個跳出來嘴：『就這？我家狗都做得比你好。』嘴賤歸嘴賤，他倒是你每篇必到的鐵粉，比真愛還準時。這條留言，你打算怎麼接？",
+   meme:{scene:"phone", top:"我家狗都做得比你好", bot:"那也是因為我先做了", tag:"網路"},
+   choices:[
+     {label:"理性回嗆＋玩梗反殺，把酸民聊成損友", eff:{hap:4,int:2,apr:1}, bond:{troll:9}, flags:{r103_met_troll:true}, res:"你不動氣，一句神回覆把球漂亮地打回去，連嘴秋都默默按了個讚。一來一往幾回合，你們從互嗆嗆出了某種詭異的革命情感——網路上最難得的不是粉絲，是一個願意天天來嘴你的損友。"},
+     {label:"已讀不回、直接封鎖，眼不見為淨", eff:{hap:2,int:1}, bond:{troll:-8}, flags:{r103_met_troll:true}, res:"你懶得餵食酸民，手指一滑封鎖了事。世界瞬間清淨，留言區少了那個跳針的身影。你不確定他是真討厭你還是只是寂寞，但你的心情，確實清爽了不少。"},
+     {label:"玻璃心爆氣，跟他從早對線到天黑", eff:{hap:-5,hp:-2}, bond:{troll:7}, flags:{r103_met_troll:true,r103_troll_war:true}, res:"你被一句酸話點燃，跟嘴秋你一言我一語對線到深夜，吵得難分難解。羈絆是莫名其妙加深了（畢竟天天互動），但你的睡眠跟血壓一起陪葬——跟酸民認真，你就輸在起跑點了。"},
+   ]},
+
+  /* ── NPC3 神隊友 阿肥（反覆登場；互相罩→羈絆漲、獨吞功勞→降、客氣保持距離→微漲）── */
+  {id:"r103_bro", stage:[24,60], w:1.5, cond:s=>isEmployed(s),
+   title:"神隊友阿肥又來罩你", text:"專案開天窗的深夜，神隊友『阿肥』默默留下來陪你一起補：『沒事，兄弟的事就是我的事。』這種同事一輩子遇得到一個就是燒好香。隔天慶功，主管問是誰的功勞——你怎麼回？",
+   meme:{scene:"work", top:"兄弟的事就是我的事", bot:"功勞算你的、鍋算我們的", tag:"職場"},
+   choices:[
+     {label:"把功勞分一半給阿肥，兄弟有福同享", eff:{hap:6,mny:-1,apr:2}, bond:{bro:10}, flags:{r103_met_bro:true}, res:"你當著主管的面把功勞推給阿肥一半：『這案子他熬的夜比我多。』阿肥愣了一下，眼眶有點紅。從此你們是彼此職場上最硬的後盾——好人緣不是裝出來的，是一次次這樣換來的。"},
+     {label:"功勞先獨吞，反正阿肥不會計較", eff:{mny:4,hap:-2}, bond:{bro:-9}, flags:{r103_met_bro:true,r103_bro_betray:true}, res:"你把功勞全攬到自己身上，升遷加分先卡位。阿肥沒說什麼，只是那句『兄弟的事就是我的事』之後再也沒出現過。你贏了這一局的 KPI，輸了一個會在深夜陪你補洞的人——這筆帳，要很久以後才看得懂划不划算。"},
+     {label:"婉謝阿肥幫忙、保持客氣距離，公私分明", eff:{int:2,hap:1}, bond:{bro:3}, flags:{r103_met_bro:true}, res:"你謝過阿肥但堅持自己的事自己扛，職場上不欠人情、也不太麻煩人。關係不冷不熱地維持著——是成熟，也少了點熱血兄弟的痛快。"},
+   ]},
+
+  /* ── NPC4 恐怖情人 寶貝（反覆登場；哄陪伴→羈絆漲、冷處理→降、被情勒妥協→漲但傷身）── */
+  {id:"r103_lover", stage:[20,65], w:1.4, cond:s=>s.age>=20,
+   title:"寶貝的奪命連環call", text:"你那位黏度破表的另一半『寶貝』，因為你已讀慢了三秒，又腦補出一整齣八點檔：『你是不是不愛我了？』愛起來像颱風，鬧起來也像颱風。手機螢幕上的未接來電正在跳到第八通——你怎麼接招？",
+   meme:{scene:"love", top:"已讀三秒沒回", bot:"等於不愛了（寶貝邏輯）", tag:"感情"},
+   choices:[
+     {label:"秒回＋好聲好氣哄，給足安全感", eff:{hap:3,hp:-2}, bond:{lover:9}, flags:{r103_met_lover:true}, res:"你放下手邊的事，耐著性子把那場想像中的劈腿大戲一句句拆掉，哄到寶貝破涕為笑。關係的溫度是回來了，只是你的精力也被吸乾一輪——愛一個沒安全感的人，得隨身帶充電寶。"},
+     {label:"冷處理：愛鬧就讓你鬧，先把事做完", eff:{int:2,hap:-1}, bond:{lover:-8}, flags:{r103_met_lover:true}, res:"你決定不被情緒綁架，把手機調靜音、先把正事處理完。寶貝氣到傳了二十則訊息加一排哭臉，你們之間結了一層薄冰——你守住了界線，代價是那份黏膩的熱度，涼了一截。"},
+     {label:"被情勒到投降，取消所有行程陪一整晚", eff:{hap:-4,hp:-3,mny:-2}, bond:{lover:8}, flags:{r103_met_lover:true,r103_lover_bound:true}, res:"你架不住那句『你再不回來我就……』，取消了跟朋友的約、推掉了加班，連夜趕回去陪。寶貝瞬間雨過天晴，黏得更緊了。羈絆是更深了，但你的時間、朋友圈跟自我，正在被這段關係一點一點吃掉。"},
+   ]},
+
+  /* ── 羈絆專屬 hidden：達哥羈絆≥35 →『收你當乾兒子』畫更大的餅（int 看穿／mny 賭分紅）── */
+  {id:"r103_boss_heir", hidden:true, stage:[26,60], title:"達哥要收你當乾兒子",
+   text:"羈絆養到這份上，達哥把你叫進辦公室，神情誠懇得不像在演：『我沒兒子，公司以後就交給你這種自己人。先別計較眼前那點薪水，跟著我，將來分紅吃不完。』——這是他畫過最大的一張餅，香味撲鼻，就是不知道裡頭到底有沒有餡。",
+   meme:{scene:"deal", top:"我把你當兒子栽培", bot:"兒子哪好意思跟爸談加薪", tag:"職場"},
+   choices:[
+     {label:'<i class="gtag">🧠智力65+</i> 笑著婉謝這份『情義』，把器重換成白紙黑字的加薪', eff:{int:4,mny:8,hap:5}, cond:s=>s.attr.int>=65, gate:true, bond:{boss:-4}, flags:{r103_boss_done:true,r103_boss_smart:true}, res:"🧠 你聽懂了：『乾兒子』是綁住你又不用加薪的最高招。你誠懇道謝，話鋒一轉把話題拉回實質——『達哥這麼看重我，那這份器重，能不能寫進下季的調薪？』達哥的笑容僵了半秒。你沒接下那張情感空頭支票，反而逼出了一筆真金白銀。器重很暖，但能換錢的器重才叫器重。"},
+     {label:"感動接下這份『情義』，從此以廠為家、賣命相挺", eff:{hp:-8,hap:-3,mny:-2}, bond:{boss:12}, flags:{r103_boss_done:true,r103_boss_loyal:true}, res:"你被那份『被當成自己人』的暖意打動，從此把公司當家、把達哥當爸，加班加好加滿、凍薪也甘願。達哥心裡你的份量重到頂點。至於那塊餅——你決定先不去想它到底會不會變成真的餡，畢竟，達哥說的怎麼會有錯呢？（這句話，要再過十年你才會嚐出苦味。）"},
+     {label:'<i class="gtag">⚖️財富檢定</i> 賭一把跟著達哥拚分紅，盼這餅成真', r22:true, sr:{k:"mny", need:62, spread:40,
+       win:{eff:{mny:12,hap:6,hp:-3}, bond:{boss:8}, res:"🎯 你決定信達哥一回，把身家跟青春一起押上。沒想到這回公司真的接到大單、業績翻紅，達哥沒食言，分紅扎扎實實發進你戶頭，連凍了多年的薪水都補調回來。你賭對了——這種事一輩子遇到一次就要偷笑，你剛好就是那個等到餅變成餡的傻人。"},
+       lose:{eff:{mny:-6,hap:-6,hp:-3}, bond:{boss:4}, res:"😮‍💨 你把青春押了下去，結果不意外——上市沒影、分紅是傳說，達哥那句『明年一定』又講了一年。你跟他的交情是更近了，但近的代價是你最能衝的那幾年，全餵給了一張畫在月亮上的餅。早知如此，去年就該把器重換成現金落袋。"}},
+       flags:{r103_boss_done:true}},
+   ]},
+
+  /* ── 羈絆專屬 hidden：阿肥羈絆≥40 →『揪你跳船創業』（mny 合資結拜→soulmate／義氣硬拚／理智踩煞）── */
+  {id:"r103_bro_startup", hidden:true, stage:[24,60], title:"阿肥揪你一起跳船創業",
+   text:"羈絆深到這地步，神隊友阿肥某個下班後拉你去燒烤攤，三杯黃湯下肚，眼神發亮地說：『欸，咱倆技術都到位，幹嘛一直幫人賣命？出來自己搞，我挺你，賺賠都一起扛。』這條兄弟一起跳船的路，你接不接？",
+   meme:{scene:"startup", top:"兄弟一起創業", bot:"虧錢也要虧得有義氣", tag:"羈絆"},
+   choices:[
+     {label:'<i class="gtag">💰財富55+</i> 兩人合資、白紙黑字各司其職，正式結拜當創業夥伴', eff:{mny:-8,hap:8,int:4}, cond:s=>s.attr.mny>=55, gate:true, bond:{bro:12}, flags:{r103_bro_done:true,r103_soulmate:true,r103_bro_partner:true}, res:"🤝 你拿得出本錢，更難得的是你們把醜話講在前頭：股份怎麼分、退場怎麼算，全寫進合約裡。談錢不傷感情，反而把這段兄弟情升級成最穩的事業夥伴關係。你們各扛一塊、彼此補位，從職場神隊友變成人生合夥人——這種羈絆，是燒了好幾輩子好香才修得來的。"},
+     {label:"沒本錢但有義氣，咬牙跟阿肥拚一把", eff:{mny:-5,hp:-4,hap:6}, bond:{bro:8}, flags:{r103_bro_done:true,r103_bro_ride:true}, res:"你口袋不深，但那股『兄弟挺你』的熱血壓過了理智，你決定跟阿肥拚了。創業的日子又累又燒錢，三點半跑票的壓力天天上演，但每次快撐不住時，回頭都有阿肥那句『還有我在』。賺賠未定，這份並肩作戰的義氣，已經先賺到了。"},
+     {label:"心動但理智踩煞車，勸阿肥再等等、繼續互相罩", eff:{int:3,hap:2}, bond:{bro:3}, flags:{r103_bro_done:true,r103_bro_wait:true}, res:"你欣賞阿肥的衝勁，但盤算過現金流、市場、退路後，還是勸他別衝動：『時機沒到，先別把全部身家壓上去。』阿肥有點失望，但也懂你是為他好。你們繼續在職場互相罩著——熱血沒燒成火，倒也沒把彼此燙傷。"},
+   ]},
+
+  /* ── 羈絆專屬 hidden：寶貝羈絆≥40 →『下最後通牒逼定下來』（hap 化黏為承諾／apr 溫柔退場／閃婚）── */
+  {id:"r103_lover_vow", hidden:true, stage:[22,65], title:"寶貝下了最後通牒",
+   text:"羈絆濃到化不開，寶貝紅著眼眶把話挑明：『我們在一起這麼久，你到底要不要給我一個交代？』那份黏膩有時讓你窒息，可真要放手，又捨不得那些甜得發膩的時刻。這道人生選擇題，你怎麼填？",
+   meme:{scene:"love", top:"愛得轟轟烈烈", bot:"也吵得驚天動地", tag:"感情"},
+   choices:[
+     {label:'<i class="gtag">😊快樂60+</i> 把黏TT化成安全感，給承諾、好好經營這段', eff:{hap:8,apr:3}, cond:s=>s.attr.hap>=60, gate:true, bond:{lover:12}, flags:{r103_lover_done:true,r103_lover_settle:true,married:true,marital:"married"}, res:"❤️‍🔥 你心態夠穩，懂得那份黏不是任性、是缺安全感。你牽起寶貝的手給了承諾，也立下界線：愛你，但我也要做我自己。你用穩定的情緒一點點把颱風養成了避風港，兩人正式定下來。事實證明，恐怖情人不恐怖的關鍵，往往是另一半夠不夠穩。"},
+     {label:'<i class="gtag">⚖️外貌檢定</i> 想好聚好散溫柔退場，卻怕一句話就點燃八點檔', r22:true, sr:{k:"apr", need:60, spread:40,
+       win:{eff:{hap:5,apr:2,hp:-2}, bond:{lover:-12}, res:"🕊️ 你拿出十足的真誠與情商，把『我們不適合』講得溫柔又堅定，給足了對方台階。寶貝哭了一場，最後居然點頭：『謝謝你沒有騙我。』你們好聚好散，那份濃烈的羈絆隨風淡去，但沒撕破臉——能把恐怖情人安全送走，靠的是一張會說話的臉跟一顆夠軟的心。雖然送走那晚你也悶悶地失眠了一回，畢竟再黏的人，也曾是你愛過的人。"},
+       lose:{eff:{hap:-8,hp:-4}, bond:{lover:6}, res:"😰 你話還沒說完，寶貝的情緒就炸了，八點檔當場開演：又哭又鬧、奪命連環call、半夜堵在你家樓下。你心一軟又縮了回去，這段關係非但沒結束，反而被綁得更緊。想溫柔退場卻弄巧成拙——有些颱風，不是你想送走就送得走的。"}},
+       flags:{r103_lover_done:true}},
+     {label:"被愛沖昏頭，乾脆閃婚把人生互相綁定", eff:{hap:6,mny:-6,hp:-2}, bond:{lover:9}, flags:{r103_lover_done:true,r103_lover_rush:true,married:true,marital:"married"}, res:"💒 一股腦的熱戀加上那句『不結就分』，你索性把心一橫登記結婚。寶貝破涕為笑，黏得更名正言順了。婚是結了、羈絆也封頂——至於把人生跟一場颱風綁在一起到底是浪漫還是冒險，就留給往後的日子慢慢揭曉了。"},
+   ]},
+
+  /* ── 羈絆專屬 hidden：嘴秋羈絆≥35 →『化敵為友揪你合體開頻道』（int 黑紅變現／損友取暖／識破封鎖）── */
+  {id:"r103_troll_team", hidden:true, stage:[18,70], title:"嘴秋私訊：不如我們合作",
+   text:"嗆來嗆去竟嗆出了感情，某天酸民嘴秋突然私訊你：『欸，我嘴你那麼久也算最懂你的人了。不如合體做頻道，你正經、我來酸，這種反差流量保證爆。』從仇人到合夥人，這齣劇情，你接嗎？",
+   meme:{scene:"phone", top:"從互嗆到互粉", bot:"網路上沒有永遠的敵人", tag:"網路"},
+   choices:[
+     {label:'<i class="gtag">🧠智力58+</i> 化敵為友合體開節目，黑紅也是紅', eff:{int:3,mny:8,hap:6}, cond:s=>s.attr.int>=58, gate:true, bond:{troll:12}, flags:{r103_troll_done:true,r103_troll_ally:true}, res:"💬 你一眼看出這組『一捧一酸』的反差有搞頭，當場拍板合作。節目一上線就被演算法寵幸，嘴秋的毒舌配你的正經，化學反應炸裂，流量跟業配接到手軟。曾經最討厭的酸民，成了你最好的工作搭檔——這座島最荒謬也最浪漫的事，莫過於你的黑粉變成你的金主。"},
+     {label:"婉拒合作但留個損友，偶爾互酸取暖", eff:{hap:4,int:1}, bond:{troll:5}, flags:{r103_troll_done:true,r103_troll_frenemy:true}, res:"你覺得合作太麻煩，但也不想真翻臉，於是回他一句『下次再說啦酸民』。你們維持著一種微妙的損友關係——他繼續嘴你，你繼續回嗆，誰也離不開誰。網路上最堅固的緣分，有時候就是這麼莫名其妙。"},
+     {label:"識破他只是想蹭流量，直接封鎖老死不相往來", eff:{hap:2,int:2}, bond:{troll:-12}, flags:{r103_troll_done:true,r103_troll_block:true}, res:"你冷靜一想，這人嘴你那麼久，現在湊上來八成是看你有流量了。你不吃這套，一鍵封鎖、清乾淨。世界少了個嘴砲、也少了個可能的夥伴——你寧可乾淨地一個人走，也不想跟踩過你的人稱兄道弟。"},
+   ]},
 ];}
 const EVENTS_BASE = buildEvents();   // 載入時建一份（行為與舊版 const EVENTS 完全一致）
 let EVENTS = EVENTS_BASE;            // 每日挑戰時暫時換成種子重建版，結束即還原
@@ -11123,6 +11305,7 @@ function nextYear(){
   r49YearTick();   // R49 開局天賦年度節拍：純查狀態零 rng，無天賦直接 return
   r50CareerTick(); // R50 職業分流：25 歲依屬性/旗標確定性入行（零裸 rng；已入行/超齡直接 return）
   r68StatTick();   // R68 屬性被動命運：五圍高低每年實質牽動數值（純查狀態零 rng，顧此失彼）
+  r103BondTick();  // R103 人際羈絆自然淡化：每四歲各段羈絆往 0 收一格（疏於經營就淡；純查狀態零 rng）
   // R30 屬性年史：年度快照（平淡年也記，曲線不斷線）
   histTick();
 
@@ -11189,6 +11372,9 @@ function resolveYear(){
   // R96 台味天災生存人生支線：分流狀態機，命中即確定性插播（零裸 rng；置於 R95 之後、一般池之前）
   const disaster96=r96DisasterPick();
   if(disaster96) return showEvent(disaster96);
+  // R103 人際羈絆專屬事件：某 NPC 羈絆跨門檻即確定性插播 hidden 專屬橋段（零裸 rng；置於支線攔截器之後、一般池之前）
+  const bond103=r103BondPick();
+  if(bond103) return showEvent(bond103);
   const pool=eligible();
   if(pool.length && chance(0.78)){
     // 優先池：此刻成立的門檻事件 + 帶 flag 的因果鏈回呼。
@@ -11517,6 +11703,7 @@ function choose(i){
     eff = Object.assign({}, out.eff||{});
     res = out.res||"";
     if(out.flags) Object.assign(S.flags, out.flags);
+    if(out.bond) for(const bk in out.bond) adjBond(bk, out.bond[bk]);   // R103 sr 分流羈絆升降（純加減零 rng）
     if(roll >= c.sr.need) S.flags.gateWin=(S.flags.gateWin||0)+1;
     else S.flags.srLose=(S.flags.srLose||0)+1;   // R22 檢定翻車計數（成就「骰子恨我」用）
     r89Snap(c.sr.k, "sr", roll >= c.sr.need);
@@ -11531,6 +11718,7 @@ function choose(i){
     eff = Object.assign({}, brOut.eff||{});
     res = brOut.res||"";
     if(brOut.flags) Object.assign(S.flags, brOut.flags);
+    if(brOut.bond) for(const bk in brOut.bond) adjBond(bk, brOut.bond[bk]);   // R103 br 分流羈絆升降（純加減零 rng）
     if(brHit) S.flags.brHi=(S.flags.brHi||0)+1;   // 分流好結局計數（成就「分流路口的常勝軍」用）
     else S.flags.brLo=(S.flags.brLo||0)+1;
     r89Snap(c.br.k, "br", brHit);
@@ -12101,6 +12289,7 @@ function choose(i){
 
   // 旗標 / 計數（成就追蹤）
   if(c.flags) Object.assign(S.flags, c.flags);
+  if(c.bond) for(const bk in c.bond) adjBond(bk, c.bond[bk]);   // R103 人際羈絆升降（選項層；純加減零 rng）
   if(c.inc) S.flags[c.inc]=(S.flags[c.inc]||0)+1;
   if(c.flags && c.flags.married) S.flags.marriages=(S.flags.marriages||0)+1;  // 結婚次數（隱藏成就「情關難過」用）
 
@@ -12679,6 +12868,17 @@ const HIDDEN_ENDINGS = [
    hint:"喜帖轟炸、過馬路搏命、搶不到的蛋、老闆畫的餅——這座島最荒謬的四件日常，一條都別漏，全在同一輩子親身體驗過…",
    text:"紅色炸彈炸到吃土、過馬路被三寶當保齡球瓶閃、蛋荒時凌晨排隊搶蛋、尾牙聽老闆畫第五年的餅——鬼島四大荒謬日常，你一輩子全收集滿了，而且還笑著活了下來。別人光攤上一樣就崩潰，你把整套體驗成就解鎖，順便練成一身苦中作樂的金鐘罩。系統頒你一張無法兌換任何優惠的博士證書：鬼島生存學・荒謬組首席。能在這座島笑到最後的，才是真正的人生勝利組。",
    chk:(s)=>{ const f=s.flags||{}; return !!(f.r102_redbomb_done && f.r102_road_done && f.r102_egg_done && f.r102_pie_done); }},
+  /* ---- R103 台味人際羈絆稀有結局（純讀 S.bonds／羈絆鏈旗標＋年齡，零 rng；走溫情自嘲，不踩政治暴力仇恨）---- */
+  {id:"he_soulmate", ic:"🍻", nm:"結拜兄弟・一起白頭的事業夥伴", rar:2,
+   cond:"和神隊友走完創業專屬事件、羈絆養到 70 以上，還一起活到 60 歲",
+   hint:"那個揪你跳船創業的神隊友，把合資那條路走下去、羈絆養到頂，兩個人再肩並肩一起撐到花甲之年…",
+   text:"從職場上互相罩的神隊友，到燒烤攤拍板合夥的創業夥伴，再到一起把公司撐過三點半、熬成招牌的老戰友——這段兄弟情，你們養了一輩子。別人的事業夥伴拆夥時對簿公堂，你們六十幾歲了還會為了一個爛笑話笑到岔氣。錢賺多賺少是其次，能有一個願意跟你賭上半生、又從沒讓你失望的兄弟，這把人生你已經贏了。孟婆翻名冊都羨慕：『這位，是有過真兄弟的那種人。』",
+   chk:(s)=>!!(s.flags&&s.flags.r103_bro_done)&&bondOf(s,"bro")>=70&&s.age>=60},
+  {id:"he_social_king", ic:"👑", nm:"人際勝利組・八面玲瓏交際王", rar:2,
+   cond:"謝幕時慣老闆、酸民、神隊友、恐怖情人四段 NPC 羈絆全數達到麻吉(35＋)以上",
+   hint:"慣老闆、酸民、神隊友、恐怖情人——這座島丟給你的四段最難搞關係，竟然被你同時全經營成麻吉…",
+   text:"畫餅的慣老闆被你哄成自己人、嘴你的酸民被你聊成損友、神隊友跟你出生入死、連黏TT的恐怖情人都被你穩成避風港——這座島最難搞的四種人，到你手上全成了麻吉。別人光應付其中一個就心力交瘁，你卻把人際關係玩成一門藝術。有人說你八面玲瓏太累，你笑笑：在這座人情濃稠的島上，會做人，才是真正吃得開的超能力。系統頒你一頂無形的王冠：交際王，當之無愧。",
+   chk:(s)=>{ if(!s.bonds) return false; return R103_NPCS.every(n=>bondOf(s,n.k)>=35); }},
 ];
 const HE_MAP = Object.fromEntries(HIDDEN_ENDINGS.map(h=>[h.id,h]));
 /* R100 稀有度分級：1=★稀有（金）、2=☆☆傳說（紫）；缺 rar 鍵一律當稀有（舊資料零影響） */
@@ -13740,6 +13940,7 @@ function screenSummary(cat){
       ${attrPersonaHTML()}
       ${r41WishHTML()}
       ${attrReviewHTML()}
+      ${bondReviewHTML()}
       ${attrCurveHTML()}
       ${keySnapHTML()}
       ${attrTurnsHTML()}
@@ -15305,6 +15506,12 @@ function buildShareText(){
   }
   const ta=topAch(1)[0];   // R24 最高成就（本局達標制，零 rng）
   if(ta) lines.push(`🏆 最高成就：${ta.ic} ${ta.nm}`);
+  // R103 人際羈絆：分享卡帶最深的一段關係（未遇過任何 NPC 自動省略，零 rng）
+  if(S.bonds){
+    const _np=R103_NPCS.slice().sort((a,b)=>(S.bonds[b.k]||0)-(S.bonds[a.k]||0))[0];
+    const _bv=_np?(S.bonds[_np.k]||0):0;
+    if(_bv>0) lines.push(`🫂 最深羈絆：${_np.ic}${_np.nm}（${bondTier(_bv).nm} ${_bv}）`);
+  }
   // R99 跨局圖鑑收集進度（成就展示；collStats 缺席或拋錯自動略過，兩次生成仍逐字一致）
   try{ if(typeof collStats==="function"){ const _cs=collStats(); lines.push(`🗃️ 圖鑑收集：${_cs.got}/${_cs.total} 種（💀${_cs.d}・🏆${_cs.a}・🎴${_cs.o}）`); } }catch(e){}
   lines.push(`💭 ${lifeQuoteText()}`);   // R99 台味金句
