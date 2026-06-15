@@ -15369,6 +15369,7 @@ function screenSummary(cat){
       ${epitaphHTML()}
       ${memoirHTML()}
       ${personaHTML()}
+      ${r125WhatIfHTML()}
       ${challengeCompareHTML()}
       <div class="origin center"><span class="grademedal"><span class="gm-t">本局評價</span><span class="gm-g">${grade}</span><span class="gm-s">級</span></span><br>
       <span class="muted">${GRADE_TALK[grade]||""}</span><br>
@@ -18175,6 +18176,95 @@ function challengeLinkOverlay(url, copied){
     '<button onclick="closeShareOverlay()" style="background:#39ff88;color:#08110a;font:bold 14px monospace;padding:11px 22px;border:0;border-radius:8px;cursor:pointer">好了，關閉</button>';
   document.body.appendChild(ov);
 }
+
+/* =========================================================================
+   R125 平行人生・如果當初：死後反事實「假想推演」鉤（反事實重玩鉤）
+   從本局真實關鍵抉擇紀錄(S.keySnap，R89 gate/sr/br 當下記錄)確定性挑出 1 個最關鍵轉折，
+   呈現「當時你選了什麼」＋對立路徑的『假想推演』一句台味敘事，並明確標示為假設彩蛋。
+   勾起「如果當初走另一條路會怎樣」的好奇與遺憾→「再走一次」延續重玩迴圈、直攻北極星。
+   純呈現/DOM 層：只讀 S.keySnap/S.attr 等完局資料，零 rng、生成前後 S 不變、不動 sim/state 序列。
+   無有效抉擇(極早夭/缺資料)→安全降級為通用感慨，絕不報錯白屏。
+   嚴禁捏造真實統計/伺服器數據/百分位：文案由本局真實經歷×對立選項合理外推，走台味鬼島自嘲。
+   ========================================================================= */
+// 對立路徑「假想推演」文案池(本局真實經歷×另一選項的合理外推；非真實數據，純台味自嘲幽默，不踩政治/暴力/仇恨)
+const R125_WHATIF = {
+  hp:{
+    won:["要是當初也跟著大家爆肝衝一波，也許戶頭能多滾幾位數，但這副身體大概撐不到謝幕這天——命跟錢，你那關選了命。",
+         "要是當初逞強硬上、把健康丟一邊，搞不好換來一陣風光，代價是後半輩子都在醫院走廊排隊抽號碼牌。"],
+    lost:["要是當初有把身體當回事、別硬撐，下半場大概能少跑幾趟急診、多走幾年好路——這條命，輸在沒早點養生。",
+          "要是當初先顧好這副皮囊再談拚搏，這一關也許不會被扣得這麼狠，謝幕那天的數字會好看一點。"],
+  },
+  int:{
+    won:["要是當初沒動那顆腦袋、隨大家一起傻傻跟風，也許日子過得輕鬆無腦，但你大概也撈不到後來這手好牌。",
+         "要是當初懶得算、憑感覺亂選，搞不好一時爽快，回頭看卻是把一手好局親手玩成爛尾。"],
+    lost:["要是當初多讀兩頁、別自作聰明，這一關也許就不會被現實狠狠上一課——聰明反被聰明誤，說的就是那天的你。",
+          "要是當初肯查清楚再決定，而不是憑一股鐵齒，後面這串連環坑大概能少踩一半。"],
+  },
+  apr:{
+    won:["要是當初沒靠那張臉開路、老老實實排隊，也許得多繞好幾年遠路——這世界對好看的人，確實偷偷開了後門。",
+         "要是當初不靠形象經營、素顏硬碰硬，搞不好機會根本輪不到你，門面這東西在鬼島還真能當敲門磚。"],
+    lost:["要是當初別太在意別人眼光、把力氣花在實力上，這一關也許就不會敗在金玉其外——好看撐不起場面的時候最尷尬。",
+          "要是當初多充實點內在、少花時間顧門面，這道坎大概能靠真本事跨過去，而不是卡在表面功夫。"],
+  },
+  mny:{
+    won:["要是當初沒咬牙砸下去、選了保守的那條，也許這輩子安穩沒波瀾，但你大概也嘗不到後來翻身的滋味——有錢能使鬼推磨，那天你推動了。",
+         "要是當初省著點、別拿錢去拚那一把，搞不好戶頭數字漂亮些，卻錯過了只有敢花錢的人才搶得到的那班車。"],
+    lost:["要是當初手頭再寬裕點、別在錢上卡關，這一關也許就能硬上車——鬼島最現實的一課，就是很多門檻其實是用錢標價的。",
+          "要是當初早點存、別月光，這道坎大概不會把你逼到牆角，謝幕回看才懂，當年那幾筆亂花的，都是後來的悔。"],
+  },
+  hap:{
+    won:["要是當初沒選讓自己開心的那條、硬逼自己卷下去，也許成就漂亮些，但你大概會活成一台不會笑的賺錢機器。",
+         "要是當初為了別人的期待委屈自己，搞不好面子好看，裡子卻早就空了——快樂這關，你那天選對了。"],
+    lost:["要是當初別把自己逼這麼緊、留一點喘息，這一關也許就不會被情緒壓垮——人生不是只有撐住，還要撐得下去。",
+          "要是當初肯對自己好一點、別什麼都吞，這道坎大概不會崩得這麼難看，快樂歸零的時候，再多成就都救不回來。"],
+  },
+};
+// 確定性挑最關鍵轉折：分流/檢定 > 門檻；翻車(遺憾感最強)加權；略偏人生後段(離結局近)；同分取較晚發生那筆
+function r125PickKey(snaps){
+  let best=null, bestScore=-1, bestIdx=-1;
+  snaps.forEach((x,idx)=>{
+    if(!x || !ATTR[x.k]) return;
+    const kindW = x.kind==='br'?3 : x.kind==='sr'?2 : 1;
+    const score = kindW*10 + (x.won?0:16) + Math.min(Math.max(x.age|0,0),95)*0.12;
+    if(score>bestScore || (score===bestScore && idx>=bestIdx)){ bestScore=score; best=x; bestIdx=idx; }
+  });
+  return best;
+}
+function r125WhatIfHTML(){
+  if(!S) return "";
+  const snaps = Array.isArray(S.keySnap) ? S.keySnap.filter(x=>x && ATTR[x.k]) : [];
+  const disclaim = `<div class="muted" style="font-size:10.5px;margin-top:7px;opacity:.72;text-align:left;line-height:1.6">＊<b>假設彩蛋・非真實模擬數據</b>：以上「另一條路」純屬本局經歷的合理想像，沒有真的跑模擬、也沒有任何伺服器統計或百分位，看個感覺、笑一笑就好。</div>`;
+  const wrap = (inner)=>`<div class="panel" style="margin-top:12px;border:1px solid rgba(170,130,255,.5);background:linear-gradient(180deg,rgba(150,110,255,.10),var(--panel2))">
+    <h2 class="sec" style="color:#b79bff">🔮 平行人生・如果當初</h2>
+    ${inner}
+    <div class="choices" style="margin-top:10px"><button class="btn cta" onclick="r125Replay()">↩️ 再走一次・這次走另一條路</button></div>
+  </div>`;
+  // 安全降級：無有效抉擇(極早夭/缺資料/舊存檔)——絕不報錯白屏
+  if(!snaps.length){
+    return wrap(`<p class="etext" style="font-size:13px;line-height:1.85;text-align:left">這一生，你連一次像樣的選擇都還沒輪到，劇本就先替你按下了結束鍵。<br>有時候鬼島最殘酷的不是選錯，而是<b style="color:#b79bff">連選的機會都沒有</b>。<br>——換一個開局，說不定命運願意多給你幾道題。</p>${disclaim}`);
+  }
+  const key = r125PickKey(snaps);
+  const A = ATTR[key.k]; const ev = stripTags(key.ev||"") || "那個轉折"; const v = key.v|0;
+  // 當時你選了什麼(依 kind/won 從真實紀錄推敲，不捏造)
+  let picked;
+  if(key.kind==='gate') picked=`當時在「${ev}」那一關，你靠夠硬的 ${A.ic}${A.nm}（${v}）解鎖了專屬選項，毅然走上了這條路。`;
+  else if(key.kind==='sr') picked = key.won
+    ? `當時在「${ev}」那一關，你押上 ${A.ic}${A.nm}（${v}）擲了一把——賭贏了，命運就此轉彎。`
+    : `當時在「${ev}」那一關，你押上 ${A.ic}${A.nm}（${v}）擲骰，骰子卻狠狠背叛了你。`;
+  else picked = key.won
+    ? `當時在「${ev}」那一關，是你那身 ${A.ic}${A.nm}（${v}）替你挑了這條岔路。`
+    : `當時在「${ev}」那一關，${A.ic}${A.nm}（${v}）不夠看，你被推上了沒得選的那條路。`;
+  // 對立路徑假想推演(確定性挑句：吃 age×屬性序，同種子同軌跡 → 同文案)
+  const pool = (R125_WHATIF[key.k]||R125_WHATIF.hap)[key.won?"won":"lost"];
+  const ord = {hp:0,int:1,apr:2,mny:3,hap:4}[key.k]||0;
+  const imagined = pool[(Math.max(key.age|0,0)*2 + ord) % pool.length];
+  return wrap(`<div class="muted" style="font-size:11.5px;margin-bottom:6px;text-align:left">回放這一生最關鍵的那個岔路口——當初要是手一滑選了另一邊…</div>
+    <p class="etext" style="font-size:13px;line-height:1.85;text-align:left"><b style="color:var(--accent,#ffd24a)">🎬 真實發生（${key.age} 歲）</b><br>${picked}</p>
+    <p class="etext" style="font-size:13px;line-height:1.85;text-align:left;margin-top:8px;padding:8px 11px;border-left:3px solid #b79bff;background:rgba(150,110,255,.07)"><b style="color:#b79bff">🔮 假想推演・如果當初走另一條</b><br>${imagined}</p>
+    ${disclaim}`);
+}
+// 再走一次(沿用既有重開流程；不鎖分支，純延續重玩迴圈)——清掉戰帖記憶，乾淨投一次胎
+function r125Replay(){ try{ if(typeof CHALLENGE!=="undefined") CHALLENGE=null; }catch(e){} try{ startGame(); }catch(e){} }
 
 /* =========================================================================
    啟動

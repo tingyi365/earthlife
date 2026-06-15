@@ -4230,5 +4230,60 @@ const r124 = JSON.parse(vm.runInContext(`(function(){
   ['nullSafe','⑫ 無局(S=null)相容不炸'],
 ].forEach(([k,m])=>ok(r124[k], 'R124 '+m));
 
+// ===== R125 平行人生・如果當初：反事實假想推演鉤 — 關鍵抉擇確定性挑選/假想標示/純呈現零rng/S不變/安全降級 =====
+const r125 = JSON.parse(vm.runInContext(`(function(){
+  const out={};
+  // 完局資料：手動鋪一組關鍵抉擇紀錄 keySnap
+  startGame(); const s=S; ensureState(s); s.alive=false; s.age=70;
+  s.attr={hp:40,int:60,apr:50,mny:30,hap:45};
+  s.keySnap=[
+    {age:25,k:'int',v:72,kind:'gate',won:true,ev:'志願抉擇'},
+    {age:40,k:'mny',v:55,kind:'sr',won:false,ev:'拚上車買房'},   // 翻車 sr → 遺憾加權，預期被挑中
+    {age:33,k:'hp',v:48,kind:'br',won:true,ev:'爆肝衝刺'},
+  ];
+  // ① 關鍵抉擇挑選確定性：多次呼叫挑到同一筆(這裡 40 歲翻車 sr 評分最高)
+  const k1=r125PickKey(s.keySnap), k2=r125PickKey(s.keySnap);
+  out.pickDet = !!k1 && !!k2 && k1.age===k2.age && k1.k===k2.k && k1.kind===k2.kind && k1.age===40 && k1.won===false;
+  // ② 假想文案存在且標示為假設(含「假設彩蛋」「假想推演」「再走一次」鈕)
+  const h1=r125WhatIfHTML();
+  out.hasImagined = h1.indexOf('假想推演')>=0 && h1.indexOf('假設彩蛋')>=0
+    && h1.indexOf('如果當初')>=0 && h1.indexOf('r125Replay')>=0 && h1.indexOf('真實發生')>=0;
+  // ③ 嚴禁捏造真實統計：明示「非真實模擬數據」否認(免責聲明明確否認伺服器統計/百分位)，且無捏造的「贏過/打敗 N%」式假數據
+  out.noFakeStat = h1.indexOf('非真實模擬數據')>=0 && h1.indexOf('沒有任何伺服器統計或百分位')>=0
+    && !/(贏過|打敗|勝過|超越|擊敗|勝率|存活率)[^。]{0,8}\d+\s*%/.test(h1);
+  // ④ HTML 渲染確定性：同 state 連兩次輸出一致
+  out.htmlDet = r125WhatIfHTML()===r125WhatIfHTML();
+  // ⑤ 純呈現零汙染：生成前後 S.attr/S.flags/keySnap 完全不變
+  const bA=JSON.stringify(S.attr), bF=JSON.stringify(S.flags), bK=JSON.stringify(S.keySnap);
+  r125WhatIfHTML(); r125PickKey(S.keySnap);
+  out.noMutate = JSON.stringify(S.attr)===bA && JSON.stringify(S.flags)===bF && JSON.stringify(S.keySnap)===bK;
+  // ⑥ 零 rng() 消耗(不踏進遊戲隨機序列)
+  let used=0; const old=rng; rng=function(){ used++; return old(); };
+  r125WhatIfHTML(); r125PickKey(S.keySnap);
+  rng=old; out.rngZero = used===0;
+  // ⑦ 安全降級：無有效抉擇(極早夭/空 keySnap) → 不報錯、給通用感慨且仍含再走一次鈕
+  S.keySnap=[]; const hEmpty=r125WhatIfHTML();
+  out.degrade = hEmpty.indexOf('連選的機會都沒有')>=0 && hEmpty.indexOf('r125Replay')>=0 && hEmpty.indexOf('假設彩蛋')>=0;
+  // ⑧ 髒資料相容：keySnap 含壞鍵(未知屬性/缺欄位) 被濾掉不炸
+  S.keySnap=[{age:10,k:'???',v:5,kind:'gate',won:true,ev:'x'},{age:20,k:'hp',v:50,kind:'sr',won:true,ev:'保命關'}];
+  let dirtyOk=true; try{ const hd=r125WhatIfHTML(); dirtyOk = hd.indexOf('保命關')>=0; }catch(e){ dirtyOk=false; }
+  out.dirtySafe = dirtyOk;
+  // ⑨ 無局(S=null)相容：不炸、回空字串
+  let okNull=true; try{ S=null; if(r125WhatIfHTML()!=="") okNull=false; }catch(e){ okNull=false; }
+  out.nullSafe = okNull;
+  return JSON.stringify(out);
+})()`, sandbox));
+[
+  ['pickDet','① 關鍵抉擇挑選確定性(翻車sr遺憾加權→穩定挑同一筆)'],
+  ['hasImagined','② 假想推演文案存在且含真實發生/再走一次鈕'],
+  ['noFakeStat','③ 不捏造統計(無百分位/伺服器)且明示非真實模擬數據'],
+  ['htmlDet','④ HTML 渲染確定性(同 state 連兩次一致)'],
+  ['noMutate','⑤ 純呈現零汙染:生成前後 S.attr/flags/keySnap 不變'],
+  ['rngZero','⑥ 零 rng() 消耗'],
+  ['degrade','⑦ 無有效抉擇安全降級(通用感慨+再走一次鈕，不白屏)'],
+  ['dirtySafe','⑧ 髒資料(壞屬性鍵)被濾掉不炸'],
+  ['nullSafe','⑨ 無局(S=null)相容回空字串不炸'],
+].forEach(([k,m])=>ok(r125[k], 'R125 '+m));
+
 console.log(fails ? `\n結果: ❌ ${fails} 項未通過` : '\n結果: ✅ 狀態機全數正確');
 process.exit(fails ? 1 : 0);
