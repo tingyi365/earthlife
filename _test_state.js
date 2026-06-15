@@ -5012,5 +5012,74 @@ const r135 = JSON.parse(vm.runInContext(`(function(){
   ['achPartial','⑩ 跨局集滿:缺一世代→r135_allgen 不解'],
 ].forEach(([k,m])=>ok(r135[k], 'R135 '+m));
 
+/* ===== R136 人際羈絆網・人生重要他人（純呈現/唯讀疊加層；零 rng/零汙染/deterministic 推導/舊存檔降級/羈絆成就） ===== */
+const r136 = JSON.parse(vm.runInContext(`(function(){
+  const out={};
+  function mk(attr,age,bonds,flags){ return {attr:Object.assign({hp:50,int:50,apr:50,mny:50,hap:50},attr), age:age, bonds:bonds||{}, flags:flags||{}, alive:false}; }
+  // ① 資料齊備：>=9 個 NPC，欄位完整、grp 合法、d 為函式
+  const grps=['family','friend','love','work','life'];
+  out.dataFull = Array.isArray(R136_PEOPLE) && R136_PEOPLE.length>=9
+    && R136_PEOPLE.every(p=>p.k&&p.ic&&p.nm&&p.role&&grps.indexOf(p.grp)>=0&&typeof p.d==='function');
+  // ② roster 推導＋卡片渲染：豐富正向人生→八人登場、含老母老爸、含三段總結
+  const GOOD=mk({hp:80,int:80,apr:80,mny:72,hap:80},60,{boss:25,lover:35});
+  S=GOOD; const ros=r136Roster(); const card=r136PeopleReviewHTML();
+  out.roster = ros.length>=8 && ros.some(x=>x.k==='mom') && ros.every(x=>typeof x.bond==='number'&&typeof x.years==='number');
+  out.cardRender = card.indexOf('人生重要他人')>=0 && card.indexOf('招治')>=0
+    && card.indexOf('陪你走最久')>=0 && card.indexOf('虧欠')>=0 && card.indexOf('拖累')>=0;
+  // ③ deterministic 純讀：同 S 兩次渲染逐字一致
+  S=mk({hp:80,int:80,apr:80,mny:72,hap:80},60,{boss:25,lover:35});
+  const a1=r136PeopleReviewHTML(), a2=r136PeopleReviewHTML();
+  out.deterministic = a1===a2 && a1.indexOf('招治')>=0;
+  // ④ 純呈現零汙染：生成前後 S 不變、零 rng 消耗
+  S=mk({hp:80,int:80,apr:80,mny:72,hap:80},60,{boss:25,lover:35});
+  const bA=JSON.stringify(S.attr), bB=JSON.stringify(S.bonds), bF=JSON.stringify(S.flags), bAge=S.age;
+  let used=0; const oldR=rng; rng=function(){ used++; return oldR(); };
+  r136PeopleReviewHTML(); r136Roster(); rng=oldR;
+  out.pure = JSON.stringify(S.attr)===bA && JSON.stringify(S.bonds)===bB && JSON.stringify(S.flags)===bF && S.age===bAge && used===0;
+  // ⑤ S=null / 缺 attr 降級：roster 空陣列、卡空字串、不炸
+  out.nullSafe = (()=>{ try{ S=null; return r136Roster().length===0 && r136PeopleReviewHTML()===''; }catch(e){ return false; } })();
+  out.noAttr = (()=>{ try{ S={age:50,flags:{}}; return r136RosterOf(S).length===0 && r136PeopleReviewHTML()===''; }catch(e){ return false; } })();
+  // ⑥ 髒資料降級：flags 非物件、bonds 缺鍵 → 不炸、仍回陣列
+  out.dirtySafe = (()=>{ try{ const dd={attr:{hp:50,int:50,apr:50,mny:50,hap:50},age:40,flags:'x',bonds:null}; return Array.isArray(r136RosterOf(dd)) && r136RosterOf(dd).length>=1; }catch(e){ return false; } })();
+  // ⑦ 舊存檔相容：ensureState 不為 R136 在 S/flags 補任何 r136 鍵
+  startGame(); const olds=S; ensureState(olds);
+  out.compatOld = !Object.keys(olds).some(k=>k.toLowerCase().indexOf('r136')===0)
+    && !Object.keys(olds.flags||{}).some(k=>k.toLowerCase().indexOf('r136')===0);
+  // ⑧ 成就 r136_full：八人齊+平均正向→解；met<8→不解
+  out.achFull = !!ACH_MAP.r136_full && ACH_MAP.r136_full.check({S:GOOD})===true;
+  const CUT=mk({hp:70,int:60,apr:30,mny:85,hap:55},40,{});
+  out.achFullNo = ACH_MAP.r136_full.check({S:CUT})===false;
+  // ⑨ 成就 r136_lonely：整體羈絆負→解；正向人生→不解
+  const LONE=mk({hp:15,int:15,apr:15,mny:15,hap:15},50,{boss:-15,lover:-10});
+  out.achLonely = !!ACH_MAP.r136_lonely && ACH_MAP.r136_lonely.check({S:LONE})===true && ACH_MAP.r136_lonely.check({S:GOOD})===false;
+  // ⑩ 成就 r136_drag：損友重度拖累→解；好人生(損友未登場)→不解
+  const DRAG=mk({hp:40,int:40,apr:40,mny:30,hap:40},40,{});
+  out.achDrag = !!ACH_MAP.r136_drag && ACH_MAP.r136_drag.check({S:DRAG})===true && ACH_MAP.r136_drag.check({S:GOOD})===false;
+  // ⑪ 成就 r136_owe：父母兩段皆虧欠→解；GOOD→不解
+  const OWE=mk({hp:50,int:50,apr:30,mny:30,hap:30},50,{});
+  out.achOwe = !!ACH_MAP.r136_owe && ACH_MAP.r136_owe.check({S:OWE})===true && ACH_MAP.r136_owe.check({S:GOOD})===false;
+  // ⑫ 成就 r136_cutoff：小圈正向零拖累零虧欠→解；GOOD(八人)→不解
+  out.achCutoff = !!ACH_MAP.r136_cutoff && ACH_MAP.r136_cutoff.check({S:CUT})===true && ACH_MAP.r136_cutoff.check({S:GOOD})===false;
+  S=null;
+  return JSON.stringify(out);
+})()`, sandbox));
+[
+  ['dataFull','① 資料齊備:≥9 NPC、欄位完整、grp 合法、d 為函式'],
+  ['roster','② roster 推導:豐富人生≥8 人登場、含老母、欄位型別正確'],
+  ['cardRender','② 卡片渲染:含「人生重要他人」/招治/陪你走最久/虧欠/拖累'],
+  ['deterministic','③ deterministic 純讀:同 S 兩次渲染逐字一致'],
+  ['pure','④ 純呈現零汙染:生成前後 S.attr/bonds/flags/age 不變且零 rng'],
+  ['nullSafe','⑤ 無局(S=null)降級:roster 空、卡空字串不炸'],
+  ['noAttr','⑤ 缺 attr 降級:roster 空、卡空字串不炸'],
+  ['dirtySafe','⑥ 髒資料降級:flags 非物件/bonds null→仍回陣列不炸'],
+  ['compatOld','⑦ 舊存檔相容:ensureState 不為 R136 補任何 S/flags 鍵'],
+  ['achFull','⑧ r136_full:八人齊+平均正向→解'],
+  ['achFullNo','⑧ r136_full:不足八人→不解'],
+  ['achLonely','⑨ r136_lonely:整體羈絆負→解、正向人生→不解'],
+  ['achDrag','⑩ r136_drag:損友重度拖累→解、損友未登場→不解'],
+  ['achOwe','⑪ r136_owe:父母兩段虧欠→解、GOOD→不解'],
+  ['achCutoff','⑫ r136_cutoff:小圈全正向零拖累零虧欠→解、八人局→不解'],
+].forEach(([k,m])=>ok(r136[k], 'R136 '+m));
+
 console.log(fails ? `\n結果: ❌ ${fails} 項未通過` : '\n結果: ✅ 狀態機全數正確');
 process.exit(fails ? 1 : 0);

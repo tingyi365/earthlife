@@ -2961,6 +2961,12 @@ const ACHIEVEMENTS = [
   {id:"r103_social", ic:"🫂", nm:"人緣勝利組", desc:"同一輩子裡，慣老闆、酸民、神隊友、恐怖情人——這座島丟給你的難搞關係，至少有三段被你經營成麻吉（35＋）。八面玲瓏，是真本事。", check:c=>R103_NPCS.filter(n=>bondOf(c.S,n.k)>=35).length>=3, hint:"老闆、酸民、神隊友、恐怖情人都是會反覆登場的人…一輩子至少把其中三段羈絆都養到『麻吉』等級…"},
   {id:"r103_lonewolf", ic:"🐺", nm:"邊緣孤狼・一個人也能活", desc:"老闆、酸民、神隊友、情人都遇過，卻一段都沒留住——謝幕時四段羈絆全數歸零或結怨。孤獨不是罪，是你選的活法。", check:c=>{ const f=c.S.flags||{}; const met=R103_NPCS.some(n=>f["r103_met_"+n.k]); return met && R103_NPCS.every(n=>bondOf(c.S,n.k)<=0); }, hint:"這幾個會反覆登場的 NPC 你都遇過，卻把每一段羈絆都放到歸零或結怨…一個人走完一生…"},
   {id:"r103_bond_chain", ic:"💞", nm:"羈絆養成大師", desc:"把羈絆養到門檻會解鎖那個 NPC 的專屬橋段——你一輩子走完了其中至少三段專屬劇情，堪稱這座島的人際關係收藏家。", check:c=>{ const f=c.S.flags||{}; return [f.r103_boss_done,f.r103_bro_done,f.r103_lover_done,f.r103_troll_done].filter(Boolean).length>=3; }, hint:"羈絆跨過門檻會觸發專屬事件（達哥收乾兒子／阿肥揪創業／寶貝逼定下來／嘴秋揪合作）…走完其中三段…"},
+  /* ---- R136 人際羈絆網・人生重要他人成就（純讀 r136RosterOf(S) deterministic 推導，零 rng；未登場的人永不誤觸）---- */
+  {id:"r136_full", ic:"🕸️", nm:"人脈勝利組・羈絆集滿", desc:"父母手足、換帖同學、初戀損友、慣老闆房東里長伯——這座島丟給你的人，你這輩子至少遇齊八個，謝幕時平均羈絆還是正的。人際存摺，存好存滿。", check:c=>{ const r=r136RosterOf(c.S); return r.length>=8 && (r.reduce((s,x)=>s+x.bond,0)/r.length)>=12; }, hint:"把人生活得夠豐富、夠長、夠圓融——讓會反覆登場的台味 NPC 至少八個都登場，而且整體羈絆養成正向…"},
+  {id:"r136_lonely", ic:"🥀", nm:"孤獨終老・人際存摺見底", desc:"登場過的重要他人不算少，整體羈絆卻是負的——一個人來，一個人走，連訃聞都不知道該寄給誰。", check:c=>{ const r=r136RosterOf(c.S); return r.length>=5 && (r.reduce((s,x)=>s+x.bond,0)/r.length)<0; }, hint:"讓人生裡反覆登場的人都遇過，卻把整體羈絆耗成負的（健康、財富、快樂全低、連 R103 羈絆都養成結怨的孤狼人生）…"},
+  {id:"r136_drag", ic:"⛓️", nm:"損友拖累・歹路毋通行", desc:"那個揪你做傻事的酒肉朋友阿狗，把你的人生一路拖到見底——錢沒了、肝也沒了。歹路毋通行，少年仔，這句話你是用一輩子聽懂的。", check:c=>{ const r=r136RosterOf(c.S); const b=r.find(x=>x.k==='badfriend'); return !!b && b.bond<=-15; }, hint:"財富與健康都低到一定程度，損友阿狗就會深度登場、把羈絆拖到重度負值…"},
+  {id:"r136_owe", ic:"🙇", nm:"子欲養而親不待", desc:"拚了一輩子還是沒讓爸媽過上好日子，謝幕時心裡最放不下的，是那聲始終沒喊出口的對不起。", check:c=>{ const r=r136RosterOf(c.S); return r.filter(x=>x.grp==='family'&&x.owe).length>=2; }, hint:"終局財富與快樂偏低、沒能回報父母（甚至花過老爸金援沒還）——讓爸媽兩段都標上『虧欠』…"},
+  {id:"r136_cutoff", ic:"✂️", nm:"斷捨離・人間清醒", desc:"不討好、不糾纏，把爛關係斷得乾乾淨淨——留在身邊的每一個都是正向的羈絆。朋友不必多，夠真就好，這是中年最奢侈的清醒。", check:c=>{ const r=r136RosterOf(c.S); const met=r.length, pos=r.filter(x=>x.bond>0).length; return met>=3 && met<=6 && pos===met && !r.some(x=>x.drag||x.owe); }, hint:"把人生過得乾淨——財富穩(買得起房不靠房東、不沾損友)、家庭快樂，讓登場的人不多但每段都正向、零拖累零虧欠…"},
   {id:"r70a_unicorn", ic:"🦄", nm:"創業上岸・無中生有", desc:"在頭家夢分歧鏈選自己創業，撐過跑三點半的歲月，最後成功上岸買房定居——你把『無中生有』四個字活成了真的。", check:c=>!!(c.S.flags&&c.S.flags.r70a_unicorn), hint:"分歧鏈裡選自己創業的人，中段擴張或被收購（或在三點半跳票邊緣硬撐活下來），末段才走得到買房上岸…"},
   {id:"r70a_freebird", ic:"🕊️", nm:"社畜跳船・自由業真男人", desc:"當年領死薪水的你中途跳船去接案，多年後接出口碑、開了自己的工作室——上班族眼裡那種『自由業』，自由是真的，業也真的有在接。", check:c=>!!(c.S.flags&&c.S.flags.r70a_freebird), hint:"分歧鏈選領死薪水當社畜的人，中段選擇安靜離職跳船接案，末段把工作室掛牌做起來…"},
   {id:"r70a_clear", ic:"🧭", nm:"頭家夢・全鏈結業", desc:"從老家那通電話一路走到人生期末考，把頭家夢（或死薪水）這條三段分歧鏈完整走完——接、創、領，無論哪條路你都活出了答案。", check:c=>!!(c.S.flags&&c.S.flags.r70a_done), hint:"老家的店要收那年做出選擇後，把中段、末段兩道抉擇都接著走完，整條頭家分歧鏈一站不漏…"},
@@ -3427,6 +3433,111 @@ function bondReviewHTML(){
   return `<div class="panel" style="margin-top:12px;background:var(--panel2)">
     <h2 class="sec">🫂 人際羈絆回顧</h2>${rows}
     <div class="muted" style="font-size:12.5px;margin-top:8px;line-height:1.7">${quip}</div></div>`;
+}
+
+/* =========================================================================
+   R136 人際羈絆網・人生重要他人（純呈現／唯讀疊加層；建於 R103 羈絆系統之上）
+   設計鐵律＝零 rng、零狀態汙染：不進 pinned 抽事件序列、不動 sim、不寫 SAVE。
+   每個會反覆登場的台味鬼島 NPC 的「羈絆值／陪伴年數／拖累／虧欠」，全部從結算
+   當下既有 S 狀態（S.attr / S.age / S.bonds(R103) / S.flags）deterministic 推導，
+   故同一局重繪逐字一致、種子序列與壽命分佈完全不變（比照 R135 覆蓋層做法）。
+   無局／髒資料／舊存檔一律安全降級回空字串或空陣列，絕不白屏或拋例外。
+   尺度＝台味自嘲幽默（低薪／過勞／買不起房／22K…），零政治／暴力／仇恨／真人影射。
+   ========================================================================= */
+const R136_PEOPLE = [
+  // grp: family/friend/love/work/life；d(A,st,f) 純讀回 {met,years,bond,owe,drag}
+  // 羈絆基底刻意壓低、由既有屬性真正驅動：好人生全員正向、爛人生連家人都掉到負值。
+  {k:"mom", ic:"👩", nm:"老母 招治", role:"嘴上碎念、實際挺你到底的媽", grp:"family",
+    d:(A,st,f)=>({ met:true, years:Math.min(st.age,80),
+      bond: 6 + Math.floor(A.hap/6) + Math.floor(A.mny/12) - (A.hp<30?6:0) - (A.hap<35?6:0),
+      owe: (A.mny<45 && A.hap<48) })},
+  {k:"dad", ic:"👨", nm:"老爸 慶仔", role:"嘴硬心軟、報喜不報憂的爸", grp:"family",
+    d:(A,st,f)=>({ met:true, years:Math.min(st.age,78),
+      bond: 4 + Math.floor(A.mny/8) + Math.floor(A.int/14) - (f.qkDadCut?8:0) - (A.mny<30?5:0),
+      owe: (A.mny<45 || !!f.qkDadCut) })},
+  {k:"sib", ic:"🧒", nm:"手足 阿弟仔", role:"從小搶遙控器、長大互嗆的兄弟姊妹", grp:"family",
+    d:(A,st,f)=>({ met:true, years:Math.min(st.age,75),
+      bond: 5 + Math.floor(A.hap/9) + Math.floor(A.mny/16) - (A.hap<30?5:0) })},
+  {k:"classmate", ic:"🎒", nm:"換帖同學 阿明", role:"國小同窗一路同框到中年的麻吉", grp:"friend",
+    d:(A,st,f)=>{ const met=st.age>=7;
+      return { met, years: met?Math.max(1,Math.min(st.age,68)-6):0,
+        bond: 3 + Math.floor(A.apr/12) + Math.floor(A.hap/14) - (A.hap<30?4:0) }; }},
+  {k:"firstlove", ic:"🌸", nm:"初戀 那個誰", role:"心裡最軟那塊的白月光", grp:"love",
+    d:(A,st,f)=>{ const v=bondOf(st,'lover');
+      const met = A.apr>=42 || v!==0 || !!f.firstlove || (st.age>=18 && A.hap>=58);
+      return { met, years: met?Math.max(2,Math.min(12, Math.floor(A.apr/8))):0,
+        bond: met?(2 + Math.floor(A.apr/14) + Math.floor(v/10)):0,
+        owe: met && A.apr>=72 }; }},
+  {k:"badfriend", ic:"🍻", nm:"損友 阿狗", role:"揪你做傻事的酒肉朋友", grp:"friend",
+    d:(A,st,f)=>{ const met = A.mny<52 || A.hp<48 || !!f.r84_scammed || !!f.gambler;
+      return { met, years: met?Math.max(5,Math.min(22, 42-Math.floor(A.mny/2.5))):0,
+        bond: met? -(7 + (A.mny<35?9:0) + (A.hp<35?6:0)) : 0,
+        drag: met }; }},
+  {k:"boss", ic:"💼", nm:"慣老闆 達哥", role:"年年畫餅、年終發雞腿的鐵血頭家", grp:"work",
+    d:(A,st,f)=>{ const v=bondOf(st,'boss'); const met = v!==0 || (st.age>=23 && A.mny>=20);
+      const bond = v!==0? v : (A.mny>=70?6:-4);
+      return { met, years: met?Math.max(3,Math.min(30, Math.floor(Math.min(st.age,60)-22))):0,
+        bond, drag: bond<0 }; }},
+  {k:"landlord", ic:"🏠", nm:"房東 陳太太", role:"年年喊漲租、押金能凹則凹的二房東", grp:"life",
+    d:(A,st,f)=>{ const owned = !!f.r87_owner || A.mny>=78; const met = !owned && st.age>=18;
+      return { met, years: met?Math.max(3,Math.min(25, 30-Math.floor(A.mny/4))):0,
+        bond: met? -(3 + (A.mny<40?6:0)) : 0,
+        drag: met && A.mny<35 }; }},
+  {k:"chief", ic:"📢", nm:"里長伯", role:"廣播放送頭兼人肉里報的里長伯", grp:"life",
+    d:(A,st,f)=>({ met:st.age>=6, years:Math.min(st.age,72),
+      bond: 2 + Math.floor(A.hap/14) - (A.hap<25?3:0) })},
+];
+/* 從任一 state 物件 deterministic 推導人生重要他人名單（純讀、零 rng、零 mutation） */
+function r136RosterOf(st){
+  try{
+    if(!st || typeof st!=="object" || !st.attr) return [];
+    const A=st.attr, f=(st.flags&&typeof st.flags==="object")?st.flags:{};
+    return R136_PEOPLE.map(p=>{
+      let r; try{ r=p.d(A,st,f)||{}; }catch(e){ r={}; }
+      return { k:p.k, ic:p.ic, nm:p.nm, role:p.role, grp:p.grp,
+        met:!!r.met,
+        years:Math.max(0,Math.round(r.years||0)),
+        bond:Math.max(-40,Math.min(100,Math.round(r.bond||0))),
+        owe:!!r.owe, drag:!!r.drag };
+    }).filter(x=>x.met);
+  }catch(e){ return []; }
+}
+function r136Roster(){ return r136RosterOf(S); }
+/* 結算：人生重要他人名單回顧——誰陪你走最久／誰拖累你／誰你這輩子虧欠（純讀零 rng，可截圖分享） */
+function r136PeopleReviewHTML(){
+  const ros=r136Roster();
+  if(!ros.length) return "";
+  const longest = ros.slice().sort((a,b)=>b.years-a.years || b.bond-a.bond)[0];
+  const drags = ros.filter(x=>x.drag || x.bond<0).sort((a,b)=>a.bond-b.bond);
+  const owes  = ros.filter(x=>x.owe);
+  const rows = ros.slice().sort((a,b)=>b.bond-a.bond).map(n=>{
+    const t=bondTier(n.bond), pct=Math.max(0,Math.min(100,n.bond));
+    const col = n.bond>=60?"#ff7ab8" : n.bond>=35?"#ffd24a" : n.bond>=1?"#7ad0ff" : "#9aa3ad";
+    const tags=[];
+    if(n.k===longest.k) tags.push('<span style="color:#7ad0ff">🕰️陪你最久</span>');
+    if(n.drag||n.bond<0) tags.push('<span style="color:#ff8a8a">⛓️拖累</span>');
+    if(n.owe) tags.push('<span style="color:#ffd24a">🙇虧欠</span>');
+    return `<div style="margin:7px 0">
+      <div style="display:flex;justify-content:space-between;font-size:13px;gap:8px">
+        <span>${n.ic} <b>${n.nm}</b> <span class="muted">（${n.role}）</span></span>
+        <span style="color:${col};white-space:nowrap">${t.ic}${t.nm}　${n.years} 年　${n.bond}</span></div>
+      ${tags.length?`<div style="font-size:11px;margin-top:2px">${tags.join('　')}</div>`:""}
+      <div style="height:6px;border-radius:4px;background:rgba(255,255,255,.08);margin-top:3px;overflow:hidden">
+        <div style="height:100%;width:${pct}%;background:${col};opacity:.85"></div></div></div>`;
+  }).join("");
+  const lines=[];
+  lines.push(`🕰️ 陪你走最久的是 ${longest.ic}<b>${longest.nm}</b>——整整 ${longest.years} 年的緣分，這座島再怎麼難混，至少還有這個人在。`);
+  lines.push(drags.length
+    ? `⛓️ 這輩子最扯你後腿的是 ${drags[0].ic}<b>${drags[0].nm}</b>——人生負債表上，這筆利息繳得最痛。歹路毋通行啊。`
+    : `⛓️ 沒什麼人扯你後腿，這座島待你算是客氣了，珍惜這份難得的清靜。`);
+  lines.push(owes.length
+    ? `🙇 你這輩子最虧欠的是 ${owes.map(o=>o.ic+o.nm).join('、')}——子欲養而親不待，有些對不起，該趁人還在的時候說。`
+    : `🙇 你沒欠誰人情，每一段關係都還得乾乾淨淨——這年頭，能不拖累別人就已經是溫柔。`);
+  return `<div class="panel" style="margin-top:12px;background:var(--panel2)">
+    <h2 class="sec">👪 人生重要他人</h2>
+    <div class="muted" style="font-size:11.5px;margin:-4px 0 6px">這座島丟給你的人，會反覆在你人生登場——盤點一下，誰陪你最久、誰拖累你、誰你這輩子虧欠。</div>
+    ${rows}
+    <div class="muted" style="font-size:12.5px;margin-top:8px;line-height:1.8">${lines.join("<br>")}</div></div>`;
 }
 
 /* =========================================================================
@@ -16817,6 +16928,7 @@ function screenSummary(cat){
       ${r41WishHTML()}
       ${attrReviewHTML()}
       ${bondReviewHTML()}
+      ${r136PeopleReviewHTML()}
       ${attrCurveHTML()}
       ${attrTrajectoryHTML()}
       ${r129TrajectoryHTML()}
