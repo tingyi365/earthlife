@@ -4882,5 +4882,78 @@ const r132 = JSON.parse(vm.runInContext(`(function(){
   ['alltitles','⑳ 跨局集滿:九大五圍集滿→r132_alltitles 解鎖、缺一不解'],
 ].forEach(([k,m])=>ok(r132[k], 'R132 '+m));
 
+// ===== R133 複合屬性命運門檻 c.cr + 屬性命運判決書：掛點齊備/結構守約/五圍覆蓋/弱項floor拖垮/雙屬性hi協同/lo差臨門/deterministic零額外rng/判決書呈現MVP罩門/純呈現零汙染/髒資料降級/空keySnap省略/舊存檔相容/S=null 相容 =====
+const r133 = JSON.parse(vm.runInContext(`(function(){
+  const out={};
+  function fresh(age,attr,fl){ startGame(); S.flags=Object.assign({},fl||{}); ensureState(S); S.seen={}; S.alive=true; S.keySnap=[]; S.tradeLog=[]; if(age!=null)S.age=age; if(attr)Object.assign(S.attr,attr); return S; }
+  function baseAttr(){ const a={}; Object.keys(ATTR).forEach(k=>a[k]=50); return a; }
+  const opts=[]; EVENTS.forEach(e=>(e.choices||[]).forEach((c,ci)=>{ if(c.r133) opts.push({e,c,ci}); }));
+  // ① 掛點齊備：本輪 c.cr 複合門檻 ≥6 處
+  out.count = opts.length>=6;
+  // ② 結構守約：label 含 gtag+🎯+複合+R133；ks 長度2且皆 ATTR 鍵；need 100-140；floor.below 15-30；hi/lo/floor 三者 eff+res 齊備且文案相異
+  out.struct = opts.every(o=>{ const c=o.c, cr=c.cr;
+    if(!/class="gtag"/.test(c.label)||c.label.indexOf('🎯')<0||c.label.indexOf('複合')<0||c.label.indexOf('R133')<0) return false;
+    if(!Array.isArray(cr.ks)||cr.ks.length!==2||!cr.ks.every(k=>ATTR[k])) return false;
+    if(!(cr.need>=100&&cr.need<=140)) return false;
+    if(!cr.floor||!ATTR[cr.floor.k]||!(cr.floor.below>=15&&cr.floor.below<=30)) return false;
+    if(![cr.hi,cr.lo,cr.floor].every(s=>s&&s.eff&&s.res)) return false;
+    if(cr.hi.res===cr.lo.res||cr.hi.res===cr.floor.res||cr.lo.res===cr.floor.res) return false;
+    return true; });
+  // ③ 五圍覆蓋：所有 cr.ks 聯集涵蓋全五圍
+  out.cover = (new Set(opts.reduce((a,o)=>a.concat(o.c.cr.ks),[]))).size===5;
+  // 驅動引擎：依本選項自己的 cr 規格組屬性，走指定分支（floor.k 與 ks 不重疊，前面結構已隱含）
+  function crRun(o,mode){ const cr=o.c.cr, ks=cr.ks, fl=cr.floor; const attr=baseAttr();
+    attr[fl.k]=fl.below+25;
+    if(mode==='floor'){ attr[fl.k]=Math.max(0, fl.below-10); }
+    else if(mode==='hi'){ const each=Math.ceil((cr.need+ks.length*5)/ks.length); ks.forEach(k=>attr[k]=each); }
+    else { ks.forEach(k=>attr[k]=5); }
+    fresh(o.e.stage?o.e.stage[0]:30, attr, {employed:true}); showEvent(o.e); choose(o.ci); return S; }
+  // ④ 弱項 floor 真拖垮：floor.k 低於門檻 → 走 floor(負面)，r133floor/r133cr+1、keySnap kind:cr k=floor.k won:false
+  out.floor = opts.every(o=>{ const s=crRun(o,'floor'); const k=s.keySnap[s.keySnap.length-1];
+    return (s.flags.r133floor||0)>0 && (s.flags.r133cr||0)>0 && k&&k.kind==='cr'&&k.k===o.c.cr.floor.k&&k.won===false; });
+  // ⑤ 雙屬性 hi 協同：floor 過關+兩屬性加總≥need → 走 hi(正向)，r133hi+1、keySnap kind:cr k=ks[0] won:true
+  out.hi = opts.every(o=>{ const s=crRun(o,'hi'); const k=s.keySnap[s.keySnap.length-1];
+    return (s.flags.r133hi||0)>0 && k&&k.kind==='cr'&&k.k===o.c.cr.ks[0]&&k.won===true; });
+  // ⑥ 差臨門 lo：floor 過關但兩屬性加總<need → 走 lo，r133lo+1、keySnap won:false
+  out.lo = opts.every(o=>{ const s=crRun(o,'lo'); const k=s.keySnap[s.keySnap.length-1];
+    return (s.flags.r133lo||0)>0 && k&&k.kind==='cr'&&k.won===false; });
+  // ⑦ deterministic 零額外 rng：同屬性兩次跑 hi 結果一致（純門檻、種子序列不靠擲骰）
+  out.deterministic = opts.every(o=>{ const a=crRun(o,'hi'), ka=a.keySnap[a.keySnap.length-1];
+    const b=crRun(o,'hi'), kb=b.keySnap[b.keySnap.length-1]; return ka.won===kb.won && ka.k===kb.k && ka.won===true; });
+  // ⑧ 判決書呈現：keySnap 有 cr 料 → 含標題/MVP/罩門/複合門檻字樣
+  fresh(60,{}); S.keySnap=[{age:30,k:'int',kind:'cr',won:true,v:80,ev:'a'},{age:40,k:'int',kind:'cr',won:true,v:85,ev:'b'},{age:45,k:'hp',kind:'cr',won:false,v:10,ev:'c'}]; S.flags.r133cr=3; S.flags.r133floor=1;
+  const vh=r133VerdictHTML();
+  out.verdictRender = vh.indexOf('屬性命運判決書')>=0 && vh.indexOf('MVP')>=0 && vh.indexOf('罩門')>=0 && vh.indexOf('複合門檻')>=0;
+  // ⑨ 純呈現零汙染：生成前後 S.attr/flags/keySnap 不變、零 rng 消耗
+  const bA=JSON.stringify(S.attr), bF=JSON.stringify(S.flags), bK=JSON.stringify(S.keySnap);
+  let used=0; const oldR=rng; rng=function(){ used++; return oldR(); };
+  r133VerdictHTML(); r133VerdictHTML(); rng=oldR;
+  out.verdictPure = JSON.stringify(S.attr)===bA && JSON.stringify(S.flags)===bF && JSON.stringify(S.keySnap)===bK && used===0;
+  // ⑩ 髒資料降級：keySnap 含 null/非 ATTR 鍵被濾掉不炸，仍回字串
+  out.dirtySafe = (()=>{ try{ fresh(60,{}); S.keySnap=[null,{k:'zzz'},{k:'int',kind:'cr',won:true,v:5,ev:''}]; return typeof r133VerdictHTML()==='string'; }catch(e){ return false; } })();
+  // ⑪ 無關鍵抉擇/空 keySnap → 安全降級回空字串
+  out.verdictEmpty = (fresh(60,{}), S.keySnap=[], r133VerdictHTML()==='');
+  // ⑫ 舊存檔相容：ensureState 不為 R133 在 S.flags 補任何鍵
+  startGame(); const olds=S; ensureState(olds); out.compatOld = !Object.keys(olds.flags).some(k=>k.indexOf('r133')===0);
+  // ⑬ 無局(S=null)相容：判決書回空字串不炸
+  out.nullSafe = (()=>{ try{ S=null; return r133VerdictHTML()===''; }catch(e){ return false; } })();
+  return JSON.stringify(out);
+})()`, sandbox));
+[
+  ['count','① 本輪 c.cr 複合屬性門檻掛點齊備(≥6 處)'],
+  ['struct','② 結構守約:label gtag+🎯+複合+R133、ks 長2皆ATTR鍵、need100-140、floor.below15-30、hi/lo/floor eff+res 齊備且文案相異'],
+  ['cover','③ 五圍覆蓋:所有 cr.ks 聯集涵蓋 hp/int/apr/mny/hap'],
+  ['floor','④ 弱項 floor 真拖垮:低於門檻走 floor、r133floor/cr+1、keySnap kind:cr k=floor.k won:false'],
+  ['hi','⑤ 雙屬性 hi 協同:加總≥need 走 hi、r133hi+1、keySnap kind:cr k=ks[0] won:true'],
+  ['lo','⑥ 差臨門 lo:加總<need 走 lo、r133lo+1、keySnap won:false'],
+  ['deterministic','⑦ deterministic 零額外 rng:同屬性兩次跑 hi 結果完全一致'],
+  ['verdictRender','⑧ 判決書呈現:含「屬性命運判決書」+MVP+罩門+複合門檻'],
+  ['verdictPure','⑨ 純呈現零汙染:生成前後 S.attr/flags/keySnap 不變且零 rng'],
+  ['dirtySafe','⑩ 髒資料降級:keySnap 含 null/非ATTR鍵被濾掉不炸仍回字串'],
+  ['verdictEmpty','⑪ 無關鍵抉擇/空 keySnap→安全降級回空字串'],
+  ['compatOld','⑫ 舊存檔相容:ensureState 不為 R133 補 S.flags 鍵'],
+  ['nullSafe','⑬ 無局(S=null)相容:判決書回空字串不炸'],
+].forEach(([k,m])=>ok(r133[k], 'R133 '+m));
+
 console.log(fails ? `\n結果: ❌ ${fails} 項未通過` : '\n結果: ✅ 狀態機全數正確');
 process.exit(fails ? 1 : 0);

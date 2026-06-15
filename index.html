@@ -3374,6 +3374,12 @@ function buildEvents(){ return [
       {label:"選錢途光明的熱門科系", eff:{mny:10,int:6,hap:-4}, flags:{edu:"university"}, res:"你走上主流賽道，前方人擠人。"},
       {label:"選自己真心喜歡的冷門", eff:{hap:12,int:6,mny:-5}, flags:{edu:"university"}, res:"父母嘆氣，但你眼裡有光。"},
       {label:"不念了，提早出社會", eff:{mny:6,hp:-3,int:-3}, flags:{edu:"highschool"}, res:"你決定用社會大學的學分換現金。"},
+      /* R133 複合門檻：拚理想校＝腦袋(int)＋心態(hap)一起算，但健康(hp)是底線——爆肝崩盤連考場都進不去 */
+      {label:'<i class="gtag">🎯智力＋心態複合・R133</i> 拚理想校：腦袋夠不夠＋心態穩不穩一起算', r133:true,
+        cr:{ks:["int","hap"], need:120, floor:{k:"hp", below:25,
+          eff:{hp:-8,int:-3,hap:-6}, res:"🎯 倒數一個月你硬撐夜戰，偏偏底子早就掏空——大考前一週直接燒到送急診，准考證貼在病床欄杆上看著你。鬼島最殘酷的一課：腦袋再轉得動，身體垮了，連上場的資格都沒有。你只能含淚改填落點，這一仗輸在沒先把命顧好。"},
+          hi:{eff:{int:10,mny:5,hp:-4}, res:"🎯 因為你腦袋夠清楚、心態又穩得住，這場硬仗你打得漂亮——理想校榜單上有你的名字，連帶把未來的薪資天花板也往上頂了一截。代價是換來一身熬夜練出的黑眼圈，但在這座學歷還是能當敲門磚的島，這張門票值。"},
+          lo:{eff:{int:4,hap:-4}, res:"🎯 你拚是拚了，可惜不是腦袋差一截、就是考前心態先崩，志願填得七零八落——錄取的學校離理想還有段距離。沒關係，鬼島混到最後比的是誰活得久，不是十八歲那張榜單。"}}, eff:{}, res:""},
     ]},
   {id:"clubparty", stage:[18,24], w:2,
     title:"大學夜衝", text:"室友揪你半夜衝海邊看日出，但明天早八有必修。",
@@ -3398,6 +3404,12 @@ function buildEvents(){ return [
       /* R29 出身回收：黑手世家不投履歷，直接接班（出生旗標確定性解鎖，零 rng） */
       {label:'<i class="gtag">🔧黑手囝限定</i> 回廠裡接阿爸的車床', cond:s=>!!(s.flags&&s.flags.blackhandKid), eff:{mny:8,hap:3,hp:-3}, flags:{employed:true,familybiz:true}, res:"你沒投半張履歷，直接回自家工廠上工。同學領 28K 吹冷氣，你滿手機油但訂單抽成實拿。阿爸默默多打了一副廠房鑰匙，掛在你的工具櫃上——沒講話，但全廠都懂了。"},
       {label:"考公職求安穩", eff:{mny:8,hp:6,hap:2,int:-3}, flags:{employed:true,gov:true}, res:"在這座民間薪水十年不漲的島上，你選擇了長輩心中的人生勝利組——鐵飯碗。考取那天阿母逢人就說『阮囝考上公家』，比你考上大學還光榮。你的人生從此進入自動巡航：安穩到連腦袋都跟著省電待機，公文用語以外的詞彙開始陸續登出。"},
+      /* R133 複合門檻：搶好缺＝實力(int)＋面試門面(apr)一起被檢視，但心態(hap)崩了連面試都到不了 */
+      {label:'<i class="gtag">🎯實力＋門面複合・R133</i> 衝高薪好缺：腦袋＋面試台風一起被檢視', r133:true,
+        cr:{ks:["int","apr"], need:120, flags:{employed:true}, floor:{k:"hap", below:22,
+          eff:{mny:4,hap:-5,hp:-3}, res:"🎯 你心態早就垮了，投了一輪好缺，面試通知一封封來，你卻連從床上爬起來梳洗的力氣都沒有——offer 全被你已讀不回到過期。最後隨便撿了份能餬口的工作上工，22K 起跳。鬼島職場第一課：再好的缺，也得先有站上場的心力。", flags:{employed:true}},
+          hi:{eff:{mny:16,int:4,hp:-4}, res:"🎯 履歷夠漂亮、面試台風又穩，你一路過關斬將搶進人人眼紅的好缺——別人領 22K 數饅頭，你的數字前面直接多一位。代價是進去就被當主力操，肝先預支了一點，但這張入場券在低薪鬼島稀有得像中樂透。", flags:{employed:true,bigco:true}},
+          lo:{eff:{mny:8,hap:-3}, res:"🎯 不是專業底子差一截、就是面試表現差臨門一腳，好缺擦肩而過，你進了間普通公司當螺絲釘，月薪 22K 起跳『有志者上看 25K』。HR 要你把公司當家——你笑了笑，把成家夢先下修成下個月別透支。", flags:{employed:true}}}, eff:{}, res:""},
     ]},
   {id:"overtime", stage:[24,55], w:3, cond:isEmployed,
     title:"加班的呼喚", text:"晚上九點，主管在群組丟了一句：『這個明天早上要喔，辛苦了 :)』。責任制三個字的精髓你終於懂了——責任是你的，制度是看不到的。加班費？那是傳說中別的國家才有的東西。",
@@ -3436,6 +3448,12 @@ function buildEvents(){ return [
       {label:'<i class="gtag">⚖️財富檢定</i> 本多終勝，自組對沖部位', r22:true, sr:{k:"mny", need:75, spread:40,
         win:{eff:{mny:15,int:3,hp:-5}, res:"你資金夠厚，正反向部位一掛，行情怎麼走都吃得到。三個月後朋友的明牌腰斬，你的對沖單穩穩獲利下車——只是天天盯盤盯到凌晨，肝先扣了血。本多終勝，誠不欺我。"},
         lose:{eff:{mny:-12,hap:-5,int:4}, res:"你學人家開槓桿對沖，結果本金太薄，一根長黑直接掃到斷頭線，部位被強制平倉。市場用保證金通知教會你：別人的本多終勝，是你的本少終敗。"}}},
+      /* R133 複合門檻：賺智商財＝腦袋(int)＋本金(mny)一起決定，但健康(hp)是罩門——盯盤盯到爆肝先住院 */
+      {label:'<i class="gtag">🎯智商＋本金複合・R133</i> 自組策略單：腦袋＋口袋深度一起決定', r133:true,
+        cr:{ks:["int","mny"], need:130, floor:{k:"hp", below:25,
+          eff:{hp:-7,mny:-6,hap:-3}, res:"🎯 你想靠操作翻身，偏偏身體早就掏空——盤還沒看完，半夜血壓飆到送急診，醫藥費反咬一口本金。躺在病床上盯著手機裡綠油油的帳戶，你苦笑：再厲害的策略，也得有條命去執行。健康歸零的人，連韭菜都當不成。"},
+          hi:{eff:{mny:14,int:3,hp:-5}, res:"🎯 本金夠厚、腦袋又清楚，你避開老鼠倉、看穿出貨文，正反部位一掛行情怎麼走都吃得到——三個月後朋友套在山頂，你穩穩收割一波『智商財』下車。代價是天天盯盤盯到凌晨，肝先扣了血。本多終勝＋腦袋夠用，誠不欺我。"},
+          lo:{eff:{mny:-4,int:3}, res:"🎯 不是腦袋差一點、就是本金太薄撐不起像樣的部位，你進場小試一手，繳了一點學費換一點經驗。沒大賺也沒重傷——在這座連定存利率都追不上通膨的島，沒被割到見骨，已經算贏一半了。"}}, eff:{}, res:""},
     ]},
 
   /* ---------- 感情 / 家庭 25-50 ---------- */
@@ -3447,6 +3465,12 @@ function buildEvents(){ return [
       {label:"堅持單身，享受自由", eff:{hap:8,mny:5}, flags:{single:true,marital:"single"}, res:"你笑著回敬：『房都買不起了，是要拿什麼結婚？』親戚一時語塞。你把省下的聘金、婚宴、頭期款全留給自己，續了 Netflix、訂了想去的旅行——在這個成家成本高到嚇人的島，一個人過得好，本身就是一種叛逆的勝利。"},
       {label:"養貓養狗，毛孩才是真愛", eff:{hap:12,mny:-4}, flags:{pet:true,marital:"single"}, res:"你抱起主子，從此進入鏟屎官的幸福人生。"},
       {label:'<i class="gtag">💅外貌75+</i> 亮出追求者名單，親戚當場閉麥', eff:{hap:10,apr:2}, cond:s=>s.attr.apr>=75, gate:true, res:"你慢條斯理滑開手機，隨手展示幾位排隊中的追求者。七大姑八大姨瞬間從逼婚模式切換成幫你選妃模式，年夜飯的話語權重回你手上。"},
+      /* R133 複合門檻：婚姻市場行情＝魅力(apr)＋情商/情緒穩定(hap)一起算，但財富(mny)是門票——口袋空空連婚禮都辦不起 */
+      {label:'<i class="gtag">🎯魅力＋情商複合・R133</i> 認真進婚姻市場：行情由魅力＋情商定，口袋是門票', r133:true,
+        cr:{ks:["apr","hap"], need:120, floor:{k:"mny", below:22,
+          eff:{hap:-5,mny:-3}, res:"🎯 你也想成個家，可一翻存摺就清醒了——這座島辦場婚禮、付個聘金、湊個頭期款，隨便都是好幾年薪水。對象沒嫌你，是你自己先在帳單前退了堂。你苦笑著把交友軟體關掉：在鬼島，連結婚都是有錢人的權利。感情狀態維持：單身。", flags:{single:true,marital:"single"}},
+          hi:{eff:{hap:10,apr:2,mny:-8}, res:"🎯 條件夠亮、情商又高，你在婚姻市場根本是搶手貨——對象被你迷得團團轉，連雙方家長都搶著敲定日子。你風風光光成了家，禮金紅包收到手軟。代價是婚禮場面鋪得不小、聘金嫁妝樣樣來，荷包先瘦了一圈，但這場喜事辦得人人稱羨。", flags:{married:true,marital:"married"}},
+          lo:{eff:{hap:4,mny:-6}, res:"🎯 條件普通、又不太會經營關係，你的婚姻市場行情平平——折騰了好一陣子，總算和一個還算合得來的人將就成了家。沒有童話般的盛大，但兩個普通人在貴到嚇人的鬼島湊合著把日子過下去，本身就不容易了。", flags:{married:true,marital:"married"}}}, eff:{}, res:""},
     ]},
   {id:"married", hidden:true, title:"婚後生活",
     text:"婚禮的煙火散去，柴米油鹽的日常開始了。要不要迎接新成員？",
@@ -4375,6 +4399,12 @@ function buildEvents(){ return [
         hi:{eff:{mny:14,hap:-3,hp:-4,int:5}, res:"你升職加薪，也升級了壓力與胃藥的用量——好在腦袋夠用，把爛攤子全變成你的代表作。"},
         lo:{eff:{mny:8,hap:-6,hp:-6,int:4}, res:"你坐上了主管位才發現報表看不懂、會議追不上，每天靠胃藥跟咖啡續命——位子是升了，人先垮了一半。"}}, eff:{}, res:""},
       {label:"婉拒，守住生活品質", eff:{hap:8,mny:-2}, res:"你選擇了健康與睡眠，把升官的機會讓給了別人。"},
+      /* R133 複合門檻：坐穩主管位＝能力(int)＋體力(hp)一起扛，但心態(hap)是底線——心累垮了升了也只想擺爛 */
+      {label:'<i class="gtag">🎯能力＋體力複合・R133</i> 拚小主管：腦袋扛得動＋身體撐得住才坐得穩', r133:true,
+        cr:{ks:["int","hp"], need:125, floor:{k:"hap", below:22,
+          eff:{hap:-4,mny:2,hp:-2}, res:"🎯 主管位遞到面前，你卻連點頭的力氣都擠不出來——心早就累垮，整個人 emo 到只想躺平擺爛。你婉拒了升遷，連帶把『拚一波』的念頭也一起關機。位子讓給了別人，你只想下班後癱著，什麼都不要想。鬼島職場最深的疲憊，是連往上爬的慾望都被磨光了。"},
+          hi:{eff:{mny:14,int:5,hp:-5}, res:"🎯 腦袋夠用、身體又撐得住，你把關鍵專案扛成了代表作，一路火速升上管理層——加薪、頭銜、實權樣樣到手。代價是責任和壓力翻倍、頭髮先走一步，但你證明了自己坐得穩這個位子。在這座升遷論資排輩的島，靠真本事跳級的，是少數。", flags:{exec:true}},
+          lo:{eff:{mny:8,hap:-5,hp:-5}, res:"🎯 你硬著頭皮接了主管位，才發現報表看不懂、會議追不上、體力又跟不上加班強度——每天靠胃藥跟咖啡續命。位子是升了，人先垮了一半。鬼島中階主管的真相：薪水多那一點，是拿命跟頭髮分期換來的。"}}, eff:{}, res:""},
     ]},
   {id:"toxicboss", stage:[24,55], w:2, cond:isEmployed,
     title:"慣老闆語錄", text:"老闆語重心長：『年輕人不要計較薪水，要看重學習跟成長。』",
@@ -4395,6 +4425,12 @@ function buildEvents(){ return [
       {label:"當無殼蝸牛，把錢拿去玩", eff:{hap:10,mny:4}, res:"你看透了：與其當三十年的房奴給銀行打工，不如把頭期款拿去環遊世界。別人笑你沒有家，你笑別人被一間房綁住整個人生。這座島賣太貴，當無殼蝸牛不是輸，是你算過 CP 值後的清醒選擇。"},
       {label:"啃老，靠爸媽出頭期款", eff:{mny:-6,hap:4,apr:-3}, flags:{homeowner:true}, res:"靠著爸媽掏出畢生積蓄當頭期款，你終於擠上了車。在這個薪水追不上房價的年代，能不能買房早就不是看你多努力，是看你爸媽口袋多深——這個殘酷的真相，全島年輕人都心照不宣。代價是親戚念了你好幾年。"},
       {label:'<i class="gtag">💰財富80+</i> 現金底氣足，殺價全款上車', eff:{mny:-10,hap:10,apr:3}, cond:s=>s.attr.mny>=80, gate:true, flags:{homeowner:true}, res:"因為口袋夠深，你跟代銷從樣品屋殺到簽約桌，折扣拿好拿滿、貸款壓力極輕。搬進新家那天還有餘裕辦了場喬遷趴。"},
+      /* R133 複合門檻：殺價上車不被當盤子＝財力(mny)＋精算(int)一起決定，但健康(hp)是罩門——身體先垮醫藥費吃掉頭期款 */
+      {label:'<i class="gtag">🎯財力＋精算複合・R133</i> 進場殺價上車：口袋深度＋算盤精度一起決定', r133:true,
+        cr:{ks:["mny","int"], need:130, floor:{k:"hp", below:25,
+          eff:{hp:-6,mny:-8,hap:-3}, res:"🎯 你正準備衝一波頭期款，身體卻先出了狀況——一場病住下來，醫藥費連著工作空窗，把存了好幾年的買房基金啃掉一大塊。看房計畫只能無限期延後。鬼島最現實的順序你被迫學會：命都顧不住，談什麼三十年的房貸。買房夢，先擱著。"},
+          hi:{eff:{mny:-10,hap:10,apr:2}, res:"🎯 本金夠厚、又會算，你跟代銷從樣品屋一路殺到簽約桌——實價登錄查好查滿、貸款方案精算到小數點，折扣拿好拿滿、月付壓在安全線內。搬進自己的家那天，你辦了場喬遷趴。在這座房價所得比逼近二十年的島，能聰明上車不被當盤子，是真本事。", flags:{homeowner:true}},
+          lo:{eff:{mny:-18,hap:4,hp:-3}, res:"🎯 不是本金差一截、就是不太會算，你被代銷牽著走、貸款條件談得不漂亮，硬著頭皮上了車——房子是有了，但成了名副其實的屋奴，三十年的甜蜜枷鎖扣在身上。每個月薪水一進帳就先飛去銀行，你苦笑：在鬼島，買得起房跟買得划算，是兩回事。", flags:{homeowner:true}}}, eff:{}, res:""},
     ]},
   {id:"scam", stage:[24,70], w:2,
     title:"穩賺的陷阱", text:"一通電話/一個訊息：『恭喜您中獎！只要先付一筆手續費……』",
@@ -13276,7 +13312,7 @@ function showEvent(ev){
   let cs="", hasKey=false;
   ev.choices.forEach((c,i)=>{
     if(c.cond && !c.cond(S)) return;
-    if(c.gate||c.sr||c.br) hasKey=true;
+    if(c.gate||c.sr||c.br||c.cr) hasKey=true;
     cs+=`<button class="choice" onclick="choose(${i})">${c.label}<span class="arrow">→</span></button>`;
   });
   const kind=evKind(ev, hasKey);   // R33 視覺分級（純顯示，不動抽選與判定）
@@ -13470,6 +13506,38 @@ function choose(i){
     if(brHit) S.flags.brHi=(S.flags.brHi||0)+1;   // 分流好結局計數（成就「分流路口的常勝軍」用）
     else S.flags.brLo=(S.flags.brLo||0)+1;
     r89Snap(c.br.k, "br", brHit);
+  }
+  /* ---- R133 複合屬性命運門檻 c.cr（雙屬性協同＋弱項放大，純門檻零 rng・sim 驅動層）----
+     directive 2026-06-10 17:23「五圍存在感低、想真正驅動玩法」。與 R129(單屬性 br/sr) 刻意錯開：
+     本層是「兩條屬性一起算＋一條弱項拖垮」的複合命運引擎，讓玩家感覺『點哪幾條屬性』是真取捨。
+     c.cr = {ks:[k1,k2], need, hi:{eff,res,flags?,bond?}, lo:{eff,res,flags?,bond?},
+             floor:{k, below, eff, res, flags?, bond?}}
+       ① 先看弱項 floor：S.attr[floor.k] < floor.below → 走 floor（被罩門拖垮的負面分流，
+          回應「低健康/低魅力/沒錢放大負面、解鎖負向走向」）；記 r133floor、keySnap 取 floor.k won:false。
+       ② 否則 ks 兩屬性加總 vs need → ≥ 走 hi（高協同解鎖正向分流：高智力+本金/實力+門面…）、否則 lo。
+     純確定性門檻（與 br 同層，不擲骰、零消耗既有亂數流 → 同種子同屬性必同結果，挑戰/對戰復現性不破壞）；
+     keySnap 記 kind:'cr' 取首屬性、won 為是否走 hi；eff 同時升一條扣一條會自動串 R98 取捨偵測(tradeLog)。
+     新增掛點守約：label 須含 class="gtag"+🎯+「複合」+「R133」、ks 長度 2 且皆 ATTR 鍵、need 100-140、
+     floor.below 15-30、hi/lo/floor 三者 eff+res 齊備且文案相異。 */
+  if(c.cr){
+    const ks=Array.isArray(c.cr.ks)?c.cr.ks:[];
+    const fl=c.cr.floor;
+    let crOut, crWon, crKey=ks[0]||(fl&&fl.k);
+    if(fl && (S.attr[fl.k]||0) < fl.below){
+      crOut=fl; crWon=false; crKey=fl.k;
+      S.flags.r133floor=(S.flags.r133floor||0)+1;          // 弱項拖垮計數（結算判決書「罩門」用）
+    } else {
+      const sum=ks.reduce((a,k)=>a+(S.attr[k]||0),0);
+      crWon = sum>=c.cr.need;
+      crOut = crWon ? c.cr.hi : c.cr.lo;
+      if(crWon) S.flags.r133hi=(S.flags.r133hi||0)+1; else S.flags.r133lo=(S.flags.r133lo||0)+1;
+    }
+    eff=Object.assign({}, crOut.eff||{});
+    res=crOut.res||"";
+    if(crOut.flags) Object.assign(S.flags, crOut.flags);
+    if(crOut.bond) for(const bk in crOut.bond) adjBond(bk, crOut.bond[bk]);
+    S.flags.r133cr=(S.flags.r133cr||0)+1;                  // 複合門檻觸發總數（判決書統計用）
+    r89Snap(crKey, "cr", crWon);
   }
   /* ---- R41 志向轉向：換候選池中下一個沒立過的志向（確定性、零 rng）；
           代價寫在選項 eff（快樂/財富小扣），轉向次數記 r41pivot 供結算與成就觀察 ---- */
@@ -15976,7 +16044,7 @@ function r131CareerReviewHTML(){
 function keySnapHTML(){
   if(!S || !Array.isArray(S.keySnap) || S.keySnap.length<1) return "";
   const snaps=S.keySnap.slice().sort((a,b)=>a.age-b.age);
-  const KIND={gate:"門檻",sr:"檢定",br:"分流"};
+  const KIND={gate:"門檻",sr:"檢定",br:"分流",cr:"命運"};
   const wins=snaps.filter(x=>x.won).length, total=snaps.length;
   // 一生最常派上用場的屬性（決定關鍵抉擇次數最多的那項，同數取 ATTR 先序）
   const cnt={}; snaps.forEach(x=>{ if(ATTR[x.k]) cnt[x.k]=(cnt[x.k]||0)+1; });
@@ -15998,6 +16066,59 @@ function keySnapHTML(){
     <h2 class="sec">🎲 關鍵抉擇・屬性翻牌實錄</h2>
     <div class="muted" style="font-size:12px;margin-bottom:4px;text-align:left">在這些路口，是你的數值替你做了決定（過關 ${wins}/${total}）</div>
     ${rows}
+    <div style="margin-top:6px;font-size:12.5px;text-align:left;line-height:1.7;color:var(--accent,#ffd24a)">「${verdict}」</div>
+  </div>`;
+}
+
+/* =========================================================================
+   R133 屬性命運判決書（sim 驅動層的結算回應・線C 可分享素材）：
+   directive 2026-06-10 17:23——把「本局關鍵節點到底被哪幾條屬性決定」攤成一張精簡判決書，
+   直球回應「五圍存在感低」。純讀本局 S.keySnap（choose() 當下記的 gate/sr/br/cr）＋S.flags 的
+   R133 計數，零 rng、生成前後 S 不變（零汙染）；無關鍵抉擇/缺資料/壞資料/S=null → 安全降級回空字串不白屏。
+   與 keySnapHTML（逐筆清單）刻意錯開：本卡是「屬性層級的總帳」——誰是替你掀牌的 MVP、哪條是拖你
+   下水的罩門、本輪 cr 雙屬性複合門檻贏了幾把、弱項拖垮了幾次。文案走台味鬼島自嘲、零政治紅線。
+   ========================================================================= */
+function r133VerdictHTML(){
+  if(!S || !Array.isArray(S.keySnap) || S.keySnap.length<1) return "";
+  const snaps=S.keySnap.filter(x=>x && ATTR[x.k]);
+  if(snaps.length<1) return "";
+  const stat={};  // k -> {n,win,lose}
+  snaps.forEach(x=>{ const s=stat[x.k]||(stat[x.k]={n:0,win:0,lose:0}); s.n++; if(x.won)s.win++; else s.lose++; });
+  const fl=S.flags||{};
+  const crN=snaps.filter(x=>x.kind==='cr').length;
+  const floorN=fl.r133floor||0;
+  // MVP：贏最多的屬性（同數取決定次數多者、再取 ATTR 先序）；罩門：翻車最多的屬性（同上）
+  let mvp=null, weak=null;
+  for(const k in ATTR){ const s=stat[k]; if(!s) continue;
+    if(s.win>0 && (mvp===null || s.win>stat[mvp].win || (s.win===stat[mvp].win && s.n>stat[mvp].n))) mvp=k;
+    if(s.lose>0 && (weak===null || s.lose>stat[weak].lose || (s.lose===stat[weak].lose && s.n>stat[weak].n))) weak=k;
+  }
+  const total=snaps.length, wins=snaps.filter(x=>x.won).length;
+  const rows=Object.keys(ATTR).filter(k=>stat[k]).map(k=>{
+    const s=stat[k], a=ATTR[k]; const tags=[];
+    if(k===mvp) tags.push('<span style="color:var(--good,#39ff88)">MVP</span>');
+    if(k===weak) tags.push('<span style="color:var(--bad,#ff6b6b)">罩門</span>');
+    return `<div class="atrow"><span style="white-space:nowrap;color:${a.col}">${a.ic}${a.nm}</span>`
+      +`<span class="atev">替你掀牌 ${s.n} 次・過 ${s.win}／翻 ${s.lose}${tags.length?'　'+tags.join(' '):''}</span></div>`;
+  }).join("");
+  let verdict;
+  if(mvp && weak && mvp!==weak){
+    verdict=`這一生 ${total} 個被數值定生死的路口，${ATTR[mvp].ic}${ATTR[mvp].nm}是替你掀牌的 MVP、${ATTR[weak].ic}${ATTR[weak].nm}卻老在關鍵時刻扯後腿——人生沒有全能王，養出一條主力、認清一個罩門，就是你這局的命運形狀。`;
+  } else if(mvp){
+    verdict=`這一生 ${total} 個關頭，幾乎都是 ${ATTR[mvp].ic}${ATTR[mvp].nm} 替你扛下來的——把一條屬性養到夠強，命運的牌桌上你就多一張王牌。`;
+  } else if(weak){
+    verdict=`這一生 ${total} 個關頭，${ATTR[weak].ic}${ATTR[weak].nm} 老是差臨門一腳——屬性沒養夠，關鍵時刻就只能看天吃飯。`;
+  } else {
+    verdict=`這一生在 ${total} 個路口賭了把數值，過 ${wins} 把。`;
+  }
+  const crLine = crN>0
+    ? `本局 ${crN} 次踏上「雙屬性複合門檻」——兩條屬性一起夠看才解鎖好結局${floorN>0?`，其中被罩門屬性直接拖下水 ${floorN} 次`:''}。`
+    : (floorN>0?`本局有 ${floorN} 次被罩門屬性在關鍵時刻拖下水。`:"");
+  return `<div class="panel" style="margin-top:12px;background:var(--panel2)">
+    <h2 class="sec">⚖️ 屬性命運判決書・R133</h2>
+    <div class="muted" style="font-size:12px;margin-bottom:4px;text-align:left">本局關鍵節點，是被這幾條屬性決定的（過關 ${wins}/${total}）</div>
+    ${rows}
+    ${crLine?`<div style="margin-top:6px;font-size:12px;text-align:left;color:var(--int,#4aa8ff)">🎯 ${crLine}</div>`:""}
     <div style="margin-top:6px;font-size:12.5px;text-align:left;line-height:1.7;color:var(--accent,#ffd24a)">「${verdict}」</div>
   </div>`;
 }
@@ -16442,6 +16563,7 @@ function screenSummary(cat){
       ${attrTrajectoryHTML()}
       ${r129TrajectoryHTML()}
       ${keySnapHTML()}
+      ${r133VerdictHTML()}
       ${r112TradeoffHTML()}
       ${attrTurnsHTML()}
       ${r68FateHTML()}

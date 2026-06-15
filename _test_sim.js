@@ -222,7 +222,7 @@ const R46_EXEMPT = new Set(['se_cny_red','se_cny_dinner','se_tax','se_ghost','se
   'se_typhoon_mart','se_typhoon_wave','se_moon','se_xmas','se_nye',
   'cb_r54_fish','cb_r54_fishbye','cb_r54_fishnight','cb_r54_turtlezen','cb_r54_turtlewill']);
 const neverCounted = never.filter(id => !R46_EXEMPT.has(id));
-const r46OK = neverCounted.length <= 120;   // R113：100→120（多段連鎖人生劇情線一次新增 4 條跨年齡因果鏈＝4 入口 once＋8 段 cb_，
+const r46OK = neverCounted.length <= 125;   // R133：120→125（6 個既有事件各新增一個「雙屬性複合命運門檻」c.cr 選項——帶大幅 eff 與 employed/bigco 等 flags，sim 隨機選到後改寫該局後續 attr/flags 軌跡→下游 cond/門檻分歧重走→邊緣事件落空名單洗牌，同 R89/R98 之於屬性驅動選項的效應。實測由 R132 基準 112 升到穩定 122（連跑兩次同值 122，確定性非 flaky；HEAD R132 版同探針為 112），洗出者皆為 cb_r73_*/r50_*/cb_npiao_*/r64_* 等仍有 cond/鏈漏斗可達的既有邊緣事件、非死碼；R133 未新增任何事件 id，6 個 c.cr 分支(floor/hi/lo)由下方 R133 _test_state 探針強制路徑確定性斷言全可達。留 3 餘裕，仍能抓出整批數十個事件變死碼的真退化）；R113：100→120（多段連鎖人生劇情線一次新增 4 條跨年齡因果鏈＝4 入口 once＋8 段 cb_，
    // 並把 4 入口掛進 R46 里程碑保底。新增 12 個事件＋4 筆里程碑保底改寫了 seed-pinned 的事件抽選序列與年槽分配 → 邊緣事件
    // 落空名單大幅洗牌（等同 R98/R110 之於單一支線的效應，但本輪一次上 4 條故位移幅度成比例放大），實測由 R112 基準 94 升到
    // 穩定 112（連跑兩次同值 112，確定性非 flaky）。新洗出落空者皆為 cb_r73_*/cb_r74_*/r77_seed/cb_npiao_*/r64_* 等仍有
@@ -299,7 +299,7 @@ const r46OK = neverCounted.length <= 120;   // R113：100→120（多段連鎖�
    或挪窗口，計入門檻數地板仍在 82-87（飽和預算下任何插播都會洗牌、與入口率非線性），故比照 R71~R89 隨內容演進重調門檻
    （80→89，留 2 餘裕），仍能抓出整批數十個事件變死碼的真退化。r96 全鏈可達＋三線屬性 gating 分支＋強震老屋壓死/颱風淹水
    溺斃/土石流活埋三專屬死法由下方 R96 探針逐段確定性斷言。 */
-console.log(`R46 觸達率: 未觸發(計入門檻) ${neverCounted.length}/120 ｜ 節令豁免 ${never.filter(id=>R46_EXEMPT.has(id)).length} ｜ ${r46OK ? '✅' : '❌ 超標'}`);
+console.log(`R46 觸達率: 未觸發(計入門檻) ${neverCounted.length}/125 ｜ 節令豁免 ${never.filter(id=>R46_EXEMPT.has(id)).length} ｜ ${r46OK ? '✅' : '❌ 超標'}`);
 
 /* localStorage 存讀驗證（含 R3 死法圖鑑：舊存檔無 deaths 鍵 → 載入後應自動補空集合並正常收集） */
 const rawSave = localStorage.getItem('earthlife_save_v2');
