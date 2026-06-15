@@ -20,6 +20,7 @@
 <!-- R38_EVOLVE（隱藏彩蛋＋彩蛋成就）：新增 5 顆確定性隱藏彩蛋，全部掛進既有 R32 攔截器（r32trig，零裸 rng、一局至多 2 顆、每顆一生一次護欄沿用）：egg38_funeralstar（出身 funeral × 天賦天選社牛，告別式氣氛組）、egg38_samedeath（連續兩世同一 deathId 登出觸發孟婆常客夢，新增 SAVE.deathStreak/lastDeathId 跨局計數，挑戰/對戰局不計不影響全服公平）、egg38_reaper90（90 歲 × 健康 70+ 死神勘景）、egg38_poorface（外貌 90+ × 財富 ≤10 夜市星探）、egg38_whalecare（whale × scammed 旗標 × 財富 75+ 風控 AI 白名單）。每顆配一個隱藏成就（r38_*，圖鑑未解鎖顯示 ??? ＋隱晦 hint，解鎖才揭曉），效果量級全部 ±8 內比照 R32。不動既有事件機率/權重/數值平衡、不動 R37 結算分享區與屬性系統本體、不刪任何內容；迷因全用既有場景（funeral/huhcat/death/broke/gacha）不需新圖。_test_sim 新增 R38 五蛋觸發/邊界/成就/計數探針。 -->
 <!-- R41_EVOLVE（人生志向系統）：①開局依出身/屬性確定性立 1 個「人生志向」（R41_WISHES ×11：買房上車/發大財/環遊世界/活過90/平凡終老/人生勝利組/執手偕老/萬人迷/智慧大師/快樂就好/做頭家），選志走 fit 評分＋種子雜湊抖動（零 rng 消耗、同種子同志向），開局卡可重抽 1 次（換候選池次名，限一次）。②遊戲中狀態列下常駐志向進度小塊（wishbox，prog 全走屬性/旗標/年齡確定性判定、零裸 rng），跨階段 2 個志向抉擇事件 cb_r41_doubt（24-38 歲）/cb_r41_cross（45-62 歲）走既有 cb_ 因果鏈優先池：堅持得小增益、轉向換志向但付代價（special:r41pivot 換 wishPool 次一候選，確定性零 rng）。③結算頁「🎯 志向結算」面板（插屬性人格認證後方，不擠 R24 稱號區與 R37 分享卡）：die() 內確定性達成判定 S.wishDone，達成給專屬榮耀結語、未達成給台味自嘲結語。④每志向配 1 個達成成就 r41_*（共 11 個，hint 配齊），沿用既有成就機制與 R40 篩選 UI 不改其行為。志向資料只存 id/池（純字串，續玩存檔可序列化），舊存檔無 wishId 全部 UI 自動省略、零影響。_test_sim 新增 R41 志向探針（結構/確定性/重抽/零 rng/轉向/結算/相容）納入通過條件。 -->
 <!-- R43_EVOLVE（跨階段 NPC 緣分系統）：3 條跨階段人物線（青梅竹馬「隔壁的阿珠」×5 段 6→84 歲／死對頭「轉學生阿標」×4 段 8→82 歲／巷口算命仙「半仙伯」×4 段 6→85 歲），前段選擇埋分支旗標（r43_cm_gift/race/shy、r43_rv_fight/sneak/team、r43_ft_listen/doubt/pay），後段事件 cond 讀旗標分流、重逢文案逐字呼應先前互動（彈珠/賽跑/借筆記/那一卦），走完末段立 r43_cmfin/r43_rvfin/r43_ftfin。全部沿用 R39 因果鏈骨架：種子事件照既有進池機制（stage+w+once）、後段 cb_ 前綴自動入 CHAIN_IDS 優先池，零裸 rng、零新狀態鍵——旗標全存 S.flags，同種子同選擇必同走向，挑戰/對戰復現性不破壞；未展開人物線的局無旗標無 UI 無結算註記，行為與舊版一致零殘留。單段 eff 全部 ±8 內（比照 R39 常態幅度），不動既有事件機率/權重。die() 內走完任一線 tlPush 一行緣分註記進人生回顧時間軸（不擠 R24 稱號/R37 分享卡/R41 志向/R42 家族年表版面）；3 個緣分成就 r43_mate/r43_rival/r43_fate（hint 配齊）沿用既有成就機制與 R40 篩選 UI。_test_sim 新增 R43 人物線探針（結構/進池/旗標串接/文案呼應/零殘留/復現性/成就/緣分註記）納入通過條件。 -->
+<!-- R135_EVOLVE（鬼島時代背景・出生年代浪潮）：在既有 R55 出生年代（S.era，deterministic 走種子）之上疊一層「呈現/覆蓋層」——為六個年代（1970經濟起飛/1980解嚴前後/1990錢淹腳目尾聲/2000千禧網路原民/2010 22K低薪/2020疫情×AI）各加一組「物價快照／社會氛圍／世代金句」台味鬼島嘲諷著色（R135_WAVE），並在結算發一張可一鍵複製/截圖分享的「你是 X 世代」年代卡（r135WaveCardHTML/r135EraShareText/copyR135EraCard，複製文字含 earthlife.pages.dev，線C推廣素材，計入「人生甩賣員」分享成就）。新增跨局收集成就 r135_allgen＝集滿全部 6 個世代（沿用既有 SAVE.eraSeen，與 R55 r55_traveler 集 4 個錯開＝真・全圖鑑）。鐵律：年代指派完全沿用 R55 的 S.era、R135 全程只讀不寫、零 Math.random/rng()→種子事件抽取序列逐位元不變（sim 全綠不擾動）；純呈現只回字串不改數值平衡；S=null／無 era／髒 era id／舊存檔皆回空字串安全降級不炸。_test_state 新增 R135 探針（資料齊備/年代卡渲染/分享文字含連結且無捏造勝率/deterministic純讀S.era/純呈現零汙染零rng/無era降級/髒era降級/S=null降級/舊存檔不補鍵/跨局集滿成就解鎖與缺一不解）納入通過條件。 -->
 <html lang="zh-Hant">
 <head>
 <meta charset="UTF-8">
@@ -2186,6 +2187,54 @@ const R55_ERAS = [
 const R55_MAP = {}; R55_ERAS.forEach(e=>R55_MAP[e.id]=e);
 
 /* =========================================================================
+   R135 鬼島時代背景・出生年代浪潮（純呈現／覆蓋層，零 rng、零事件序列擾動）
+   ── 建立在既有 R55 出生年代（S.era，deterministic 走種子）之上，「不重造年代」，
+      只為每個年代再疊一層「物價快照／社會氛圍／世代金句」的台味鬼島嘲諷著色，
+      並在結算發一張可一鍵複製／截圖分享的「你是 X 世代」年代卡（線C推廣素材，
+      複製文字含 earthlife.pages.dev）。
+   鐵律：
+   ① 年代指派完全沿用 R55 的 S.era（出生時 pick(R55_ERAS) 已走種子→同種子同年代），
+      R135 全程只「讀」S.era，不新增任何 Math.random／rng() → 種子事件抽取序列逐位元不變。
+   ② 純呈現：所有 R135 函式只回傳字串、不寫 S、不改數值平衡；S=null／無 era 鍵／
+      髒資料一律安全降級回空字串，絕不白屏或拋例外。
+   ③ 跨局收集：沿用既有 SAVE.eraSeen（R55 出生時已記）；本輪加成就 r135_allgen
+      ＝集滿全部 6 個世代（與 R55 r55_traveler「集滿 4 個」錯開，是真・全圖鑑）。
+   wave 欄位：price 物價快照／mood 社會氛圍／quote 世代金句／tag 年代卡副標／share 分享梗一句
+   ========================================================================= */
+const R135_WAVE = {
+  e70:{ tag:"做工的人・愛拚才會贏世代",
+    price:"陽春麵一碗 1 塊半、起薪幾百塊、透天厝一坪幾千——錢薄是薄，但買得起。",
+    mood:"客廳即工廠、亭仔腳堆滿外銷代工，全家動員加工到半夜；那是個流汗就有回報、肯拚就有明天的島。",
+    quote:"「台灣錢淹腳目」——只是那時還沒人發現，淹的是別人家的腳目。",
+    share:"我是經濟起飛世代：那年代房子買得起、肝也還健在。" },
+  e80:{ tag:"解嚴囝仔・什麼都要開始世代",
+    price:"一坪幾萬塊、大哥大一支幾萬、股市衝萬點——大人開始相信明天會更有錢。",
+    mood:"報紙變厚、第四台變多、講話音量一年比一年大；連空氣都有種『什麼都被鬆綁了』的躁動。",
+    quote:"從『不能說』活到『什麼都有人說』——你的童年見證了一座島學會大聲。",
+    share:"我是解嚴世代：看著這座島從噤聲活到吵成一團，也算一種自由。" },
+  e90:{ tag:"泡沫餘溫・好日子聽說有過世代",
+    price:"泡沫紅茶 25 塊、KTV 包廂唱整晚、一坪十幾萬——景氣口頭說壞，夜市照樣擠爆。",
+    mood:"股市剛從萬點摔下來，BBcall 嗶嗶叫、大哥大越換越小支；大人嘴上喊不景氣，手筆倒是沒小過。",
+    quote:"好日子？聽說有過，但都是聽說——你這代從小就懂，傳說不能當飯吃。",
+    share:"我是泡沫尾聲世代：含著餘溫出生，長大發現泡沫早破了。" },
+  e00:{ tag:"網路原住民・撥接咿嗚世代",
+    price:"撥接網路按分鐘計費、無名小站開台、一坪二十幾萬——還算追得上的房價，最後一代。",
+    mood:"千禧蟲沒咬壞電腦，奇摩交友與 BBS 是社交主場；你是最後一批記得『沒網路的下午』長怎樣的人。",
+    quote:"帳號比印章多、好友比鄰居熟——新世紀第一批原住民，正式上線。",
+    share:"我是千禧世代：撥接的『咿——嗚——』是我家的傳統音樂。" },
+  e10:{ tag:"22K 世代・房子是笑話世代",
+    price:"22K 是跑馬燈常客、滷肉飯一碗漲到 35、一坪破百萬——薪水是上一代的話題，房價是你這代的笑話。",
+    mood:"人手一支智慧型手機，小確幸是唯一買得起的奢侈；買房是傳說、加薪靠通膨，還好你們很早就學會笑著講比較不痛。",
+    quote:"房子買不起是時代的問題，把自己操壞才是自己的問題——這代人最痛的領悟。",
+    share:"我是 22K 世代：薪水追不上房價，幽默感倒是練滿了。" },
+  e20:{ tag:"疫情×AI 世代・全程在場世代",
+    price:"口罩搶到缺貨、蛋價上新聞、一坪更天價、外送多收一筆——連呼吸都要分段消費的年代。",
+    mood:"滿月照全家只露眼睛；等你會認人臉，AI 已經會畫人臉。上半場躲病毒、下半場躲被取代，你全程在場還順便交作業。",
+    quote:"你跟 AI 是同梯的——只是牠不用睡覺，你還得繳房租。",
+    share:"我是疫情×AI 世代：人類躲病毒又躲被取代，我兩場都到齊了。" },
+};
+
+/* =========================================================================
    R56 人生劇本挑戰（命題開局）：主選單選一張「劇本卡」開特殊局——
    特殊開局（鎖屬性/鎖年代）＋特殊規則＋可判定通關目標，通關發專屬徽章
    （存 SAVE.scriptBadges 跨輪迴持久化）。
@@ -2848,6 +2897,8 @@ const ACHIEVEMENTS = [
   /* ---- R55 台灣時代背景成就（era/旗標確定性判定，零裸 rng；舊存檔無 era 永不誤觸） ---- */
   {id:"r55_native", ic:"🗓️", nm:"時代的親歷者", desc:"在同一局把自己年代的兩段專屬風景全數經歷——別人讀的是歷史課本，你讀的是回憶錄，而且你是作者。", check:c=>!!(c.S.flags&&c.S.flags.r55_hit1&&c.S.flags.r55_hit2), hint:"每個年代都有兩段只屬於那代人的風景——生在哪個年代不能選，但既然生了，兩段都別錯過…"},
   {id:"r55_traveler", ic:"⏳", nm:"穿越時空的投胎客", desc:"跨輪迴在 4 個不同的台灣年代出生過——孟婆湯加湯不加價，時代體驗券一張一張收，你是輪迴站最資深的觀光客。", check:c=>Object.keys(SAVE.eraSeen||{}).length>=4, hint:"投胎是隨機降落在某個年代的——多輪迴幾次，把不同年代的出生證明集起來，集到第 4 張…"},
+  /* ---- R135 出生年代浪潮：跨局集滿全部 6 個世代（純讀 SAVE.eraSeen，零 rng；舊存檔缺鍵當未集滿不誤觸）---- */
+  {id:"r135_allgen", ic:"🌊", nm:"鬼島六世代・浪潮全紀錄", desc:"從『台灣錢淹腳目』的經濟起飛，一路投胎到『人類躲 AI』的當代——經濟起飛、解嚴前後、錢淹腳目尾聲、千禧網路原民、22K 低薪、疫情×AI，鬼島近半世紀的六道浪潮你全身而退地各活過一遍。富過、窮過、撥接過、戴口罩過，每一代的物價與心酸你都親自繳過學費。這座島怎麼變的，你不是讀來的，是活來的。", check:c=>{const e=SAVE&&SAVE.eraSeen||{}; return R55_ERAS.every(er=>e[er.id]);}, hint:"跨局把六個出生年代各降落過至少一次（經濟起飛/解嚴前後/錢淹腳目尾聲/千禧/22K低薪/疫情×AI）——比集滿 4 張更難的真・全圖鑑…"},
   /* ---- R71 世代特化成就（生在對應年代＋在傾向死法事件選對活路；era/旗標確定性判定，零裸 rng；他年代/舊存檔永不誤觸）---- */
   {id:"r71_ironworker", ic:"🏭", nm:"黑手世代・做到老不做到死", desc:"生在經濟起飛年代，拚到中年那場一身病沒選擇硬撐——你戒了菸、轉了管理或乖乖回診，把『做到死』的劇本改寫成『做到老』，還撐過了 65 歲。這代人最難學的一課，你學會了。", check:c=>c.S.era==="e70"&&!!(c.S.flags&&(c.S.flags.r71_grindwise||c.S.flags.r71_grindcare||c.S.flags.r71_grindlive))&&c.age>=65, hint:"生在 1970 經濟起飛世代、中年遇上那場一身病的人…別硬撐，戒菸、轉管理或定期回診選一條活路，再把自己顧到 65 歲以後…"},
   {id:"r71_slasher", ic:"🧩", nm:"斜槓世代・低薪可以過勞免談", desc:"生在低薪年代，把人生切成好幾份賣的斜槓青年——但你沒被接到飽的浪潮捲走，砍掉雜案或設下班界線，證明了房子買不起是時代的問題，把自己操壞才是自己的問題。", check:c=>c.S.era==="e10"&&!!(c.S.flags&&(c.S.flags.r71_slashpro||c.S.flags.r71_slashbalance||c.S.flags.r71_slashlive)), hint:"生在 2010 低薪世代、斜槓接案接到分身乏術的人…別選接到飽，把斜槓養成正職或乾脆設下班界線，替自己留條活路…"},
@@ -12567,6 +12618,80 @@ function r134Equip(id){
     if(typeof S==="object" && S && S.cat) screenSummary(S.cat);   // 重繪結算頁讓勾選狀態即時更新
   }catch(e){}
 }
+
+/* ===================== R135 出生年代浪潮・結算年代卡 =====================
+   結算發一張「你是 X 世代」年代卡：年代名＋物價快照＋社會氛圍＋世代金句＋跨局收集進度，
+   外加一鍵複製分享（複製文字含 earthlife.pages.dev，線C推廣素材）。
+   純呈現/讀取層：零 rng、零狀態汙染；S=null／無 era／無 wave／髒資料一律回空字串安全降級。 */
+function r135Era(){
+  // 取本局年代的 R55 基礎資料＋R135 浪潮著色（缺任一→null，呼叫端整段省略）
+  try{
+    if(!S || typeof S!=="object" || !S.era) return null;
+    var base=R55_MAP[S.era], wave=R135_WAVE[S.era];
+    if(!base || !wave) return null;
+    return {id:S.era, base:base, wave:wave};
+  }catch(e){ return null; }
+}
+function r135EraShareText(){
+  // 年代卡純文字（分享/截圖用，含遊戲連結）；無年代→空字串
+  var e=r135Era(); if(!e) return "";
+  var lines=[
+    "🌊【地球Online・你是 "+e.base.nm+"】",
+    e.base.ic+" "+e.wave.tag,
+    "💸 物價：" + e.wave.price,
+    "🌆 氛圍：" + e.wave.mood,
+    "💬 " + e.wave.quote,
+    "🗯️ " + e.wave.share,
+  ];
+  try{
+    var got=0; for(var i=0;i<R55_ERAS.length;i++){ if((SAVE.eraSeen||{})[R55_ERAS[i].id]) got++; }
+    lines.push("🗓️ 鬼島世代收集：" + got + "/" + R55_ERAS.length + (got>=R55_ERAS.length?"（六世代浪潮全紀錄達成 🏆）":""));
+  }catch(e2){}
+  lines.push("換你投胎，看你降落在哪個年代 → https://" + SHARE_URL);
+  return lines.join("\n");
+}
+function r135WaveCardHTML(){
+  // 結算「你是 X 世代」年代卡（純呈現）；無年代/髒資料 → 空字串安全降級
+  var e=r135Era(); if(!e) return "";
+  var got=0, tot=R55_ERAS.length;
+  try{ for(var i=0;i<R55_ERAS.length;i++){ if((SAVE.eraSeen||{})[R55_ERAS[i].id]) got++; } }catch(e2){ got=0; }
+  var full=got>=tot;
+  return '<div class="origin" style="margin-top:10px;text-align:left;border-color:rgba(99,179,237,.45);background:rgba(99,179,237,.07)">'+
+    '🌊 <b style="font-size:15px">你是 '+e.base.ic+' '+e.base.nm+'</b>　<span class="muted">'+e.wave.tag+'</span>'+
+    '<p class="etext" style="margin:7px 0 3px">💸 <b>物價</b>　'+e.wave.price+'</p>'+
+    '<p class="etext" style="margin:3px 0">🌆 <b>氛圍</b>　'+e.wave.mood+'</p>'+
+    '<p class="etext" style="margin:3px 0;color:var(--accent,#ffd24a)">💬 '+e.wave.quote+'</p>'+
+    '<p class="muted" style="font-size:11.5px;margin:6px 0 8px">🗓️ 鬼島世代收集：<b>'+got+'/'+tot+'</b>'+
+      (full?'　🏆 六世代浪潮全紀錄達成！':'　（跨局降落不同年代即可集滿，解鎖 🌊 六世代浪潮全紀錄）')+'</p>'+
+    '<button class="btn sec" style="font-size:12px;padding:8px 12px" onclick="copyR135EraCard(this)">📣 複製年代卡（你是哪個世代，貼群組對暗號）</button>'+
+    '</div>';
+}
+function copyR135EraCard(btn){
+  // 沿用 copyShareTextCard 的 clipboard→legacyCopy→overlay 降級鏈，並計入「人生甩賣員」分享成就
+  var txt; try{ txt=r135EraShareText(); }catch(e){ txt=""; }
+  if(!txt){ try{ if(typeof alert==="function") alert("年代卡生成失敗（本局可能無出生年代資料）"); }catch(e){} return; }
+  try{
+    SAVE.sharecards=(SAVE.sharecards||0)+1;
+    if(SAVE.ach && !SAVE.ach.sharecard){ SAVE.ach.sharecard=true; recFound("a","sharecard",{w:SAVE.plays||0}); try{ sfxLater("ach",200); }catch(e){} }
+    persist();
+  }catch(e){}
+  var done=function(){
+    if(!btn) return;
+    if(!btn.dataset.orig) btn.dataset.orig=btn.innerHTML;
+    btn.innerHTML="✅ 年代卡已複製，貼到群組對暗號吧！";
+    setTimeout(function(){ if(btn.dataset.orig) btn.innerHTML=btn.dataset.orig; },2600);
+  };
+  var fallback=function(){
+    var okk=false; try{ okk=legacyCopy(txt); }catch(e){}
+    if(okk) done(); else { try{ textReportOverlay(txt); }catch(e){} }
+  };
+  try{
+    if(typeof navigator!=="undefined"&&navigator.clipboard&&navigator.clipboard.writeText){
+      navigator.clipboard.writeText(txt).then(done, fallback); return;
+    }
+  }catch(e){}
+  fallback();
+}
 function statsHTML(){
   applyAtmosphere();   // R120 分齡氛圍主題：每個遊戲畫面渲染時依當前年齡平滑切換背景主色（純視覺，無 DOM 自動略過）
   updateAmbient();     // R121 分齡 ambient 氛圍音：與視覺同步，依當前人生階段切換背景和聲（預設靜音/無 window 自動略過）
@@ -16669,6 +16794,7 @@ function screenSummary(cat){
       最終以 <b>${S.title}</b> 的身分被系統強制下線。</p>
       ${(S.origin&&R35_ORIGIN_EPI[S.origin.id])?`<p class="etext" style="color:var(--accent,#ffd24a)">${S.origin.ic} ${R35_ORIGIN_EPI[S.origin.id]}</p>`:""}
       ${(S.era&&R55_MAP[S.era])?`<p class="etext">${R55_MAP[S.era].ic} 你生於【${R55_MAP[S.era].nm}】——${R55_MAP[S.era].sum}</p>`:""}
+      ${r135WaveCardHTML()}
       ${r50SummaryHTML()}
       ${r81EraReviewHTML()}
       ${r83BizReviewHTML()}

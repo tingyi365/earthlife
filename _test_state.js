@@ -4955,5 +4955,62 @@ const r133 = JSON.parse(vm.runInContext(`(function(){
   ['nullSafe','⑬ 無局(S=null)相容:判決書回空字串不炸'],
 ].forEach(([k,m])=>ok(r133[k], 'R133 '+m));
 
+// ===== R135 出生年代浪潮：資料齊備/年代卡渲染/分享文字含連結/deterministic讀S.era/純呈現零汙染/無era降級/髒era降級/S=null降級/舊存檔不補鍵/跨局集滿成就 =====
+const r135 = JSON.parse(vm.runInContext(`(function(){
+  const out={};
+  // ① 資料齊備：R55 六個年代每個都有 R135_WAVE，且 tag/price/mood/quote/share 皆非空字串
+  out.dataFull = R55_ERAS.length>=6 && R55_ERAS.every(er=>{ const w=R135_WAVE[er.id];
+    return w && ['tag','price','mood','quote','share'].every(k=>typeof w[k]==='string' && w[k].length>4); });
+  // ② 年代卡渲染：設一個合法年代 → 含年代名/物價/氛圍/金句/收集進度/複製按鈕
+  startGame(); S.era='e10';
+  const card=r135WaveCardHTML();
+  out.cardRender = card.indexOf(R55_MAP.e10.nm)>=0 && card.indexOf('物價')>=0 && card.indexOf('氛圍')>=0
+    && card.indexOf('世代收集')>=0 && card.indexOf('copyR135EraCard')>=0;
+  // ③ 分享文字：含年代名與 earthlife.pages.dev、且無捏造對戰勝率字眼
+  const txt=r135EraShareText();
+  out.shareText = txt.indexOf(R55_MAP.e10.nm)>=0 && txt.indexOf(SHARE_URL)>=0
+    && !/(贏過|打敗|勝過|超越|擊敗|勝率|存活率|百分位)[^。\\n]{0,8}\\d+\\s*%/.test(txt);
+  // ④ deterministic 純讀 S.era：同年代兩次渲染逐字一致
+  S.era='e70'; const a1=r135WaveCardHTML(), a2=r135WaveCardHTML();
+  out.deterministic = a1===a2 && a1.indexOf(R55_MAP.e70.nm)>=0;
+  // ⑤ 純呈現零汙染：生成前後 S.attr/era/flags 不變、零 rng 消耗
+  S.era='e20'; const bA=JSON.stringify(S.attr), bE=S.era, bF=JSON.stringify(S.flags);
+  let used=0; const oldR=rng; rng=function(){ used++; return oldR(); };
+  r135WaveCardHTML(); r135EraShareText(); rng=oldR;
+  out.pure = JSON.stringify(S.attr)===bA && S.era===bE && JSON.stringify(S.flags)===bF && used===0;
+  // ⑥ 無 era 降級：S.era 缺 → 卡與文字皆空字串不炸
+  startGame(); delete S.era;
+  out.noEra = r135WaveCardHTML()==='' && r135EraShareText()==='';
+  // ⑦ 髒 era 降級：S.era 為不存在 id → 空字串不炸
+  startGame(); S.era='zzz999';
+  out.dirtyEra = (()=>{ try{ return r135WaveCardHTML()==='' && r135EraShareText()===''; }catch(e){ return false; } })();
+  // ⑧ S=null 降級：卡與文字皆空字串不炸
+  out.nullSafe = (()=>{ try{ S=null; return r135WaveCardHTML()==='' && r135EraShareText()===''; }catch(e){ return false; } })();
+  // ⑨ 舊存檔相容：ensureState 不為 R135 在 S 補任何 r135 鍵
+  startGame(); const olds=S; ensureState(olds);
+  out.compatOld = !Object.keys(olds).some(k=>k.toLowerCase().indexOf('r135')===0)
+    && !Object.keys(olds.flags||{}).some(k=>k.toLowerCase().indexOf('r135')===0);
+  // ⑩ 跨局集滿成就 r135_allgen：六世代全亮→解鎖、缺一→不解
+  const allSeen={}; R55_ERAS.forEach(er=>allSeen[er.id]=true);
+  SAVE.eraSeen=allSeen; out.achFull = !!ACH_MAP.r135_allgen && ACH_MAP.r135_allgen.check({S:{},age:0});
+  const partial=Object.assign({},allSeen); delete partial[R55_ERAS[0].id];
+  SAVE.eraSeen=partial; out.achPartial = !ACH_MAP.r135_allgen.check({S:{},age:0});
+  SAVE.eraSeen={};
+  return JSON.stringify(out);
+})()`, sandbox));
+[
+  ['dataFull','① 資料齊備:R55 六年代皆有 R135_WAVE 且 tag/price/mood/quote/share 非空'],
+  ['cardRender','② 年代卡渲染:含年代名/物價/氛圍/金句/收集進度/複製按鈕'],
+  ['shareText','③ 分享文字:含年代名與 earthlife.pages.dev、無捏造勝率%'],
+  ['deterministic','④ deterministic 純讀 S.era:同年代兩次渲染逐字一致'],
+  ['pure','⑤ 純呈現零汙染:生成前後 S.attr/era/flags 不變且零 rng'],
+  ['noEra','⑥ 無 era 降級:卡與分享文字皆回空字串不炸'],
+  ['dirtyEra','⑦ 髒 era 降級:不存在 id→空字串不炸'],
+  ['nullSafe','⑧ 無局(S=null)相容:卡與分享文字皆回空字串不炸'],
+  ['compatOld','⑨ 舊存檔相容:ensureState 不為 R135 補任何 S/flags 鍵'],
+  ['achFull','⑩ 跨局集滿:六世代全亮→r135_allgen 解鎖'],
+  ['achPartial','⑩ 跨局集滿:缺一世代→r135_allgen 不解'],
+].forEach(([k,m])=>ok(r135[k], 'R135 '+m));
+
 console.log(fails ? `\n結果: ❌ ${fails} 項未通過` : '\n結果: ✅ 狀態機全數正確');
 process.exit(fails ? 1 : 0);
