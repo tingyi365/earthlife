@@ -4150,5 +4150,85 @@ const r123 = JSON.parse(vm.runInContext(`(function(){
   ['nullSafe','⑮ 無局(S=null)相容不炸'],
 ].forEach(([k,m])=>ok(r123[k], 'R123 '+m));
 
+// ===== R124 病毒人生挑戰迴圈：戰帖編碼/解碼容錯、首屏橫幅、完局對照、純呈現層不動序列 =====
+sandbox.btoa = (str)=>Buffer.from(str,'binary').toString('base64');
+sandbox.atob = (b64)=>Buffer.from(b64,'base64').toString('binary');
+const r124 = JSON.parse(vm.runInContext(`(function(){
+  const out={};
+  // 完局資料：航海王背債局
+  startGame(); const s=S; ensureState(s); s.alive=false;
+  s.age=62; s.attr={hp:40,int:60,apr:50,mny:25,hap:45};
+  s.flags=Object.assign(s.flags||{},{r122_in:true,r122_path:"sailor",r122_endtype:"r122_end_debtgrad"});
+  s.deathReason="<b>梭哈梭到畢業</b>，套房裡只剩對帳單";
+  // ① payload 精簡結構：含 享年/人格名/圖示/稀有度/死法/五圍，五圍長度=5
+  const pay=buildChallengePayload();
+  out.payload = typeof pay.a==="number" && typeof pay.n==="string" && typeof pay.i==="string"
+    && typeof pay.r==="number" && typeof pay.d==="string" && Array.isArray(pay.s) && pay.s.length===5;
+  // ② 死法去標籤（不帶 < > 標籤殘留）、欄位截短
+  out.stripped = pay.d.indexOf("<")<0 && pay.d.indexOf(">")<0 && pay.n.length<=24 && pay.d.length<=42;
+  // ③ encode→decode round-trip 還原一致（透過注入 location.hash 走 readChallengeHash）
+  const enc=b64urlEncode(JSON.stringify(pay));
+  globalThis.location={hash:"#c="+enc};
+  const dec=readChallengeHash();
+  out.roundtrip = !!dec && dec.a===pay.a && dec.n===pay.n && dec.r===pay.r
+    && JSON.stringify(dec.s)===JSON.stringify(pay.s);
+  // ④ URL 精簡：總長合理（避免超長），且為 #c= 格式
+  const url=buildChallengeURL();
+  out.compactUrl = url.indexOf("#c=")>=0 && url.length<320;
+  // ⑤ 容錯：壞 base64 / 舊版缺欄位 / 空 hash 一律降級為 null（絕不報錯）
+  let robust=true;
+  try{
+    globalThis.location={hash:"#c=@@@notbase64@@@"}; if(readChallengeHash()!==null) robust=false;
+    globalThis.location={hash:"#c="+b64urlEncode(JSON.stringify({v:1,foo:"bar"}))}; if(readChallengeHash()!==null) robust=false;  // 缺 s/a
+    globalThis.location={hash:""}; if(readChallengeHash()!==null) robust=false;
+    globalThis.location={hash:"#r=abc"}; if(readChallengeHash()!==null) robust=false;  // 別人的 hash 不誤判
+  }catch(e){ robust=false; }
+  out.robust = robust;
+  // ⑥ CHALLENGE 為空時：首屏橫幅與完局對照皆整段省略（不破壞既有畫面）
+  CHALLENGE=null;
+  out.emptySafe = challengeBannerHTML()==="" && challengeCompareHTML()==="";
+  // ⑦ 首屏戰帖橫幅：含被挑戰者人格/稀有度與「接受挑戰」鈕、走自嘲不踩仇恨紅線
+  CHALLENGE={a:88,n:"養生長壽仙",i:"🥦",r:10,d:"睡夢中安詳登出",s:[78,60,55,50,70]};
+  const banner=challengeBannerHTML();
+  out.banner = banner.indexOf("戰帖")>=0 && banner.indexOf("養生長壽仙")>=0
+    && banner.indexOf("10%")>=0 && banner.indexOf("acceptChallenge")>=0;
+  // ⑧ 完局對照：你 vs 對方、含勝負定性與「換你下戰帖」鈕
+  startGame(); const me=S; ensureState(me); me.alive=false; me.age=45; me.attr={hp:30,int:60,apr:50,mny:25,hap:40};
+  me.flags={r122_endtype:"r122_end_debtgrad"};
+  const cmp=challengeCompareHTML();
+  out.compare = cmp.indexOf("挑戰結果對照")>=0 && cmp.indexOf("VS")>=0
+    && cmp.indexOf("copyChallengeLink")>=0
+    && (cmp.indexOf("你贏了")>=0 || cmp.indexOf("你輸了")>=0 || cmp.indexOf("平手")>=0);
+  // ⑨ 對照勝負方向正確：我 45 歲 < 對方 88 歲 → 壽命落敗段呈現「少活」
+  out.compareDir = cmp.indexOf("少活")>=0;
+  // ⑩ 純呈現層：產 payload/URL/對照 前後 S.attr / S.flags 完全不變（不動 sim/state 序列）
+  const bA=JSON.stringify(S.attr), bF=JSON.stringify(S.flags);
+  buildChallengePayload(); buildChallengeURL(); challengeCompareHTML(); challengeBannerHTML();
+  out.noMutate = JSON.stringify(S.attr)===bA && JSON.stringify(S.flags)===bF;
+  // ⑪ 零 rng 消耗（不踏進遊戲隨機序列）
+  let used=0; const old=rng; rng=function(){ used++; return old(); };
+  buildChallengePayload(); buildChallengeURL(); challengeCompareHTML(); challengeBannerHTML();
+  rng=old; out.rngZero = used===0;
+  // ⑫ 無局(S=null)相容：產 payload 不炸、對照/橫幅安全
+  let okNull=true; try{ S=null; CHALLENGE=null; buildChallengePayload(); if(challengeCompareHTML()!=="") okNull=false; }catch(e){ okNull=false; }
+  out.nullSafe = okNull;
+  CHALLENGE=null; delete globalThis.location;
+  return JSON.stringify(out);
+})()`, sandbox));
+[
+  ['payload','① 戰帖 payload 精簡結構(享年/人格/圖示/稀有度/死法/五圍×5)'],
+  ['stripped','② 死法去標籤+欄位截短(避免超長)'],
+  ['roundtrip','③ encode→decode 還原一致(readChallengeHash)'],
+  ['compactUrl','④ URL 精簡 #c= 格式且總長合理'],
+  ['robust','⑤ 容錯:壞碼/舊版缺欄位/空hash/他人hash 一律安全降級 null'],
+  ['emptySafe','⑥ 無戰帖時首屏橫幅與完局對照整段省略'],
+  ['banner','⑦ 首屏戰帖橫幅含人格/稀有度/接受挑戰鈕'],
+  ['compare','⑧ 完局挑戰結果對照含你vs對方/勝負定性/換你下戰帖鈕'],
+  ['compareDir','⑨ 對照勝負方向正確(45<88→少活)'],
+  ['noMutate','⑩ 純呈現層:生成前後 S.attr/S.flags 不變(不動序列)'],
+  ['rngZero','⑪ 零 rng() 消耗'],
+  ['nullSafe','⑫ 無局(S=null)相容不炸'],
+].forEach(([k,m])=>ok(r124[k], 'R124 '+m));
+
 console.log(fails ? `\n結果: ❌ ${fails} 項未通過` : '\n結果: ✅ 狀態機全數正確');
 process.exit(fails ? 1 : 0);

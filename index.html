@@ -11818,6 +11818,7 @@ function screenStart(){
   $("#app").innerHTML = `
     ${topbarHTML()}
     ${worldTickerHTML()}
+    ${challengeBannerHTML()}
     ${renderMeme("baby","歡迎登入","地球 ONLINE","M3")}
     <div class="panel center">
       <h2 class="sec">史上最爛 MMORPG · 文字版</h2>
@@ -15368,6 +15369,7 @@ function screenSummary(cat){
       ${epitaphHTML()}
       ${memoirHTML()}
       ${personaHTML()}
+      ${challengeCompareHTML()}
       <div class="origin center"><span class="grademedal"><span class="gm-t">本局評價</span><span class="gm-g">${grade}</span><span class="gm-s">級</span></span><br>
       <span class="muted">${GRADE_TALK[grade]||""}</span><br>
       <span class="muted">總分 ${sum} / 500　·　本帳號第 ${SAVE.plays} 隻角色</span></div>
@@ -15405,6 +15407,7 @@ function screenSummary(cat){
         <button class="btn" onclick="copyTextReport(this)">📣 複製人生戰報（稱號＋名場面，貼群組嗆人）</button>
         <button class="btn" onclick="copyMemoir(this)">📖 複製人生回憶錄（自動代筆傳記，貼社群最有感）</button>
         <button class="btn" onclick="copyShareLink()">🔗 複製比拼連結，嗆朋友</button>
+        <button class="btn cta" onclick="copyChallengeLink(this)">📨 向朋友下戰帖（朋友開連結→首屏戰帖橫幅→活贏你再說）</button>
         <button class="btn sec" onclick="screenTimeline()">📜 人生回顧（大事時間軸）</button>
         <button class="btn sec" onclick="screenResume()">📋 回顧這一生的人生履歷</button>
         <button class="btn sec" onclick="screenRebirth()">🔄 轉生殿（${rebirthData().pts} 點可花）</button>
@@ -18047,11 +18050,140 @@ function backFromGallery2(){
 }
 
 /* =========================================================================
+   R124 病毒人生挑戰迴圈（社交回流閉環）——純 URL / DOM 層
+   結算「下戰帖」把本局戰績精簡編碼進 #c=<base64> → 朋友開連結首屏看到戰帖橫幅
+   → 接受挑戰活一局 → 完局結算自動「挑戰結果對照」→「換你下戰帖」延續迴圈。
+   只讀完局資料與解析 hash，嚴禁碰 sim/state 既有序列；hash 容錯一律安全降級為正常開局。
+   所有對外環境（location/navigator/btoa）皆沿用既有 typeof 守衛，測試 sandbox 自動降級。
+   ========================================================================= */
+let CHALLENGE = null;   // 接收端解析到的「被挑戰者」戰績（容錯通過才會非 null）
+
+/* 把本局關鍵戰績精簡編碼成戰帖 payload（只塞必要欄位，避免超長 URL） */
+function buildChallengePayload(){
+  const a = (S&&S.attr) || {};
+  let p=null; try{ p=buildPersona(); }catch(e){}
+  return {
+    v:124,
+    a:(S&&S.age)|0,                                   // 享年
+    n:((p&&p.nm)||"地球路人").slice(0,24),            // 台味人格原型標籤（R123）
+    i:((p&&p.ic)||"🧑").slice(0,4),                   // 人格圖示
+    r:(p&&typeof p.rar==="number")?p.rar:35,          // 稀有度估算
+    d:stripTags((S&&S.deathReason)||"").slice(0,42),  // 死法（去標籤、截短）
+    s:[a.hp|0,a.int|0,a.apr|0,a.mny|0,a.hap|0],       // 最終五圍
+  };
+}
+function buildChallengeURL(){
+  const base = (typeof location!=="undefined" && location.origin && location.pathname)
+    ? location.origin+location.pathname : "https://"+SHARE_URL+"/";
+  return base+"#c="+b64urlEncode(JSON.stringify(buildChallengePayload()));
+}
+/* 解析 #c= 戰帖；格式錯誤／舊版／空 hash 一律回傳 null（呼叫端據此安全降級成正常開局） */
+function readChallengeHash(){
+  try{
+    const h=(typeof location!=="undefined" && location.hash) || "";
+    const m=h.match(/[#&]c=([^&]+)/);
+    if(!m) return null;
+    const o=JSON.parse(b64urlDecode(m[1]));
+    if(o && Array.isArray(o.s) && o.s.length===5 && typeof o.a==="number"){
+      return {
+        a:o.a|0,
+        n:String(o.n||"神秘玩家").slice(0,24),
+        i:String(o.i||"🧑").slice(0,4),
+        r:(typeof o.r==="number")?o.r:35,
+        d:stripTags(String(o.d||"")).slice(0,42),
+        s:o.s.map(x=>Math.max(0,Math.min(100,x|0))),
+      };
+    }
+  }catch(e){}
+  return null;
+}
+function r124RarWord(r){ return r<=8?"超稀有":r<=15?"稀有":"常見"; }
+
+/* 接收端首屏戰帖橫幅（CHALLENGE 為空時整段省略；台味自嘲梗，不踩政治/暴力/仇恨紅線） */
+function challengeBannerHTML(){
+  const d=CHALLENGE; if(!d) return "";
+  return `<div class="panel center" style="border:2px solid var(--accent,#ffd24a);background:linear-gradient(180deg,rgba(255,210,74,.12),var(--panel2));margin-bottom:12px">
+    <h2 class="sec" style="color:var(--accent,#ffd24a)">📨 有人對你下了戰帖</h2>
+    <div style="text-align:center;margin:8px 0">
+      <div style="font-size:38px;line-height:1.1">${d.i}</div>
+      <p class="etext" style="font-size:14px;line-height:1.7;margin:6px auto;max-width:440px">
+        對方在鬼島活了 <b>${d.a}</b> 歲，走了一條「<b style="color:var(--accent,#ffd24a)">${d.n}</b>」的人生<br>
+        ☠️ ${d.d||"下場成謎"}<br>
+        🎲 稀有度估算 <b>${d.r}%</b>（${r124RarWord(d.r)}）——同款人生全台沒幾個</p>
+      <p class="hero-slogan" style="margin:8px auto">「${d.a} 歲走「${d.n}」，你敢挑戰超越嗎？」投一次胎，活給他看。</p>
+    </div>
+    <div class="choices">
+      <button class="btn cta" onclick="acceptChallenge()">⚔️ 接受挑戰・開始這一生</button>
+      <button class="btn sec" onclick="declineChallenge()">🙅 算了，我自己隨便活</button>
+    </div>
+  </div>`;
+}
+function acceptChallenge(){ startGame(); }   // CHALLENGE 保留在記憶體，完局時做對照
+function declineChallenge(){
+  CHALLENGE=null;
+  try{ if(typeof history!=="undefined" && history.replaceState && typeof location!=="undefined") history.replaceState(null,"",location.pathname+location.search); }catch(e){}
+  screenStart();
+}
+
+/* 完局結算「挑戰結果對照」（CHALLENGE 為空時整段省略；rar 越低越稀有） */
+function challengeCompareHTML(){
+  const d=CHALLENGE; if(!d) return "";
+  let mine=null; try{ mine=buildPersona(); }catch(e){}
+  const myAge=(S&&S.age)|0, myRar=(mine&&typeof mine.rar==="number")?mine.rar:35;
+  const myNm=(mine&&mine.nm)||"地球路人", myIc=(mine&&mine.ic)||"🧑";
+  const ageWin=myAge>d.a, ageTie=myAge===d.a;
+  const ageLine = ageTie ? `🤝 你跟對方同樣活到 ${myAge} 歲，平手，難分高下。`
+    : ageWin ? `🏆 你活了 ${myAge} 歲，比對方多撐了 ${myAge-d.a} 年——壽命這局你完勝。`
+    : `💀 你只活到 ${myAge} 歲，對方撐到 ${d.a} 歲，足足少活 ${d.a-myAge} 年。`;
+  const rarWin=myRar<d.r, rarTie=myRar===d.r;
+  const rarLine = rarTie ? `🎲 兩人稀有度同為 ${myRar}%，人生稀有度打成平手。`
+    : rarWin ? `💎 你的「${myNm}」估算僅 ${myRar}%，比對方「${d.n}」(${d.r}%) 更稀有——這條命更難複製。`
+    : `🍌 你的「${myNm}」(${myRar}%) 比對方「${d.n}」(${d.r}%) 大眾，論獨特你略輸一籌。`;
+  let verdict;
+  if(ageWin || (ageTie&&rarWin)) verdict=`😎 整體你贏了——這口氣，截圖回敬對方剛剛好！`;
+  else if(!ageWin && !ageTie && !rarWin) verdict=`😮‍💨 整體你輸了——別氣，鬼島本來就難混，下輩子再戰。`;
+  else verdict=`😐 互有勝負，這場挑戰算平手，誰也別嘴誰。`;
+  return `<div class="panel center" id="r124compare" style="margin-top:12px;border:2px solid var(--accent,#ffd24a);background:var(--panel2)">
+    <h2 class="sec">⚔️ 挑戰結果對照</h2>
+    <div class="muted" style="font-size:11.5px;margin-bottom:6px">你 vs 對你下戰帖的玩家</div>
+    <div style="display:flex;justify-content:space-around;align-items:center;text-align:center;margin:8px 0;font-size:12.5px">
+      <div><div style="font-size:30px">${myIc}</div><b>你</b><br>${myAge}歲 · ${myRar}%</div>
+      <div style="font-size:20px;font-weight:800;color:var(--accent,#ffd24a)">VS</div>
+      <div><div style="font-size:30px">${d.i}</div><b>對方</b><br>${d.a}歲 · ${d.r}%</div>
+    </div>
+    <p class="etext" style="font-size:12.5px;line-height:1.7;text-align:left;max-width:440px;margin:6px auto">${ageLine}<br>${rarLine}</p>
+    <p class="hero-slogan" style="margin:8px auto">${verdict}</p>
+    <div class="choices"><button class="btn cta" onclick="copyChallengeLink(this)">📨 換你下戰帖，把戰績甩回去</button></div>
+  </div>`;
+}
+
+/* 一鍵產生／複製戰帖連結（沿用 clipboard→overlay 降級鏈） */
+function copyChallengeLink(btn){
+  let url; try{ url=buildChallengeURL(); }catch(e){ alert("戰帖連結生成失敗："+(e&&e.message||e)); return; }
+  let copied=false;
+  try{ if(typeof navigator!=="undefined" && navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(url); copied=true; } }catch(e){}
+  challengeLinkOverlay(url, copied);
+}
+function challengeLinkOverlay(url, copied){
+  closeShareOverlay();
+  const ov=document.createElement('div'); ov.id='shareov';
+  ov.setAttribute('style','position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.88);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:22px;gap:14px;');
+  ov.innerHTML=
+    '<div style="color:#ffd24a;font:bold 16px monospace;text-align:center">📨 向朋友下戰帖'+(copied?'（已複製到剪貼簿）':'')+'</div>'+
+    '<div style="color:#9fffd0;font:12px monospace;text-align:center;max-width:90%">把這條連結貼到群組，朋友一點開就會看到你的戰帖橫幅——接受挑戰活一局，完局就會跟你比輸贏，再換他下戰帖傳下去👇</div>'+
+    '<textarea readonly onclick="this.select()" style="width:90%;max-width:520px;height:96px;background:#11131f;color:#cfd3e6;border:1px solid #39ff88;border-radius:8px;font:12px monospace;padding:10px;resize:none">'+url+'</textarea>'+
+    '<button onclick="closeShareOverlay()" style="background:#39ff88;color:#08110a;font:bold 14px monospace;padding:11px 22px;border:0;border-radius:8px;cursor:pointer">好了，關閉</button>';
+  document.body.appendChild(ov);
+}
+
+/* =========================================================================
    啟動
    ========================================================================= */
 loadSave();
-const __shared = readShareHash();
-if(__shared) screenFriendCard(__shared);
+CHALLENGE = readChallengeHash();              // R124 戰帖優先解析（容錯失敗回 null → 正常開局）
+const __shared = CHALLENGE ? null : readShareHash();
+if(CHALLENGE) screenStart();                  // 首屏帶戰帖橫幅，等玩家按「接受挑戰」
+else if(__shared) screenFriendCard(__shared);
 else screenStart();
 </script>
 </body>
