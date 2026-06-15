@@ -4812,5 +4812,75 @@ const r131 = JSON.parse(vm.runInContext(`(function(){
   ['allpaths','⑯ 跨局收集:七業集滿→r131_allpaths 解鎖、缺一不解'],
 ].forEach(([k,m])=>ok(r131[k], 'R131 '+m));
 
+// ===== R132 鬼島即時稱號養成系統(Live 在地稱號 Badge)：即時稱號 deterministic/升階邏輯/零汙染零 rng/即時面板省略顯示/結算定格卡/複製文字/髒資料降級/舊存檔相容/S=null 相容/跨局集滿九大五圍解鎖 r132_alltitles =====
+const r132 = JSON.parse(vm.runInContext(`(function(){
+  const out={};
+  function fresh(age,fl,attr){ startGame(); const s=S; s.flags=Object.assign({},fl||{}); ensureState(s); if(age!=null)s.age=age; if(attr)Object.assign(s.attr,attr); return s; }
+  function byId(list,id){ return list.filter(b=>b.id===id)[0]; }
+  // ⑪ deterministic 點亮：高五圍→winner/brainy/pretty/rich 同時點亮；同輸入兩次結果完全一致
+  fresh(40,{},{hp:75,int:90,apr:90,mny:90,hap:80}); let L=r132LitBadges();
+  out.detLit = !!byId(L,'winner') && !!byId(L,'brainy') && !!byId(L,'rich') && !!byId(L,'pretty');
+  fresh(40,{},{hp:75,int:90,apr:90,mny:90,hap:80}); const J1=JSON.stringify(r132LitBadges());
+  fresh(40,{},{hp:75,int:90,apr:90,mny:90,hap:80}); out.deterministic = (JSON.stringify(r132LitBadges())===J1);
+  // ⑫ 升階邏輯(養成感)：條件加深 base→up；attr 系與 flag 系各驗一條
+  fresh(40,{},{int:68}); out.brainyBase = (b=>!!b && b.up===false && b.nm==='靠北潛力股')(byId(r132LitBadges(),'brainy'));
+  fresh(40,{},{int:90}); out.brainyUp   = (b=>!!b && b.up===true  && b.nm==='鬼島智力怪物')(byId(r132LitBadges(),'brainy'));
+  fresh(40,{npiao:true},{}); out.npiaoBase = (b=>!!b && b.up===false)(byId(r132LitBadges(),'npiao'));
+  fresh(40,{npiao:true,rentpain:true},{}); out.npiaoUp = (b=>!!b && b.up===true)(byId(r132LitBadges(),'npiao'));
+  // ⑬ 純呈現零汙染：生成前後 S.attr/flags 不變、零 rng 消耗
+  fresh(40,{npiao:true,r128_in:true,r130stress:20},{hp:75,int:90,mny:90,hap:80,apr:90});
+  const bA=JSON.stringify(S.attr), bF=JSON.stringify(S.flags);
+  let used=0; const old=rng; rng=function(){ used++; return old(); };
+  r132LitBadges(); r132LiveTitleHTML(); r132FreezeHTML(); buildR132Text();
+  rng=old;
+  out.pure = JSON.stringify(S.attr)===bA && JSON.stringify(S.flags)===bF && used===0;
+  // ⑭ 髒資料降級：attr 髒值/缺欄位 → 不炸、回陣列、安全渲染
+  out.dirtySafe = (()=>{ try{ fresh(40,{},{}); S.attr={hp:'x',int:null}; delete S.attr.mny; if(!Array.isArray(r132LitBadges())) return false; r132LiveTitleHTML(); r132FreezeHTML(); return true; }catch(e){ return false; } })();
+  // ⑮ 舊存檔相容：ensureState 不為 R132 在 S.flags 補任何必填鍵；空 flags+中庸五圍不誤觸 flag 系稱號
+  startGame(); const olds=S; ensureState(olds); out.compatOld = !Object.keys(olds.flags).some(k=>k.indexOf('r132')===0);
+  fresh(40,{},{hp:50,int:50,apr:50,mny:50,hap:50}); const fl=r132LitBadges().map(b=>b.id);
+  out.noFlagFalsePos = !fl.some(id=>['house','npiao','whale','boss','stress','pet','tiger','leek'].indexOf(id)>=0);
+  // ⑯ 無局(S=null)相容：lit 回空陣列、面板/定格卡/複製文字皆回空字串，皆不炸
+  out.nullSafe = (()=>{ try{ S=null; if(r132LitBadges().length!==0) return false; if(r132LiveTitleHTML()!=='') return false; if(r132FreezeHTML()!=='') return false; if(buildR132Text()!=='') return false; return true; }catch(e){ return false; } })();
+  // ⑰ 即時面板：無點亮→整段省略；有點亮→含標題且升階顯 ▲
+  out.liveEmpty = (fresh(5,{},{hp:50,int:50,apr:50,mny:50,hap:50}), r132LiveTitleHTML()==='');
+  fresh(40,{},{int:90}); const lh=r132LiveTitleHTML(); out.liveShow = lh.indexOf('鬼島即時稱號')>=0 && lh.indexOf('▲')>=0;
+  // ⑱ 結算定格卡：沒點亮→省略；有點亮→含「我的鬼島稱號牆」+九大收集進度；複製文字含標題與站點
+  out.freezeEmpty = (fresh(5,{},{hp:50,int:50,apr:50,mny:50,hap:50}), r132FreezeHTML()==='');
+  fresh(60,{},{int:90}); const fh=r132FreezeHTML(); out.freezeShow = fh.indexOf('我的鬼島稱號牆')>=0 && fh.indexOf('/9')>=0;
+  fresh(40,{},{int:90}); out.copyText = buildR132Text().indexOf('我的鬼島稱號牆')>=0 && buildR132Text().indexOf('earthlife.pages.dev')>=0;
+  // ⑲ 結算定格寫入 SAVE.r132seen(die 收集邏輯)：點亮的 id 全寫進跨局集合
+  fresh(40,{},{hp:85,int:85,apr:85,mny:85,hap:85}); SAVE.r132seen={}; r132LitBadges().forEach(b=>{ SAVE.r132seen[b.id]=true; });
+  out.freezeWrite = SAVE.r132seen.winner===true && SAVE.r132seen.brainy===true && SAVE.r132seen.rich===true;
+  // ⑳ 跨局集滿九大五圍稱號→r132_alltitles 解鎖；缺一→不解
+  const ach=ACHIEVEMENTS.find(a=>a.id==='r132_alltitles');
+  SAVE.r132seen={}; R132_CORE.forEach(id=>SAVE.r132seen[id]=true);
+  const full = !!(ach && ach.check({S:{flags:{}}}));
+  SAVE.r132seen={winner:true,loser:true}; const partial = !!(ach && ach.check({S:{flags:{}}}));
+  SAVE.r132seen={};
+  out.alltitles = full && !partial;
+  return JSON.stringify(out);
+})()`, sandbox));
+[
+  ['detLit','⑪ 即時稱號 deterministic:高五圍→winner/brainy/rich/pretty 同時點亮'],
+  ['deterministic','⑪ 即時稱號 deterministic:同輸入兩次結果完全一致'],
+  ['brainyBase','⑫ 升階邏輯:int68→靠北潛力股(base)'],
+  ['brainyUp','⑫ 升階邏輯:int90→鬼島智力怪物(up▲)'],
+  ['npiaoBase','⑫ 升階邏輯(flag系):npiao→北漂青年(base)'],
+  ['npiaoUp','⑫ 升階邏輯(flag系):npiao+rentpain→北漂魯蛇(up▲)'],
+  ['pure','⑬ 純呈現零汙染:生成前後 S.attr/flags 不變且零 rng'],
+  ['dirtySafe','⑭ 髒資料降級:attr 髒值/缺欄位不炸仍回陣列安全渲染'],
+  ['compatOld','⑮ 舊存檔相容:ensureState 不為 R132 補 S.flags 鍵'],
+  ['noFlagFalsePos','⑮ 舊存檔相容:空 flags+中庸五圍不誤觸 flag 系稱號'],
+  ['nullSafe','⑯ 無局(S=null)相容:lit 回空陣列/面板/定格卡/複製文字回空字串不炸'],
+  ['liveEmpty','⑰ 即時面板:無點亮整段省略'],
+  ['liveShow','⑰ 即時面板:有點亮含標題且升階顯 ▲'],
+  ['freezeEmpty','⑱ 結算定格卡:沒點亮整段省略'],
+  ['freezeShow','⑱ 結算定格卡:含「我的鬼島稱號牆」+九大收集進度(/9)'],
+  ['copyText','⑱ 複製文字:含標題與 earthlife.pages.dev'],
+  ['freezeWrite','⑲ 結算定格寫入 SAVE.r132seen:點亮 id 全進跨局集合'],
+  ['alltitles','⑳ 跨局集滿:九大五圍集滿→r132_alltitles 解鎖、缺一不解'],
+].forEach(([k,m])=>ok(r132[k], 'R132 '+m));
+
 console.log(fails ? `\n結果: ❌ ${fails} 項未通過` : '\n結果: ✅ 狀態機全數正確');
 process.exit(fails ? 1 : 0);

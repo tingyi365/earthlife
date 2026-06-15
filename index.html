@@ -2486,6 +2486,7 @@ function loadSave(){
     if(!SAVE.scriptBadges || typeof SAVE.scriptBadges!=="object") SAVE.scriptBadges={}; // R56 劇本徽章：缺鍵當空集合，舊存檔不炸
     if(!Array.isArray(SAVE.hof)) SAVE.hof=[]; // R108 歷代人生名人堂：跨周目人生收藏冊，缺鍵當空陣列，舊存檔不崩
     if(!SAVE.r131seen || typeof SAVE.r131seen!=="object") SAVE.r131seen={}; // R131 職涯路線跨局收集：path→true，缺鍵當空集合，舊存檔不崩
+    if(!SAVE.r132seen || typeof SAVE.r132seen!=="object") SAVE.r132seen={}; // R132 即時稱號跨局收集：badgeId→true，缺鍵當空集合，舊存檔不崩
     rebirthData();   // R6 轉生：舊存檔缺鍵就地補上 {pts,total,talents,equipped}，不可炸
     legacyData();    // R23 祖產：舊存檔缺鍵就地補上 {yd,ydTotal,perks,roster,lastMny,pickAttr}，不可炸
     dynastyData();   // R42 世代傳承：舊存檔缺鍵就地補上 {pending,lineage}，不可炸
@@ -2943,6 +2944,8 @@ const ACHIEVEMENTS = [
   {id:"r131_polwin", ic:"🎤", nm:"風光當選・擠進權力遊戲核心", desc:"你選了政治這條掌聲與冷箭並存的路，在黑函抹黑排山倒海的選戰肉搏裡，靠著一張扛得住鎂光燈的臉跟綿密的群眾緣催出了選票，從幕後走到了台前、風光當選。你擠進了這座島最現實也最迷人的權力遊戲核心——只是別忘了當初為何站上這個舞台。", check:c=>!!(c.S.flags&&c.S.flags.r131_politics_win), hint:"職涯選政治幕僚／參選、又在選戰決勝點靠夠高的魅力(群眾緣)催出選票、風光當選上位…"},
   {id:"r131_freestable", ic:"🛋️", nm:"自由上岸・靠本事接案的游牧者", desc:"你選了窮一點但自由的接案路，沒被收入的波動打回原形——靠著一顆會規劃的腦袋，把『自由』活成了『事業』，接到願意長期合作的大客戶，時間自己排、價格自己開。在這座把穩定工作當神主牌的島上，你證明了只要本事夠硬，自由接案一樣能活得踏實又體面。", check:c=>!!(c.S.flags&&c.S.flags.r131_free_stable), hint:"職涯選自由接案／躺平打工、又在淡旺季考驗那關靠夠高的智力(規劃與接案本事)接到大客戶、把自由經營成穩定事業…"},
   {id:"r131_allpaths", ic:"🎰", nm:"鬼島百業通・七業全玩過一輪", desc:"科技業、公務員、網紅、小吃攤、詐騙車手、政治幕僚、自由接案——這座島的七條職涯路線，你硬是用一次次重新投胎，全部走過了一輪。每條路的風光與狼狽你都親身嚐過，地球 Online 的百業地圖，被你踏成了肌肉記憶。下輩子要當什麼？你大概比命運之神還清楚。", check:c=>{const s=(SAVE&&SAVE.r131seen)||{}; return ["tech","civil","creator","vendor","scam","politics","freelance"].every(p=>s[p]);}, hint:"跨局玩遍全部 7 條職涯路線各至少一次(科技業/公務員/網紅/小吃攤/詐騙/政治/自由接案)——多投幾次胎、每次選不同的路…"},
+  /* ---- R132 即時稱號養成跨局收集成就（純讀 SAVE.r132seen 確定性判定，零 rng；九大五圍稱號皆純 attr 驅動、各局必有機會點亮，舊存檔/空集合永不誤觸）---- */
+  {id:"r132_alltitles", ic:"🏷️", nm:"鬼島稱號蒐集王・九大封號全集滿", desc:"人生勝利組、靠北魯蛇、躺平大師、爆肝戰士、靠北潛力股、顏值擔當、小資新貴、鐵打的身體、佛系青年——這座島把人分門別類貼上的九張在地標籤，你硬是用一次次重新投胎，全部親身活成過一遍。風光的、狼狽的、躺平的、爆肝的，每一種鬼島人生你都掛過那塊牌子。下輩子想當哪一種？你比誰都清楚每張稱號是什麼滋味。", check:c=>{const s=(SAVE&&SAVE.r132seen)||{}; return ["winner","loser","lieflat","grind","brainy","pretty","rich","ironman","buddhist"].every(id=>s[id]);}, hint:"跨局集滿九大五圍稱號各至少點亮過一次(人生勝利組/靠北魯蛇/躺平大師/爆肝戰士/靠北潛力股/顏值擔當/小資新貴/鐵打的身體/佛系青年)——多投幾次胎、把人生養成不同極端…"},
   /* ---- R105 周目/New Game+ 累計成就（純讀 SAVE.ngp.cycle 確定性判定，零 rng；挑戰/對戰/劇本局不計入周目）---- */
   {id:"ngp_rookie", ic:"🔁", nm:"輪迴老鳥・孟婆認得你了", desc:"正式跑完 3 個周目——投胎投到孟婆都會隨手幫你把那碗湯加滿。在這座下輩子還想不想當台灣人都要猶豫一下的島上，你硬是回鍋了三次。", check:c=>ngpData().cycle>=3, hint:"好好過完 3 個正常人生（任一結局都算），挑戰／對戰／劇本局不計——多投幾次胎就有…"},
   {id:"ngp_veteran", ic:"♻️", nm:"六道常客・地府 VIP", desc:"正式跑完 6 個周目——地府叫號機看到你直接跳你的號，孟婆湯改幫你準備無糖的。鬼島玩到下面都辦會員了，這份執著也是一種才華。", check:c=>ngpData().cycle>=6, hint:"累積 6 個正式周目（正常局完局），地府就把你升 VIP 了…"},
@@ -12299,6 +12302,108 @@ function effWeight(e){
 /* =========================================================================
    渲染：主畫面
    ========================================================================= */
+/* ===================== R132 鬼島即時稱號養成系統（Live 在地稱號 Badge）=====================
+   與 R129~R131 三張「結算卡」刻意錯開：本系統在「遊玩進行中」即時演化——依玩家累積的五圍/旗標
+   即時點亮稱號、條件加深可升階（如 房奴→資深房奴），呈現即時養成感。
+   純呈現/讀取層：只讀 S.attr / S.flags / S.age，零 rng() 消耗、零狀態汙染（生成前後 S 完全不變）；
+   無局(S=null) / 髒資料 / 舊存檔皆回空集合安全降級，絕不白屏或拋例外。
+   結算時把本局最終稱號集合定格（可一鍵複製，線 C 素材）＋跨局收集（SAVE.r132seen），
+   集滿九大五圍稱號解鎖 r132_alltitles。判定全部 deterministic，不碰 sim/壽命結算/事件機率。 */
+function r132num(v){ var n=+v; return isFinite(n)?n:0; }   // 髒資料/缺欄位 → 0，判定不炸
+// 九大五圍稱號（純讀 attr，跨局各局必有機會達成）→ 構成跨局收集成就 r132_alltitles 的判定集合
+var R132_CORE = ["winner","loser","lieflat","grind","brainy","pretty","rich","ironman","buddhist"];
+var R132_BADGES = [
+  // ── 五圍系（核心收集集合，純 attr deterministic；隨人生逐歲演化、達標即點亮、加深即升階）──
+  {id:"winner",  ic:"👑", base:"人生勝利組",   up:"天選人生勝利組",
+     cond:function(f,a){return a.hp>=65&&a.int>=62&&a.mny>=65&&a.hap>=58;}, upcond:function(f,a){return a.hp>=80&&a.int>=78&&a.mny>=80&&a.hap>=75;}},
+  {id:"loser",   ic:"🫠", base:"靠北魯蛇",     up:"鬼島資深魯蛇",
+     cond:function(f,a){return a.mny<=30&&a.hap<=35;}, upcond:function(f,a){return a.mny<=18&&a.hap<=22;}},
+  {id:"lieflat", ic:"🛌", base:"躺平大師",     up:"躺平宗師",
+     cond:function(f,a){return a.hap>=58&&a.mny<=42;}, upcond:function(f,a){return a.hap>=76&&a.mny<=28;}},
+  {id:"grind",   ic:"🔥", base:"爆肝戰士",     up:"鬼島過勞之王",
+     cond:function(f,a){return a.int>=55&&a.hp<=46;}, upcond:function(f,a){return a.int>=70&&a.hp<=30;}},
+  {id:"brainy",  ic:"🧠", base:"靠北潛力股",   up:"鬼島智力怪物",
+     cond:function(f,a){return a.int>=68;}, upcond:function(f,a){return a.int>=88;}},
+  {id:"pretty",  ic:"💅", base:"顏值擔當",     up:"全島最靚天菜",
+     cond:function(f,a){return a.apr>=68;}, upcond:function(f,a){return a.apr>=88;}},
+  {id:"rich",    ic:"💰", base:"小資新貴",     up:"鬼島人生富翁",
+     cond:function(f,a){return a.mny>=68;}, upcond:function(f,a){return a.mny>=88;}},
+  {id:"ironman", ic:"💪", base:"鐵打的身體",   up:"打不死的蟑螂",
+     cond:function(f,a){return a.hp>=74;}, upcond:function(f,a){return a.hp>=90;}},
+  {id:"buddhist",ic:"🧘", base:"佛系青年",     up:"佛系大師",
+     cond:function(f,a){return a.hap>=58&&a.hp>=50&&a.mny>=35&&a.mny<=70;}, upcond:function(f,a){return a.hap>=74&&a.hp>=62;}},
+  // ── 旗標風味系（bonus 嘲諷梗，不列入收集集合；缺旗標/舊存檔自然不點亮，永不誤觸）──
+  {id:"slasher", ic:"🧩", base:"斜槓社畜",     up:"過勞斜槓王",
+     cond:function(f,a){return a.int>=54&&a.mny>=54&&a.hp<=58;}, upcond:function(f,a){return a.int>=68&&a.mny>=68&&a.hp<=46;}},
+  {id:"house",   ic:"🏠", base:"房奴",         up:"資深房奴",
+     cond:function(f){return !!f.r111_owner;}, upcond:function(f,a){return !!f.r111_owner&&a.mny<=42;}},
+  {id:"npiao",   ic:"📦", base:"北漂青年",     up:"北漂魯蛇",
+     cond:function(f){return !!f.npiao;}, upcond:function(f){return !!f.npiao&&(!!f.rentpain||!!f.ghostgrind);}},
+  {id:"whale",   ic:"🎰", base:"課金小資",     up:"課長傳說",
+     cond:function(f){return !!f.r128_in;}, upcond:function(f){return !!f.r128_addict||f.r128_endtype==="r128_end_whale";}},
+  {id:"boss",    ic:"🍜", base:"創業頭家",     up:"連鎖帝國老闆",
+     cond:function(f){return !!(f.r83biz||f.r83_quit||f.r83_slash);}, upcond:function(f){return !!f.r83_expand;}},
+  {id:"stress",  ic:"😵", base:"壓力鍋",       up:"鬼島崩潰邊緣",
+     cond:function(f){return r132num(f.r130stress)>=8;}, upcond:function(f){return r132num(f.r130collapses)>=1;}},
+  {id:"leek",    ic:"🥬", base:"韭菜信徒",     up:"少年股神（蓋章認證）",
+     cond:function(f){return !!(f.r57_huivictim||f.r84_in);}, upcond:function(f){return !!(f.r57_leekwin||f.r57_stockgod);}},
+  {id:"pet",     ic:"🐾", base:"鏟屎官",       up:"資深毛孩奴",
+     cond:function(f){return !!(f.petkind||f.r54_kind);}, upcond:function(f){return r132num(f.petAge)>=8||r132num(f.r54_age)>=8;}},
+  {id:"tiger",   ic:"🚁", base:"直升機父母",   up:"鬼島虎爸虎媽",
+     cond:function(f){return !!f.r110_helimode;}, upcond:function(f){return !!(f.r110_helimode&&f.r110_filial);}},
+  {id:"old",     ic:"🧓", base:"鬼島倖存老人", up:"百歲人瑞",
+     cond:function(f,a,age){return age>=82;}, upcond:function(f,a,age){return age>=100;}}
+];
+function r132LitBadges(){
+  // 回傳本局當下已點亮稱號 [{id,ic,nm,up}]，deterministic、純讀不改任何欄位；無局/髒資料→空陣列安全降級
+  var out=[];
+  try{
+    if(!S || typeof S!=="object" || !S.attr || typeof S.attr!=="object") return out;
+    var f=(S.flags&&typeof S.flags==="object")?S.flags:{};
+    var a={hp:r132num(S.attr.hp),int:r132num(S.attr.int),apr:r132num(S.attr.apr),mny:r132num(S.attr.mny),hap:r132num(S.attr.hap)};
+    var age=r132num(S.age);
+    for(var i=0;i<R132_BADGES.length;i++){
+      var b=R132_BADGES[i], lit=false, up=false;
+      try{ lit=!!b.cond(f,a,age); }catch(e){ lit=false; }
+      if(!lit) continue;
+      try{ up=!!(b.upcond&&b.upcond(f,a,age)); }catch(e){ up=false; }
+      out.push({id:b.id, ic:b.ic, nm:(up&&b.up)?b.up:b.base, up:up});
+    }
+  }catch(e){ return []; }
+  return out;
+}
+function r132LiveTitleHTML(){
+  // 遊玩中狀態列下方的即時稱號面板（純呈現；無點亮→整段省略，不擋既有操作/版面）
+  var list=r132LitBadges();
+  if(!list.length) return "";
+  var chips=list.map(function(b){
+    return '<span style="display:inline-block;margin:2px 3px;padding:2px 8px;border-radius:11px;font-size:11.5px;background:'+(b.up?'rgba(255,210,63,.16)':'rgba(120,160,255,.13)')+';border:1px solid '+(b.up?'rgba(255,210,63,.5)':'rgba(120,160,255,.35)')+'">'+b.ic+' '+b.nm+(b.up?' <span style="color:#ffd23f">▲</span>':'')+'</span>';
+  }).join("");
+  return '<div class="muted" style="text-align:left;font-size:11px;margin:2px 2px 8px">🏷️ 鬼島即時稱號 <span style="opacity:.7">（隨人生演化・▲ 已升階）</span><div style="margin-top:3px">'+chips+'</div></div>';
+}
+function r132FreezeHTML(){
+  // 結算定格卡：把本局最終稱號集合定格＋顯示九大五圍跨局收集進度（線 C 可分享素材）
+  var list=r132LitBadges();
+  if(!list.length) return "";
+  var seen=(typeof SAVE==="object"&&SAVE&&SAVE.r132seen&&typeof SAVE.r132seen==="object")?SAVE.r132seen:{};
+  var coreGot=0;
+  for(var i=0;i<R132_CORE.length;i++){ var id=R132_CORE[i]; if(seen[id]||list.some(function(b){return b.id===id;})) coreGot++; }
+  var chips=list.map(function(b){
+    return '<span style="display:inline-block;margin:3px 4px;padding:3px 10px;border-radius:12px;font-size:12px;background:'+(b.up?'rgba(255,210,63,.16)':'rgba(120,160,255,.13)')+';border:1px solid '+(b.up?'rgba(255,210,63,.55)':'rgba(120,160,255,.4)')+'">'+b.ic+' '+b.nm+(b.up?' <span style="color:#ffd23f">▲</span>':'')+'</span>';
+  }).join("");
+  return '<div class="origin" style="margin-top:10px;text-align:left">'+
+    '🏷️ <b>我的鬼島稱號牆</b>　<span class="muted">這輩子養成的在地稱號定格</span>'+
+    '<div style="margin-top:6px">'+chips+'</div>'+
+    '<div class="muted" style="font-size:11.5px;margin-top:6px">九大五圍稱號跨局收集：<b>'+coreGot+'/9</b>'+(coreGot>=9?'　🏆 已集滿全九大！':'　（多投幾次胎、把人生活成不同極端就能集滿）')+'</div>'+
+    '<div style="margin-top:7px"><button class="btn sec" style="display:inline-block;width:auto;padding:7px 14px;font-size:12.5px" onclick="copyR132Titles(this)">🏷️ 複製我的稱號牆</button></div></div>';
+}
+function buildR132Text(){
+  var list=r132LitBadges();
+  if(!list.length) return "";
+  var names=list.map(function(b){return b.ic+b.nm+(b.up?"▲":"");}).join("　");
+  return "【我的鬼島稱號牆】\n"+names+"\n——這輩子在地球 Online 養成的在地稱號\nearthlife.pages.dev";
+}
+function copyR132Titles(btn){ var t=buildR132Text(); if(t){ try{ copyClip(t, btn, "✅ 稱號牆已複製，貼上分享你的鬼島人生"); }catch(e){} } }
 function statsHTML(){
   applyAtmosphere();   // R120 分齡氛圍主題：每個遊戲畫面渲染時依當前年齡平滑切換背景主色（純視覺，無 DOM 自動略過）
   updateAmbient();     // R121 分齡 ambient 氛圍音：與視覺同步，依當前人生階段切換背景和聲（預設靜音/無 window 自動略過）
@@ -12333,6 +12438,8 @@ function statsHTML(){
   if(badges) h+=`<div class="muted" style="text-align:right;font-size:11.5px;margin:-4px 2px 8px">${badges}</div>`;
   // R41 志向進度小塊：常駐顯示志向與確定性達成度（零 rng；舊存檔無 wishId 自動省略）
   h+=r41ProgHTML();
+  // R132 鬼島即時稱號面板：遊玩中依五圍/旗標即時點亮並升階（純讀 S，零 rng/零汙染；無點亮自動省略）
+  h+=r132LiveTitleHTML();
   return h;
 }
 /* 結果幕：把剛變動的數值從舊值滾到新值（純視覺，無 DOM 自動略過） */
@@ -14878,6 +14985,9 @@ function die(from){
   // ---- R131 職涯路線跨局收集（玩遍鬼島七業）：踏進過任一路線即記錄該 path，缺鍵當空集合、舊存檔不炸 ----
   if(!SAVE.r131seen || typeof SAVE.r131seen!=="object") SAVE.r131seen={};
   if(S.flags && S.flags.r131path && R131_PATHS.indexOf(S.flags.r131path)>=0) SAVE.r131seen[S.flags.r131path]=true;
+  // ---- R132 即時稱號跨局收集（集滿九大五圍稱號解鎖 r132_alltitles）：定格本局已點亮稱號 id，缺鍵當空集合、舊存檔不炸；純讀 S 不改任何欄位，零 rng ----
+  if(!SAVE.r132seen || typeof SAVE.r132seen!=="object") SAVE.r132seen={};
+  try{ r132LitBadges().forEach(function(b){ if(b&&b.id) SAVE.r132seen[b.id]=true; }); }catch(e){}
   // R17 結算瀏覽計數（成就「結算廳常客」用）：缺鍵當 0，舊存檔不炸
   SAVE.summarySeen = (SAVE.summarySeen||0)+1;
   // ---- R24 人生稱號：依這一生軌跡確定性頒發（零 rng，種子序列不受污染）----
@@ -16322,6 +16432,7 @@ function screenSummary(cat){
       ${r128GachaReviewHTML()}
       ${r130SurvivalHTML()}
       ${r131CareerReviewHTML()}
+      ${r132FreezeHTML()}
       <div class="stats" style="margin:12px 0">${attrRows}</div>
       ${attrPersonaHTML()}
       ${r41WishHTML()}
