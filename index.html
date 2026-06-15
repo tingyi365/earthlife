@@ -2179,6 +2179,68 @@ function screenScripts(){
 }
 
 /* =========================================================================
+   R126 開局人生難度（選你敢挑戰的人生）
+   ── 開局可主動選難度（非全隨機）：不同難度套用差異化「起手五圍」＋「可控長期修正」，
+      讓數值在開局即有實感、並利於分享（『你敢挑戰地獄級嗎』）。
+   鐵律：
+   ① 預設＝現行隨機流程：未選難度（startGame() 無參 / R126_NEXT=null）與「普通・鬼島中產」
+      皆 zero-eff zero-mod，行為與舊版逐位元一致；舊存檔無 S.diff 鍵 → 完全無感。
+   ② 每日挑戰 / 種子對戰 / 劇本局強制走預設（newLife(true) → 不套難度、S.diff="normal"），
+      全服同種子同開局，公平不破。
+   ③ 守恆：起手 eff 比照出身（單屬性 |≤8|），三難度淨值對稱（簡單 +5／普通 0／地獄 −5），
+      無純上位／純地獄——簡單起手領先但長期快樂閾值高（正增益砍半），
+      地獄起手吃癟但長期韌性（快樂跌幅減半），起跑優勢與長期修正互相抵銷。
+   ④ 全程零 rng()：難度 eff/mod 皆純查表，不消耗隨機序列 → 同種子事件序列完全不變，
+      只改屬性數值；S.diff 為純字串 id，可序列化、續玩相容。 */
+const R126_DIFFS = [
+  {id:"easy", ic:"🥄", nm:"含金湯匙・人生勝利組", lv:"簡單級",
+   tag:"投胎就贏在起跑點",
+   intro:"爸媽早幫你把路鋪好：學區房、補習班、出國深造，錢從來不是問題——問題是你好像從沒真正為自己活過。",
+   eff:{mny:8, hp:3, apr:2, int:-4, hap:-4},
+   mod:"easy",
+   rule:"起手 💰財富+8 🩺健康+3 ✨顏值+2，代價 📖智力−4 😊快樂−4；長期：快樂『正成長』砍半（被寵壞的高閾值，小確幸難入眼）",
+   share:"簡單級・含金湯匙——對啦我投胎就贏了，不服？"},
+  {id:"normal", ic:"🏙️", nm:"鬼島中產", lv:"普通級",
+   tag:"標準鬼島出廠設定",
+   intro:"不上不下的島嶼中產：租得起套房、扛得住通勤、忍得了老闆畫的餅。沒含金湯匙、也沒慘到谷底——就是最普通的那批人。",
+   eff:null,
+   mod:null,
+   rule:"完全比照現行隨機開局，無任何起手修正——最公平、最原汁原味的鬼島人生",
+   share:""},
+  {id:"hell", ic:"💀", nm:"22K 魯蛇開局", lv:"地獄級",
+   tag:"鬼島把難度拉到地獄",
+   intro:"起薪 22K、加薪靠通膨、房價是天文數字——這座島直接把你的開局難度拉到地獄。錢包扁歸扁，但能笑著活下去，就是真本事。",
+   eff:{mny:-8, apr:-2, hp:1, hap:4},
+   mod:"hell",
+   rule:"起手 💰財富−8 ✨顏值−2，補償 🩺健康+1 😊快樂+4（窮歸窮，苦中作樂的鈍感力點滿）；長期：快樂『跌幅』減半（鬼島早把你打皮了）",
+   share:"地獄級・22K 魯蛇開局——你敢挑這種人生嗎？我活下來了。"},
+];
+const R126_MAP = {}; R126_DIFFS.forEach(d=>R126_MAP[d.id]=d);
+let R126_NEXT = null;   // startGame(diffId) → newLife 的難度通道（開局用完即清；null＝預設隨機流程）
+function r126Diff(){ const d = (S && S.diff && R126_MAP[S.diff]) || null; return (d && d.mod) ? d : null; }
+
+/* 難度選擇頁：3 張難度卡（自嘲台味簡介＋起手修正＋長期規則），純渲染零 rng。
+   點卡 → startGame(id) 走一般局種子化流程（挑戰/對戰/劇本不經此路，恆走預設）。 */
+function screenDifficulty(){
+  const cards = R126_DIFFS.map(d=>{
+    const isDef = !d.mod;
+    return `<div class="panel">
+      <b style="font-size:15px">${d.ic} <span style="color:var(--accent)">${d.lv}</span>・${d.nm}</b>${isDef?`　<span class="muted">（＝現行隨機開局）</span>`:""}
+      <p class="etext" style="margin:6px 0 4px">${d.intro}</p>
+      <p class="muted" style="font-size:12px;margin:0 0 8px">⚙️ ${d.rule}</p>
+      <button class="btn ${isDef?'sec':''}" onclick="startGame('${d.id}')">${d.ic} 挑這種人生・投胎 →</button>
+    </div>`;
+  }).join("");
+  $("#app").innerHTML=`${topbarHTML()}
+    <div class="panel center"><h2 class="sec">🎚️ 選你敢挑戰的人生</h2>
+      <p class="etext">投胎不一定全靠抽——挑一個開局難度，<br>起手五圍與長期體質就此不同。<b>你敢挑地獄級嗎？</b></p>
+      <p class="muted" style="font-size:12px">難度只改起手條件與可控的長期修正（量級節制、守恆對稱，無純上位／純地獄）；天賦・出身・年代・事件序列照常隨機。<br>📅 今日挑戰／⚔️ 種子對戰／🎭 劇本局不受難度影響，恆走預設全服公平。</p>
+    </div>
+    ${cards}
+    <div class="panel center"><button class="btn sec" onclick="screenStart()">↩ 回主選單</button></div>`;
+}
+
+/* =========================================================================
    遊戲狀態
    ========================================================================= */
 let S = null;
@@ -2196,6 +2258,9 @@ function newLife(isChallenge){
   if(quirk) applyEff(base, quirk.eff);
   // R71 世代特化：出生年代的屬性起點傾向（與出身/天賦同層 applyEff，零額外 rng；淨值 0 不動整體平衡，只改起手形狀）
   if(era55 && era55.eff) applyEff(base, era55.eff);
+  // R126 開局難度：玩家自選起手五圍修正（與出身/年代同層 applyEff，零 rng 不動種子序列）；
+  // 挑戰/對戰/劇本強制走預設（isChallenge）→ 不套用，全服公平；未選難度（R126_NEXT=null）→ base 與舊版完全一致
+  if(!isChallenge && R126_NEXT && R126_NEXT.eff) applyEff(base, R126_NEXT.eff);
   for(const k in base) base[k]=clamp(base[k]);
   // R6 轉生天賦：僅一般模式生效，每日挑戰強制禁用（公平）；全程不消耗 rng()，
   // 不影響挑戰種子序列；未裝備任何天賦時 base 與舊版完全一致
@@ -2250,6 +2315,13 @@ function newLife(isChallenge){
     attrTrajectory:[{age:0,st:0,hp:base.hp,int:base.int,apr:base.apr,mny:base.mny,hap:base.hap}], // R106 屬性編年史：以「人生五階段」為節點的里程碑快照（出生即第一章；與 R30 逐歲曲線錯開，本卡是分章節敘事）
   };
   ensureState(S);
+  // R126 開局難度（純字串 id，可序列化、續玩相容）：一般局存玩家自選難度，挑戰/對戰/劇本恆為預設 "normal"。
+  // 舊存檔續玩無此鍵 → ensureState/讀取端皆容缺，行為同舊版。
+  S.diff = (!isChallenge && R126_NEXT) ? R126_NEXT.id : "normal";
+  if(!isChallenge && R126_NEXT && R126_NEXT.mod){
+    S.log.push(`<span class="yr">第 0 年</span> ${R126_NEXT.ic} 自選開局難度【${R126_NEXT.lv}・${R126_NEXT.nm}】：${R126_NEXT.rule}。`);
+    tlPush(R126_NEXT.ic, `自選開局難度【${R126_NEXT.lv}・${R126_NEXT.nm}】——${R126_NEXT.tag}`, 1);
+  }
   // R29 出身專屬旗標：新出身出生即帶身分旗標（零 rng，挑戰/對戰同種子同出身同旗標，公平不破壞）；
   // 舊出身無 flags 鍵 → 完全無感，行為同舊版
   if(origin.flags) Object.assign(S.flags, origin.flags);
@@ -11827,6 +11899,7 @@ function screenStart(){
       <div class="choices" style="margin-top:8px">
         ${resumeBtn}
         <button class="btn ${hasResume?'sec':'cta'}" onclick="startGame()">${startLabel}</button>
+        <button class="btn sec" onclick="screenDifficulty()">🎚️ 選難度開局 · 你敢挑地獄級嗎？</button>
         <button class="btn sec" onclick="startChallenge()">📅 今日挑戰 #${today}</button>
         <p class="muted" style="margin:-2px 0 2px;font-size:12px">${dailyStatus}</p>
         <button class="btn sec" onclick="screenDailyCode()">🎟️ 輸入挑戰碼 · 重玩好友的同一局</button>
@@ -11866,11 +11939,13 @@ function historyHTML(){
    R14：一般局也種子化 —— 先用 Math.random 抽一組種子碼，再以它初始化 rng 並
    重建事件庫（baked 數值同吃種子）。對玩家效果上等同隨機（每局碼都不同），
    但整局可被結算頁的「人生種子碼」完整復現，朋友拿碼就能開對戰局活同一個人生。 */
-function startGame(){
+function startGame(diffId){
   const code = randomSeedCode();
   rng = mulberry32(seedCodeToInt(code));
   EVENTS = buildEvents();
-  newLife();
+  // R126 難度通道：合法且非預設才掛通道；無參/普通/非法 → null＝走現行隨機流程（逐位元一致）。
+  R126_NEXT = (diffId && R126_MAP[diffId] && R126_MAP[diffId].mod) ? R126_MAP[diffId] : null;
+  try{ newLife(); } finally { R126_NEXT = null; }
   S.seed = code;
   renderBirth();
 }
@@ -12145,6 +12220,8 @@ function renderBirth(){
         <div class="muted">${S.fam.desc}</div>
         ${S.origin?`<div class="t" style="margin-top:8px">${S.origin.ic} 出身卡：${S.origin.nm}</div>
         <div class="muted">${S.origin.open}</div>`:""}
+        ${(S.diff&&R126_MAP[S.diff]&&R126_MAP[S.diff].mod)?`<div class="t" style="margin-top:8px">${R126_MAP[S.diff].ic} 開局難度：${R126_MAP[S.diff].lv}・${R126_MAP[S.diff].nm}</div>
+        <div class="muted">${R126_MAP[S.diff].rule}</div>`:""}
         ${(S.era&&R55_MAP[S.era])?`<div class="t" style="margin-top:8px">${R55_MAP[S.era].ic} 年代膠囊：${R55_MAP[S.era].nm}</div>
         <div class="muted">${R55_MAP[S.era].open}</div>`:""}
         ${S.quirk?`<div class="t" style="margin-top:8px">${S.quirk.ic} 權衡天賦：<span class="talent">${S.quirk.nm}</span></div>
@@ -13435,6 +13512,21 @@ function choose(i){
     r56Notes.push({t:"lw", s:`🧋 22K 永動機：財富增益 +${o} 被低薪天花板壓成 +${eff.mny}`});
   }
 
+  /* ---- R126 開局難度長期修正（固定規則、零 rng 消耗；普通/挑戰/對戰/劇本/舊存檔 mod 為空 → 完全無感）----
+     簡單・含金湯匙：快樂「正增益」砍半（min 1）——溫室花朵的高閾值，抵銷起手領先。
+     地獄・22K 魯蛇：快樂「跌幅」減半（向零取整）——鬼島韌性，抵銷起手吃癟。
+     放在 R25 偏科稅之前，稅金以修正後的實際增益計算 */
+  const r126Notes=[];
+  const dm126 = r126Diff();
+  if(dm126 && dm126.mod==="easy" && (eff.hap||0)>=2){
+    const o=eff.hap; eff.hap=Math.max(1,Math.floor(o/2));
+    r126Notes.push({t:"lw", s:`🥄 溫室花朵：快樂增益 +${o} 被嬌生慣養的高閾值壓成 +${eff.hap}`});
+  }
+  if(dm126 && dm126.mod==="hell" && (eff.hap||0)<=-2){
+    const o=eff.hap; eff.hap=Math.ceil(o/2);
+    r126Notes.push({t:"pw", s:`🧋 鬼島韌性：快樂跌幅 ${o} 被苦中作樂的鈍感力鈍化為 ${eff.hap}`});
+  }
+
   /* ---- R25 偏科代價：頂標屬性（85+）還要往上堆，搭檔屬性會被抽稅 ----
      配對與稅率全固定（每 6 點增益抽 1 點、單次上限 3）、零 rng 消耗——
      懲罰只咬「已經頂標還無腦狂拉」的玩法，85 以下完全無感，不動既有平衡 */
@@ -13480,7 +13572,7 @@ function choose(i){
     if(before>=20 && after<20) warns.push({t:"lw", s:`${ATTR[k].ic} ${DANGER_LINE[k]}`});
     if(before<=85 && after>85) warns.push({t:"pw", s:`${ATTR[k].ic} ${PEAK_LINE[k]}`});
   }
-  S.lastWarn=qkNotes.concat(r56Notes, taxNotes, warns);   // R26 權衡天賦提示最前、R56 劇本帳次之、R25 稅單再次，玩家看得到每一筆帳
+  S.lastWarn=qkNotes.concat(r56Notes, r126Notes, taxNotes, warns);   // R26 權衡天賦提示最前、R56 劇本帳、R126 難度帳、R25 稅單依序，玩家看得到每一筆帳
 
   // ---- 人生履歷：記下每個重大選擇（幾歲→做了什麼→結果如何）----
   if(!S.resume) S.resume=[];
@@ -15381,6 +15473,9 @@ function screenSummary(cat){
       ${(S.script&&R56_MAP[S.script])?`<div class="origin center" style="margin-top:10px">${R56_MAP[S.script].ic} <b>劇本：${R56_MAP[S.script].nm}（${S.scriptDone?"✅ 通關":"❌ 未通關"}）</b><br>
       <span class="muted">🎯 ${R56_MAP[S.script].goalTxt}</span><br>
       <span class="muted">${S.scriptDone?(S.newScriptBadge?`🎖️ 專屬徽章入手！跨輪迴保存（${r56BadgeCount()}/${R56_SCRIPTS.length}）`:`🎖️ 徽章早已在收藏中（${r56BadgeCount()}/${R56_SCRIPTS.length}）`):"劇本不會跑，從主選單隨時回來重演"}</span></div>`:""}
+      ${(S.diff&&R126_MAP[S.diff]&&R126_MAP[S.diff].mod)?`<div class="origin center" style="margin-top:10px">${R126_MAP[S.diff].ic} <b>開局難度：${R126_MAP[S.diff].lv}・${R126_MAP[S.diff].nm}</b><br>
+      <span class="muted">${R126_MAP[S.diff].rule}</span><br>
+      <span class="muted">${R126_MAP[S.diff].share}</span></div>`:""}
       ${(S.seed&&!S.battle&&!S.challenge&&!S.script)?`<div class="origin center" style="margin-top:10px">🧬 人生種子碼：<b style="font-size:18px;letter-spacing:3px">${S.seed}</b><br>
       <span class="muted">朋友在主選單「⚔️ 種子對戰」輸入這串碼，就會活進跟你完全相同的人生——同開局、同事件，輸贏全看選擇。</span></div>`:""}
       <div class="origin center" style="margin-top:10px">🔄 <b>輪迴點 +${S.rpGain||0}</b>　<span class="muted">可用 ${rebirthData().pts} 點 · 歷史累計 ${rebirthData().total} 點</span><br>
@@ -15397,6 +15492,7 @@ function screenSummary(cat){
         ${S.battle?`<button class="btn" onclick="startSeedBattle('${S.battle.code}')">⚔️ 不服，再戰這條種子</button>`:""}
         ${(S.script&&R56_MAP[S.script])?`<button class="btn" onclick="startScriptGame('${S.script}')">🎭 ${S.scriptDone?"再演一次":"不服，重演"}劇本【${R56_MAP[S.script].nm}】</button>`:""}
         ${(S.seed&&!S.battle&&!S.challenge&&!S.script)?`<button class="btn sec" onclick="startSeedBattle('${S.seed}')">⚔️ 拿這條種子開對戰（裸裝重打）</button>`:""}
+        ${(S.diff&&R126_MAP[S.diff]&&R126_MAP[S.diff].mod&&!S.battle&&!S.challenge&&!S.script)?`<button class="btn sec" onclick="startGame('${S.diff}')">${R126_MAP[S.diff].ic} 再挑一次【${R126_MAP[S.diff].lv}】（換條種子重投胎）</button>`:""}
         <p class="sharehead">— 截圖／複製，貼回群組嗆爆同溫層 —</p>
         <button class="btn" onclick="copyVerdictCard(this)">🪪 複製人生總評卡（稱號＋金句＋數字 · 截圖貼限動）</button>
         <button class="btn" onclick="copyBragText(this,'plain')">⚡ 複製精華戰績（正經版 · 短到限動都放得下）</button>
@@ -16892,6 +16988,7 @@ function buildTextReport(){
     ...(bt ? [`🎯 對戰總分 ${sum}/500 · 對戰第 ${bt.attempt} 次嘗試（個人最佳 ${(SAVE.seedpb&&SAVE.seedpb[bt.code]&&SAVE.seedpb[bt.code].best)||sum}）`] : []),
     ...(bd31 ? [`🎖️ 本局人生稱號：【${bd31.tier}】${bd31.nm}`] : []),
     ...((S.script&&R56_MAP[S.script]) ? [`🎭 劇本：${R56_MAP[S.script].nm}（${S.scriptDone?"通關 ✅":"未通關 ❌"}）`] : []),
+    ...((S.diff&&R126_MAP[S.diff]&&R126_MAP[S.diff].mod) ? [`${R126_MAP[S.diff].ic} 開局難度：${R126_MAP[S.diff].lv}・${R126_MAP[S.diff].nm}——${R126_MAP[S.diff].share}`] : []),
     `${(S.era&&R55_MAP[S.era])?`生於【${R55_MAP[S.era].nm}】、`:''}${S.origin?`${S.origin.ic}「${S.origin.nm}」出身的你`:'玩家'}以「${S.title}」之姿在線 ${S.age} 年，已被系統強制登出。`,
     ...(petLine?[petLine]:[]),
     `☠️ 死因：${stripTags(S.deathReason)}`,

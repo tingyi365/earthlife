@@ -4285,5 +4285,80 @@ const r125 = JSON.parse(vm.runInContext(`(function(){
   ['nullSafe','⑨ 無局(S=null)相容回空字串不炸'],
 ].forEach(([k,m])=>ok(r125[k], 'R125 '+m));
 
+// ============================================================================
+// R126 開局人生難度：結構/守恆對稱/預設等價/挑戰強制預設/零 rng 影響/長期修正生效/
+//   非法防呆/序列化相容/UI 渲染（難度選擇頁＋開局牌＋結算卡＋分享文）
+// ============================================================================
+const r126 = JSON.parse(vm.runInContext(`(function(){
+  const out={};
+  /* ① 結構＋守恆對稱：三難度齊備、淨值 +5/0/−5、單屬性 |≤8|、普通＝零 eff/mod */
+  function net(e){ let s=0,mx=0; for(const k in (e||{})){ s+=e[k]; mx=Math.max(mx,Math.abs(e[k])); } return {s,mx}; }
+  const ne=net(R126_MAP.easy.eff), nh=net(R126_MAP.hell.eff);
+  out.struct = R126_DIFFS.length===3 && ne.s===5 && net(R126_MAP.normal.eff).s===0 && nh.s===-5
+    && ne.mx<=8 && nh.mx<=8 && !R126_MAP.normal.eff && !R126_MAP.normal.mod;
+  /* ② 預設等價：同種子 startGame()/startGame('normal')/undefined → base 與 diff 一致 */
+  const oc=randomSeedCode; randomSeedCode=function(){return 'AAAAAA';};
+  startGame(); const a=JSON.stringify(S.attr);
+  startGame('normal'); const b=JSON.stringify(S.attr);
+  startGame(undefined); const c=JSON.stringify(S.attr);
+  out.defaultEquiv = a===b && b===c && S.diff==='normal';
+  /* ③ 難度生效：方向正確（easy 富/智低、hell 窮/樂高），且開局日誌記下自選難度 */
+  startGame('normal'); const N=Object.assign({},S.attr);
+  startGame('easy'); const E=Object.assign({},S.attr); const easyLog=S.log.some(l=>l.indexOf('自選開局難度')>=0 && l.indexOf('含金湯匙')>=0);
+  startGame('hell'); const H=Object.assign({},S.attr);
+  out.diffApplies = E.mny>N.mny && E.int<N.int && H.mny<N.mny && H.hap>N.hap && easyLog && S.diff==='hell';
+  /* ④ 零 rng 影響：同碼 normal/easy/hell 抽 rng 數列一致（種子序列不被難度擾動） */
+  function nums(d){ randomSeedCode=function(){return 'CCCCCC';}; startGame(d); const r=[]; for(let i=0;i<20;i++)r.push(rng()); return r; }
+  const rn=nums('normal'), re=nums('easy'), rh=nums('hell');
+  let eq=true; for(let i=0;i<20;i++){ if(rn[i]!==re[i]||rn[i]!==rh[i]) eq=false; } out.rngZero=eq;
+  randomSeedCode=oc;
+  /* ⑤ 挑戰/對戰強制預設：今日挑戰 diff='normal'、r126Diff()=null（全服公平鐵律） */
+  startChallenge('20260615'); out.dailyDefault = S.diff==='normal' && r126Diff()===null;
+  startSeedBattle('K7PQ2X'); out.battleDefault = S.diff==='normal' && r126Diff()===null;
+  /* ⑥ 長期修正在 choose() 生效：easy 砍快樂正增益(+10→+5)、hell 減快樂跌幅(−10→−5)、
+        各自只動自家方向（easy 不碰跌幅、hell 不碰增益）、普通完全不修——stub 掉 showResult 避開 DOM */
+  const _sr=showResult; showResult=function(){};
+  function hap(diff, d){
+    randomSeedCode=function(){return 'DDDDDD';}; startGame(diff); randomSeedCode=oc;
+    S.age=30; S.attr.hap=50; const before=S.attr.hap;
+    CURRENT={id:'_t126',title:'測試',choices:[{label:'x',eff:{hap:d},res:'r'}]};
+    choose(0); return S.attr.hap-before;
+  }
+  out.modEasy = hap('normal',10)===10 && hap('easy',10)===5 && hap('easy',-10)===-10;
+  out.modHell = hap('normal',-10)===-10 && hap('hell',-10)===-5 && hap('hell',10)===10;
+  /* 長期修正帳單會出現在 S.lastWarn（玩家看得到每一筆帳） */
+  hap('easy',10); out.modNote = (S.lastWarn||[]).some(w=>w.s && w.s.indexOf('溫室花朵')>=0);
+  showResult=_sr;
+  /* ⑦ 非法 id 防呆：startGame('xxx') 落回預設 */
+  randomSeedCode=function(){return 'AAAAAA';}; startGame('xxx'); randomSeedCode=oc;
+  out.badId = S.diff==='normal' && r126Diff()===null;
+  /* ⑧ 序列化相容：S.diff 純字串往返保值；舊存檔缺鍵 ensureState 不炸 */
+  startGame('hell'); const rt=JSON.parse(JSON.stringify({d:S.diff})).d;
+  let compat=true; try{ ensureState({flags:{},attr:{hp:50,int:50,apr:50,mny:50,hap:50},age:40,alive:true}); }catch(e){ compat=false; }
+  out.serialCompat = rt==='hell' && typeof S.diff==='string' && compat;
+  /* ⑨ UI：難度選擇頁含三難度＋鬼島標語；開局牌顯示難度；非預設局 r126Diff 有值 */
+  let ui=false; try{ screenDifficulty(); const h=document.querySelector('#app').innerHTML;
+    ui = h.indexOf('選你敢挑戰的人生')>=0 && h.indexOf('地獄級')>=0 && h.indexOf('含金湯匙')>=0 && h.indexOf("startGame('hell')")>=0; }catch(e){ out.uiErr=String(e&&e.message||e); }
+  out.uiDiffScreen = ui;
+  startGame('hell'); let birth=false; try{ renderBirth(); birth=document.querySelector('#app').innerHTML.indexOf('開局難度')>=0; }catch(e){ out.birthErr=String(e&&e.message||e); }
+  out.uiBirth = birth;
+  return JSON.stringify(out);
+})()`, sandbox));
+[
+  ['struct','① 結構＋守恆對稱(淨值+5/0/−5、單屬性|≤8|、普通＝零eff/mod預設)'],
+  ['defaultEquiv','② 預設等價(startGame()/normal/undefined 同種子 base 一致、diff=normal)'],
+  ['diffApplies','③ 難度生效(easy富/智低、hell窮/樂高)＋開局日誌記自選難度'],
+  ['rngZero','④ 零 rng 影響(同碼三難度 rng 數列一致，種子序列不被擾動)'],
+  ['dailyDefault','⑤ 今日挑戰強制預設(diff=normal、r126Diff=null 全服公平)'],
+  ['battleDefault','⑤ 種子對戰強制預設(diff=normal、r126Diff=null)'],
+  ['modEasy','⑥ 長期修正-簡單:快樂正增益砍半(+10→+5)、不碰跌幅'],
+  ['modHell','⑥ 長期修正-地獄:快樂跌幅減半(−10→−5)、不碰增益'],
+  ['modNote','⑥ 修正帳單入 S.lastWarn(玩家看得到每筆帳)'],
+  ['badId','⑦ 非法 id 防呆落回預設'],
+  ['serialCompat','⑧ 序列化相容(S.diff 純字串往返保值＋舊存檔缺鍵不炸)'],
+  ['uiDiffScreen','⑨ 難度選擇頁渲染(標語＋三難度＋投胎鈕)'],
+  ['uiBirth','⑨ 開局牌顯示難度'],
+].forEach(([k,m])=>ok(r126[k], 'R126 '+m + ((!r126[k]&&r126[k.replace('ui','ui')+'Err'])?(' ['+(r126.uiErr||r126.birthErr)+']'):'')));
+
 console.log(fails ? `\n結果: ❌ ${fails} 項未通過` : '\n結果: ✅ 狀態機全數正確');
 process.exit(fails ? 1 : 0);

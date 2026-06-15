@@ -3893,6 +3893,55 @@ try {
   console.log('R122 台味股海浮沉・投機理財人生支線: ❌ ' + e.message);
 }
 
+/* ===== R126 開局人生難度：結構/守恆對稱/預設等價/挑戰強制預設/零 rng 影響/長期修正 ===== */
+let r126OK = false;
+try {
+  const r126Raw = vm.runInContext(`(function(){
+    const out={};
+    /* ① 結構：三難度齊備、欄位完整、id/map 對應 */
+    out.struct = Array.isArray(R126_DIFFS) && R126_DIFFS.length===3
+      && ['easy','normal','hell'].every(id=>R126_MAP[id] && R126_MAP[id].nm && R126_MAP[id].lv && R126_MAP[id].rule)
+      && typeof R126_NEXT==='object';   // 模組載入時通道為 null
+    /* ② 守恆對稱：起手淨值 簡單 +5／普通 0／地獄 −5，單屬性 |≤8|，普通無 eff/mod（＝預設） */
+    function net(e){ let s=0,mx=0; for(const k in (e||{})){ s+=e[k]; mx=Math.max(mx,Math.abs(e[k])); } return {s,mx}; }
+    const ne=net(R126_MAP.easy.eff), nn=net(R126_MAP.normal.eff), nh=net(R126_MAP.hell.eff);
+    out.conserve = ne.s===5 && nn.s===0 && nh.s===-5 && ne.mx<=8 && nh.mx<=8
+      && !R126_MAP.normal.eff && !R126_MAP.normal.mod && R126_MAP.easy.mod==='easy' && R126_MAP.hell.mod==='hell';
+    /* ③ 預設等價：同種子 startGame() / startGame('normal') / startGame(undefined) base 完全一致、diff='normal' */
+    const oc=randomSeedCode; randomSeedCode=function(){return 'AAAAAA';};
+    startGame(); const a=JSON.stringify(S.attr), da=S.diff;
+    startGame('normal'); const b=JSON.stringify(S.attr), db=S.diff;
+    startGame(undefined); const c=JSON.stringify(S.attr);
+    out.defaultEquiv = a===b && b===c && da==='normal' && db==='normal';
+    /* ④ 難度生效：easy/hell 與 normal 起手差異符合 eff（受 clamp，方向需正確） */
+    startGame('normal'); const N=Object.assign({},S.attr);
+    startGame('easy'); const E=Object.assign({},S.attr);
+    startGame('hell'); const H=Object.assign({},S.attr);
+    out.diffApplies = E.mny>N.mny && E.int<N.int && H.mny<N.mny && H.hap>N.hap;
+    /* ⑤ 零 rng 影響：同碼初始化後 normal/easy/hell 抽出的 rng 數列完全一致（種子序列不被難度擾動） */
+    function nums(d){ randomSeedCode=function(){return 'CCCCCC';}; startGame(d); const r=[]; for(let i=0;i<20;i++)r.push(rng()); return r; }
+    const rn=nums('normal'), re=nums('easy'), rh=nums('hell');
+    let rngEq=true; for(let i=0;i<20;i++){ if(rn[i]!==re[i]||rn[i]!==rh[i]) rngEq=false; }
+    out.rngZero = rngEq;
+    randomSeedCode=oc;
+    /* ⑥ 挑戰/對戰強制預設：今日挑戰 diff='normal' 且 r126Diff()=null（不套難度，全服公平） */
+    startChallenge('20260615'); out.dailyDefault = S.diff==='normal' && r126Diff()===null && !!S.challenge;
+    /* ⑦ 非法 id 防呆：startGame('xxx') 落回預設（diff='normal'，無修正） */
+    randomSeedCode=function(){return 'AAAAAA';}; startGame('xxx'); randomSeedCode=oc;
+    out.badId = S.diff==='normal' && r126Diff()===null;
+    /* ⑧ 序列化相容：S.diff 為純字串，stringify→parse 保值；舊存檔缺鍵 ensureState 不炸、不誤判 */
+    startGame('hell'); const round=JSON.parse(JSON.stringify({diff:S.diff}));
+    const oldSave={flags:{},attr:{hp:50,int:50,apr:50,mny:50,hap:50},age:40,alive:true}; ensureState(oldSave);
+    out.serialCompat = round.diff==='hell' && typeof S.diff==='string';
+    return JSON.stringify(out);
+  })()`, sandbox);
+  const r126 = JSON.parse(r126Raw);
+  r126OK = Object.values(r126).every(v => v === true);
+  console.log(`R126 開局人生難度: ${r126OK ? '✅ 全數通過' : '❌ ' + JSON.stringify(r126)}`);
+} catch (e) {
+  console.log('R126 開局人生難度: ❌ ' + e.message);
+}
+
 if (__errors.length) {
   console.log('\n--- 錯誤樣本(前5) ---');
   __errors.slice(0, 5).forEach(e => console.log('  ' + e));
@@ -3900,6 +3949,6 @@ if (__errors.length) {
 
 /* 退出碼 */
 const pass = __errors.length === 0 && chk.missingScenes.length === 0 && chk.eventVisible >= 126 && chk.eventTotal >= 126 && lsOK && achUnlocked > 0
-  && chk.deathbookMissing.length === 0 && chk.deathTotal >= 17 && deathsOK && rebirthOK && legacyOK && petOK && r13OK && r17OK && r20OK && r21OK && r22OK && r24OK && r25OK && r34OK && r38OK && r41OK && r42OK && r43OK && r44OK && r45OK && r46OK && r47OK && r48OK && r49OK && r51OK && r52OK && r53OK && r54OK && r55OK && r72OK && r76OK && r77OK && r79OK && r86OK && r87OK && r92OK && r93OK && r95OK && r96OK && r108OK && r110OK && r111OK && r112OK && r113OK && r115OK && r116OK && r117OK && r118OK && r119OK && r122OK;
+  && chk.deathbookMissing.length === 0 && chk.deathTotal >= 17 && deathsOK && rebirthOK && legacyOK && petOK && r13OK && r17OK && r20OK && r21OK && r22OK && r24OK && r25OK && r34OK && r38OK && r41OK && r42OK && r43OK && r44OK && r45OK && r46OK && r47OK && r48OK && r49OK && r51OK && r52OK && r53OK && r54OK && r55OK && r72OK && r76OK && r77OK && r79OK && r86OK && r87OK && r92OK && r93OK && r95OK && r96OK && r108OK && r110OK && r111OK && r112OK && r113OK && r115OK && r116OK && r117OK && r118OK && r119OK && r122OK && r126OK;
 console.log('\n結果: ' + (pass ? '✅ 全數通過' : '❌ 有項目未通過'));
 process.exit(pass ? 0 : 1);
