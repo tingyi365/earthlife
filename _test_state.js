@@ -4695,5 +4695,122 @@ const r130 = JSON.parse(vm.runInContext(`(function(){
   ['idxMap','⑭ 生存指數確定性映射:翻身/踩煞車加分、髒資料安全歸 0、夾 5~100'],
 ].forEach(([k,m])=>ok(r130[k], 'R130 '+m));
 
+// ===== R131 鬼島百業人生・可選職涯路線分流系統：入口可達/7 分流/各路線專屬節點可達/試煉屬性驅動/專屬結局可達/爆肝死法/結算卡踏進才出現/純呈現零汙染/壞資料降級/舊存檔相容/S=null 相容/跨局收集 =====
+const r131 = JSON.parse(vm.runInContext(`(function(){
+  const out={};
+  function fresh(age,fl,attr){ startGame(); const s=S; s.origin=ORIGIN_MAP.office; s.flags=Object.assign({},fl||{}); ensureState(s); s.seen={}; s.alive=true; if(age!=null)s.age=age; if(attr)Object.assign(s.attr,attr); return s; }
+  const _roll=r131Roll;
+  // ① 入口可達性：出社會窗口(22-28)+乾淨+閘命中→入口 r131_choose
+  let s=fresh(25,{}); r131Roll=function(){return 0.1;}; out.entry = !!r131CareerPick() && r131CareerPick().id==='r131_choose';
+  // ② 閘落空→不插播、零殘留(舊存檔無旗標時不寫任何 r131 鍵)
+  s=fresh(25,{}); r131Roll=function(){return 0.9;}; out.gateMiss = r131CareerPick()===null;
+  out.gateMissPure = !('r131step' in s.flags) && !('r131_in' in s.flags) && !('r131path' in s.flags);
+  r131Roll=_roll;
+  // ③ 窗口外(過小/過老)不插播；已收尾不再插播
+  s=fresh(20,{}); out.gateYoung = r131CareerPick()===null;
+  s=fresh(35,{}); out.gateOld   = r131CareerPick()===null;
+  s=fresh(25,{r131step:99}); out.gateDone = r131CareerPick()===null;
+  // ④ 入口 7 分流：各選項立 path+step:1+r131_in（模擬亂選也會推進）
+  function pick0(idx){ s=fresh(25,{}); const ev=r131ById('r131_choose'); showEvent(ev); choose(idx); return s.flags; }
+  const PATHS=['tech','civil','creator','vendor','scam','politics','freelance'];
+  out.splitAll = PATHS.every((p,i)=>{ const g=pick0(i); return g.r131path===p && g.r131step===1 && !!g.r131_in; });
+  // ⑤ 各路線專屬節點可達：step1→_1、step2→_2
+  out.node1All = PATHS.every(p=>{ s=fresh(28,{r131step:1,r131path:p}); const e=r131CareerPick(); return e && e.id==='r131_'+p+'_1'; });
+  out.node2All = PATHS.every(p=>{ s=fresh(28,{r131step:2,r131path:p}); const e=r131CareerPick(); return e && e.id==='r131_'+p+'_2'; });
+  // ⑥ 專屬結局可達：step3→_end，確定性落地 r131_endtype/r131_endhit
+  out.endAll = PATHS.every(p=>{ s=fresh(30,{r131step:3,r131path:p}); const e=r131CareerPick(); return e && e.id==='r131_'+p+'_end' && s.flags.r131_endtype===p && s.flags.r131_endhit===true; });
+  // ⑦ _1 入行兩選項皆推進 step:2（鏈必走完）
+  out.node1Adv = PATHS.every(p=>{ let ok2=true; for(let i=0;i<2;i++){ s=fresh(28,{r131step:1,r131path:p}); const e=r131CareerPick(); showEvent(e); choose(i); if(s.flags.r131step!==2) ok2=false; } return ok2; });
+  // ⑧ 試煉屬性驅動(呼應 R129)：各路線 _2 special 吃對應五圍門檻——高屬性 win 立旗、低屬性 lose 不立
+  function trial(p,attr){ s=fresh(30,{r131step:2,r131path:p}); Object.assign(s.attr,attr); const e=r131CareerPick(); showEvent(e); choose(0); return s.flags; }
+  out.techWin  = !!trial('tech',{int:100,hp:60}).r131_tech_senior;
+  out.techLose = !trial('tech',{int:5,hp:60}).r131_tech_senior;
+  out.civilWin = !!trial('civil',{int:100}).r131_civil_pass;
+  out.civilLose= !trial('civil',{int:5}).r131_civil_pass;
+  out.creatorWin = !!trial('creator',{apr:100}).r131_creator_viral;
+  out.creatorLose= !trial('creator',{apr:5}).r131_creator_viral;
+  out.vendorWin = !!trial('vendor',{hp:100}).r131_vendor_hit;
+  out.vendorLose= !trial('vendor',{hp:5}).r131_vendor_hit;
+  out.scamWin  = (g=>!!g.r131_scam_boss && !!g.r131_scam_caught)(trial('scam',{int:100}));
+  out.scamLose = (g=>!g.r131_scam_boss && !!g.r131_scam_caught)(trial('scam',{int:5}));
+  out.polWin   = !!trial('politics',{apr:100}).r131_politics_win;
+  out.polLose  = !trial('politics',{apr:5}).r131_politics_win;
+  out.freeWin  = !!trial('freelance',{int:100}).r131_free_stable;
+  out.freeLose = !trial('freelance',{int:5}).r131_free_stable;
+  // ⑨ 爆肝死法可達：tech _2 爆肝硬撐、身體見底(hp≤12)→coderburn 過勞猝死（且僅 tech 一路有死法）
+  s=fresh(30,{r131step:2,r131path:'tech'}); s.attr.hp=10; s.attr.int=40; showEvent(r131ById('r131_tech_2')); choose(0);
+  out.deathCoder = s.flags.specialDeath==='coderburn' && typeof SPECIAL_DEATHS.coderburn==='object';
+  // 其他路線 _2 身體見底也不致死（路線分流不可變必死失衡）
+  out.vendorNoDeath = (()=>{ s=fresh(30,{r131step:2,r131path:'vendor'}); s.attr.hp=5; showEvent(r131ById('r131_vendor_2')); choose(0); return !s.flags.specialDeath; })();
+  // ⑩ 旗標純淨：乾淨開局無任何 r131 旗標
+  startGame(); const clean=S; ensureState(clean);
+  out.cleanPure = !Object.keys(clean.flags).some(k=>k.indexOf('r131')===0);
+  // ⑪ 結算職涯卡：沒踏進(無 r131_in)整段省略；踏進+結局→含「我的鬼島職涯」+路線名+達成度
+  s=fresh(60,{}); out.reviewEmpty = r131CareerReviewHTML()==='';
+  s=fresh(60,{r131_in:true,r131path:'tech',r131_tech_senior:true,r131_endhit:true,r131_endtype:'tech'});
+  const rv=r131CareerReviewHTML();
+  out.reviewShow = rv.indexOf('我的鬼島職涯')>=0 && rv.indexOf('科技業爆肝碼農')>=0 && rv.indexOf('達成度')>=0;
+  // ⑫ 純呈現零汙染：生成回顧前後 S.attr/flags 不變、零 rng 消耗
+  const bA=JSON.stringify(S.attr), bF=JSON.stringify(S.flags);
+  let used=0; const old=rng; rng=function(){ used++; return old(); };
+  r131CareerReviewHTML(); r131CareerReviewHTML();
+  rng=old;
+  out.reviewPure = JSON.stringify(S.attr)===bA && JSON.stringify(S.flags)===bF && used===0;
+  // ⑬ 壞資料降級：髒/缺欄位旗標 → 不炸，仍安全渲染、不誤觸發
+  let dirtyOk=true; try{ s=fresh(60,{r131_in:true,r131path:'???',r131_endtype:'no_such'}); const h=r131CareerReviewHTML(); dirtyOk = h.indexOf('我的鬼島職涯')>=0; }catch(e){ dirtyOk=false; }
+  out.dirtySafe = dirtyOk;
+  // ⑭ 舊存檔相容：缺 r131 鍵 → ensureState 不補 r131 鍵；攔截器在閘落空時零殘留
+  startGame(); const oldsave=S; delete oldsave.flags.r131step; ensureState(oldsave);
+  out.compatOld = !('r131step' in oldsave.flags) && !('r131_in' in oldsave.flags) && !('r131path' in oldsave.flags);
+  // ⑮ 無局(S=null)相容：picker 回 null、回顧回空字串，皆不炸
+  let okNull=true; try{ S=null; if(r131CareerPick()!==null) okNull=false; if(r131CareerReviewHTML()!=='') okNull=false; }catch(e){ okNull=false; }
+  out.nullSafe = okNull;
+  // ⑯ 跨局收集(玩遍七業)成就：SAVE.r131seen 集滿 7 path→r131_allpaths 解鎖；缺一→不解
+  const ach=ACHIEVEMENTS.find(a=>a.id==='r131_allpaths');
+  SAVE.r131seen={}; PATHS.forEach(p=>SAVE.r131seen[p]=true);
+  const full = !!(ach && ach.check({S:{flags:{}}}));
+  SAVE.r131seen={tech:true,civil:true}; const partial = !!(ach && ach.check({S:{flags:{}}}));
+  SAVE.r131seen={};
+  out.allpaths = full && !partial;
+  return JSON.stringify(out);
+})()`, sandbox));
+[
+  ['entry','① 入口可達性:出社會窗口(22-28)+閘命中→r131_choose'],
+  ['gateMiss','② 閘落空→不插播'],
+  ['gateMissPure','② 閘落空零殘留(不寫任何 r131 旗標)'],
+  ['gateYoung','③ 窗口外(過小)不插播'],
+  ['gateOld','③ 窗口外(過老)不插播'],
+  ['gateDone','③ 已收尾(step99)不再插播'],
+  ['splitAll','④ 入口 7 分流:各立 path/step:1/r131_in'],
+  ['node1All','⑤ 各路線專屬節點可達:step1→_1(七路線全可達)'],
+  ['node2All','⑤ 各路線專屬節點可達:step2→_2(七路線全可達)'],
+  ['endAll','⑥ 各路線專屬結局可達:step3→_end 並落地 r131_endtype/r131_endhit(七路線全可達)'],
+  ['node1Adv','⑦ _1 入行兩選項皆推進 step:2(鏈必走完)'],
+  ['techWin','⑧ 屬性驅動:科技業高智力升資深(r131_tech_senior)'],
+  ['techLose','⑧ 屬性驅動:科技業低智力卡關不升'],
+  ['civilWin','⑧ 屬性驅動:公務員高智力國考上岸(r131_civil_pass)'],
+  ['civilLose','⑧ 屬性驅動:公務員低智力落榜'],
+  ['creatorWin','⑧ 屬性驅動:網紅高魅力爆紅(r131_creator_viral)'],
+  ['creatorLose','⑧ 屬性驅動:網紅低魅力流量焦慮'],
+  ['vendorWin','⑧ 屬性驅動:小吃攤高體質排隊神話(r131_vendor_hit)'],
+  ['vendorLose','⑧ 屬性驅動:小吃攤低體質累垮出包'],
+  ['scamWin','⑧ 屬性驅動:詐騙高智力升主嫌(r131_scam_boss，終究被收網)'],
+  ['scamLose','⑧ 屬性驅動:詐騙低智力車手砲仔被逮(僅 caught)'],
+  ['polWin','⑧ 屬性驅動:政治高魅力催票當選(r131_politics_win)'],
+  ['polLose','⑧ 屬性驅動:政治低魅力黑函落馬'],
+  ['freeWin','⑧ 屬性驅動:自由接案高智力經營成穩定事業(r131_free_stable)'],
+  ['freeLose','⑧ 屬性驅動:自由接案低智力月光吃土'],
+  ['deathCoder','⑨ 爆肝死法可達:科技業身體見底硬撐→coderburn 過勞猝死(且入 SPECIAL_DEATHS)'],
+  ['vendorNoDeath','⑨ 平衡護欄:其他路線身體見底也不致死(路線不變必死失衡)'],
+  ['cleanPure','⑩ 旗標純淨:乾淨開局無任何 r131 旗標'],
+  ['reviewEmpty','⑪ 職涯卡:沒踏進(無 r131_in)整段省略'],
+  ['reviewShow','⑪ 職涯卡:踏進+結局含「我的鬼島職涯」/路線名/達成度'],
+  ['reviewPure','⑫ 純呈現零汙染:生成前後 S.attr/flags 不變且零 rng'],
+  ['dirtySafe','⑬ 壞資料降級:髒/缺欄位旗標不炸仍安全渲染'],
+  ['compatOld','⑭ 舊存檔相容:ensureState 不補 r131 鍵'],
+  ['nullSafe','⑮ 無局(S=null)相容:picker 回 null/回顧回空字串不炸'],
+  ['allpaths','⑯ 跨局收集:七業集滿→r131_allpaths 解鎖、缺一不解'],
+].forEach(([k,m])=>ok(r131[k], 'R131 '+m));
+
 console.log(fails ? `\n結果: ❌ ${fails} 項未通過` : '\n結果: ✅ 狀態機全數正確');
 process.exit(fails ? 1 : 0);
