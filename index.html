@@ -13646,6 +13646,7 @@ function showResult(ev,res,eff,chainEv,dead){
   $("#app").innerHTML = `
     ${topbarHTML()}
     ${statsHTML()}
+    ${r127BreakingHTML()}
     ${renderMeme(m.scene,m.top,m.bot,"結果")}
     <div class="panel${dead?' deadend':''}">
       <h2 class="etitle">${ev.title}</h2>
@@ -15461,6 +15462,7 @@ function screenSummary(cat){
       ${epitaphHTML()}
       ${memoirHTML()}
       ${personaHTML()}
+      ${r127DigestHTML()}
       ${r125WhatIfHTML()}
       ${challengeCompareHTML()}
       <div class="origin center"><span class="grademedal"><span class="gm-t">本局評價</span><span class="gm-g">${grade}</span><span class="gm-s">級</span></span><br>
@@ -18362,6 +18364,129 @@ function r125WhatIfHTML(){
 }
 // 再走一次(沿用既有重開流程；不鎖分支，純延續重玩迴圈)——清掉戰帖記憶，乾淨投一次胎
 function r125Replay(){ try{ if(typeof CHALLENGE!=="undefined") CHALLENGE=null; }catch(e){} try{ startGame(); }catch(e){} }
+
+/* =========================================================================
+   R127 鬼島人生・時事諷刺新聞快報（純呈現層）
+   ── 遊玩中：依本局「真實發生過」的關鍵事件（讀 S.tl 大事時間軸）＋當下年齡＋五圍狀態，
+      即時組出一條第三人稱台味諷刺新聞頭條，掛在結果幕的「🔴 鬼島快報 LIVE」面板，
+      營造一邊過人生一邊被鬼島媒體酸的臨場感。
+   ── 結算：把本局生成過的頭條彙整成「📰 鬼島人生大事報」，沿用既有 clipboard 降級鏈一鍵複製。
+   ── 與既有軸明確錯開：R119＝結算後第一人稱長敘事；R123＝結算單句人格定性卡；
+      本輪＝「遊玩進行中」的第三人稱諷刺新聞快報（不同時機、不同口吻、不同呈現）。
+   ── 硬護欄：純讀 S.tl/S.attr/S.age，台味嘲諷靠 r41Hash 確定性選句（零 rng、不碰 sim/state
+      序列），生成前後 S.attr/flags/keySnap/tl 完全不變（零汙染）；S=null／空 tl／壞資料
+      安全降級回空字串不白屏；口吻走低薪/過勞/買不起房/22K 自嘲幽默，不踩政治暴力/仇恨。
+   ========================================================================= */
+const R127_PREFIX  = ["獨家","快訊","震驚","悲報","爆料","現場直擊","頭條","插播","民眾爆料","重磅"];
+const R127_COMMENT = ["網friend：勇者","鄉民：不意外，鬼島日常","酸民：又一個","網友淚推","留言區已歪樓","笑死太真實","祝你好運啦","大家快來看","底下一片『+1』","已被洗版"];
+const R127_QUOTE   = ["早就躺平了","不意外啦","認命","這就是鬼島","笑著流淚","下輩子再說","還能怎樣","躺平最大","佛系面對","習慣就好"];
+// 確定性選句：吃字串雜湊取餘（同輸入→同輸出，零 rng）
+function r127Pick(arr, key){ return arr[r41Hash(String(key))%arr.length]; }
+/* 依年齡＋（可選）五圍狀態組「當事人」稱謂——讀本局真實資料。
+   ctx 帶 {mny,hp} 時掛財富/過勞修飾（給遊玩中 LIVE 面板用當下五圍）；
+   ctx=null 時只用年齡（給結算回顧用，避免拿末態五圍硬蓋每一條往事）。 */
+function r127Subject(age, ctx){
+  age=age|0;
+  let who = age<=12?`${age}歲屁孩` : age<=22?`${age}歲學生` : age<=40?`${age}歲青年` : age<=60?`${age}歲中年人` : `${age}歲長輩`;
+  let tag="";
+  if(ctx && typeof ctx.mny==="number"){
+    if(ctx.mny<30) tag = age<=22?"（家裡蹲）" : "（月薪22K魯蛇）";
+    else if(ctx.mny>75) tag="（人生勝利組）";
+  }
+  if(!tag && ctx && typeof ctx.hp==="number" && ctx.hp<25) tag="（過勞肝苦人）";
+  return who+tag;
+}
+/* 生成一條諷刺頭條（回傳純文字字串）：srcText=本局真實事件敘述，age=發生年齡，ctx=可選五圍快照。
+   全程確定性（r41Hash 選 報頭/留言/金句/句式），不消耗 rng()，不改任何狀態。 */
+function r127NewsLine(srcText, age, ctx){
+  const raw = stripTags(srcText);
+  const ev  = (typeof tlShort==="function" ? tlShort(raw, 30) : (raw.length>30?raw.slice(0,30)+"…":raw)) || "過著鬼島人生";
+  const key = raw + "|" + (age|0);
+  const px  = r127Pick(R127_PREFIX,  key);
+  const cm  = r127Pick(R127_COMMENT, key+"c");
+  const qt  = r127Pick(R127_QUOTE,   key+"q");
+  const subj= r127Subject(age, ctx);
+  const frame = r41Hash(key+"f")%4;
+  let body;
+  if(frame===0)      body = `${subj}${ev}`;
+  else if(frame===1) body = `${ev}！當事人${subj}回應：「${qt}」`;
+  else if(frame===2) body = `本市${subj}，${ev}`;
+  else               body = `驚見${subj}${ev}`;
+  return `【${px}】${body}　${cm}`;
+}
+/* 遊玩中 LIVE 快報面板：讀最新一條大事時間軸＋當下五圍即時酸一句。無局/空 tl/壞資料 → 回空字串。 */
+function r127BreakingHTML(){
+  try{
+    if(!S || !Array.isArray(S.tl) || !S.tl.length) return "";
+    let last=null;
+    for(let i=S.tl.length-1;i>=0;i--){ if(S.tl[i] && S.tl[i].txt){ last=S.tl[i]; break; } }
+    if(!last) return "";
+    const line = r127NewsLine(last.txt, last.age, (S&&S.attr)||null);
+    return `<div class="panel" id="r127breaking" style="margin:10px 0 0;padding:10px 13px;border:1px solid rgba(255,90,110,.5);background:linear-gradient(180deg,rgba(255,80,90,.10),var(--panel2))">
+      <div style="display:flex;align-items:center;gap:7px;font-size:11px;font-weight:800;letter-spacing:1px;color:#ff5a6e">
+        <span style="animation:m3blink 1.1s infinite">🔴 鬼島快報 LIVE</span>
+        <span class="muted" style="font-weight:400">本市 ${last.age} 歲現場連線</span>
+      </div>
+      <div style="font-size:13.5px;font-weight:700;line-height:1.6;margin-top:5px">${line}</div>
+    </div>`;
+  }catch(e){ return ""; }
+}
+/* 結算：把本局活著時生成過的頭條彙整成「鬼島人生大事報」。依重要度(lv)＋年齡挑最多 14 則，
+   再按年齡排版成新聞回顧；多出的明示未列，不靜默截斷。無局/空 tl → 回空字串。 */
+function r127DigestPick(){
+  if(!S || !Array.isArray(S.tl)) return {pick:[], total:0};
+  const ents = S.tl.filter(x=>x && x.txt);
+  const sorted = ents.slice().sort((a,b)=> (b.lv||0)-(a.lv||0) || (a.age|0)-(b.age|0));
+  const pick = sorted.slice(0,14).sort((a,b)=>(a.age|0)-(b.age|0));
+  return {pick, total:ents.length};
+}
+function r127DigestHTML(){
+  try{
+    const {pick,total} = r127DigestPick();
+    if(!pick.length) return "";
+    const rows = pick.map(e=>`<div style="font-size:13px;font-weight:600;line-height:1.62;text-align:left;padding:6px 0;border-bottom:1px dashed rgba(255,90,110,.22)">${r127NewsLine(e.txt, e.age, null)}</div>`).join("");
+    const more = total>pick.length ? `<div class="muted" style="font-size:10.5px;margin-top:6px;text-align:left">…本局另有 ${total-pick.length} 則頭條未列入（只挑了最有份量的 ${pick.length} 則）</div>` : "";
+    return `<div class="panel" id="r127digest" style="margin-top:12px;border:1px solid rgba(255,90,110,.5);background:linear-gradient(180deg,rgba(255,80,90,.08),var(--panel2))">
+      <h2 class="sec" style="color:#ff5a6e">📰 鬼島人生大事報</h2>
+      <div class="muted" style="font-size:11.5px;margin-bottom:6px;text-align:left">這一生被鬼島媒體酸過的頭條全收錄——同一場人生，第三人稱的諷刺版。截圖丟群，看誰的版面最荒謬。</div>
+      ${rows}
+      ${more}
+      <div style="text-align:right;margin-top:8px">
+        <button class="btn sec" style="display:inline-block;width:auto;padding:7px 14px;font-size:12.5px" onclick="copyR127Digest(this)">📋 一鍵複製大事報</button>
+      </div>
+    </div>`;
+  }catch(e){ return ""; }
+}
+/* 大事報純文字版（貼 Threads/Dcard/IG 限動／群組） */
+function buildR127DigestText(){
+  const {pick} = r127DigestPick();
+  if(!pick.length) return "";
+  const lines=[`📰《鬼島人生大事報》— 享年 ${(S&&S.age)|0} 歲`,""];
+  pick.forEach(e=>lines.push(stripTags(r127NewsLine(e.txt, e.age, null))));
+  lines.push("");
+  lines.push("—— 地球 Online · 鬼島時事諷刺新聞快報");
+  if(typeof SHARE_URL!=="undefined"&&SHARE_URL) lines.push(SHARE_URL);
+  return lines.join("\n").trim();
+}
+/* 一鍵複製大事報（沿用 copyMemoir 的 clipboard→legacyCopy→overlay 降級鏈） */
+function copyR127Digest(btn){
+  let txt; try{ txt=buildR127DigestText(); }catch(e){ alert("大事報生成失敗："+(e&&e.message||e)); return; }
+  if(!txt){ alert("這一生還沒生出任何頭條～"); return; }
+  const done=()=>{
+    if(!btn) return;
+    if(!btn.dataset.orig) btn.dataset.orig=btn.innerHTML;
+    btn.innerHTML="✅ 大事報已複製，貼上去分享吧！";
+    setTimeout(()=>{ if(btn.dataset.orig) btn.innerHTML=btn.dataset.orig; },2600);
+  };
+  const fallback=()=>{ if(typeof legacyCopy==="function"&&legacyCopy(txt)) done(); else if(typeof textReportOverlay==="function") textReportOverlay(txt); else done(); };
+  try{
+    if(typeof navigator!=="undefined"&&navigator.clipboard&&navigator.clipboard.writeText){
+      navigator.clipboard.writeText(txt).then(done, fallback);
+      return;
+    }
+  }catch(e){}
+  fallback();
+}
 
 /* =========================================================================
    啟動

@@ -4360,5 +4360,69 @@ const r126 = JSON.parse(vm.runInContext(`(function(){
   ['uiBirth','⑨ 開局牌顯示難度'],
 ].forEach(([k,m])=>ok(r126[k], 'R126 '+m + ((!r126[k]&&r126[k.replace('ui','ui')+'Err'])?(' ['+(r126.uiErr||r126.birthErr)+']'):'')));
 
+// ============================================================================
+// R127 鬼島人生・時事諷刺新聞快報：頭條生成確定性/讀本局真實資料/渲染存在/零rng/
+//   零汙染(S.attr/flags/keySnap/tl不變)/不捏造統計/S=null＋空tl＋壞資料安全降級
+// ============================================================================
+const r127 = JSON.parse(vm.runInContext(`(function(){
+  const out={};
+  // 完局資料：鋪一組「真實發生過」的大事時間軸 S.tl
+  startGame(); const s=S; ensureState(s); s.alive=false; s.age=68;
+  s.attr={hp:22,int:60,apr:50,mny:25,hap:45};
+  s.tl=[
+    {age:8,  ic:'🐾', txt:'迎來毛孩主子，正式上任鏟屎官', lv:1},
+    {age:30, ic:'💍', txt:'結婚了！單身狗識別證正式繳回', lv:1},
+    {age:42, ic:'🏠', txt:'買下人生第一間房，從此與房貸相依為命', lv:1},
+    {age:55, ic:'📉', txt:'創業倒閉／破產，扛下一身債與教訓', lv:2},
+  ];
+  // ① 頭條生成確定性：同輸入連兩次完全一致，且明顯讀到真實資料(年齡數字＋事件片段)
+  const l1=r127NewsLine(s.tl[1].txt, s.tl[1].age, s.attr);
+  const l2=r127NewsLine(s.tl[1].txt, s.tl[1].age, s.attr);
+  out.lineDet = l1===l2 && l1.indexOf('30')>=0 && l1.indexOf('【')===0;
+  // ② 渲染存在：LIVE 快報面板＋結算大事報皆生成，且大事報含真實事件改寫的頭條
+  const hb=r127BreakingHTML(), hd=r127DigestHTML();
+  // LIVE 面板讀最新一條大事(age 55 破產)現場連線，非死亡年齡
+  out.render = hb.indexOf('鬼島快報 LIVE')>=0 && hb.indexOf('55')>=0
+    && hd.indexOf('鬼島人生大事報')>=0 && hd.indexOf('【')>=0 && hd.indexOf('copyR127Digest')>=0;
+  // ③ HTML 渲染確定性：同 state 連兩次輸出一致
+  out.htmlDet = r127BreakingHTML()===r127BreakingHTML() && r127DigestHTML()===r127DigestHTML();
+  // ④ 不捏造統計：頭條走自嘲質性梗，無「贏過/打敗 N%」式假數據、無百分位
+  out.noFakeStat = !/(贏過|打敗|勝過|超越|擊敗|勝率|存活率|百分位)[^。　]{0,8}\\d+\\s*%/.test(hb+hd);
+  // ⑤ 純呈現零汙染：生成前後 S.attr/flags/keySnap/tl 完全不變
+  const bA=JSON.stringify(S.attr), bF=JSON.stringify(S.flags), bK=JSON.stringify(S.keySnap), bT=JSON.stringify(S.tl);
+  r127BreakingHTML(); r127DigestHTML(); buildR127DigestText(); r127NewsLine('測試事件',40,S.attr);
+  out.noMutate = JSON.stringify(S.attr)===bA && JSON.stringify(S.flags)===bF
+    && JSON.stringify(S.keySnap)===bK && JSON.stringify(S.tl)===bT;
+  // ⑥ 零 rng() 消耗(不踏進遊戲隨機序列)
+  let used=0; const old=rng; rng=function(){ used++; return old(); };
+  r127BreakingHTML(); r127DigestHTML(); buildR127DigestText(); r127NewsLine(S.tl[0].txt,8,S.attr);
+  rng=old; out.rngZero = used===0;
+  // ⑦ 大事報純文字版：含享年＋四則頭條彙整
+  const txt=buildR127DigestText();
+  out.textOk = txt.indexOf('鬼島人生大事報')>=0 && txt.indexOf('享年 68 歲')>=0 && (txt.match(/【/g)||[]).length===4;
+  // ⑧ 空 tl 降級：LIVE/大事報/文字版皆回空字串，不報錯
+  S.tl=[]; out.emptyDeg = r127BreakingHTML()==='' && r127DigestHTML()==='' && buildR127DigestText()==='';
+  // ⑨ 壞資料相容：tl 含 null/缺 txt 條目 → 被濾掉不炸，仍能渲染剩餘有效頭條
+  S.tl=[null,{age:20,ic:'x'},{age:33,txt:'被詐騙割走錢財，韭菜學費繳好繳滿',lv:1}];
+  let dirtyOk=true; try{ const hd2=r127DigestHTML(); dirtyOk = hd2.indexOf('韭菜')>=0 || hd2.indexOf('【')>=0; }catch(e){ dirtyOk=false; }
+  out.dirtySafe = dirtyOk;
+  // ⑩ 無局(S=null)相容：全數回空字串、不炸
+  let okNull=true; try{ S=null; if(r127BreakingHTML()!==''||r127DigestHTML()!==''||buildR127DigestText()!=='') okNull=false; }catch(e){ okNull=false; }
+  out.nullSafe = okNull;
+  return JSON.stringify(out);
+})()`, sandbox));
+[
+  ['lineDet','① 頭條生成確定性(同輸入連兩次一致＋讀真實年齡/事件)'],
+  ['render','② 渲染存在(LIVE快報面板＋結算大事報＋複製鈕)'],
+  ['htmlDet','③ HTML 渲染確定性(同 state 連兩次一致)'],
+  ['noFakeStat','④ 不捏造統計(無百分位/贏過N%式假數據)'],
+  ['noMutate','⑤ 純呈現零汙染:生成前後 S.attr/flags/keySnap/tl 不變'],
+  ['rngZero','⑥ 零 rng() 消耗'],
+  ['textOk','⑦ 大事報純文字版(享年＋四則頭條彙整)'],
+  ['emptyDeg','⑧ 空 tl 安全降級(全回空字串不白屏)'],
+  ['dirtySafe','⑨ 髒資料(null/缺txt條目)被濾掉不炸'],
+  ['nullSafe','⑩ 無局(S=null)相容全回空字串不炸'],
+].forEach(([k,m])=>ok(r127[k], 'R127 '+m));
+
 console.log(fails ? `\n結果: ❌ ${fails} 項未通過` : '\n結果: ✅ 狀態機全數正確');
 process.exit(fails ? 1 : 0);
