@@ -1640,6 +1640,73 @@ function r116KarmaGain(){
 }
 
 /* =========================================================================
+   R134 鬼島輪迴傳承 / 投胎傳承（New Game+ 傳承）：再玩一輪的「帶一手過去」動機。
+   與既有 轉生殿/祖產/世代/周目/業力 各自獨立、互不疊代、互不爭奪貨幣：
+   - 傳承 perk 不靠貨幣購買，而是「上輩子活成什麼樣」deterministic 點亮（零 rng，誠實讀本局終局）。
+     每局結算依該局最終五圍/壽命/評級點亮可繼承 perk，玩家勾選「最多 1 個」帶入下一局。
+   - 跨局把點亮過的 perk 記進 SAVE.r134.seen，集滿全部解鎖成就 r134_samsara。
+   平衡護欄（鐵律，與轉生殿/祖產/業力同一套）：
+   ① 效果只動「開局層 base 屬性」極小幅（單項 +2 或全項 +1），不碰任何事件內數值與檢定公式
+   ② 挑戰/對戰/劇本局強制禁用（newLife(true) → 不套 r134，S.r134k=[]），全服公平
+   ③ 全程零 rng 消耗——未裝備任何傳承時開局與舊版完全一致，種子序列不變；
+      sim 全新開局不帶任何 equipped 旗標 → 傳承永不生效，觸達率/壽命分佈逐位元不變
+   ④ 點亮判定純讀本局終局 S（零 rng），與 R132 即時稱號同款，不碰 sim/壽命結算/事件機率
+   ========================================================================= */
+const R134_PERKS = [
+  {id:"spoon",    ic:"🥄", nm:"金湯匙世家",   eff:{mny:2},
+   desc:"上輩子財富滿出來，閻王特批你含著金湯匙投胎——開局財富 +2（小確幸，別想靠這個翻身）。",
+   lit:function(a){return a.mny>=78;}, hint:"把一輩子過到收尾時財富 78+（人生勝利富翁那種）就點得亮…"},
+  {id:"iron",     ic:"💪", nm:"鐵人體質遺傳", eff:{hp:2},
+   desc:"上輩子活到登出畫面都嫌你太硬，這身鐵打的體質基因幫你帶過來——開局健康 +2。",
+   lit:function(a,age){return age>=82;}, hint:"上輩子硬是活到 82 歲以上（鬼島倖存老人）就點得亮…"},
+  {id:"zen",      ic:"🧘", nm:"佛系心態真傳", eff:{hap:2},
+   desc:"上輩子看得夠開，連孟婆湯都沖不掉那份淡定——開局快樂 +2，煩惱繞著你走。",
+   lit:function(a){return a.hap>=78;}, hint:"把一輩子過到收尾時快樂 78+（佛系大師那種）就點得亮…"},
+  {id:"nerd",     ic:"🤓", nm:"書呆基因",     eff:{int:2},
+   desc:"上輩子腦袋太好用，投胎還記得九九乘法跟注音——開局智力 +2。",
+   lit:function(a){return a.int>=82;}, hint:"把一輩子過到收尾時智力 82+（鬼島智力怪物那種）就點得亮…"},
+  {id:"face",     ic:"💅", nm:"天生好皮相",   eff:{apr:2},
+   desc:"上輩子那張臉太罩，這輩子捏臉師傅照著上一版複製——開局外貌 +2。",
+   lit:function(a){return a.apr>=82;}, hint:"把一輩子過到收尾時外貌 82+（全島最靚天菜那種）就點得亮…"},
+  {id:"winner",   ic:"👑", nm:"人生勝利組 DNA", eff:{hp:1,int:1,apr:1,mny:1,hap:1},
+   desc:"上輩子活成人生勝利組，連投胎都自帶 buff——開局每項屬性 +1（小幅均衡，到頂的都知道別貪）。",
+   lit:function(a,age,grade){return grade==="S";}, hint:"把一輩子過到 S 級評價（總分 380+）那種全面開花的人生就點得亮…"},
+  {id:"survivor", ic:"🥲", nm:"歹命囝仔認證", eff:{hp:2},
+   desc:"上輩子早早被系統登出，閻王看你可憐多塞一管命給你——開局健康 +2（歹命的孩子卡實在）。",
+   lit:function(a,age){return age<=35;}, hint:"上輩子 35 歲前就英年早逝（短命收場）反而點得亮這張同情牌…"},
+  {id:"broke",    ic:"🫰", nm:"窮過的記憶",   eff:{mny:2},
+   desc:"上輩子窮到記得每一塊錢怎麼花，這份精打細算的肌肉記憶偷渡過來——開局財富 +2。",
+   lit:function(a){return a.mny<=20;}, hint:"把一輩子過到收尾時窮到財富 20 以下（靠北魯蛇那種）反而點得亮這張…"},
+];
+const R134_MAP = {}; R134_PERKS.forEach(p=>R134_MAP[p.id]=p);
+/* 傳承存檔結構：缺鍵/壞值一律就地修補（舊存檔相容鐵律，與 rebirthData/r116Data 同款）
+   seen = 跨局點亮過的 perk 收集集合 {id→true}；equipped = 帶入下一局的傳承 perk id（或 null） */
+function r134Data(){
+  if(!SAVE.r134 || typeof SAVE.r134!=="object") SAVE.r134={seen:{}, equipped:null};
+  const r=SAVE.r134;
+  if(!r.seen || typeof r.seen!=="object") r.seen={};
+  if(typeof r.equipped!=="string" || !R134_MAP[r.equipped]) r.equipped=null;   // 髒/失效 id → null
+  return r;
+}
+/* 本局終局點亮的可繼承傳承 perk（deterministic、純讀 S 不改任何欄位，零 rng；無局/髒資料→空陣列安全降級） */
+function r134LitPerks(){
+  const out=[];
+  try{
+    if(!S || typeof S!=="object" || !S.attr || typeof S.attr!=="object") return out;
+    const a={hp:r132num(S.attr.hp),int:r132num(S.attr.int),apr:r132num(S.attr.apr),mny:r132num(S.attr.mny),hap:r132num(S.attr.hap)};
+    const age=r132num(S.age), grade=(typeof S.grade==="string")?S.grade:"";
+    for(let i=0;i<R134_PERKS.length;i++){
+      const p=R134_PERKS[i]; let lit=false;
+      try{ lit=!!p.lit(a,age,grade); }catch(e){ lit=false; }
+      if(lit) out.push(p);
+    }
+  }catch(e){ return []; }
+  return out;
+}
+/* 本局是否帶著傳承 perk（挑戰/對戰/劇本局 S.r134k=[]；舊進行中存檔無 r134k 鍵 → 一律 false） */
+function r134Active(id){ return !!(S && S.r134k && S.r134k.indexOf(id)>=0); }
+
+/* =========================================================================
    R49 開局天賦三選一（roguelike 起手）：開局從天賦池確定性抽 3 張供玩家選 1。
    抽選走種子雜湊（同 r41Init 取源）——零 rng 消耗、不動事件序列，
    同種子同候選（挑戰/對戰全服同三張，選哪張是玩家的事，公平不破壞）。
@@ -2315,6 +2382,17 @@ function newLife(isChallenge){
   if(r116k.indexOf("k_fortune")>=0){ base.hap=clamp(base.hap+4); base.mny=clamp(base.mny+4); r116Notes.push("🍀 夙世福報：快樂 +4、財富 +4"); }
   if(r116k.indexOf("k_chosen")>=0){ base.hp=clamp(base.hp+5); r116Notes.push("🎁 天選之子：健康 +5"); }
   if(r116k.indexOf("k_floor")>=0){ let lifted=0; for(const kk in base){ if(base[kk]<38){ base[kk]=38; lifted++; } } r116Notes.push(lifted?`🌟 宿慧加持：${lifted} 項屬性保底拉到 38`:"🌟 宿慧加持：五圍皆達標，保底未動用"); }
+  // R134 投胎傳承：上一世結算時玩家勾選的「傳承 perk」在這一局開局極小幅生效（挑戰/對戰/劇本停用，全服公平）；
+  // 全程零 rng 不動種子序列、效果只動 base 開局屬性（單項 +2／全項 +1）；
+  // 未勾選任何傳承（SAVE.r134.equipped=null）時 base 與舊版完全一致——sim 全新開局不帶旗標 → 此段整段跳過、分佈逐位元不變。
+  const r134 = r134Data();
+  const r134k = (!isChallenge && r134.equipped && R134_MAP[r134.equipped]) ? [r134.equipped] : [];
+  let r134Note = "";
+  if(r134k.length){
+    const p=R134_MAP[r134k[0]];
+    applyEff(base, p.eff); for(const k in base) base[k]=clamp(base[k]);
+    r134Note = `${p.ic} ${p.nm}`;
+  }
   // R42 世代傳承：上一代結算時選定的傳承物在這一局開局生效（挑戰/對戰停用，全服公平）；
   // 全程零 rng 不動種子序列、同時只生效 1 件、用掉即清不疊代；
   // 沒接香火 → 開新家族（世代歸 1、家族年表重寫）；無 pending 時 base 與舊版完全一致
@@ -2333,7 +2411,7 @@ function newLife(isChallenge){
   const r35syn = R35_SYNERGY.find(x=>x.tal===talent.nm && x.org===origin.id) || null;
   if(r35syn){ applyEff(base, r35syn.eff); for(const k in base) base[k]=clamp(base[k]); }
   S = {
-    age:0, alive:true, attr:base, talent, fam, origin, quirk, rtal, lgk, r116k, era:era55.id,
+    age:0, alive:true, attr:base, talent, fam, origin, quirk, rtal, lgk, r116k, r134k, era:era55.id,
     log:[], seen:{}, flags:{}, resume:[], tl:[], lastMeme:null, deathReason:null, title:null,
     peak:Object.assign({},base), peakAge:{hp:0,int:0,apr:0,mny:0,hap:0}, newAch:[],
     low:Object.assign({},base), lowAge:{hp:0,int:0,apr:0,mny:0,hap:0},   // R25 谷底追蹤（出生即基準）
@@ -2393,6 +2471,10 @@ function newLife(isChallenge){
   if(lgNotes.length) S.log.push(`<span class="yr">第 0 年</span> ⛩️ 祖傳加成生效：${lgNotes.join("；")}——列祖列宗在天上集資罩你。`);
   // R116 命格加成生效日誌；天選之子另寫一段「特殊起始事件」序章＋旗標（純記錄/旗標，零 rng）
   if(r116Notes.length) S.log.push(`<span class="yr">第 0 年</span> 🧭 命格加成生效：${r116Notes.join("；")}——前世修來的命格在開局就替你鋪好路。`);
+  if(r134Note){
+    S.log.push(`<span class="yr">第 0 年</span> 🧬 投胎傳承生效：你帶著上輩子的【${r134Note}】來投胎——前世活成的樣子，這輩子開局先還你一點點。`);
+    tlPush("🧬", `投胎傳承【${r134Note}】上身——上輩子的人生，偷渡了一點過來`, 1);
+  }
   if(r116k.indexOf("k_chosen")>=0){
     S.flags.r116_chosen=true;
     S.log.push(`<span class="yr">第 0 年</span> 🎁 命定序章：產房外天有異象，左鄰右舍都說這囡仔『帶天命來的』——天選之子身分上身，命途註定不平凡。`);
@@ -2487,6 +2569,7 @@ function loadSave(){
     if(!Array.isArray(SAVE.hof)) SAVE.hof=[]; // R108 歷代人生名人堂：跨周目人生收藏冊，缺鍵當空陣列，舊存檔不崩
     if(!SAVE.r131seen || typeof SAVE.r131seen!=="object") SAVE.r131seen={}; // R131 職涯路線跨局收集：path→true，缺鍵當空集合，舊存檔不崩
     if(!SAVE.r132seen || typeof SAVE.r132seen!=="object") SAVE.r132seen={}; // R132 即時稱號跨局收集：badgeId→true，缺鍵當空集合，舊存檔不崩
+    r134Data();      // R134 鬼島輪迴傳承：舊存檔缺鍵就地補上 {seen:{},equipped:null}，不可炸
     rebirthData();   // R6 轉生：舊存檔缺鍵就地補上 {pts,total,talents,equipped}，不可炸
     legacyData();    // R23 祖產：舊存檔缺鍵就地補上 {yd,ydTotal,perks,roster,lastMny,pickAttr}，不可炸
     dynastyData();   // R42 世代傳承：舊存檔缺鍵就地補上 {pending,lineage}，不可炸
@@ -2946,6 +3029,8 @@ const ACHIEVEMENTS = [
   {id:"r131_allpaths", ic:"🎰", nm:"鬼島百業通・七業全玩過一輪", desc:"科技業、公務員、網紅、小吃攤、詐騙車手、政治幕僚、自由接案——這座島的七條職涯路線，你硬是用一次次重新投胎，全部走過了一輪。每條路的風光與狼狽你都親身嚐過，地球 Online 的百業地圖，被你踏成了肌肉記憶。下輩子要當什麼？你大概比命運之神還清楚。", check:c=>{const s=(SAVE&&SAVE.r131seen)||{}; return ["tech","civil","creator","vendor","scam","politics","freelance"].every(p=>s[p]);}, hint:"跨局玩遍全部 7 條職涯路線各至少一次(科技業/公務員/網紅/小吃攤/詐騙/政治/自由接案)——多投幾次胎、每次選不同的路…"},
   /* ---- R132 即時稱號養成跨局收集成就（純讀 SAVE.r132seen 確定性判定，零 rng；九大五圍稱號皆純 attr 驅動、各局必有機會點亮，舊存檔/空集合永不誤觸）---- */
   {id:"r132_alltitles", ic:"🏷️", nm:"鬼島稱號蒐集王・九大封號全集滿", desc:"人生勝利組、靠北魯蛇、躺平大師、爆肝戰士、靠北潛力股、顏值擔當、小資新貴、鐵打的身體、佛系青年——這座島把人分門別類貼上的九張在地標籤，你硬是用一次次重新投胎，全部親身活成過一遍。風光的、狼狽的、躺平的、爆肝的，每一種鬼島人生你都掛過那塊牌子。下輩子想當哪一種？你比誰都清楚每張稱號是什麼滋味。", check:c=>{const s=(SAVE&&SAVE.r132seen)||{}; return ["winner","loser","lieflat","grind","brainy","pretty","rich","ironman","buddhist"].every(id=>s[id]);}, hint:"跨局集滿九大五圍稱號各至少點亮過一次(人生勝利組/靠北魯蛇/躺平大師/爆肝戰士/靠北潛力股/顏值擔當/小資新貴/鐵打的身體/佛系青年)——多投幾次胎、把人生養成不同極端…"},
+  /* ---- R134 投胎傳承跨局收集成就（純讀 SAVE.r134.seen 確定性判定，零 rng；八張傳承 perk 皆由本局終局確定性點亮、各局必有機會，舊存檔/空集合永不誤觸）---- */
+  {id:"r134_samsara", ic:"🧬", nm:"鬼島輪迴傳承・八世命格全集滿", desc:"金湯匙世家、鐵人體質、佛系心態、書呆基因、天生好皮相、人生勝利組 DNA、歹命囝仔、窮過的記憶——把人生過成各種極端收場後能繼承的八種命格，你用一次次投胎全都親手點亮過一遍。富過、窮過、早夭過、活到人瑞過，每一種收場你都帶著它的記憶投了下一次胎。孟婆湯沖不掉的，是你把這座島活了個透的執念。", check:c=>{const s=(SAVE&&SAVE.r134&&SAVE.r134.seen)||{}; return ["spoon","iron","zen","nerd","face","winner","survivor","broke"].every(id=>s[id]);}, hint:"跨局集滿八張投胎傳承 perk 各至少點亮過一次(財富 78+/活到 82+/快樂 78+/智力 82+/外貌 82+/S 級人生/35 歲前早逝/財富 20 以下)——把人生活成各種極端收場…"},
   /* ---- R105 周目/New Game+ 累計成就（純讀 SAVE.ngp.cycle 確定性判定，零 rng；挑戰/對戰/劇本局不計入周目）---- */
   {id:"ngp_rookie", ic:"🔁", nm:"輪迴老鳥・孟婆認得你了", desc:"正式跑完 3 個周目——投胎投到孟婆都會隨手幫你把那碗湯加滿。在這座下輩子還想不想當台灣人都要猶豫一下的島上，你硬是回鍋了三次。", check:c=>ngpData().cycle>=3, hint:"好好過完 3 個正常人生（任一結局都算），挑戰／對戰／劇本局不計——多投幾次胎就有…"},
   {id:"ngp_veteran", ic:"♻️", nm:"六道常客・地府 VIP", desc:"正式跑完 6 個周目——地府叫號機看到你直接跳你的號，孟婆湯改幫你準備無糖的。鬼島玩到下面都辦會員了，這份執著也是一種才華。", check:c=>ngpData().cycle>=6, hint:"累積 6 個正式周目（正常局完局），地府就把你升 VIP 了…"},
@@ -12440,6 +12525,48 @@ function buildR132Text(){
   return "【我的鬼島稱號牆】\n"+names+"\n——這輩子在地球 Online 養成的在地稱號\nearthlife.pages.dev";
 }
 function copyR132Titles(btn){ var t=buildR132Text(); if(t){ try{ copyClip(t, btn, "✅ 稱號牆已複製，貼上分享你的鬼島人生"); }catch(e){} } }
+/* ===================== R134 投胎傳承結算選擇卡 =====================
+   結算時把本局終局點亮的可繼承 perk 列出來，讓玩家「勾選最多 1 個」帶入下一局（寫 SAVE.r134.equipped）；
+   並顯示跨局收集進度（集滿全部解鎖 r134_samsara）。純呈現/讀取層：零 rng、零狀態汙染；
+   無局/髒資料/舊存檔皆回空字串安全降級，絕不白屏或拋例外。 */
+function r134EffDesc(p){
+  // 把 perk.eff 轉成人話（純讀，零 rng）：全項同值→「每項屬性 +n」；否則逐項列出
+  try{
+    var ks=Object.keys(p.eff||{}); if(!ks.length) return "";
+    var vals=ks.map(function(k){return p.eff[k];}), allSame=vals.every(function(v){return v===vals[0];});
+    if(ks.length>=5 && allSame) return "開局每項屬性 +"+vals[0];
+    return "開局 "+ks.map(function(k){return (ATTR[k]?ATTR[k].nm:k)+" +"+p.eff[k];}).join("、");
+  }catch(e){ return ""; }
+}
+function r134FreezeHTML(){
+  var list=r134LitPerks();
+  if(!list.length) return "";   // 本局沒點亮任何傳承 → 整段省略（與舊版同樣不出現）
+  var r=r134Data(), eq=r.equipped, seenN=0;
+  for(var i=0;i<R134_PERKS.length;i++){ if(r.seen[R134_PERKS[i].id]) seenN++; }
+  var chips=list.map(function(p){
+    var on=(eq===p.id);
+    return '<button class="btn sec" style="display:inline-block;width:auto;margin:3px 4px;padding:6px 11px;font-size:12px;'
+      +(on?'background:rgba(255,210,63,.18);border-color:rgba(255,210,63,.65);color:#ffd23f':'')+'" '
+      +'onclick="r134Equip(\''+p.id+'\')">'+(on?'✅ ':'')+p.ic+' '+p.nm+'</button>';
+  }).join("");
+  var eqTxt = (eq&&R134_MAP[eq]) ? ('已選定帶入下一局：<b style="color:#ffd23f">'+R134_MAP[eq].ic+' '+R134_MAP[eq].nm+'</b>（'+r134EffDesc(R134_MAP[eq])+'）')
+                                 : '尚未勾選——點一個帶進下輩子，或留空裸投胎。';
+  return '<div class="origin" style="margin-top:10px;text-align:left">'+
+    '🧬 <b>投胎傳承・選一個帶去下輩子</b>　<span class="muted">這輩子活成的樣子，點亮了這些可繼承的命格</span>'+
+    '<div style="margin-top:6px">'+chips+'</div>'+
+    '<div class="muted" style="font-size:11.5px;margin-top:6px">'+eqTxt+'　<span style="opacity:.75">（最多帶 1 個・效果極小幅・挑戰/對戰/劇本局不生效）</span></div>'+
+    '<div class="muted" style="font-size:11.5px;margin-top:4px">傳承圖鑑跨局收集：<b>'+seenN+'/'+R134_PERKS.length+'</b>'+(seenN>=R134_PERKS.length?'　🏆 已集滿全部傳承！':'　（把人生活成不同極端、各種收場都走一遍就能集滿）')+'</div></div>';
+}
+function r134Equip(id){
+  // 勾選/取消勾選帶入下一局的傳承 perk（最多 1 個）：只認「本局有點亮」的 perk，再點同一個＝取消
+  try{
+    var lit=r134LitPerks(); if(!lit.some(function(p){return p.id===id;})) return;   // 防呆：只能帶本局點亮的
+    var r=r134Data();
+    r.equipped = (r.equipped===id) ? null : id;
+    persist();
+    if(typeof S==="object" && S && S.cat) screenSummary(S.cat);   // 重繪結算頁讓勾選狀態即時更新
+  }catch(e){}
+}
 function statsHTML(){
   applyAtmosphere();   // R120 分齡氛圍主題：每個遊戲畫面渲染時依當前年齡平滑切換背景主色（純視覺，無 DOM 自動略過）
   updateAmbient();     // R121 分齡 ambient 氛圍音：與視覺同步，依當前人生階段切換背景和聲（預設靜音/無 window 自動略過）
@@ -15056,6 +15183,10 @@ function die(from){
   // ---- R132 即時稱號跨局收集（集滿九大五圍稱號解鎖 r132_alltitles）：定格本局已點亮稱號 id，缺鍵當空集合、舊存檔不炸；純讀 S 不改任何欄位，零 rng ----
   if(!SAVE.r132seen || typeof SAVE.r132seen!=="object") SAVE.r132seen={};
   try{ r132LitBadges().forEach(function(b){ if(b&&b.id) SAVE.r132seen[b.id]=true; }); }catch(e){}
+  // ---- R134 投胎傳承跨局收集（集滿全部傳承 perk 解鎖 r134_samsara）：定格本局終局點亮的可繼承 perk id，
+  //      缺鍵當空集合、舊存檔不炸；純讀 S 不改任何欄位，零 rng（S.grade 已於上方定案） ----
+  const r134die = r134Data();
+  try{ r134LitPerks().forEach(function(p){ if(p&&p.id) r134die.seen[p.id]=true; }); }catch(e){}
   // R17 結算瀏覽計數（成就「結算廳常客」用）：缺鍵當 0，舊存檔不炸
   SAVE.summarySeen = (SAVE.summarySeen||0)+1;
   // ---- R24 人生稱號：依這一生軌跡確定性頒發（零 rng，種子序列不受污染）----
@@ -16554,6 +16685,7 @@ function screenSummary(cat){
       ${r130SurvivalHTML()}
       ${r131CareerReviewHTML()}
       ${r132FreezeHTML()}
+      ${r134FreezeHTML()}
       <div class="stats" style="margin:12px 0">${attrRows}</div>
       ${attrPersonaHTML()}
       ${r41WishHTML()}

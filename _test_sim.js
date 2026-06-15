@@ -3942,6 +3942,61 @@ try {
   console.log('R126 開局人生難度: ❌ ' + e.message);
 }
 
+/* ===== R134 投胎傳承（New Game+ 傳承）：資料結構/sim 路徑零污染/零 rng/挑戰禁用/舊存檔降級/deterministic 點亮/跨局集滿解鎖 r134_samsara ===== */
+let r134OK = false;
+try {
+  const r134Raw = vm.runInContext(`(function(){
+    const out={};
+    /* ① 結構：八張 perk 齊備、欄位完整、map 對應、收集成就存在 */
+    out.struct = Array.isArray(R134_PERKS) && R134_PERKS.length===8
+      && R134_PERKS.every(p=>p.id && p.ic && p.nm && p.eff && typeof p.lit==='function' && R134_MAP[p.id]===p)
+      && !!ACH_MAP.r134_samsara;
+    /* ② sim 全新開局零旗標：startGame() 後 S.r134k 為空陣列（傳承不生效＝sim 路徑前提） */
+    startGame(); out.cleanStart = Array.isArray(S.r134k) && S.r134k.length===0;
+    /* ③ equipped 套用：同種子釘死，equipped 前後比 base——spoon 財富恰 +2（或撞 100 上限）、r134k 記錄正確 */
+    const oc=randomSeedCode; randomSeedCode=function(){return 'BBBBBB';};
+    SAVE.r134.equipped=null; startGame(); const m0=S.attr.mny, k0=S.r134k.length;
+    SAVE.r134.equipped='spoon'; startGame(); const m1=S.attr.mny, hasK=r134Active('spoon');
+    out.applies = k0===0 && hasK && S.r134k.length===1 && (m1===Math.min(100,m0+2));
+    /* ④ 零 rng 消耗：equipped 與否，開局後 rng() 序列完全一致（傳承只動 base、不吃種子序列） */
+    function nums(eq){ randomSeedCode=function(){return 'CCCCCC';}; SAVE.r134.equipped=eq; startGame(); const r=[]; for(let i=0;i<20;i++)r.push(rng()); return r; }
+    const rn=nums(null), rw=nums('winner'); let rngEq=true; for(let i=0;i<20;i++){ if(rn[i]!==rw[i]) rngEq=false; }
+    out.rngZero = rngEq;
+    /* ⑤ 挑戰/對戰局強制禁用：即使 equipped 設了，挑戰局 S.r134k=[] */
+    SAVE.r134.equipped='iron'; startChallenge('20260616'); out.challengeOff = Array.isArray(S.r134k) && S.r134k.length===0;
+    SAVE.r134.equipped=null; randomSeedCode=oc;
+    /* ⑥ deterministic 點亮：純讀終局 S，同態同結果；各 perk 門檻正確 */
+    function lit(attr,age,grade){ startGame(); S.attr=Object.assign({hp:50,int:50,apr:50,mny:50,hap:50},attr); S.age=age; S.grade=grade; return r134LitPerks().map(p=>p.id); }
+    const L1=JSON.stringify(lit({mny:80},50,'B')); const L2=JSON.stringify(lit({mny:80},50,'B'));
+    out.litDeterministic = L1===L2;
+    out.litSpoon = lit({mny:80},50,'B').indexOf('spoon')>=0 && lit({mny:50},50,'B').indexOf('spoon')<0;
+    out.litBroke = lit({mny:18},50,'C').indexOf('broke')>=0 && lit({mny:50},50,'C').indexOf('broke')<0;
+    out.litIron  = lit({},85,'C').indexOf('iron')>=0 && lit({},60,'C').indexOf('iron')<0;
+    out.litSurv  = lit({},30,'D').indexOf('survivor')>=0 && lit({},60,'D').indexOf('survivor')<0;
+    out.litWinner= lit({},50,'S').indexOf('winner')>=0 && lit({},50,'A').indexOf('winner')<0;
+    /* ⑦ 舊存檔降級：無 r134 鍵→r134Data() 補 {seen:{},equipped:null}；髒 equipped(失效 id)→null；不炸 */
+    delete SAVE.r134; const rd=r134Data();
+    out.compatOld = !!rd && typeof rd.seen==='object' && rd.equipped===null;
+    SAVE.r134={seen:'x', equipped:'no_such_perk'}; const rd2=r134Data();
+    out.dirtySafe = typeof rd2.seen==='object' && rd2.equipped===null;
+    /* ⑧ 跨局集滿→r134_samsara 解鎖；缺一→不解 */
+    SAVE.r134={seen:{}, equipped:null}; R134_PERKS.forEach(p=>SAVE.r134.seen[p.id]=true);
+    out.achFull = ACH_MAP.r134_samsara.check({S:{flags:{}},age:50})===true;
+    SAVE.r134.seen={spoon:true,iron:true}; out.achPartial = ACH_MAP.r134_samsara.check({S:{flags:{}},age:50})===false;
+    SAVE.r134={seen:{}, equipped:null};
+    /* ⑨ S=null 安全降級：r134LitPerks/r134FreezeHTML 回空、不炸 */
+    const sv=S; S=null; let nullSafe=true;
+    try{ if(r134LitPerks().length!==0) nullSafe=false; if(r134FreezeHTML()!=='') nullSafe=false; }catch(e){ nullSafe=false; }
+    S=sv; out.nullSafe = nullSafe;
+    return JSON.stringify(out);
+  })()`, sandbox);
+  const r134 = JSON.parse(r134Raw);
+  r134OK = Object.values(r134).every(v => v === true);
+  console.log(`R134 投胎傳承(New Game+ 傳承): ${r134OK ? '✅ 全數通過' : '❌ ' + JSON.stringify(r134)}`);
+} catch (e) {
+  console.log('R134 投胎傳承(New Game+ 傳承): ❌ ' + e.message);
+}
+
 if (__errors.length) {
   console.log('\n--- 錯誤樣本(前5) ---');
   __errors.slice(0, 5).forEach(e => console.log('  ' + e));
@@ -3949,6 +4004,6 @@ if (__errors.length) {
 
 /* 退出碼 */
 const pass = __errors.length === 0 && chk.missingScenes.length === 0 && chk.eventVisible >= 126 && chk.eventTotal >= 126 && lsOK && achUnlocked > 0
-  && chk.deathbookMissing.length === 0 && chk.deathTotal >= 17 && deathsOK && rebirthOK && legacyOK && petOK && r13OK && r17OK && r20OK && r21OK && r22OK && r24OK && r25OK && r34OK && r38OK && r41OK && r42OK && r43OK && r44OK && r45OK && r46OK && r47OK && r48OK && r49OK && r51OK && r52OK && r53OK && r54OK && r55OK && r72OK && r76OK && r77OK && r79OK && r86OK && r87OK && r92OK && r93OK && r95OK && r96OK && r108OK && r110OK && r111OK && r112OK && r113OK && r115OK && r116OK && r117OK && r118OK && r119OK && r122OK && r126OK;
+  && chk.deathbookMissing.length === 0 && chk.deathTotal >= 17 && deathsOK && rebirthOK && legacyOK && petOK && r13OK && r17OK && r20OK && r21OK && r22OK && r24OK && r25OK && r34OK && r38OK && r41OK && r42OK && r43OK && r44OK && r45OK && r46OK && r47OK && r48OK && r49OK && r51OK && r52OK && r53OK && r54OK && r55OK && r72OK && r76OK && r77OK && r79OK && r86OK && r87OK && r92OK && r93OK && r95OK && r96OK && r108OK && r110OK && r111OK && r112OK && r113OK && r115OK && r116OK && r117OK && r118OK && r119OK && r122OK && r126OK && r134OK;
 console.log('\n結果: ' + (pass ? '✅ 全數通過' : '❌ 有項目未通過'));
 process.exit(pass ? 0 : 1);
