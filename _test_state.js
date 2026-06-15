@@ -4424,5 +4424,112 @@ const r127 = JSON.parse(vm.runInContext(`(function(){
   ['nullSafe','⑩ 無局(S=null)相容全回空字串不炸'],
 ].forEach(([k,m])=>ok(r127[k], 'R127 '+m));
 
+// ===== R128 台味手遊課金抽卡人生支線：支線可達性/分流節點/結局確定性/屬性真驅動/旗標純淨/壞資料降級/存檔相容/S=null 相容/爆肝死法可達 =====
+const r128 = JSON.parse(vm.runInContext(`(function(){
+  const out={};
+  function fresh(age,fl,attr){ startGame(); const s=S; s.origin=ORIGIN_MAP.office; s.flags=Object.assign({},fl||{}); ensureState(s); s.seen={}; s.alive=true; if(age!=null)s.age=age; if(attr)Object.assign(s.attr,attr); return s; }
+  const _roll=r128Roll;
+  // ① 支線可達性：成年窗口＋乾淨＋閘命中→入口 r128_hook
+  let s=fresh(30,{}); r128Roll=function(){return 0.1;}; out.entry = !!r128GachaPick() && r128GachaPick().id==='r128_hook';
+  // ② 閘落空→不插播、零殘留（舊存檔無旗標時不寫任何 r128 鍵）
+  s=fresh(30,{}); r128Roll=function(){return 0.9;}; out.gateMiss = r128GachaPick()===null;
+  out.gateMissPure = !('r128step' in s.flags) && !('r128_in' in s.flags) && !('r128path' in s.flags);
+  r128Roll=_roll;
+  // ③ 窗口外（未接觸手遊年齡／過老）不插播
+  s=fresh(10,{}); out.gateYoung = r128GachaPick()===null;
+  s=fresh(70,{}); out.gateOld   = r128GachaPick()===null;
+  s=fresh(30,{r128step:99}); out.gateDone = r128GachaPick()===null;   // 已收尾不再插播
+  // ④ 入口三分流：踏進三選項各立 path+step:1+r128_in；第4選項直接收尾(step:99 無 path 無 r128_in)
+  function pick0(idx){ s=fresh(30,{}); const ev=r128ById('r128_hook'); showEvent(ev); choose(idx); return s.flags; }
+  out.splitF2p    = (g=>g.r128path==='f2p'   &&g.r128step===1&&!!g.r128_in)(pick0(0));
+  out.splitMinnow = (g=>g.r128path==='minnow'&&g.r128step===1&&!!g.r128_in)(pick0(1));
+  out.splitWhale  = (g=>g.r128path==='whale' &&g.r128step===1&&!!g.r128_in)(pick0(2));
+  out.splitNone   = (g=>g.r128step===99&&!g.r128path&&!g.r128_in)(pick0(3));
+  // ⑤ 分流節點：依 path＋step 確定性返回對應節點
+  s=fresh(30,{r128step:1,r128path:'f2p'});    out.nodeF2p    =(r128GachaPick()||{}).id==='r128_f2p';
+  s=fresh(30,{r128step:1,r128path:'minnow'}); out.nodeMinnow =(r128GachaPick()||{}).id==='r128_minnow';
+  s=fresh(30,{r128step:1,r128path:'whale'});  out.nodeWhale  =(r128GachaPick()||{}).id==='r128_whale';
+  // ⑥ step2 結局確定性落地 r128_endtype/r128_endhit
+  s=fresh(30,{r128step:2,r128path:'whale',r128w_mny:true}); const e2=r128GachaPick();
+  out.endLand = e2 && e2.id==='r128_end_whale' && s.flags.r128_endtype==='r128_end_whale' && s.flags.r128_endhit===true;
+  // ⑦ 結局 picker 5 選 1 映射正確（純讀旗標、零 rng）
+  out.endId = r128EndingId({r128path:'whale',r128w_mny:true})==='r128_end_whale'
+    && r128EndingId({r128path:'whale'})==='r128_end_debt'
+    && r128EndingId({r128path:'minnow',r128_addict:true})==='r128_end_debt'
+    && r128EndingId({r128path:'minnow'})==='r128_end_minnow'
+    && r128EndingId({r128path:'f2p',r128w_int:true})==='r128_end_f2p'
+    && r128EndingId({r128path:'f2p'})==='r128_end_quit'
+    && r128EndingId({})==='r128_end_quit';   // 防呆：未設 path 落 f2p 分支
+  // ⑧ 屬性真驅動：f2p 智力檢定（高 int 看穿期望值過關 r128w_int；低 int 破戒）
+  function chain1(path,attr,idx){ s=fresh(30,{r128step:1,r128path:path}); Object.assign(s.attr,attr); const ev=r128GachaPick(); showEvent(ev); choose(idx); return s.flags; }
+  out.f2pWin  = [0,0,0].every(()=>!!chain1('f2p',{int:100},0).r128w_int);   // int 高→看穿期望值不破戒
+  out.f2pLose = [0,0,0].every(()=>!chain1('f2p',{int:5},0).r128w_int);      // int 低→忍不住破戒
+  // whale 財富檢定（厚口袋撐住 r128w_mny / 薄口袋刷爆卡）
+  out.whaleWin  = [0,0,0].every(()=>!!chain1('whale',{mny:100},0).r128w_mny);
+  out.whaleLose = [0,0,0].every(()=>!chain1('whale',{mny:5},0).r128w_mny);
+  // minnow 平選項『越課越深』立 r128_addict → 卡債
+  out.minnowAddict = !!chain1('minnow',{hap:50},1).r128_addict;
+  // ⑨ 爆肝死法可達：whale 爆肝刷夜場(special r128_allnight)身體見底→gachaburn；f2p 爆肝硬刷同理
+  s=fresh(40,{r128step:1,r128path:'whale'}); s.attr.hp=10; s.attr.mny=10; showEvent(r128ById('r128_whale')); choose(1);
+  out.deathWhale = s.flags.specialDeath==='gachaburn';
+  s=fresh(40,{r128step:1,r128path:'f2p'}); s.attr.hp=10; showEvent(r128ById('r128_f2p')); choose(1);
+  out.deathF2p = s.flags.specialDeath==='gachaburn' && typeof SPECIAL_DEATHS.gachaburn==='object';
+  // ⑩ 旗標純淨：乾淨開局無任何 r128 旗標
+  startGame(); const clean=S; ensureState(clean);
+  out.cleanPure = !Object.keys(clean.flags).some(k=>k.indexOf('r128')===0);
+  // ⑪ 回顧戰績卡：沒踏進(無 r128_in)整段省略；踏進+結局→含標題與結局名與「這輩子課了」
+  s=fresh(50,{}); out.reviewEmpty = r128GachaReviewHTML()==='';
+  s=fresh(50,{r128_in:true,r128path:'whale',r128w_mny:true,r128_endtype:'r128_end_whale'});
+  const rv=r128GachaReviewHTML();
+  out.reviewShow = rv.indexOf('課金抽卡人生')>=0 && rv.indexOf('課長傳說')>=0 && rv.indexOf('這輩子課了')>=0;
+  // ⑫ 純呈現零汙染：生成回顧前後 S.attr/flags 不變、零 rng 消耗
+  const bA=JSON.stringify(S.attr), bF=JSON.stringify(S.flags);
+  let used=0; const old=rng; rng=function(){ used++; return old(); };
+  r128GachaReviewHTML(); r128GachaReviewHTML();
+  rng=old;
+  out.reviewPure = JSON.stringify(S.attr)===bA && JSON.stringify(S.flags)===bF && used===0;
+  // ⑬ 壞資料降級：髒/缺欄位旗標 → 不炸，仍安全渲染（不誤觸發整段）
+  let dirtyOk=true; try{ s=fresh(50,{r128_in:true,r128path:'???',r128_endtype:'no_such'}); const h=r128GachaReviewHTML(); dirtyOk = h.indexOf('課金抽卡人生')>=0; }catch(e){ dirtyOk=false; }
+  out.dirtySafe = dirtyOk;
+  // ⑭ 存檔相容：舊存檔缺 r128 鍵 → ensureState 不補 r128 鍵；閘落空亦零殘留
+  startGame(); const oldsave=S; delete oldsave.flags.r128step; ensureState(oldsave);
+  out.compatOld = !('r128step' in oldsave.flags) && !('r128_in' in oldsave.flags);
+  // ⑮ 無局(S=null)相容：picker 回 null、回顧回空字串，皆不炸
+  let okNull=true; try{ S=null; if(r128GachaPick()!==null) okNull=false; if(r128GachaReviewHTML()!=='') okNull=false; }catch(e){ okNull=false; }
+  out.nullSafe = okNull;
+  return JSON.stringify(out);
+})()`, sandbox));
+[
+  ['entry','① 支線可達性：成年窗口+閘命中→入口 r128_hook'],
+  ['gateMiss','② 閘落空→不插播'],
+  ['gateMissPure','② 閘落空零殘留(不寫任何 r128 旗標)'],
+  ['gateYoung','③ 窗口外(過小)不插播'],
+  ['gateOld','③ 窗口外(過老)不插播'],
+  ['gateDone','③ 已收尾(step99)不再插播'],
+  ['splitF2p','④ 入口分流：無課堅持立 path/step/in'],
+  ['splitMinnow','④ 入口分流：小資微課立 path/step/in'],
+  ['splitWhale','④ 入口分流：課長梭哈立 path/step/in'],
+  ['splitNone','④ 入口分流：沒在玩→step99 無 path 無 in'],
+  ['nodeF2p','⑤ 分流節點：f2p→r128_f2p'],
+  ['nodeMinnow','⑤ 分流節點：minnow→r128_minnow'],
+  ['nodeWhale','⑤ 分流節點：whale→r128_whale'],
+  ['endLand','⑥ step2 結局確定性落地 r128_endtype/r128_endhit'],
+  ['endId','⑦ 結局 picker 5 選 1 映射正確(純讀旗標零 rng)'],
+  ['f2pWin','⑧ 屬性真驅動：高智力看穿期望值過關(r128w_int)'],
+  ['f2pLose','⑧ 屬性真驅動：低智力忍不住破戒'],
+  ['whaleWin','⑧ 屬性真驅動：厚財富撐住爆抽(r128w_mny)'],
+  ['whaleLose','⑧ 屬性真驅動：薄財富刷爆卡'],
+  ['minnowAddict','⑧ 小資越課越深立 r128_addict→卡債'],
+  ['deathWhale','⑨ 爆肝死法可達：課長搏命衝榜身體見底→gachaburn'],
+  ['deathF2p','⑨ 爆肝死法可達：無課爆肝硬刷身體見底→gachaburn'],
+  ['cleanPure','⑩ 旗標純淨：乾淨開局無任何 r128 旗標'],
+  ['reviewEmpty','⑪ 回顧卡：沒踏進(無 r128_in)整段省略'],
+  ['reviewShow','⑪ 回顧卡：踏進+結局含標題/結局名/這輩子課了'],
+  ['reviewPure','⑫ 純呈現零汙染：生成前後 S.attr/flags 不變且零 rng'],
+  ['dirtySafe','⑬ 壞資料降級：髒/缺欄位旗標不炸仍安全渲染'],
+  ['compatOld','⑭ 存檔相容：舊存檔 ensureState 不補 r128 鍵'],
+  ['nullSafe','⑮ 無局(S=null)相容：picker 回 null/回顧回空字串不炸'],
+].forEach(([k,m])=>ok(r128[k], 'R128 '+m));
+
 console.log(fails ? `\n結果: ❌ ${fails} 項未通過` : '\n結果: ✅ 狀態機全數正確');
 process.exit(fails ? 1 : 0);
