@@ -3317,6 +3317,10 @@ function buildEvents(){ return [
       {label:"全部硬吞，內捲從小開始", eff:{int:10,apr:4,hap:-8,hp:-3}, res:"十項全能的代價，是你再也不知道快樂長怎樣。"},
       {label:"裝病翹掉一半", eff:{hap:8,int:2}, res:"你保住了童年，也保住了對人生的熱愛。"},
       {label:"只挑一樣認真練", eff:{int:6,hap:3,apr:3}, res:"專精路線，你在那一項小有名氣。"},
+      /* R129 數值驅動：才藝由智力決定啃不啃得動（分流＋成長代價），文案點明「因為你的智力」 */
+      {label:'<i class="gtag">🧭智力50分流・R129</i> 挑最難的那項硬啃到底', r129:true, br:{k:"int", need:50,
+        hi:{eff:{int:10,hap:-6,hp:-3}, res:"因為你這顆小腦袋轉得快，最硬的那項才藝被你啃成了招牌——獎狀貼滿牆，代價是童年提早下檔、笑容跟著打折。爸媽的炫耀文，是你拿快樂換的。"},
+        lo:{eff:{int:4,hap:-7,hp:-4}, res:"你逞強挑了最難的那項，偏偏腦袋還沒長到位——練到哭、學到吐，獎狀沒幾張，倒把『我是不是很笨』刻進了心裡。硬啃不動的年紀，硬啃只會啃傷自己。"}}, eff:{}, res:""},
     ]},
 
   /* ---------- 求學 12-22 ---------- */
@@ -5627,6 +5631,10 @@ function buildEvents(){ return [
     choices:[
       {label:"報名上課，活絡身心", eff:{int:6,hap:10,hp:3}, res:"你重新當起學生，腦袋靈活了，朋友也多了一票。"},
       {label:"在家追劇就好", eff:{hap:4,hp:-2}, inc:"lazy", res:"你選擇宅在家，遙控器成了最忠實的學伴。"},
+      /* R129 數值驅動：晚年體質決定報得了幾門課（健康分流），文案點明「因為你的健康」 */
+      {label:'<i class="gtag">🧭健康55分流・R129</i> 一口氣報滿三門，當最忙的樂齡生', r129:true, br:{k:"hp", need:55,
+        hi:{eff:{int:8,hap:12,apr:3}, res:"因為你這把年紀身子骨還硬朗，書法、外語、烏克麗麗一門都沒落下——同學笑你比退休前還忙，你腦袋越用越靈、朋友一票接一票，晚年活成了校園風雲人物。"},
+        lo:{eff:{int:3,hap:2,hp:-5}, res:"你雄心壯志報了三門，無奈膝蓋跟腰先投降——爬個樓梯就喘、坐久了渾身痠，半學期下來只能含淚退掉兩門。身體跟不上，再多熱情也只能打折上課。"}}, eff:{}, res:""},
     ]},
   {id:"tech_struggle", stage:[60,84], w:2,
     title:"智慧手機大冒險", text:"孫子送你新手機，但那些 App、貼圖、雙重驗證簡直像天書。",
@@ -5641,6 +5649,10 @@ function buildEvents(){ return [
     choices:[
       {label:"把酒言歡，重溫舊情", eff:{hap:12,hp:rnd(-3,3)}, res:"你們聊到天黑，那些共同的回憶讓晚年多了一份溫熱。"},
       {label:"感慨物是人非，淡淡寒暄", eff:{hap:4,int:4}, res:"歲月改變了太多，你們客氣地敘舊，各自帶著回憶離開。"},
+      /* R129 數值驅動＋成長代價：心境（快樂）決定這場重逢是暢快還是觸景傷情（成功率檢定）；贏了喝太嗨也傷身（win 帶 hp 負＝trade-off） */
+      {label:'<i class="gtag">😄快樂58檢定・R129</i> 賭這場重逢能不能笑著散場（骰）', r129:true, sr:{k:"hap", need:58, spread:40,
+        win:{eff:{hap:14,apr:3,hp:-4}, res:"因為你這些年把心養得夠寬，老友一坐下就有聊不完的好事——你們笑著翻舊帳、約好明年再聚，散場時心裡暖暖的。代價只是貪杯多喝了兩攤，隔天頭有點痛，但值得。"},
+        lose:{eff:{hap:-8,int:3}, res:"你心裡那口悶氣還沒消，重逢反而勾出一堆『當年要是…』——你越聊越沉，看著彼此白了的頭髮只覺得唏噓。有些重逢，是因為自己過得不夠好，才連敘舊都變成了傷口。"}}, eff:{}, res:""},
     ]},
   {id:"write_memoir", stage:[66,90], w:1, once:true,
     title:"寫下回憶錄", text:"晚輩鼓勵你把這一生的故事寫下來，留給後人，也留給自己。",
@@ -5823,6 +5835,10 @@ function buildEvents(){ return [
     choices:[
       {label:"認真練團追夢", eff:{hap:10,apr:4,int:-2}, res:"你們在頂樓克難練團，那段嘈雜又熱血的青春無可取代。"},
       {label:"現實考量還是讀書", eff:{int:6,hap:-3}, res:"你把吉他收進櫃子，那個搖滾夢偶爾還會在深夜叫醒你。"},
+      /* R129 數值驅動：上台魅力決定樂團人氣（外貌分流），文案點明「因為你的外貌」 */
+      {label:'<i class="gtag">🧭外貌55分流・R129</i> 自願當主唱站到舞台最前面', r129:true, br:{k:"apr", need:55,
+        hi:{eff:{hap:12,apr:6,int:-2}, res:"因為你這張臉天生吃舞台，校慶一開唱台下尖叫成片、社群被翻拍洗版——樂團從無名小卒變成校園話題，你嚐到了被人群點亮的滋味。"},
+        lo:{eff:{hap:-4,apr:2,int:-2}, res:"你硬著頭皮站到最前面，台下卻只有零星掌聲跟幾支對著別人的手機——主唱的光環沒落到你身上，散場後你默默把麥克風讓回給比較上相的團員。舞台這東西，有時候真的看臉。"}}, eff:{}, res:""},
     ]},
 
   /* ---------- 工作 22-55（在職 / 待業 gating） ---------- */
@@ -5832,6 +5848,10 @@ function buildEvents(){ return [
     choices:[
       {label:"低調做事不選邊", eff:{int:6,hap:2}, res:"你專注本業、誰都不得罪，平安地在風暴中存活下來。"},
       {label:"主動結盟卡位", eff:{mny:6,hp:-4,hap:-3}, res:"你選了邊站，吃到了資源紅利，也背上了站隊的風險。"},
+      /* R129 數值驅動：財富底氣決定敢不敢硬碰派系（財富分流），文案點明「因為你的財富」 */
+      {label:'<i class="gtag">🧭財富55分流・R129</i> 帶著存款底氣，敢翻臉就翻臉', r129:true, br:{k:"mny", need:55,
+        hi:{eff:{mny:8,hap:6,int:3}, res:"因為戶頭夠厚、退路夠寬，你在派系角力裡腰桿挺得筆直——該爭的資源一分不讓，誰想拿『不聽話就走人』壓你，你只回一句『那就走啊』。有底氣的人，連辦公室政治都玩得比較開。"},
+        lo:{eff:{mny:-3,hp:-5,hap:-6}, res:"你想硬，奈何房貸卡費追在後頭——一句『考慮一下家裡』就把你的氣焰澆熄。你只能陪笑、選邊、吞下不公平，散會後在廁所深呼吸三次。沒有存款的人，連生氣都要先算成本。"}}, eff:{}, res:""},
     ]},
   {id:"raise_request", stage:[26,55], w:2, cond:isEmployed,
     title:"開口談加薪", text:"你扛了一整年的業績，終於鼓起勇氣走進主管辦公室，準備談那個敏感的數字。",
@@ -5860,6 +5880,10 @@ function buildEvents(){ return [
     choices:[
       {label:"認真經營小副業", eff:{mny:12,hp:-5,int:5}, flags:{sidegig:true}, res:"你利用下班時間滾出了第二份收入，雖然累，但帳戶數字會說話。"},
       {label:"下班就是要耍廢", eff:{hap:8,hp:3,mny:-2}, res:"你選擇守住僅有的休息時間，覺得身心健康才是真正的本金。"},
+      /* R129 數值驅動＋成長代價：副業能不能做起來吃智力（成功率檢定），但贏了也要拿健康換（win 帶 hp 負值＝trade-off） */
+      {label:'<i class="gtag">🧠智力60檢定・R129</i> 賭一把：把副業做成真正的事業（骰）', r129:true, sr:{k:"int", need:60, spread:40,
+        win:{eff:{mny:14,int:6,hp:-6}, flags:{sidegig:true}, res:"因為你腦子夠靈、選對了賽道，副業滾成了真正的第二事業——訂單接到手軟，存摺數字漂亮到不真實。代價是你已經想不起來『下班』兩個字怎麼寫，肝在角落默默記帳。"},
+        lose:{eff:{mny:-6,hp:-5,hap:-4}, res:"你押了時間、押了本錢，偏偏方向沒抓準——投出去的成本收不回來，正職還因為分心被主管約談。賠了夫人又折兵，你才懂副業不是有空就能變現的東西。"}}, eff:{}, res:""},
     ]},
   {id:"gig_delivery", stage:[23,50], w:2, cond:notEmployed,
     title:"先去跑外送", text:"工作還沒著落，帳單卻不會等人。你掛上保溫箱，成了城市裡的一道身影。",
@@ -13004,6 +13028,14 @@ function choose(i){
     else S.flags.srLose=(S.flags.srLose||0)+1;   // R22 檢定翻車計數（成就「骰子恨我」用）
     r89Snap(c.sr.k, "sr", roll >= c.sr.need);
   }
+  /* ---- R129 五圍真正有感（數值驅動強化，給下一輪 AI 當記憶）----
+     沿用既有 gate/sr/br 引擎，於既有事件「加掛」屬性驅動選項(tag c.r129)而非新開支線：
+     涵蓋早(talent_class 智力50分流/youth_band 外貌55分流)、中(office_politics 財富55分流/
+     side_hustle_new 智力60檢定)、晚(silver_learning 健康55分流/old_friend 快樂58檢定)，五圍全覆蓋。
+     成長有代價：side_hustle/old_friend 的 sr.win 與 talent_class 的 br.hi 都「升一條、扣一條」，
+     自動串 R98 取捨偵測(tradeLog)。結算新增 r129TrajectoryHTML()「五圍人生軌跡・起落總帳」純讀
+     S.attrHist/S.attr/S.keySnap(零 rng)。新增掛點要守 R25 sim 全域 br 探針：br.need 須 50-70、
+     label 須含 class="gtag"+🧭+門檻數字+「分流」；sr 慣例 label 含「檢定」+「骰」+門檻數字、win.eff 帶負值(代價)。 */
   /* ---- R25 確定性屬性分流 ----
      c.br={k, need, hi:{eff,res,flags?}, lo:{eff,res,flags?}}：同一選項依屬性門檻走不同結局，
      純門檻判定、零 rng 消耗——attr >= need 走 hi、否則走 lo，同種子同屬性 → 同結果，
@@ -15183,6 +15215,72 @@ function attrTrajectoryHTML(){
    舊存檔/沒做過任何屬性抉擇的局 keySnap 為空 → 整塊省略不報錯。
    與 R30 年史曲線錯開：曲線是逐歲被動快照、本卡是主動抉擇的決定性瞬間。
    ========================================================================= */
+/* =========================================================================
+   R129 五圍人生軌跡・起落總帳：把這一生每條屬性的「起點→峰值→謝幕」攤成一張總帳，
+   並標出哪幾條數值在關鍵路口替你做過決定（讀 keySnap 統計）——直接回應 directive#1
+   「屬性存在感低、想在結算回顧屬性軌跡」。純讀本局 S.attrHist／S.attr／S.keySnap，
+   零 rng 消耗、生成前後 S.attr/flags/keySnap/attrHist 不變（零汙染）；attrHist 缺失/空/髒
+   時以謝幕值優雅降級不報錯、S=null 直接回空字串不白屏。
+   設計決策（給下一輪 AI 當記憶）：
+   ·與 R106 分章節 SVG（看五階段形狀）、keySnapHTML（看每次抉擇）、r112（看取捨）刻意錯開——
+     本卡是「每條數值一生走了多遠、最高到哪、誰最常替你掀牌」的單頁總結，專為截圖分享而生。
+   ·起終點取 attrHist 首筆／謝幕值（末筆未必含當年最後一次套用，故終值一律取 S.attr 最可靠）；
+     峰值掃全程 attrHist 取最大、再與謝幕值比一次（防末段衝高沒進 hist）。
+   ·「受屬性影響的命運抉擇」次數讀 keySnap（gate/sr/br 觸發時記的 {k,won}），與本輪新增的
+     6 處 r129 屬性驅動掛點直接連動（不另開 state、不動遊戲序列、零 rng）。
+   ========================================================================= */
+function r129TrajectoryHTML(){
+  if(!S || !S.attr) return "";
+  const KS=["hp","int","apr","mny","hap"];   // 與 attrHist 欄序 [age,hp,int,apr,mny,hap] 對齊（col = idx+1）
+  const hist=Array.isArray(S.attrHist)?S.attrHist.filter(r=>Array.isArray(r)&&r.length>=6):[];
+  const col=k=>KS.indexOf(k)+1;
+  const startV=k=> hist.length ? (hist[0][col(k)]|0) : (S.attr[k]|0);
+  const endV  =k=> (S.attr[k]|0);   // 謝幕值最可靠
+  function peakOf(k){ const c=col(k); let pv=startV(k), pa=hist.length?(hist[0][0]|0):0;
+    hist.forEach(r=>{ if((r[c]|0)>pv){ pv=r[c]|0; pa=r[0]|0; } });
+    if(endV(k)>pv){ pv=endV(k); pa=(S.age|0); } return {v:pv, age:pa}; }
+  // keySnap：每條屬性在關鍵路口被當判準的次數 / 贏的次數（壞資料/缺鍵安全略過）
+  const snaps=Array.isArray(S.keySnap)?S.keySnap:[];
+  const decCnt={}, decWin={};
+  snaps.forEach(x=>{ if(x&&ATTR[x.k]){ decCnt[x.k]=(decCnt[x.k]||0)+1; if(x.won) decWin[x.k]=(decWin[x.k]||0)+1; } });
+  const pct=v=>Math.max(0,Math.min(100,v|0));
+  let bestGrow=null, bestGrowV=-999, mainDec=null;
+  for(const k of KS){
+    const g=endV(k)-startV(k); if(g>bestGrowV){ bestGrowV=g; bestGrow=k; }
+    if(decCnt[k] && (mainDec===null || decCnt[k]>decCnt[mainDec])) mainDec=k;
+  }
+  const rows=KS.map(k=>{
+    const a=ATTR[k]; if(!a) return "";
+    const s=startV(k), e=endV(k), pk=peakOf(k), c=a.col;
+    const decTag = decCnt[k]
+      ? `<span class="atev" style="white-space:nowrap">🎲替你定生死 ${decCnt[k]} 次・贏 ${decWin[k]||0}</span>`
+      : `<span class="atev muted">—</span>`;
+    const dir = e>s?`<span style="color:var(--good,#39ff88)">▲${e-s}</span>` : e<s?`<span style="color:var(--bad,#ff6b6b)">▼${s-e}</span>` : `<span class="muted">＝</span>`;
+    return `<div class="atrow" style="align-items:center">
+      <span style="white-space:nowrap;color:${c};min-width:74px">${a.ic}${a.nm}</span>
+      <span style="position:relative;flex:1;height:9px;background:var(--panel,#222);border-radius:5px;min-width:90px;margin:0 4px">
+        <span style="position:absolute;left:0;top:0;height:9px;width:${pct(e)}%;background:${c};opacity:.85;border-radius:5px"></span>
+        <span title="峰值" style="position:absolute;left:${pct(pk.v)}%;top:-2px;width:2px;height:13px;background:var(--accent,#ffd24a)"></span>
+      </span>
+      <span style="white-space:nowrap;font-size:12px">起${s} ▸ <b style="color:var(--accent,#ffd24a)">峰${pk.v}</b><span class="muted">(${pk.age}歲)</span> ▸ 終${e} ${dir}</span>
+      ${decTag}</div>`;
+  }).join("");
+  const totalDec=Object.values(decCnt).reduce((a,b)=>a+b,0);
+  const gA=ATTR[bestGrow];
+  const growPart = (gA && bestGrowV>0)
+    ? `這一生長進最多的是 ${gA.ic}${gA.nm}（＋${bestGrowV}）`
+    : `這一生五圍幾乎原地踏步，出廠什麼樣、謝幕還什麼樣`;
+  const decPart = mainDec
+    ? `；最常在關鍵路口替你掀牌的是 ${ATTR[mainDec].ic}${ATTR[mainDec].nm}（${decCnt[mainDec]} 次）。數值從來不是表頭裝飾，是你真金白銀走出來的軌跡。`
+    : `；只是這輩子沒幾次真讓數值替你拍板——多數路口，你還是賭運氣居多。`;
+  return `<div class="panel" style="margin-top:12px;background:var(--panel2)">
+    <h2 class="sec">📈 五圍人生軌跡・起落總帳</h2>
+    <div class="muted" style="font-size:12px;margin-bottom:6px;text-align:left">每條數值這一生走了多遠、最高到哪、又替你做過幾次決定${totalDec?`（共 ${totalDec} 次屬性翻牌）`:""}</div>
+    ${rows}
+    <div style="margin-top:6px;font-size:12.5px;text-align:left;line-height:1.7;color:var(--accent,#ffd24a)">「${growPart}${decPart}」</div>
+  </div>`;
+}
+
 function keySnapHTML(){
   if(!S || !Array.isArray(S.keySnap) || S.keySnap.length<1) return "";
   const snaps=S.keySnap.slice().sort((a,b)=>a.age-b.age);
@@ -15647,6 +15745,7 @@ function screenSummary(cat){
       ${bondReviewHTML()}
       ${attrCurveHTML()}
       ${attrTrajectoryHTML()}
+      ${r129TrajectoryHTML()}
       ${keySnapHTML()}
       ${r112TradeoffHTML()}
       ${attrTurnsHTML()}

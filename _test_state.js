@@ -4531,5 +4531,77 @@ const r128 = JSON.parse(vm.runInContext(`(function(){
   ['nullSafe','⑮ 無局(S=null)相容：picker 回 null/回顧回空字串不炸'],
 ].forEach(([k,m])=>ok(r128[k], 'R128 '+m));
 
+// ===== R129 五圍真正有感・數值驅動強化：屬性門檻分流/檢定可達性 + trade-off 生效 + 軌跡卡呈現/純淨/降級/相容/S=null =====
+const r129 = JSON.parse(vm.runInContext(`(function(){
+  const out={}; const f=id=>EVENTS.find(e=>e.id===id);
+  function fresh(age,attr,fl){ startGame(); S.flags=Object.assign({},fl||{}); ensureState(S); S.seen={}; S.alive=true; S.keySnap=[]; S.tradeLog=[]; if(age!=null)S.age=age; if(attr)Object.assign(S.attr,attr); return S; }
+  function optIdx(id,kw){ const e=f(id); return e?e.choices.findIndex(c=>c.label.indexOf(kw)>=0):-1; }
+  // ① 結構＋五圍覆蓋：本輪 r129 掛點齊備(≥6)、br/sr 結構完整、label 帶 gtag+門檻數字、五圍全覆蓋
+  const opts=[]; EVENTS.forEach(e=>(e.choices||[]).forEach(c=>{ if(c.r129) opts.push({e,c}); }));
+  out.count = opts.length>=6;
+  out.cover = new Set(opts.map(o=>(o.c.br&&o.c.br.k)||(o.c.sr&&o.c.sr.k))).size===5;
+  out.struct = opts.every(o=>{ const c=o.c; if(!/class="gtag"/.test(c.label)) return false;
+    if(c.br) return ATTR[c.br.k] && c.br.need>=50 && c.br.need<=70 && c.br.hi&&c.br.hi.eff&&c.br.hi.res && c.br.lo&&c.br.lo.eff&&c.br.lo.res && c.br.hi.res!==c.br.lo.res && c.label.indexOf(String(c.br.need))>=0;
+    if(c.sr) return ATTR[c.sr.k] && c.sr.need>=55 && c.sr.need<=85 && c.sr.spread===40 && c.sr.win&&c.sr.win.eff&&c.sr.win.res && c.sr.lose&&c.sr.lose.eff&&c.sr.lose.res && c.label.indexOf(String(c.sr.need))>=0;
+    return false; });
+  // ② br 真驅動：高屬性走 hi、低屬性走 lo(talent_class 智力 / silver_learning 健康)，keySnap kind:br won 正確
+  function brRun(id,kw,attr){ const i=optIdx(id,kw); const e=f(id); fresh(e.stage[0],attr,{employed:true}); showEvent(e); choose(i); return S; }
+  out.brHi = (()=>{ const s=brRun('talent_class','硬啃',{int:90}); const k=s.keySnap[s.keySnap.length-1]; return (s.flags.brHi||0)>0 && k&&k.k==='int'&&k.kind==='br'&&k.won===true; })();
+  out.brLo = (()=>{ const s=brRun('talent_class','硬啃',{int:5}); const k=s.keySnap[s.keySnap.length-1]; return (s.flags.brLo||0)>0 && k&&k.won===false; })();
+  out.brHi2 = (()=>{ const s=brRun('silver_learning','三門',{hp:90}); return (s.flags.brHi||0)>0; })();
+  // ③ sr 真驅動：高屬性必過、低屬性必翻(side_hustle 智力 / old_friend 快樂)，連跑 3 次不翻盤，keySnap kind:sr
+  function srRun(id,kw,attr){ const i=optIdx(id,kw); const e=f(id); fresh(e.stage[0],attr,{employed:true}); showEvent(e); choose(i); return S; }
+  out.srWin = [0,0,0].every(()=>{ const s=srRun('side_hustle_new','事業',{int:100}); const k=s.keySnap[s.keySnap.length-1]; return (s.flags.gateWin||0)>0 && k&&k.k==='int'&&k.kind==='sr'&&k.won===true; });
+  out.srLose= [0,0,0].every(()=>{ const s=srRun('side_hustle_new','事業',{int:1}); return (s.flags.srLose||0)>0; });
+  out.srWin2= [0,0,0].every(()=>{ const s=srRun('old_friend','散場',{hap:100}); return (s.flags.gateWin||0)>0; });
+  // ④ 成長有代價：拿增益付代價≥2 處(副業贏了傷健康/重逢貪杯傷身/啃才藝升智扣快樂)，且實跑 win/hi 分支記入 tradeLog
+  const tcount=[
+    (c=>c&&c.sr&&c.sr.win.eff.hp<0&&c.sr.win.eff.mny>0)(f('side_hustle_new').choices[optIdx('side_hustle_new','事業')]),
+    (c=>c&&c.sr&&c.sr.win.eff.hp<0&&c.sr.win.eff.hap>0)(f('old_friend').choices[optIdx('old_friend','散場')]),
+    (c=>c&&c.br&&c.br.hi.eff.int>0&&c.br.hi.eff.hap<0)(f('talent_class').choices[optIdx('talent_class','硬啃')]),
+  ].filter(Boolean).length;
+  out.tradeoffStruct = tcount>=2;
+  out.tradeLog = (()=>{ const s=srRun('side_hustle_new','事業',{int:100}); return Array.isArray(s.tradeLog) && s.tradeLog.some(t=>t.dn==='hp'); })();
+  // ⑤ 軌跡卡呈現：attrHist 有料 → r129TrajectoryHTML 非空含關鍵字
+  fresh(60,{int:80}); S.attrHist=[[0,40,30,50,20,60],[30,60,70,55,40,70],[60,55,80,50,45,65]];
+  const html=r129TrajectoryHTML();
+  out.render = html.indexOf('五圍人生軌跡')>=0 && html.indexOf('峰')>=0 && html.length>200;
+  // ⑥ 純呈現零汙染：生成前後 S.attr/flags/keySnap 不變、零 rng 消耗
+  const bA=JSON.stringify(S.attr), bF=JSON.stringify(S.flags), bK=JSON.stringify(S.keySnap);
+  let used=0; const oldR=rng; rng=function(){ used++; return oldR(); };
+  r129TrajectoryHTML(); r129TrajectoryHTML();
+  rng=oldR;
+  out.pure = JSON.stringify(S.attr)===bA && JSON.stringify(S.flags)===bF && JSON.stringify(S.keySnap)===bK && used===0;
+  // ⑦ 壞資料降級：attrHist 含 null/短陣列被濾掉不炸，仍能渲染
+  let dirtyOk=true; try{ fresh(60,{}); S.attrHist=[null,[0,50],[20,60,70,50,40,65,9]]; const h=r129TrajectoryHTML(); dirtyOk=h.indexOf('五圍人生軌跡')>=0; }catch(e){ dirtyOk=false; }
+  out.dirtySafe = dirtyOk;
+  // ⑧ 舊存檔相容：缺 attrHist(空陣列) → 以謝幕值渲染不炸；ensureState 補空陣列不報錯
+  const old={flags:{},attr:{hp:55,int:60,apr:50,mny:45,hap:70},age:50,alive:true,seen:{}}; ensureState(old);
+  let compatOk=true; try{ fresh(50,{hp:55,int:60,apr:50,mny:45,hap:70}); S.attrHist=[]; const h=r129TrajectoryHTML(); compatOk=h.indexOf('五圍人生軌跡')>=0 && h.indexOf('60')>=0; }catch(e){ compatOk=false; }
+  out.compat = Array.isArray(old.attrHist) && compatOk;
+  // ⑨ 無局(S=null)相容：回空字串不炸
+  let okNull=true; try{ S=null; if(r129TrajectoryHTML()!=='') okNull=false; }catch(e){ okNull=false; }
+  out.nullSafe = okNull;
+  return JSON.stringify(out);
+})()`, sandbox));
+[
+  ['count','① 本輪 r129 屬性驅動掛點齊備(≥6 處)'],
+  ['cover','① 五圍全覆蓋(hp/int/apr/mny/hap 各有掛點)'],
+  ['struct','① 結構完整:br need50-70/sr need55-85 spread40、hi≠lo、label 帶 gtag+門檻數字'],
+  ['brHi','② br 真驅動:talent_class 高智力走 hi、keySnap kind:br won:true'],
+  ['brLo','② br 真驅動:低智力走 lo、keySnap won:false'],
+  ['brHi2','② br 真驅動:silver_learning 高健康走 hi'],
+  ['srWin','③ sr 真驅動:side_hustle 高智力必過(3連跑不翻盤)、keySnap kind:sr won:true'],
+  ['srLose','③ sr 真驅動:低智力必翻(srLose+1)'],
+  ['srWin2','③ sr 真驅動:old_friend 高快樂必過'],
+  ['tradeoffStruct','④ 成長有代價:≥2 處拿增益付代價(副業贏了傷健康/重逢貪杯傷身/啃才藝升智扣快樂)'],
+  ['tradeLog','④ trade-off 實跑生效:贏 side_hustle 升財富傷健康 → tradeLog 記一筆 dn:hp'],
+  ['render','⑤ 軌跡卡呈現:attrHist 有料→含「五圍人生軌跡/峰」非空'],
+  ['pure','⑥ 純呈現零汙染:生成前後 S.attr/flags/keySnap 不變且零 rng'],
+  ['dirtySafe','⑦ 壞資料降級:attrHist 含 null/短陣列被濾掉不炸仍渲染'],
+  ['compat','⑧ 舊存檔相容:缺 attrHist→以謝幕值渲染不炸、ensureState 補空陣列'],
+  ['nullSafe','⑨ 無局(S=null)相容:回空字串不炸'],
+].forEach(([k,m])=>ok(r129[k], 'R129 '+m));
+
 console.log(fails ? `\n結果: ❌ ${fails} 項未通過` : '\n結果: ✅ 狀態機全數正確');
 process.exit(fails ? 1 : 0);
