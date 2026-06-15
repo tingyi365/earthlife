@@ -5081,5 +5081,76 @@ const r136 = JSON.parse(vm.runInContext(`(function(){
   ['achCutoff','⑫ r136_cutoff:小圈全正向零拖累零虧欠→解、八人局→不解'],
 ].forEach(([k,m])=>ok(r136[k], 'R136 '+m));
 
+/* ===== R137 蝸居人生・房產夢居住軌跡（純衍生/結算覆蓋層；零 rng/零汙染/deterministic 推演/財富+世代驅動/壞資料降級/居住成就） ===== */
+const r137 = JSON.parse(vm.runInContext(`(function(){
+  const out={};
+  function mk(mny,age,era){ return {attr:{hp:50,int:50,apr:50,mny:mny,hap:50}, age:age, era:era, flags:{}, alive:false}; }
+  // ① 資料齊備：8 居住階層欄位完整、R55 六世代房價 offset 齊備、5 人生階段、6 結局型別
+  out.dataFull = Array.isArray(R137_TIERS) && R137_TIERS.length===8 && R137_TIERS.every(t=>t.ic&&t.nm&&t.short)
+    && R55_ERAS.every(er=>typeof R137_ERAOFF[er.id]==='number')
+    && Array.isArray(R137_PHASES) && R137_PHASES.length===5
+    && ['palace','owner','mortgage','inherit','renter','snail'].every(k=>R137_END[k]&&R137_END[k].nm&&R137_END[k].net&&R137_END[k].note);
+  // ② 居住階層確定性映射：高財富→帝寶(7)、中財富→上車(>=3)、低財富→無殼(0)；且財富單調驅動
+  const hi=r137HousingOf(mk(95,70,'e00')), midd=r137HousingOf(mk(50,40,'e00')), lo=r137HousingOf(mk(5,60,'e00'));
+  out.tierMap = !!hi&&!!midd&&!!lo && hi.finalTier===7 && midd.finalTier>=3 && lo.finalTier===0
+    && hi.finalTier>midd.finalTier && midd.finalTier>lo.finalTier;
+  // ③ 世代真正驅動：同財富 50，老世代(e70 買得起)階層 > 22K 世代(e10 買不起)
+  const old=r137HousingOf(mk(50,55,'e70')), young=r137HousingOf(mk(50,55,'e10'));
+  out.eraDrive = !!old&&!!young && old.finalTier>young.finalTier;
+  // ④ 卡片渲染：含標題/居住結局/房產淨值/上車與否
+  S=mk(50,40,'e00'); const card=r137HousingReviewHTML();
+  out.cardRender = card.indexOf('居住軌跡')>=0 && card.indexOf('居住結局')>=0 && card.indexOf('房產淨值')>=0 && card.indexOf('上車')>=0;
+  // ⑤ deterministic 純讀：同 S 兩次渲染逐字一致
+  S=mk(50,40,'e10'); const a1=r137HousingReviewHTML(), a2=r137HousingReviewHTML();
+  out.deterministic = a1===a2 && a1.length>0;
+  // ⑥ 純呈現零汙染：生成前後 S.attr/era/age/flags 不變、零 rng 消耗
+  S=mk(72,55,'e70'); const bA=JSON.stringify(S.attr), bE=S.era, bAge=S.age, bF=JSON.stringify(S.flags);
+  let used=0; const oldR=rng; rng=function(){ used++; return oldR(); };
+  r137HousingReviewHTML(); r137HousingOf(S); rng=oldR;
+  out.pure = JSON.stringify(S.attr)===bA && S.era===bE && S.age===bAge && JSON.stringify(S.flags)===bF && used===0;
+  // ⑦ S=null / 缺 attr / 缺 mny 降級：回 null、卡空字串、不炸
+  out.nullSafe = (()=>{ try{ S=null; return r137HousingOf(null)===null && r137HousingReviewHTML()===''; }catch(e){ return false; } })();
+  out.noAttr = (()=>{ try{ return r137HousingOf({age:50,era:'e00'})===null && r137HousingOf({attr:{},age:50})===null; }catch(e){ return false; } })();
+  // ⑧ 髒 era 降級：不存在 era id → 用中性 offset（等同 offset 0/缺 era），仍回物件不炸
+  out.dirtyEra = (()=>{ try{ const d=r137HousingOf(mk(50,40,'zzz999')); const n=r137HousingOf(mk(50,40,null)); return !!d && !!n && d.finalTier===n.finalTier; }catch(e){ return false; } })();
+  // ⑨ 舊存檔相容：ensureState 不為 R137 在 S/flags 補任何 r137 鍵
+  startGame(); const olds=S; ensureState(olds);
+  out.compatOld = !Object.keys(olds).some(k=>k.toLowerCase().indexOf('r137')===0)
+    && !Object.keys(olds.flags||{}).some(k=>k.toLowerCase().indexOf('r137')===0);
+  // ⑩ 居住成就確定性點亮：帝寶/房貸奴/一生租屋/有殼階級/繼承祖厝 各自可達且互斥
+  const PAL=mk(98,70,'e00'), MORT=mk(50,40,'e00'), RENT=mk(28,60,'e00'), OWN=mk(72,60,'e00'), INH=mk(45,55,'e80');
+  out.achPalace   = !!ACH_MAP.r137_palace   && ACH_MAP.r137_palace.check({S:PAL})===true   && ACH_MAP.r137_palace.check({S:RENT})===false;
+  out.achMortgage = !!ACH_MAP.r137_mortgage && ACH_MAP.r137_mortgage.check({S:MORT})===true && ACH_MAP.r137_mortgage.check({S:PAL})===false;
+  out.achRenter   = !!ACH_MAP.r137_renter   && ACH_MAP.r137_renter.check({S:RENT})===true   && ACH_MAP.r137_renter.check({S:PAL})===false;
+  out.achOwner    = !!ACH_MAP.r137_owner    && ACH_MAP.r137_owner.check({S:OWN})===true     && ACH_MAP.r137_owner.check({S:MORT})===false;
+  out.achInherit  = !!ACH_MAP.r137_inherit  && ACH_MAP.r137_inherit.check({S:INH})===true   && ACH_MAP.r137_inherit.check({S:PAL})===false;
+  // ⑪ 跨局集滿 r137_housing：五成就全亮→解鎖、缺一→不解
+  const allAch={r137_owner:true,r137_mortgage:true,r137_inherit:true,r137_renter:true,r137_palace:true};
+  SAVE.ach=Object.assign({},allAch); out.achFull = !!ACH_MAP.r137_housing && ACH_MAP.r137_housing.check({S:{}})===true;
+  const partial=Object.assign({},allAch); delete partial.r137_palace;
+  SAVE.ach=partial; out.achPartial = ACH_MAP.r137_housing.check({S:{}})===false;
+  SAVE.ach={}; S=null;
+  return JSON.stringify(out);
+})()`, sandbox));
+[
+  ['dataFull','① 資料齊備:8 居住階層+六世代房價offset+5 人生階段+6 結局型別'],
+  ['tierMap','② 居住階層確定性映射:高→帝寶/中→上車/低→無殼且財富單調驅動'],
+  ['eraDrive','③ 世代真正驅動:同財富老世代階層>22K世代'],
+  ['cardRender','④ 卡片渲染:含居住軌跡/居住結局/房產淨值/上車'],
+  ['deterministic','⑤ deterministic 純讀:同 S 兩次渲染逐字一致'],
+  ['pure','⑥ 純呈現零汙染:生成前後 S.attr/era/age/flags 不變且零 rng'],
+  ['nullSafe','⑦ 無局(S=null)降級:回 null、卡空字串不炸'],
+  ['noAttr','⑦ 缺 attr/mny 降級:回 null 不炸'],
+  ['dirtyEra','⑧ 髒 era 降級:用中性 offset 仍回物件不炸'],
+  ['compatOld','⑨ 舊存檔相容:ensureState 不為 R137 補任何 S/flags 鍵'],
+  ['achPalace','⑩ r137_palace:帝寶→解、租屋→不解'],
+  ['achMortgage','⑩ r137_mortgage:房貸奴→解、帝寶→不解'],
+  ['achRenter','⑩ r137_renter:一生租屋(55+)→解、帝寶→不解'],
+  ['achOwner','⑩ r137_owner:有殼階級→解、房貸奴→不解'],
+  ['achInherit','⑩ r137_inherit:繼承祖厝→解、帝寶→不解'],
+  ['achFull','⑪ 跨局集滿:五成就全亮→r137_housing 解鎖'],
+  ['achPartial','⑪ 跨局集滿:缺一→r137_housing 不解'],
+].forEach(([k,m])=>ok(r137[k], 'R137 '+m));
+
 console.log(fails ? `\n結果: ❌ ${fails} 項未通過` : '\n結果: ✅ 狀態機全數正確');
 process.exit(fails ? 1 : 0);

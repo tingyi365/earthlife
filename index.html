@@ -2967,6 +2967,13 @@ const ACHIEVEMENTS = [
   {id:"r136_drag", ic:"⛓️", nm:"損友拖累・歹路毋通行", desc:"那個揪你做傻事的酒肉朋友阿狗，把你的人生一路拖到見底——錢沒了、肝也沒了。歹路毋通行，少年仔，這句話你是用一輩子聽懂的。", check:c=>{ const r=r136RosterOf(c.S); const b=r.find(x=>x.k==='badfriend'); return !!b && b.bond<=-15; }, hint:"財富與健康都低到一定程度，損友阿狗就會深度登場、把羈絆拖到重度負值…"},
   {id:"r136_owe", ic:"🙇", nm:"子欲養而親不待", desc:"拚了一輩子還是沒讓爸媽過上好日子，謝幕時心裡最放不下的，是那聲始終沒喊出口的對不起。", check:c=>{ const r=r136RosterOf(c.S); return r.filter(x=>x.grp==='family'&&x.owe).length>=2; }, hint:"終局財富與快樂偏低、沒能回報父母（甚至花過老爸金援沒還）——讓爸媽兩段都標上『虧欠』…"},
   {id:"r136_cutoff", ic:"✂️", nm:"斷捨離・人間清醒", desc:"不討好、不糾纏，把爛關係斷得乾乾淨淨——留在身邊的每一個都是正向的羈絆。朋友不必多，夠真就好，這是中年最奢侈的清醒。", check:c=>{ const r=r136RosterOf(c.S); const met=r.length, pos=r.filter(x=>x.bond>0).length; return met>=3 && met<=6 && pos===met && !r.some(x=>x.drag||x.owe); }, hint:"把人生過得乾淨——財富穩(買得起房不靠房東、不沾損友)、家庭快樂，讓登場的人不多但每段都正向、零拖累零虧欠…"},
+  /* ---- R137 蝸居人生・房產夢居住軌跡成就（純讀 r137HousingOf(S) deterministic 推演，零 rng；財富/世代/年齡確定性驅動，舊存檔/壞資料永不誤觸；與 R87 事件型買房支線各自獨立旗標）---- */
+  {id:"r137_owner", ic:"🏠", nm:"有殼階級・房貸繳清上岸", desc:"在房價所得比全球前段班的這座島，你咬牙把三十年房貸繳到清——名下這間房，再也沒有人能從你手裡拿走。有殼，是你用半輩子換來的安全感。", check:c=>{const h=r137HousingOf(c.S); return !!h && h.ach.owner;}, hint:"把財富養夠高（或生在買得起房的老世代），讓終局居住軌跡推到『還清換屋／有殼有餘』階層…"},
+  {id:"r137_mortgage", ic:"🔑", nm:"房貸奴・用三十年換一個殼", desc:"你上車了，代價是往後三十年不敢失業、不敢生病、不敢亂花一毛錢。月薪先扣房貸再過日子——這座島最普遍的中產劇本，你親自演了一遍。", check:c=>{const h=r137HousingOf(c.S); return !!h && h.ach.mortgage;}, hint:"財富剛好夠上車、但還沒爬到還清階層——讓終局居住軌跡停在『買房上車・背三十年房貸』…"},
+  {id:"r137_inherit", ic:"🏯", nm:"啃老繼承祖厝・有根的有殼人", desc:"你沒在都市房市裡廝殺，卻憑家族傳承成了有殼的人——阿公那輩蓋起的祖厝穩穩落到你手上，不用背三十年房貸，還承載一家三代的根。", check:c=>{const h=r137HousingOf(c.S); return !!h && h.ach.inherit;}, hint:"生在老世代（經濟起飛/解嚴/泡沫尾聲）、中年後、財富中等（自己買不起大的但家有祖厝）——走繼承祖厝分流…"},
+  {id:"r137_renter", ic:"🛋️", nm:"一生租屋・無殼到老", desc:"你一輩子沒被房貸綁架，把租屋的自由守到老——名下始終一坪都沒有，自由是真的，晚年房東嫌你年紀大也是真的。這座島賣太貴，不是你的錯。", check:c=>{const h=r137HousingOf(c.S); return !!h && h.ach.renter;}, hint:"財富停在租屋階層（租得起套房但上不了車）、又活過 55 歲——把無殼的日子一路過到晚年…"},
+  {id:"r137_palace", ic:"🏰", nm:"帝寶人生・蛋黃區勝利組", desc:"蛋黃區豪宅、自住加收租，換別人幫你繳房貸——在這座死薪水永遠追不上房價的島上，你站到了食物鏈的頂端。帝寶人生，是傳說裡才有的劇本，你活成了真的。", check:c=>{const h=r137HousingOf(c.S); return !!h && h.ach.palace;}, hint:"把財富衝到頂（或生在買得起房的老世代再疊財富），讓終局居住軌跡推到最高的『帝寶人生』階層…"},
+  {id:"r137_housing", ic:"🏘️", nm:"鬼島居住圖鑑・房產夢全集滿", desc:"有殼階級、房貸奴、繼承祖厝、一生租屋、帝寶人生——這座島丟給你的五種居住命運，你用一次次投胎全都親自住過一遍。富過、窮過、上車過、無殼過，房子這道鬼島最痛的人生考題，你終於把它活成了一本圖鑑。", check:c=>{const need=["r137_owner","r137_mortgage","r137_inherit","r137_renter","r137_palace"]; return !!(SAVE&&SAVE.ach) && need.every(id=>SAVE.ach[id]);}, hint:"跨局集滿五種居住結局成就各至少一次（有殼階級/房貸奴/繼承祖厝/一生租屋/帝寶人生）——把房產夢的每一種命運都住過一遍…"},
   {id:"r70a_unicorn", ic:"🦄", nm:"創業上岸・無中生有", desc:"在頭家夢分歧鏈選自己創業，撐過跑三點半的歲月，最後成功上岸買房定居——你把『無中生有』四個字活成了真的。", check:c=>!!(c.S.flags&&c.S.flags.r70a_unicorn), hint:"分歧鏈裡選自己創業的人，中段擴張或被收購（或在三點半跳票邊緣硬撐活下來），末段才走得到買房上岸…"},
   {id:"r70a_freebird", ic:"🕊️", nm:"社畜跳船・自由業真男人", desc:"當年領死薪水的你中途跳船去接案，多年後接出口碑、開了自己的工作室——上班族眼裡那種『自由業』，自由是真的，業也真的有在接。", check:c=>!!(c.S.flags&&c.S.flags.r70a_freebird), hint:"分歧鏈選領死薪水當社畜的人，中段選擇安靜離職跳船接案，末段把工作室掛牌做起來…"},
   {id:"r70a_clear", ic:"🧭", nm:"頭家夢・全鏈結業", desc:"從老家那通電話一路走到人生期末考，把頭家夢（或死薪水）這條三段分歧鏈完整走完——接、創、領，無論哪條路你都活出了答案。", check:c=>!!(c.S.flags&&c.S.flags.r70a_done), hint:"老家的店要收那年做出選擇後，把中段、末段兩道抉擇都接著走完，整條頭家分歧鏈一站不漏…"},
@@ -3538,6 +3545,120 @@ function r136PeopleReviewHTML(){
     <div class="muted" style="font-size:11.5px;margin:-4px 0 6px">這座島丟給你的人，會反覆在你人生登場——盤點一下，誰陪你最久、誰拖累你、誰你這輩子虧欠。</div>
     ${rows}
     <div class="muted" style="font-size:12.5px;margin-top:8px;line-height:1.8">${lines.join("<br>")}</div></div>`;
+}
+
+/* =========================================================================
+   R137 蝸居人生・房產夢（居住軌跡軸）——純衍生／結算覆蓋層
+   設計鐵律＝零 rng、零狀態汙染：只讀既有 S（財富 S.attr.mny／年齡 S.age／R135 出生
+   世代 S.era）deterministic 推演一生居住軌跡，不進事件抽取序列、不寫 S、不改平衡；
+   同一局重繪逐字一致，種子序列與壽命分佈完全不變（比照 R135/R136 覆蓋層做法）。
+   財富屬性真正驅動：effW = mny − 世代房價難度offset → 決定最終居住階層；世代（老世代
+   買得起／22K 世代買不起）與年齡（年輕還沒上車、晚年才繳清）同步調制——呼應「讓屬性
+   真正影響遊戲」，與既有 R98 五圍／R55+R135 世代／R103+R136 羈絆軸協同但錯開（純呈現層）。
+   無局／缺 attr／缺 mny／髒 era／舊存檔一律安全降級回 null／空字串，絕不白屏或拋例外。
+   尺度＝台味鬼島自嘲幽默（22K 買不起房／房貸奴／鳥籠套房／啃老繼承祖厝／帝寶自嘲），
+   與既有 R87 事件型買房支線（旗標驅動）各自獨立、互不疊代。
+   ========================================================================= */
+// 居住階層（0 最低～7 最高）：純查表、零 rng
+const R137_TIERS = [
+  {ic:"🐌", nm:"無殼蝸牛",   short:"露宿邊緣・打地鋪借住"},
+  {ic:"🏚️", nm:"啃老蝸居",   short:"分租雅房・擠回老厝啃老"},
+  {ic:"🛋️", nm:"租屋族",     short:"套房月光・二房東年年喊漲"},
+  {ic:"📦", nm:"蝸居小套房", short:"買得起的鳥籠・轉個身都難"},
+  {ic:"🔑", nm:"買房上車",   short:"簽三十年房貸・正式入主屋奴俱樂部"},
+  {ic:"🏠", nm:"還清換屋",   short:"繳清有殼・換間大一點的"},
+  {ic:"🏡", nm:"有殼有餘",   short:"自住加收租・置產有道"},
+  {ic:"🏰", nm:"帝寶人生",   short:"蛋黃區豪宅・人生勝利組"},
+];
+// 世代房價難度 offset：正值＝越難買（22K／天價世代），負值＝買得起（經濟起飛世代）
+const R137_ERAOFF = { e70:-18, e80:-10, e90:-4, e00:2, e10:14, e20:18 };
+// 人生五個居住檢查點（age 門檻＋該階段可達的居住階層天花板，避免年輕就上車）
+const R137_PHASES = [
+  {key:"kid",    age:0,  nm:"啃老幼年", ceil:2},
+  {key:"young",  age:24, nm:"初出社會", ceil:2},
+  {key:"family", age:34, nm:"成家立業", ceil:4},
+  {key:"mid",    age:48, nm:"中年定錨", ceil:6},
+  {key:"old",    age:64, nm:"晚年安居", ceil:7},
+];
+// 結局型別文案（純查表、零 rng）
+const R137_END = {
+  palace:   {ic:"🏰", nm:"帝寶人生・蛋黃區勝利組", net:"🏦 房產淨值頂端・幾間房隨便賣都財富自由", note:"你站到了食物鏈的頂端——換大家幫你繳房貸。"},
+  owner:    {ic:"🏠", nm:"有殼階級・房貸繳清上岸", net:"🏦 無債一身輕・安全感都砌在磚瓦裡", note:"三十年屋奴熬成有殼，那張清償證明比任何獎狀都珍貴。"},
+  mortgage: {ic:"🔑", nm:"房貸奴・背貸有殼", net:"🏦 帳面有殼・現金流全綁在每月那筆貸款上", note:"不敢失業、不敢生病、不敢亂花一毛——這間房，是用往後三十年換來的。"},
+  inherit:  {ic:"🏯", nm:"繼承祖厝・啃老有殼", net:"🏦 淨值靠上一輩傳承・一磚一瓦都是阿公那輩蓋的", note:"沒在房市裡廝殺，卻憑家族傳承成了有根的有殼人——這份福氣，很多人求不來。"},
+  renter:   {ic:"🛋️", nm:"一生租屋・無殼瀟灑（或無奈）", net:"🏦 身家全在現金不在磚瓦・晚年居住難題未解", note:"一輩子沒被房貸綁架，自由是真的，晚年房東嫌你年紀大也是真的。"},
+  snail:    {ic:"🐌", nm:"無殼蝸牛・資深終身會員", net:"🏦 淨值歸零・名下一坪都沒有", note:"不是你不努力，是這座島賣太貴——會員資格自動續約。"},
+};
+function r137TierOf(effW){
+  return effW>=86?7 : effW>=70?6 : effW>=58?5 : effW>=46?4 : effW>=34?3 : effW>=20?2 : effW>=8?1 : 0;
+}
+/* 從任一 state deterministic 推演居住軌跡（純讀、零 rng、零 mutation）；壞資料回 null */
+function r137HousingOf(st){
+  try{
+    if(!st || typeof st!=="object" || !st.attr || typeof st.attr.mny!=="number") return null;
+    const mny = Math.max(0, Math.min(100, st.attr.mny));
+    const age = Math.max(0, Math.round(st.age||0));
+    const era = (typeof st.era==="string" && R137_ERAOFF.hasOwnProperty(st.era)) ? st.era : null;
+    const off = era ? R137_ERAOFF[era] : 0;            // 髒／缺 era → 中性 offset 0（安全降級）
+    const effW = mny - off;                            // 財富屬性真正驅動：扣掉世代房價難度
+    const finalTier = r137TierOf(effW);
+    const onboard = finalTier>=4;
+    // 繼承祖厝分流：老世代＋中年後＋中等財富（自己買不起大的、但家有祖厝可繼承）
+    const inherit = !!era && (era==="e70"||era==="e80"||era==="e90") && age>=48 && mny>=28 && mny<=60 && finalTier<5;
+    // 各人生階段的居住階層（kid 反推童年家境；其餘 min(finalTier, ceil) 隨年齡爬升）
+    const stages=[];
+    for(let i=0;i<R137_PHASES.length;i++){
+      const ph=R137_PHASES[i];
+      if(age < ph.age) break;                          // 沒活到該階段就不列（早逝只走前段）
+      let t;
+      if(ph.key==="kid") t = finalTier>=6?2 : 1;       // 童年家境：富→住家裡較好的、窮→啃老老厝
+      else t = Math.max(0, Math.min(finalTier, ph.ceil));
+      const tier=R137_TIERS[t];
+      stages.push({key:ph.key, nm:ph.nm, age:ph.age, t, ic:tier.ic, tnm:tier.nm, short:tier.short});
+    }
+    // 結局型別（互斥）
+    let endType;
+    if(inherit) endType="inherit";
+    else if(finalTier>=7) endType="palace";
+    else if(finalTier>=5) endType="owner";
+    else if(finalTier===4) endType="mortgage";
+    else if(finalTier>=2) endType="renter";
+    else endType="snail";
+    const ach = {
+      owner:    endType==="owner",
+      mortgage: endType==="mortgage",
+      inherit:  endType==="inherit",
+      renter:   endType==="renter" && age>=55,
+      palace:   endType==="palace",
+    };
+    return { mny, age, era, off, effW, finalTier, onboard, inherit, stages, endType, ach };
+  }catch(e){ return null; }
+}
+function r137Housing(){ return r137HousingOf(S); }
+/* 結算：居住人生回顧卡——一生住過哪些階段、是否上車、房貸負擔（純讀零 rng，可截圖分享，線C素材） */
+function r137HousingReviewHTML(){
+  const h=r137Housing();
+  if(!h) return "";
+  const end=R137_END[h.endType]||R137_END.snail;
+  const rows=h.stages.map(s=>`<div style="display:flex;gap:8px;align-items:baseline;padding:3px 0;font-size:13px;border-bottom:1px solid rgba(255,255,255,.05)">
+      <span class="muted" style="min-width:60px">${s.nm}</span>
+      <span style="white-space:nowrap">${s.ic} <b>${s.tnm}</b></span>
+      <span class="muted" style="font-size:11px">${s.short}</span></div>`).join("");
+  // 世代房價梗（取 R135_WAVE 物價快照；缺則略）
+  let eraLine="";
+  try{ const w=h.era&&R135_WAVE[h.era]; if(w&&w.price) eraLine=`<div class="muted" style="font-size:11.5px;margin-top:6px">🏷️ 你那年代的房價：${w.price}</div>`; }catch(e){}
+  const onboardLine = h.onboard
+    ? `🚗 <b style="color:#7ad0ff">這輩子上車了</b>——在房價所得比世界前段班的這座島，能有個自己的殼，已經贏過一票人。`
+    : `🐌 <b style="color:#ffb3b3">這輩子沒上車</b>——22K 存不到頭期、房價是上一代的好幾倍，無殼是時代的問題，不是你不努力。`;
+  return `<div class="panel" style="margin-top:12px;background:var(--panel2)">
+    <h2 class="sec">🏠 蝸居人生・居住軌跡</h2>
+    <div class="muted" style="font-size:11.5px;margin:-4px 0 6px">依你這輩子的財富、出生世代與壽數，推演你住過的每一階段——啃老蝸居、租屋、上車，還是帝寶？</div>
+    ${rows}
+    <div style="display:flex;gap:6px;align-items:baseline;padding:6px 0 2px;font-size:13px">
+      <span class="muted" style="min-width:60px">居住結局</span><span>${end.ic} <b>${end.nm}</b></span></div>
+    <div style="display:flex;gap:6px;align-items:baseline;font-size:12.5px"><span class="muted" style="min-width:60px">房產淨值</span><span>${end.net}</span></div>
+    ${eraLine}
+    <div class="muted" style="font-size:12.5px;margin-top:8px;line-height:1.8">${onboardLine}<br>${end.note}</div></div>`;
 }
 
 /* =========================================================================
@@ -16929,6 +17050,7 @@ function screenSummary(cat){
       ${attrReviewHTML()}
       ${bondReviewHTML()}
       ${r136PeopleReviewHTML()}
+      ${r137HousingReviewHTML()}
       ${attrCurveHTML()}
       ${attrTrajectoryHTML()}
       ${r129TrajectoryHTML()}
