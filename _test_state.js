@@ -4603,5 +4603,97 @@ const r129 = JSON.parse(vm.runInContext(`(function(){
   ['nullSafe','⑨ 無局(S=null)相容:回空字串不炸'],
 ].forEach(([k,m])=>ok(r129[k], 'R129 '+m));
 
+// ===== R130 鬼島壓力連鎖崩盤與翻身機制：壓力累積/攔截器觸發/預警分流/崩盤鏈逐節點/硬撐死法/求助不死/翻身分流/認命躺平/結算卡/純淨/壞資料降級/舊存檔相容/S=null 相容/生存指數映射 =====
+const r130 = JSON.parse(vm.runInContext(`(function(){
+  const out={};
+  function fresh(age,fl,attr){ startGame(); const s=S; s.origin=ORIGIN_MAP.office; s.flags=Object.assign({},fl||{}); ensureState(s); s.seen={}; s.alive=true; if(age!=null)s.age=age; if(attr)Object.assign(s.attr,attr); return s; }
+  // 合成事件丟進 choose()，量測壓力累積（無 r130node → 走累積器）
+  function stressAfter(preStress,attr,eff){ fresh(30,{r130stress:preStress},attr); const ev={id:'__t130',title:'x',text:'x',meme:{scene:'win'},choices:[{label:'x',eff:Object.assign({},eff)}]}; showEvent(ev); choose(0); return S.flags.r130stress||0; }
+  // ① 壓力累積：過勞(hp 重傷)/舉債(mny 重傷)加壓；休養/還債/進帳減壓；已透支放大；峰值追蹤
+  out.stressOverwork = stressAfter(0,{hp:60,mny:60},{hp:-8}) >= 10;        // 過勞重傷健康 +10
+  out.stressDebt     = stressAfter(0,{hp:60,mny:60},{mny:-10}) >= 9;        // 大舉債 +9
+  out.stressDrained  = stressAfter(0,{hp:10,mny:10},{hp:-8}) > stressAfter(0,{hp:60,mny:60},{hp:-8}); // 已透支放大
+  out.stressRelief   = stressAfter(50,{hp:60,mny:60},{hp:8}) < 50;          // 休養減壓
+  out.stressRepay    = stressAfter(50,{hp:60,mny:60},{mny:8}) < 50;         // 進帳/還債減壓
+  out.stressFloor    = stressAfter(3,{hp:60,mny:60},{hp:8}) === 0;          // 減壓不低於 0
+  out.peakTrack = (()=>{ fresh(30,{r130stress:0},{hp:60,mny:60}); const ev={id:'__t130p',title:'x',text:'x',meme:{scene:'win'},choices:[{label:'x',eff:{hp:-8}}]}; showEvent(ev); choose(0); return (S.flags.r130_peakstress||0) >= 10; })();
+  // 崩盤節點本身不灌壓力（r130node 跳過累積器）
+  out.nodeNoStress = (()=>{ fresh(40,{r130step:1,r130stress:50},{hp:70}); const before=S.flags.r130stress; showEvent(r130ById('r130_collapse')); choose(0); return (S.flags.r130stress||0) <= 50; })();
+  // ② 攔截器觸發：壓力跨臨界＋窗口→預警；壓力不足/窗口外/崩盤上限→不觸發
+  out.trigWarn   = (()=>{ fresh(40,{r130stress:130}); const e=r130CrisisPick(); return e && e.id==='r130_warn'; })();
+  out.trigLow    = (()=>{ fresh(40,{r130stress:50}); return r130CrisisPick()===null; })();
+  out.trigYoung  = (()=>{ fresh(15,{r130stress:130}); return r130CrisisPick()===null; })();
+  out.trigOld    = (()=>{ fresh(70,{r130stress:130}); return r130CrisisPick()===null; })();
+  out.trigCap    = (()=>{ fresh(40,{r130stress:130,r130collapses:2}); return r130CrisisPick()===null; })();
+  // ③ 預警分流：踩煞車減壓→避開崩盤(step 維持 0、壓力降到安全線、r130_defused)；硬撐→step:1+r130_in
+  out.defuse = (()=>{ fresh(30,{r130stress:130},{mny:60}); showEvent(r130ById('r130_warn')); choose(0); return !(S.flags.r130step>=1) && (S.flags.r130stress||0)<100 && !!S.flags.r130_defused && !!S.flags.r130_in; })();
+  out.warnPush = (()=>{ fresh(30,{r130stress:130}); showEvent(r130ById('r130_warn')); choose(1); return S.flags.r130step===1 && !!S.flags.r130_in; })();
+  // ④ 崩盤鏈逐節點：依 step 確定性返回 collapse→aftermath→rebound
+  out.nodeCollapse  = (()=>{ fresh(40,{r130step:1}); return (r130CrisisPick()||{}).id==='r130_collapse'; })();
+  out.nodeAftermath = (()=>{ fresh(40,{r130step:2}); return (r130CrisisPick()||{}).id==='r130_aftermath'; })();
+  out.nodeRebound   = (()=>{ fresh(40,{r130step:3}); return (r130CrisisPick()||{}).id==='r130_rebound'; })();
+  // ⑤ 硬撐死法可達＋減傷分流：hp 見底(≤12)硬撐→r130crash 崩盤猝死；高 hp 硬撐減傷不死、低 hp 重傷不死
+  out.deathEndure = (()=>{ fresh(40,{r130step:1},{hp:10}); showEvent(r130ById('r130_collapse')); choose(0); return S.flags.specialDeath==='r130crash'; })();
+  out.endureHiSafe = (()=>{ fresh(40,{r130step:1},{hp:80,mny:60}); showEvent(r130ById('r130_collapse')); choose(0); return !S.flags.specialDeath && S.flags.r130step===2 && !!S.flags.r130_endured; })();
+  out.endureLoHurt = (()=>{ fresh(40,{r130step:1},{hp:35,mny:40}); showEvent(r130ById('r130_collapse')); choose(0); return !S.flags.specialDeath && S.flags.r130step===2; })();
+  // ⑥ 放下身段求助永不致死（即使 hp 偏低也不會 r130crash）
+  out.treatNoDeath = (()=>{ fresh(40,{r130step:1},{hp:18,mny:10}); showEvent(r130ById('r130_collapse')); choose(1); return !S.flags.specialDeath && !!S.flags.r130_soughthelp && S.flags.r130step===2; })();
+  // ⑦ 翻身分流：高五圍→翻身成功(r130_rebwin+rebounds+1)、低五圍→翻身未果；末尾重置 step:0+collapses+1+壓力壓回低檔
+  out.reboundWin = (()=>{ fresh(45,{r130step:3,r130stress:130,r130_sober:true,r130_soughthelp:true},{hp:80,mny:80,int:80,hap:80,apr:80}); showEvent(r130ById('r130_rebound')); choose(0); const f=S.flags; return !!f.r130_rebwin && (f.r130rebounds||0)===1 && f.r130step===0 && (f.r130collapses||0)===1 && (f.r130stress||0)<=40; })();
+  out.reboundLose = (()=>{ fresh(45,{r130step:3,r130stress:130},{hp:5,mny:5,int:5,hap:5,apr:5}); showEvent(r130ById('r130_rebound')); choose(0); const f=S.flags; return !!f.r130_rebfail && (f.r130rebounds||0)===0 && f.r130step===0 && (f.r130collapses||0)===1; })();
+  // ⑧ 認命躺平：重置 step、collapses+1、r130_laidback、不計翻身
+  out.accept = (()=>{ fresh(45,{r130step:3,r130stress:130}); showEvent(r130ById('r130_rebound')); choose(1); const f=S.flags; return !!f.r130_laidback && f.r130step===0 && (f.r130collapses||0)===1 && (f.r130rebounds||0)===0; })();
+  // ⑨ 結算卡：踏進(r130_in)→含「鬼島生存指數」與「生存指數」數字非空；沒踏進→整段省略
+  out.cardShow = (()=>{ fresh(70,{r130_in:true,r130collapses:1,r130rebounds:1,r130_peakstress:140,r130_soughthelp:true}); const h=r130SurvivalHTML(); return h.indexOf('鬼島生存指數')>=0 && h.indexOf('/ 100')>=0 && h.length>200; })();
+  out.cardEmpty = (()=>{ fresh(70,{}); return r130SurvivalHTML()===''; })();
+  // ⑩ 純呈現零汙染：生成前後 S.attr/flags 不變、零 rng 消耗
+  out.pure = (()=>{ fresh(70,{r130_in:true,r130collapses:1,r130rebounds:1,r130_peakstress:120}); const bA=JSON.stringify(S.attr), bF=JSON.stringify(S.flags); let used=0; const oldR=rng; rng=function(){used++;return oldR();}; r130SurvivalHTML(); buildR130SurvivalText(); rng=oldR; return JSON.stringify(S.attr)===bA && JSON.stringify(S.flags)===bF && used===0; })();
+  // ⑪ 壞資料降級：髒/字串旗標 → 不炸、不渲染出 NaN
+  out.dirtySafe = (()=>{ try{ fresh(70,{r130_in:true,r130collapses:'x',r130rebounds:null,r130_peakstress:'abc'}); const h=r130SurvivalHTML(); return h.indexOf('鬼島生存指數')>=0 && h.indexOf('NaN')<0; }catch(e){ return false; } })();
+  // ⑫ 舊存檔相容：缺 r130 旗標 → 攔截器不觸發、結算卡省略、零殘留(不寫任何 r130 鍵)
+  out.compatOld = (()=>{ const old={flags:{},attr:{hp:55,int:60,apr:50,mny:45,hap:70},age:50,alive:true,seen:{}}; ensureState(old); fresh(40,{}); const noTrig=r130CrisisPick()===null; const noCard=r130SurvivalHTML()===''; const clean=!('r130stress' in S.flags)&&!('r130step' in S.flags)&&!('r130_in' in S.flags); return noTrig && noCard && clean; })();
+  // ⑬ 無局(S=null)相容：攔截器回 null、結算卡/文字版回空字串，皆不炸
+  out.nullSafe = (()=>{ try{ S=null; if(r130CrisisPick()!==null) return false; if(r130SurvivalHTML()!=='') return false; if(buildR130SurvivalText()!=='') return false; return true; }catch(e){ return false; } })();
+  // ⑭ 生存指數確定性映射：翻身/踩煞車加分、髒資料安全歸 0、夾在 5~100
+  out.idxMap = r130SurvivalIndex({r130rebounds:2,r130_defused:true,r130collapses:1,r130_soughthelp:true}) > r130SurvivalIndex({r130collapses:1})
+    && r130SurvivalIndex({r130_peakstress:'x',r130rebounds:'y'})>=5
+    && r130SurvivalIndex({r130rebounds:99})<=100;
+  return JSON.stringify(out);
+})()`, sandbox));
+[
+  ['stressOverwork','① 壓力累積:過勞重傷健康(hp-8)加壓≥10'],
+  ['stressDebt','① 壓力累積:大舉債(mny-10)加壓≥9'],
+  ['stressDrained','① 壓力累積:已透支(hp/mny 見底)雪上加霜放大加壓'],
+  ['stressRelief','① 壓力累積:休養(hp+8)減壓'],
+  ['stressRepay','① 壓力累積:進帳/還債(mny+8)減壓'],
+  ['stressFloor','① 壓力累積:減壓不低於 0'],
+  ['peakTrack','① 壓力峰值 r130_peakstress 正確追蹤'],
+  ['nodeNoStress','① 崩盤節點(r130node)本身不灌壓力(跳過累積器)'],
+  ['trigWarn','② 攔截器:壓力跨臨界+窗口→插播壓力預警 r130_warn'],
+  ['trigLow','② 攔截器:壓力不足→不觸發'],
+  ['trigYoung','② 攔截器:童年窗口外(age<22)→不觸發'],
+  ['trigOld','② 攔截器:晚年窗口外(age>66)→不觸發'],
+  ['trigCap','② 攔截器:一生崩盤上限(2 次)→不觸發'],
+  ['defuse','③ 預警分流:踩煞車減壓→避開崩盤(step 維持 0、壓力降、r130_defused/r130_in)'],
+  ['warnPush','③ 預警分流:硬撐→踏入崩盤鏈(step:1+r130_in)'],
+  ['nodeCollapse','④ 崩盤鏈:step1→r130_collapse'],
+  ['nodeAftermath','④ 崩盤鏈:step2→r130_aftermath'],
+  ['nodeRebound','④ 崩盤鏈:step3→r130_rebound'],
+  ['deathEndure','⑤ 硬撐死法:hp 見底(≤12)硬撐→r130crash 崩盤猝死'],
+  ['endureHiSafe','⑤ 硬撐減傷:高 hp 硬撐減傷不死、step→2、r130_endured'],
+  ['endureLoHurt','⑤ 硬撐重傷:低 hp 硬撐重傷不死、step→2'],
+  ['treatNoDeath','⑥ 放下身段求助永不致死(hp 偏低也不 r130crash)、r130_soughthelp'],
+  ['reboundWin','⑦ 翻身成功:高五圍→r130_rebwin+rebounds+1、末尾重置 step/壓力、collapses+1'],
+  ['reboundLose','⑦ 翻身未果:低五圍→r130_rebfail、rebounds 不增、重置'],
+  ['accept','⑧ 認命躺平:r130_laidback、重置 step、collapses+1、不計翻身'],
+  ['cardShow','⑨ 結算卡:踏進(r130_in)→含「鬼島生存指數/100」非空'],
+  ['cardEmpty','⑨ 結算卡:沒踏進→整段省略'],
+  ['pure','⑩ 純呈現零汙染:生成前後 S.attr/flags 不變且零 rng'],
+  ['dirtySafe','⑪ 壞資料降級:髒/字串旗標不炸、不渲染 NaN'],
+  ['compatOld','⑫ 舊存檔相容:缺 r130 旗標→攔截器不觸發/卡省略/零殘留'],
+  ['nullSafe','⑬ 無局(S=null)相容:攔截器回 null/卡與文字版回空字串不炸'],
+  ['idxMap','⑭ 生存指數確定性映射:翻身/踩煞車加分、髒資料安全歸 0、夾 5~100'],
+].forEach(([k,m])=>ok(r130[k], 'R130 '+m));
+
 console.log(fails ? `\n結果: ❌ ${fails} 項未通過` : '\n結果: ✅ 狀態機全數正確');
 process.exit(fails ? 1 : 0);

@@ -2928,6 +2928,9 @@ const ACHIEVEMENTS = [
   {id:"r128_whale", ic:"🐳", nm:"課長傳說・全服都認識的大佬", desc:"口袋夠深、抽卡夠狠——你首儲即課、爆抽不眨眼，限定角色一個不漏、滿命滿魂樣樣有，公會頻道喊你『課長大佬』，新角一出全服都在等你的開箱。你心知肚明這份榮耀是用真金白銀堆出來的，荷包見了底，但那一櫃滿命卡牌，是你在這座島上少數能爽快揮霍的快樂。", check:c=>!!(c.S.flags&&c.S.flags.r128_endtype==="r128_end_whale"), hint:"走課長梭哈派、又在財富檢定口袋夠深扛得住爆抽，才能課成全服都認識的課長傳說…"},
   {id:"r128_f2p", ic:"🧘", nm:"無課佛系・一毛不拔的自由人", desc:"你靠的是攻略、是肝、是看穿每一個卡池期望值的腦袋——首儲禮包再香你不碰、限定卡牌再美你不課，硬是把一款課金遊戲玩成了零課通關。別人花錢買強度，你花時間跟智慧換自由。在這座到處要你掏錢的島上，能守住『一毛不拔』的傲骨，本身就是一種強度。", check:c=>!!(c.S.flags&&c.S.flags.r128_endtype==="r128_end_f2p"), hint:"走無課堅持派、又在智力檢定看穿抽卡期望值、靠攻略跟肝撐住不破戒，才能當個零課佛系自由人…"},
   {id:"r128_debt", ic:"💀", nm:"抽卡卡債・畢業魯蛇", desc:"保底前那一抽『再一單就出』的執念，把你一路課進了循環信貸——刷爆一張又一張卡、辦了現金卡填坑，等對帳單寄到才驚覺：為了虛擬角色欠下的真實債務，畢業那天還在還最低應繳。這座島最貴的轉蛋，是『下一抽一定中』那六個字。（課金一時爽，卡債火葬場——抽卡是娛樂，別拿身家去填那個看不到底的坑。）", check:c=>!!(c.S.flags&&c.S.flags.r128_endtype==="r128_end_debt"), hint:"走課長梭哈派卻財富撐不住爆抽（或小資微課越課越深戒不掉），多半會課到刷爆卡、背著卡債從手遊畢業…"},
+  /* ---- R130 鬼島壓力連鎖崩盤與翻身機制成就（純讀 S.flags 確定性判定，零 rng；沒踏進壓力機制/舊存檔永不誤觸；與既有支線各自獨立旗標）---- */
+  {id:"r130_phoenix", ic:"🔥", nm:"廢墟裡的浴火鳳凰", desc:"爆肝與債務把你逼到臨界崩盤、人生塌掉一角，你卻沒被一次崩盤打趴——咬牙賭上僅剩的底子，從谷底硬是爬了起來、東山再起。那段最黑的日子，最後被你活成了笑著說的故事。這座島從不缺被崩盤壓垮的人，而你，是從廢墟裡走出來的那一個。", check:c=>!!(c.S.flags&&(c.S.flags.r130rebounds||0)>=1), hint:"踏進壓力崩盤機制、硬撐進崩盤連鎖後，在掙扎翻身那關靠夠硬的五圍底子(體力/財富/腦袋)拚成一次東山再起…"},
+  {id:"r130_brake", ic:"⏸️", nm:"懂得踩煞車的清醒者", desc:"壓力儀表貼到最右邊、崩盤的紅燈已經亮起，你沒有逞強說『再撐一下』，而是及時踩下煞車——請假休養、放下身段求助、砍掉撐場面的開銷，把自己從懸崖邊拉了回來，硬是把一場可能塌掉半個人生的崩盤連鎖擋在了門外。在這座把人逼到崩盤還要你正能量的島上，肯停下來善待自己，本身就是一種智慧。", check:c=>!!(c.S.flags&&c.S.flags.r130_defused&&!(c.S.flags.r130collapses>0)), hint:"壓力累積到觸發『壓力儀表亮紅燈』預警時，選擇踩煞車減壓(請假/求助/砍開銷)避開崩盤、整局沒踏進任何一次崩盤連鎖…"},
   /* ---- R105 周目/New Game+ 累計成就（純讀 SAVE.ngp.cycle 確定性判定，零 rng；挑戰/對戰/劇本局不計入周目）---- */
   {id:"ngp_rookie", ic:"🔁", nm:"輪迴老鳥・孟婆認得你了", desc:"正式跑完 3 個周目——投胎投到孟婆都會隨手幫你把那碗湯加滿。在這座下輩子還想不想當台灣人都要猶豫一下的島上，你硬是回鍋了三次。", check:c=>ngpData().cycle>=3, hint:"好好過完 3 個正常人生（任一結局都算），挑戰／對戰／劇本局不計——多投幾次胎就有…"},
   {id:"ngp_veteran", ic:"♻️", nm:"六道常客・地府 VIP", desc:"正式跑完 6 個周目——地府叫號機看到你直接跳你的號，孟婆湯改幫你準備無糖的。鬼島玩到下面都辦會員了，這份執著也是一種才華。", check:c=>ngpData().cycle>=6, hint:"累積 6 個正式周目（正常局完局），地府就把你升 VIP 了…"},
@@ -10574,6 +10577,55 @@ function buildEvents(){ return [
     ]},
 
   /* =====================================================================
+     R130 鬼島人生・壓力連鎖崩盤與翻身機制（隱藏風險儀表 → 臨界崩盤連鎖 → 掙扎翻身）：
+       玩家本局抉擇與五圍狀態，在 choose() 內由確定性規則累積一個內部「壓力/負債/健康透支」
+       風險值 S.flags.r130stress（過勞型 hp 重傷／舉債型 mny 重傷／已透支狀態加壓；休養／還債／
+       進帳型減壓；純門檻確定性、零裸 rng）。風險跨臨界(>=R130_STRESS_TRIG) → 確定性攔截器
+       r130CrisisPick 插播「壓力預警 r130_warn」，玩家可踩煞車減壓避開崩盤、或硬撐逃避踏入崩盤連鎖：
+         r130_collapse(爆肝住院／卡債循環，硬撐 hp 見底→崩盤猝死 r130crash／就醫求助安全降傷)
+         → r130_aftermath(醫藥費請假扣薪／法拍搬家，各段受五圍把關：高體質高財富減傷或擋下)
+         → r130_rebound(掙扎翻身：確定性五圍加權計分≥門檻翻身成功回血、否則翻身未果小傷；二選認命躺平)。
+       掛接鐵律（沿用 R122/R128 支線精神，零裸 rng／零 Math.random）：
+       ① 全 hidden:true（不進隨機池、不計入 R46 觸達率落空名單），只由 r130CrisisPick 依 r130step 插播；
+          不用 once／不卡 S.seen → 崩盤鏈一生最多走 2 次(r130collapses 上限)、翻身可多次。
+       ② 階梯靠 S.flags.r130step 推進（每選項帶 flags:{r130step:N} 或 special 內直接設 → 模擬亂選也會走完）；
+          翻身節點末尾 special 重置 r130step:0、r130collapses+1、把 r130stress 壓回低檔(避免立刻再觸發、不連鎖死光)。
+       ③ 平衡護欄：崩盤須可翻身、不可單純讓玩家更快死光——崩盤傷害保守且受五圍減免、翻身回血抵銷，
+          死亡僅走既有「hp 見底(≤12)還硬撐」確定性分支(比照 R86/R122/R128)，對既有壽命分佈衝擊最小。
+       ④ 與既有支線(R57理財/R83創業/R84詐騙/R113命運鏈/R122股海/R127諷刺/R128課金/R129五圍軌跡)各自獨立
+          旗標、互不衝突——本條專做「風險累積與崩盤翻身機制」軸。結算 r130SurvivalHTML() 純讀 S.flags 出
+          「鬼島生存指數＋崩盤/翻身史」可分享卡。舊存檔無 r130 旗標整套無感(預警閘不成立、結算卡省略)。
+     ===================================================================== */
+  {id:"r130_warn", hidden:true, ic:"⚠️", nm:"壓力儀表亮紅燈", r130node:"warn",
+    title:"那根快繃斷的弦", text:"你最近總覺得喘不過氣——可能是爆肝加班把身體透支到見底、可能是卡費房貸像滾雪球越欠越多、可能是兩者一起壓上來。半夜醒來盯著天花板，胸口悶悶的，一種說不上來的『再這樣下去要出事』的預感在背後嗡嗡作響。身體跟荷包的警示燈，這陣子全亮成了刺眼的紅。你心裡那把隱形的壓力儀表，指針已經貼到了最右邊——是該踩個煞車、認真喘口氣減壓，還是咬牙告訴自己『再撐一下就過去了』，繼續往前衝？",
+    meme:{scene:"panik", top:"壓力儀表貼到最右邊", bot:"是該踩煞車 還是再撐一下", tag:"崩盤"},
+    choices:[
+      {label:"⏸️ 踩煞車減壓：請假休養、找人求助、砍掉非必要開銷，先把自己拉回安全線", eff:{}, special:"r130_defuse", flags:{r130_in:true}},
+      {label:"💢 咬牙硬撐：『再撐一下就過去了』，把警訊調靜音繼續往前衝", eff:{hp:-2,hap:-3}, flags:{r130step:1, r130_in:true}, res:"💢 你把身體跟荷包的紅燈全調成靜音，告訴自己『鬼島人哪個不是這樣撐過來的』，繼續埋頭往前衝。壓力沒有消失，只是被你塞進了看不見的角落，繼續一點一點累積——你沒注意到，那根快繃斷的弦，已經發出了細微的裂響。"},
+    ]},
+  {id:"r130_collapse", hidden:true, ic:"💥", nm:"臨界崩盤", r130node:"collapse",
+    title:"那根弦，斷了", text:"你終究沒撐住——某個再平凡不過的日子，累積到臨界的壓力一次潰堤。也許是爆肝太久身體先垮、半夜胸口劇痛被送進急診；也許是卡債房貸的循環利息滾到再也補不上、催繳電話一通接一通打爆手機。崩盤來得又急又猛，整個人生像被人從中間抽掉一根柱子，嘩啦啦塌了一角。此刻擺在你面前的，是兩條都不好走的路：是繼續硬撐、假裝沒事把破口先壓著，還是放下身段、趕快就醫求助、誠實面對這個爛攤子？",
+    meme:{scene:"broke", top:"累積到臨界一次潰堤", bot:"硬撐壓著 還是放下身段求助", tag:"崩盤"},
+    choices:[
+      {label:"😤 死要面子硬撐：假裝沒事把破口壓著，咬牙繼續轉", eff:{}, special:"r130_endure", flags:{r130step:2}},
+      {label:"🆘 放下身段求助：趕快就醫／找家人朋友／跟銀行協商，誠實面對爛攤子", eff:{}, special:"r130_treat", flags:{r130step:2}},
+    ]},
+  {id:"r130_aftermath", hidden:true, ic:"🌊", nm:"崩盤後的連鎖", r130node:"aftermath",
+    title:"骨牌一張接著一張倒", text:"崩盤從來不會只崩一次——它像推倒的第一張骨牌，後面跟著一整排連鎖。住院的醫藥費還沒繳完，請假太久的薪水被扣得見骨、甚至飯碗都搖搖欲墜；或是欠的債利滾利，房子面臨法拍、被迫打包搬離住了多年的窩。一波未平一波又起，你站在連鎖崩塌的廢墟裡，得決定怎麼接下這後續的衝擊：是硬著頭皮扛下所有後果，還是當機立斷斷捨離、跟現實協商出一條活路？",
+    meme:{scene:"broke", top:"崩盤不會只崩一次", bot:"硬扛後果 還是斷捨離協商", tag:"崩盤"},
+    choices:[
+      {label:"🧱 硬著頭皮全扛：醫藥費、扣薪、催繳一個人默默吞下去", eff:{}, special:"r130_brace", flags:{r130step:3}},
+      {label:"✂️ 斷捨離協商：賣掉不必要的、跟債主談分期、搬去租金低的地方重新開始", eff:{hp:-2,mny:-5,hap:-2}, flags:{r130step:3, r130_sober:true}, res:"✂️ 你逼自己冷靜下來，把面子收進口袋——能賣的資產先變現、跟銀行談分期降月付、退掉撐不起的房子搬去便宜的小套房。每一刀都割在肉上、過程狼狽得想哭，但你知道止血比逞強重要。廢墟還在，可你總算把不斷下塌的骨牌，用最務實的方式一張張按住了——這份『認清現實、該斷就斷』的清醒，會是你翻身的第一塊立足石。"},
+    ]},
+  {id:"r130_rebound", hidden:true, ic:"🔥", nm:"掙扎翻身", r130node:"rebound",
+    title:"觸底之後，要不要反彈", text:"跌到谷底有個好處——再往下也沒有了，剩下的方向只有一個。崩盤的衝擊漸漸沉澱，你蹲在人生的最低點喘著氣，心裡冒出一個微小卻倔強的念頭：要不要，再拚一把翻身？這座島從不缺被一次崩盤打趴就再也沒站起來的人，但也總有人從廢墟裡爬出來、把那段最慘的日子活成日後笑著說的故事。翻不翻得了身，靠的是你這一生攢下的底子——體力、腦袋、人脈、還有荷包裡剩的那點本錢。是賭上僅剩的一切搏一個東山再起，還是認了命、躺平接受這就是人生的安排？",
+    meme:{scene:"luck", top:"跌到谷底剩一個方向", bot:"搏一個東山再起 還是認命躺平", tag:"崩盤"},
+    choices:[
+      {label:"🔥 拚一把翻身：賭上僅剩的底子、咬牙東山再起", eff:{}, special:"r130_rebound"},
+      {label:"🛏️ 認命躺平：接受這就是人生的安排，不再硬撐，先好好喘口氣", eff:{}, special:"r130_accept"},
+    ]},
+
+  /* =====================================================================
      R57 台味理財人生橫向事件線：
      ① 一般理財事件 ×6（跟會/儲蓄險親戚/樂透刮刮樂/股市韭菜/定存vs通膨/頭期款），
         主要落在工作期/中年期；屬性驅動回扣 R44——智力 sr 檢定投資判斷、
@@ -11954,6 +12006,26 @@ function r128GachaPick(){
   if(!ev || S.seen[ev.id]) return null;
   return ev;
 }
+/* ---- R130 鬼島壓力連鎖崩盤與翻身攔截器：確定性狀態機（純查 S.flags.r130step／r130stress／r130collapses，零裸 rng）----
+   進行中(step>=1)：依 step 確定性返回 崩盤→連鎖→翻身 三節點(不卡 S.seen→翻身重置 step 後可再走一輪)。
+   未崩盤(step 0)：壓力跨臨界 + 工作/中年窗口 + 一生崩盤次數未達上限 → 插播壓力預警 r130_warn(玩家可減壓避開)。
+   置於 r128GachaPick 之後、一般池之前；hidden:true 節點永不進隨機池。舊存檔無 r130 旗標 → 閘永不成立、完全無感。 */
+const R130_STRESS_TRIG = 100;   // 壓力觸發崩盤門檻（保守：先求穩定）
+const R130_MAX_COLLAPSE = 2;    // 一生最多崩盤次數（避免無限連鎖死光、護住壽命分佈）
+function r130ById(id){ return EVENTS.find(e=>e.id===id)||null; }
+function r130CrisisPick(){
+  if(!S || !S.alive || !S.attr || !S.flags) return null;
+  if(!S.seen) S.seen={};
+  const step=S.flags.r130step||0;
+  if(step>=1){
+    const id = step===1 ? "r130_collapse" : step===2 ? "r130_aftermath" : step===3 ? "r130_rebound" : null;
+    return id ? r130ById(id) : null;
+  }
+  if((S.flags.r130stress||0) < R130_STRESS_TRIG) return null;     // 壓力未跨臨界
+  if(S.age<22 || S.age>66) return null;                          // 崩盤窗口（工作/中年；童年晚年不觸發）
+  if((S.flags.r130collapses||0) >= R130_MAX_COLLAPSE) return null; // 一生崩盤次數上限
+  return r130ById("r130_warn");
+}
 function eligible(){
   const __sk = activeSeasonKeys();   // R10 節令池：只由日期決定（挑戰=挑戰日、一般=今天），不消耗 rng
   return EVENTS.filter(e=>{
@@ -12692,6 +12764,9 @@ function resolveYear(){
   // R128 台味手遊課金抽卡人生支線：分流狀態機，命中即確定性插播（零裸 rng；置於 R122 之後、一般池之前）
   const gacha128=r128GachaPick();
   if(gacha128) return showEvent(gacha128);
+  // R130 鬼島壓力連鎖崩盤與翻身機制：壓力跨臨界→崩盤連鎖→掙扎翻身，確定性狀態機插播（零裸 rng；置於 R128 之後、一般池之前）
+  const crisis130=r130CrisisPick();
+  if(crisis130) return showEvent(crisis130);
   // R103 人際羈絆專屬事件：某 NPC 羈絆跨門檻即確定性插播 hidden 專屬橋段（零裸 rng；置於支線攔截器之後、一般池之前）
   const bond103=r103BondPick();
   if(bond103) return showEvent(bond103);
@@ -13449,6 +13524,60 @@ function choose(i){
     else { eff={mny:-11,hap:-4,hp:-2}; res="📉 你收入不夠厚還硬要爆肝刷夜場、刷卡爆抽衝排面，結果越課越深——想停手又捨不得排行掉下來，限定一個接一個課下去，最後帳單滾過了能付清的線，只能辦卡分期循環。你癱在椅子上看著爆表的卡費，終於懂了：課長的排面，是要用付得出來的錢撐著的。這一波把你從風光的課長，狠狠課成了被帳單追著跑的卡奴。燒掉的是積蓄，學到的是別拿借來的錢衝虛擬的排名。"; }
   }
 
+  /* ---- R130 鬼島壓力連鎖崩盤與翻身機制 special（全確定性五圍門檻、零裸 rng；崩盤可翻身、不單純讓玩家更快死光；
+          死亡僅走既有「hp 見底還硬撐」分支 r130crash，比照 R86/R122/R128）---- */
+  // 預警節點：踩煞車減壓 → 把壓力壓回安全線、不進崩盤鏈（step 維持 0）；付出時間/金錢小代價
+  if(c.special==="r130_defuse"){
+    S.flags.r130stress = Math.min(S.flags.r130stress||0, 45);   // 拉回安全線（< 觸發門檻）
+    S.flags.r130_defused=true;
+    const mny=S.attr.mny||0;
+    if(mny>=50){ eff={hp:6,hap:5,mny:-4}; res="⏸️ 你及時踩了煞車——請了長假好好休養、找信任的人聊開、砍掉撐場面的非必要開銷。口袋還算有底，這一停損停得從容：身體緩了過來、心頭那塊大石放了下來，壓力儀表的指針一格一格退回了安全區。你深刻體會到，在鬼島能『該停就停』本身就是一種餘裕——崩盤前踩住的這一腳，替你擋掉了一場可能塌掉半個人生的連鎖。"; }
+    else { eff={hp:5,hap:4,mny:-2}; res="⏸️ 你硬是逼自己停下來——再撐下去真的會出事。你請假補眠、跟家人坦白求助、把能省的開銷全砍掉，雖然手頭更緊了，但身體跟精神總算從懸崖邊被拉了回來，那把貼到底的壓力儀表也慢慢退了回去。沒有餘裕的人要『踩煞車』其實最難，但你做到了——這一停，替你擋掉了一場差點塌掉的崩盤。"; }
+  }
+  // 崩盤第一段・死要面子硬撐：hp 見底(≤12)→崩盤猝死 r130crash；否則高體質減傷、低體質重傷
+  if(c.special==="r130_endure"){
+    if((S.attr.hp||0)<=12){ S.flags.specialDeath="r130crash"; eff={hp:-100}; res="💀 你死要面子，崩盤了還假裝沒事——身體早就見了底，你卻把急診醫師『要住院休養』的叮嚀當耳邊風，把催繳電話調靜音，咬牙逼自己照常運轉。某個再撐一下的深夜，累積到臨界的壓力一次討回所有欠帳：胸口猛地一陣劇痛、眼前發黑，整個人往後一仰——這一次，身體不再給你『再撐一下』的機會。家人趕到時，你手裡還攥著那張沒繳完的帳單跟沒簽的住院同意書。鬼島最沉默的崩塌，是一個人把所有壓力默默扛到最後一刻，連喊救命都覺得丟臉。（壓力與債務的崩盤是真實的，求助與停損永遠不嫌晚、不丟臉。）"; }
+    else if((S.attr.hp||0)>=60){ eff={hp:-5,mny:-5,hap:-3}; S.flags.r130_endured=true; res="😤 你死撐著面子不肯倒——好在底子還算硬朗，硬是靠著一身本錢把崩盤的第一波壓了下來。身體扣了血、荷包也失了點，但你沒被當場擊垮。你抹一把臉告訴自己『還能撐』，只是心裡清楚，這種把破口硬壓著的撐法，遲早要連本帶利還的。"; }
+    else { eff={hp:-9,mny:-6,hap:-4}; S.flags.r130_endured=true; res="😤 你死要面子硬撐，但身體本就不算好，崩盤的衝擊扎扎實實砸了下來——重傷了健康、又破了財，整個人狼狽到極點還死命假裝沒事。你咬牙把破口壓著繼續轉，只是這一壓，壓得比誰都吃力。逞強的代價很真實：該倒下時不肯倒，後面要付的利息只會更重。"; }
+  }
+  // 崩盤第一段・放下身段求助：永不致死；高財富就醫/協商更從容、低財富較吃力（皆比硬撐安全）
+  if(c.special==="r130_treat"){
+    S.flags.r130_soughthelp=true;
+    const mny=S.attr.mny||0;
+    if(mny>=55){ eff={hp:-3,mny:-6,hap:-1}; res="🆘 你放下身段，第一時間就醫住院休養、找家人朋友吐露難處、主動跟銀行協商還款。口袋夠厚是你的底氣——付得起醫藥費、談得成分期，這場崩盤雖然傷了元氣、破了點財，卻被你穩穩接住沒讓它擴大。你體會到：肯求助、肯誠實面對，加上一點財務餘裕，就是止住崩盤連鎖最有效的解方。面子值幾個錢？保住命跟生活才是真的。"; }
+    else if(mny>=25){ eff={hp:-4,mny:-7,hap:-2}; res="🆘 你嚥下面子去求助——掛了急診、跟家人坦白、硬著頭皮打給銀行談分期。手頭不寬裕，每一步都走得吃力，醫藥費跟協商讓荷包又失了不少血，但比起硬撐到底，你總算誠實面對了這個爛攤子、止住了往下塌的勢頭。你深吸一口氣：日子難歸難，活著、撐住、不再逞強，就還有翻盤的可能。"; }
+    else { eff={hp:-5,mny:-9,hap:-3}; res="🆘 你顧不得面子了——崩盤面前，活著比什麼都重要。你去掛了急診、向親友低頭借錢周轉、跟債主協商。口袋見底讓這一切格外艱難，欠的人情跟新債讓你喘不過氣，但你還是選擇了誠實面對而不是硬撐裝沒事。在最低谷肯伸手求助的人，不是軟弱，是清醒——這份清醒，會是你日後爬出來的第一根繩子。"; }
+  }
+  // 崩盤第二段・硬著頭皮全扛：高體質高財富擋下/減傷、否則連鎖傷害較重（皆可活，續鏈進翻身）
+  if(c.special==="r130_brace"){
+    const hp=S.attr.hp||0, mny=S.attr.mny||0;
+    if(hp>=55 && mny>=50){ eff={hp:-3,mny:-5,hap:-2}; res="🧱 後續的連鎖一張張倒過來——醫藥費、扣薪、催繳，你選擇一個人默默全扛。好在你體力扛得住熬、財力墊得住缺口，這些骨牌雖然砸得你肩膀生疼，卻被你硬生生一張張接住、沒讓它們繼續連鎖塌下去。你抹掉冷汗苦笑：能獨自扛下這一切，靠的是這輩子悄悄攢下的本錢——原來底子，就是崩盤時的安全氣囊。"; }
+    else if(hp>=40 || mny>=40){ eff={hp:-5,mny:-7,hap:-3}; res="🧱 你硬著頭皮把後續一個人扛——醫藥費分期繳、被扣的薪水認了、催繳的電話一通通接。靠著還剩的一點底子勉強撐住，骨牌沒有全倒，但你也被連鎖的衝擊磨掉了一層皮。獨自吞下這些的夜裡你特別累，只是你沒得選——能扛多少算多少，先別讓它垮到底。"; }
+    else { eff={hp:-8,mny:-9,hap:-4}; res="🧱 你想一個人硬扛，但底子太薄，連鎖的骨牌一張接一張砸下來，你扛得險象環生——健康跟荷包都被磨到見骨，咬牙吞下每一記衝擊。沒有餘裕還逞強獨扛的代價很沉，你被壓得幾乎喘不過氣。但你硬是撐住沒讓自己徹底垮掉——這份硬扛，傷得很重，卻也證明你還沒倒。"; }
+  }
+  // 翻身節點・拚一把：五圍加權確定性計分(零裸 rng)≥門檻 → 翻身成功回血、否則翻身未果小傷；末尾重置 step/壓力、崩盤計數+1
+  if(c.special==="r130_rebound"){
+    const a=S.attr;
+    const score = (a.hp||0)*0.3 + (a.mny||0)*0.3 + (a.int||0)*0.2 + (a.hap||0)*0.15 + (a.apr||0)*0.05
+                + (S.flags.r130_sober?12:0) + (S.flags.r130_soughthelp?8:0) + (S.flags.r130_defused?6:0);
+    if(score>=52){ eff={hp:6,mny:8,hap:10,int:2}; S.flags.r130_rebwin=true; S.flags.r130rebounds=(S.flags.r130rebounds||0)+1;
+      res="🔥 你從谷底咬牙站了起來——靠著這輩子攢下的底子(體力撐得住重來、腦袋找得到路、或荷包還留著翻本的火種)，你一步一步把塌掉的人生重新砌了回來。換跑道、接副業、把債務一筆筆還清，那段最黑的日子，硬是被你活成了日後笑著說的故事。東山再起的滋味，比沒跌倒過更踏實——因為你知道自己是真的爬得起來的人。鬼島從不缺被一次崩盤打趴的人，而你，成了從廢墟裡走出來的那一個。"; }
+    else { eff={hp:-2,mny:-3,hap:-4}; S.flags.r130_rebfail=true;
+      res="🔥 你想翻身，但底子實在太薄——想重來卻沒體力熬、想轉行卻沒餘裕學、想還債卻越補越大洞，那僅剩的一點本錢，沒能撐起一個漂亮的東山再起。掙扎了一陣，你又被現實按回了原地，傷口還添了幾道新的。翻身沒有成功，但你至少試過了——這座島壓垮人的方式有很多種，而你沒有選擇直接放棄。日子還長，這次沒翻成，不代表下次也翻不了。"; }
+    S.flags.r130step=0;
+    S.flags.r130collapses=(S.flags.r130collapses||0)+1;
+    S.flags.r130stress=Math.min(S.flags.r130stress||0, 40);   // 壓回低檔，避免立刻再觸發崩盤
+  }
+  // 翻身節點・認命躺平：不搏翻身、接受現實先喘口氣（穩健減壓）；末尾同樣重置 step/壓力、崩盤計數+1
+  if(c.special==="r130_accept"){
+    S.flags.r130_laidback=true;
+    eff={hap:3,hp:1};
+    res="🛏️ 你不再硬撐了——認了，這就是人生發給你的這手爛牌。你停下所有掙扎，先讓自己好好喘口氣、好好睡一覺，把『一定要翻身』的執念也放下。沒有東山再起的熱血劇情，但你也不再把自己往死裡逼。躺平不是放棄，是承認自己需要休息——在這座把人逼到崩盤還要你『正能量』的島上，能誠實地對自己說一句『我累了，先躺一下』，本身就是一種溫柔的自救。日子照樣過，只是這次，你決定對自己好一點。";
+    S.flags.r130step=0;
+    S.flags.r130collapses=(S.flags.r130collapses||0)+1;
+    S.flags.r130stress=Math.min(S.flags.r130stress||0, 35);
+  }
+
   /* ---- R15 老人會 KTV 麥霸：飆高音藏稀有死法 highnote，活下來即麥霸傳奇 ---- */
   if(c.special==="ktvhigh"){
     if(chance(0.1)){ S.flags.specialDeath="highnote"; eff={hp:-100}; res="🎤 副歌最高音那一刻，你把整個人生的氣全用上了——音準完美、餘音繞樑，掌聲雷動中你緩緩倒下，麥克風還亮著。老人會為你默哀三秒，然後幫你按了『精彩重唱』。走得轟轟烈烈，這就是傳奇。"; }
@@ -13757,6 +13886,26 @@ function choose(i){
       eff[tp]=(eff[tp]||0)-tax;
       S.flags.r25tax=(S.flags.r25tax||0)+tax;
       taxNotes.push({t:"lw", s:`⚖️ 偏科代價：${ATTR[k].ic}${ATTR[k].nm}已頂標還硬堆，${ATTR[tp].ic}${ATTR[tp].nm}被抽走 ${tax} 點`});
+    }
+  }
+
+  /* ---- R130 壓力/負債/健康透支風險累積（純讀最終 eff＋當前五圍狀態，確定性、零裸 rng）：
+     過勞型(hp 重傷)／舉債型(mny 重傷)／已透支狀態(hp/mny 見底)抉擇加壓；休養／還債／進帳型減壓。
+     沿用既有 S.attr/flags，不另開破壞性全域狀態。崩盤鏈本身的節點(r130node)不計入(由 special 直接管壓力)，
+     避免崩盤傷害回頭再灌爆壓力造成連鎖死光。舊存檔無 r130stress → 從 0 起算，未跨門檻整套無感。 ---- */
+  if(S && S.flags && !(ev && ev.r130node)){
+    const dhp=eff.hp||0, dmny=eff.mny||0, dhap=eff.hap||0;
+    let ds=0;
+    if(dhp<=-7) ds+=10; else if(dhp<=-4) ds+=5;          // 過勞／重傷健康
+    if(dmny<=-9) ds+=9; else if(dmny<=-5) ds+=4;          // 大舉債／破財
+    if((S.attr.hp||0)<28) ds+=4;                          // 健康已透支，雪上加霜
+    if((S.attr.mny||0)<22) ds+=4;                         // 財務已見底
+    if(dhp>=6) ds-=9; else if(dhp>=3) ds-=4;              // 休養／養生
+    if(dmny>=7) ds-=7; else if(dmny>=4) ds-=3;            // 進帳／還債
+    if(dhap>=8) ds-=4;                                    // 大幅快樂緩解壓力
+    if(ds!==0){
+      S.flags.r130stress=Math.max(0,(S.flags.r130stress||0)+ds);
+      if((S.flags.r130stress||0)>(S.flags.r130_peakstress||0)) S.flags.r130_peakstress=S.flags.r130stress;
     }
   }
 
@@ -14076,6 +14225,9 @@ const SPECIAL_DEATHS = {
   /* ---- R128 手遊課金抽卡支線死法（爆肝刷夜場猝死；無課爆肝硬刷／課長搏命衝榜，身體見底還硬撐才會觸發，比照 R86 確定性；走課金爆肝自嘲、不美化成癮、不影射真實遊戲與真實人物） ---- */
   gachaburn:{cat:"gachaburn", scene:"stonks", title:"猝死在發燙手機前的末代肝帝",
     reason:"爆肝刷夜場猝死——為了不破戒省鑽石、或為了衝排名爆抽，你開啟了搏命刷副本模式：熬夜掛機、肝活動、刷夜場掃蕩，三餐外送配能量飲料，把見底的身體往死裡操。某個刷到眼睛發直的凌晨，你正要點下一場副本／課下一單保底，胸口猛地一陣劇痛、眼前發黑往後一仰——身體在你刷完最後一管體力之前，先一步幫你把人生這個帳號永久登出了。室友隔天發現你趴在發燙的手機前，畫面還停在那場沒打完的副本上。轉蛋的快樂是虛擬的，肝出去的命是真的，別拿心跳去換金光"},
+  /* ---- R130 壓力連鎖崩盤死法（崩盤猝死；累積到臨界崩盤後，身體見底還死要面子硬撐、不肯就醫求助才會觸發，比照 R86/R122/R128 確定性；走壓力/債務崩盤自嘲、不美化、附求助提醒）---- */
+  r130crash:{cat:"r130crash", scene:"broke", title:"崩盤了還死要面子硬撐到最後一刻的人",
+    reason:"壓力連鎖崩盤猝死——爆肝與債務把身體跟荷包同時透支到見底，累積到臨界的壓力一次潰堤。你卻死要面子，把急診醫師『要住院休養』當耳邊風、把催繳電話調靜音，咬牙逼自己照常運轉。某個再撐一下的深夜，壓力一次討回所有欠帳：胸口猛地一陣劇痛、眼前發黑往後一仰——身體不再給你『再撐一下』的機會。家人趕到時，你手裡還攥著沒繳完的帳單跟沒簽的住院同意書。鬼島最沉默的崩塌，是一個人把所有壓力默默扛到最後一刻，連喊救命都覺得丟臉。壓力與債務的崩盤是真實的，求助與停損永遠不嫌晚、也不丟臉"},
   /* ---- R92 交通支線死法（車禍猝逝／酒駕釀禍；體質×安全 buff 門檻確定性觸發，比照 R27 零裸 rng；走交通文化自嘲、不影射真實事故與真實人物）---- */
   roadkill:  {cat:"roadkill",  scene:"accident",  title:"在行人地獄用肉身驗證內輪差的肉包鐵烈士",
     reason:"車禍猝逝——身體早就見了底，你還在尖峰車陣裡搶那三分鐘／在沒號誌的斑馬線上硬闖。前方大車方向盤一帶，內輪差畫出的死亡半徑把你捲了進去，你連喊出聲的時間都沒有。路口監視器拍下全程，外媒關於『行人地獄』的報導又多了一筆冰冷案例。這座島的車陣明天依舊洶湧，誰也沒空為一滴蒸發的水珠停下來"},
@@ -14229,6 +14381,7 @@ const DEATHBOOK = [
   {id:"margincall",   ic:"💀", rare:true, nm:"融資斷頭抑鬱離世", hint:"踏進股海支線走航海王梭哈派、選融資 all in 搏命的人…本金薄（財富 30 以下）又身體見底（健康 14 以下）還硬凹想翻本，會被斷頭處分到歸零倒欠、畢業背債後一蹶不振抑鬱離世…融資讓你輸不起也跑不掉…", reason:SPECIAL_DEATHS.margincall.reason},
   {id:"daytradedeath",ic:"💀", rare:true, nm:"當沖爆肝猝死",     hint:"踏進股海支線走航海王梭哈派、選融資 all in 開當沖的人…本金尚可（財富 30 以上）但身體見底（健康 14 以下）還搏命盯盤凹單，會猝死在三螢幕前…一夜致富的夢，別拿心跳去換…", reason:SPECIAL_DEATHS.daytradedeath.reason},
   {id:"gachaburn",    ic:"💀", rare:true, nm:"爆肝刷夜場猝死",   hint:"踏進手遊課金抽卡支線、無課爆肝硬刷副本或課長搏命衝榜的人…身體見底（健康 13 以下）還熬夜掛機刷夜場、能量飲料硬撐，會猝死在發燙的手機前…轉蛋的快樂是虛擬的，肝出去的命是真的…", reason:SPECIAL_DEATHS.gachaburn.reason},
+  {id:"r130crash",    ic:"💥", rare:true, nm:"壓力連鎖崩盤猝死", hint:"爆肝與債務把身體跟荷包同時透支、壓力累積到臨界引發崩盤連鎖後…身體見底（健康 12 以下）還死要面子硬撐、不肯就醫求助、把警訊調靜音的人，會猝死在崩盤的最後一刻…踩煞車減壓、放下身段求助都能避開…", reason:SPECIAL_DEATHS.r130crash.reason},
 ];
 function deathbookCount(){
   const d=(SAVE&&SAVE.deaths)||{};
@@ -15281,6 +15434,103 @@ function r129TrajectoryHTML(){
   </div>`;
 }
 
+/* =========================================================================
+   R130 鬼島生存指數・崩盤與翻身史（結算可分享卡，純讀 S.flags、零 rng）：
+   把這一生的「壓力累積→崩盤連鎖→掙扎翻身」具象成一張可截圖/複製的生存戰報——
+   本局壓力峰值、扛過幾次崩盤、幾度翻身、是否踩煞車避開、最終生存評語＋鬼島生存指數。
+   只在踏進過壓力機制(r130_in)才呈現；沒觸發/舊存檔缺鍵整段省略；無局(S=null)回空字串不炸。
+   ========================================================================= */
+function r130SurvivalIndex(f){
+  // 確定性生存指數 0~100：翻身/踩煞車/求助加分、扛過崩盤本身算韌性加分、壓力峰值過高扣分
+  // 數值旗標一律 |0 強制轉整數 → 髒資料(字串/NaN)安全歸 0，不會渲染出 NaN
+  const reb=f.r130rebounds|0, col=f.r130collapses|0, peak=f.r130_peakstress|0;
+  let idx=50 + reb*16 + (f.r130_defused?14:0) + col*6 + (f.r130_soughthelp?6:0) + (f.r130_sober?4:0);
+  idx -= Math.floor(Math.max(0, peak-120)/12);
+  if(f.r130_rebfail && !reb) idx-=6;
+  return Math.max(5, Math.min(100, Math.round(idx)));
+}
+function r130SurvivalVerdict(idx, f){
+  if(idx>=85) return "翻身高手・從廢墟裡笑著走出來的鬼島強者";
+  if(idx>=65) return "撐過來了・崩盤沒能把你按死在谷底";
+  if(idx>=42) return "勉強上岸・狼狽但總算止住了下墜";
+  return f.r130_laidback ? "躺平喘息・被鬼島壓垮但還誠實地活著" : "傷痕累累・崩盤的連鎖在你身上留了深痕";
+}
+function r130StressTier(peak){
+  if(peak>=160) return "爆表・這輩子壓力一度頂到天花板";
+  if(peak>=120) return "極高・好幾度瀕臨臨界邊緣";
+  if(peak>=90)  return "偏高・壓力儀表常亮紅燈";
+  return "可控・大致守在安全線內";
+}
+function r130SurvivalHTML(){
+  if(!S || !S.flags) return "";
+  const f=S.flags;
+  if(!f.r130_in) return "";   // 從沒踏進壓力機制（含舊存檔無旗標）→ 整段省略
+  const col=f.r130collapses|0, reb=f.r130rebounds|0, peak=f.r130_peakstress|0;   // |0 強制轉整數，髒資料安全歸 0
+  const idx=r130SurvivalIndex(f);
+  const rows=[];
+  rows.push(`<div style="display:flex;gap:6px;align-items:baseline;padding:2px 0;font-size:13px"><span>📊</span><span class="muted" style="min-width:84px">壓力峰值</span><span>${r130StressTier(peak)}</span></div>`);
+  rows.push(`<div style="display:flex;gap:6px;align-items:baseline;padding:2px 0;font-size:13px"><span>💥</span><span class="muted" style="min-width:84px">扛過崩盤</span><span>${col>0?`<b>${col}</b> 次臨界崩盤連鎖`:(f.r130_defused?"0 次——壓力預警時及時踩煞車，崩盤被你擋在門外":"0 次")}</span></div>`);
+  if(reb>0 || col>0 || f.r130_laidback) rows.push(`<div style="display:flex;gap:6px;align-items:baseline;padding:2px 0;font-size:13px"><span>🔥</span><span class="muted" style="min-width:84px">掙扎翻身</span><span>${reb>0?`成功 <b>${reb}</b> 度東山再起`:(f.r130_laidback?"認命躺平、誠實地對自己喊累":"拚過但沒能翻成")}</span></div>`);
+  const tactics=[];
+  if(f.r130_defused) tactics.push("踩煞車減壓");
+  if(f.r130_soughthelp) tactics.push("放下身段求助");
+  if(f.r130_endured) tactics.push("死要面子硬撐");
+  if(f.r130_sober) tactics.push("斷捨離協商");
+  if(f.r130_laidback) tactics.push("認命躺平喘息");
+  if(tactics.length) rows.push(`<div style="display:flex;gap:6px;align-items:baseline;padding:2px 0;font-size:13px"><span>🧭</span><span class="muted" style="min-width:84px">應對姿態</span><span>${tactics.join("、")}</span></div>`);
+  const verdict=r130SurvivalVerdict(idx, f);
+  return `<div class="panel" id="r130survival" style="margin-top:12px;border:1px solid rgba(120,170,255,.5);background:linear-gradient(180deg,rgba(90,140,255,.08),var(--panel2))">
+    <h2 class="sec" style="color:#7aa6ff">🩹 鬼島生存指數・崩盤與翻身史</h2>
+    <div class="muted" style="font-size:11.5px;margin-bottom:6px;text-align:left">爆肝、舉債、健康透支把壓力推到臨界，這一生你被崩盤連鎖砸過幾次、又從谷底爬起來幾回——鬼島生存戰報，截圖丟群比慘也比韌。</div>
+    <div style="text-align:center;margin:6px 0 8px">
+      <span style="display:inline-block;font-size:30px;font-weight:800;color:#7aa6ff;letter-spacing:1px">${idx}<span style="font-size:14px;color:var(--muted,#888)"> / 100</span></span><br>
+      <span style="font-size:13px;color:var(--accent,#ffd24a)">${verdict}</span>
+    </div>
+    <div style="margin-top:2px">${rows.join("")}</div>
+    <div class="muted" style="font-size:11.5px;margin-top:5px">在這座把人逼到崩盤還要你『正能量』的島上，撐過去的不一定是最強的，是肯踩煞車、肯求助、跌倒了還願意爬起來的人。崩盤不可怕，可怕的是一個人默默硬撐到最後一刻——求助與停損，永遠不嫌晚。</div>
+    <div style="text-align:right;margin-top:8px">
+      <button class="btn sec" style="display:inline-block;width:auto;padding:7px 14px;font-size:12.5px" onclick="copyR130Survival(this)">📋 一鍵複製生存戰報</button>
+    </div>
+  </div>`;
+}
+/* 生存戰報純文字版（貼 Threads/Dcard/IG 限動／群組） */
+function buildR130SurvivalText(){
+  if(!S || !S.flags || !S.flags.r130_in) return "";
+  const f=S.flags, col=f.r130collapses|0, reb=f.r130rebounds|0;
+  const idx=r130SurvivalIndex(f);
+  const lines=[`🩹《鬼島生存戰報》— 享年 ${(S.age)|0} 歲`,""];
+  lines.push(`生存指數：${idx} / 100`);
+  lines.push(`評語：${r130SurvivalVerdict(idx, f)}`);
+  lines.push(`壓力峰值：${r130StressTier(f.r130_peakstress||0)}`);
+  lines.push(`扛過崩盤：${col} 次臨界崩盤連鎖${col===0&&f.r130_defused?"（壓力預警時及時踩煞車擋下）":""}`);
+  if(reb>0) lines.push(`掙扎翻身：成功 ${reb} 度東山再起`);
+  else if(f.r130_laidback) lines.push(`掙扎翻身：認命躺平、誠實喊累`);
+  else if(col>0) lines.push(`掙扎翻身：拚過但沒翻成`);
+  lines.push("");
+  lines.push("—— 地球 Online · 鬼島壓力連鎖崩盤與翻身機制");
+  if(typeof SHARE_URL!=="undefined"&&SHARE_URL) lines.push(SHARE_URL);
+  return lines.join("\n").trim();
+}
+/* 一鍵複製生存戰報（沿用 copyR127Digest 的 clipboard→legacyCopy→overlay 降級鏈） */
+function copyR130Survival(btn){
+  let txt; try{ txt=buildR130SurvivalText(); }catch(e){ alert("生存戰報生成失敗："+(e&&e.message||e)); return; }
+  if(!txt){ alert("這一生還沒踏進壓力崩盤機制～"); return; }
+  const done=()=>{
+    if(!btn) return;
+    if(!btn.dataset.orig) btn.dataset.orig=btn.innerHTML;
+    btn.innerHTML="✅ 生存戰報已複製，貼上去分享吧！";
+    setTimeout(()=>{ if(btn.dataset.orig) btn.innerHTML=btn.dataset.orig; },2600);
+  };
+  const fallback=()=>{ if(typeof legacyCopy==="function"&&legacyCopy(txt)) done(); else if(typeof textReportOverlay==="function") textReportOverlay(txt); else done(); };
+  try{
+    if(typeof navigator!=="undefined"&&navigator.clipboard&&navigator.clipboard.writeText){
+      navigator.clipboard.writeText(txt).then(done, fallback);
+      return;
+    }
+  }catch(e){}
+  fallback();
+}
+
 function keySnapHTML(){
   if(!S || !Array.isArray(S.keySnap) || S.keySnap.length<1) return "";
   const snaps=S.keySnap.slice().sort((a,b)=>a.age-b.age);
@@ -15738,6 +15988,7 @@ function screenSummary(cat){
       ${r96DisasterReviewHTML()}
       ${r122StockReviewHTML()}
       ${r128GachaReviewHTML()}
+      ${r130SurvivalHTML()}
       <div class="stats" style="margin:12px 0">${attrRows}</div>
       ${attrPersonaHTML()}
       ${r41WishHTML()}
