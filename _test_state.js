@@ -6053,5 +6053,79 @@ const r149 = JSON.parse(vm.runInContext(`(function(){
   ['achPartial','⑪ 跨局集滿:缺一→r149_travel 不解'],
 ].forEach(([k,m])=>ok(r149[k], 'R149 '+m));
 
+const r150 = JSON.parse(vm.runInContext(`(function(){
+  const out={};
+  function mk(mny,apr,age,era){ return {attr:{hp:50,int:50,apr:apr,mny:mny,hap:50}, age:age, era:era, flags:{}, alive:false}; }
+  // ① 資料齊備：6 養寵底子+6 養寵處境階層+4 人生階段+6 結局型別+六世代養寵梗+陪伴需求三檔
+  out.dataFull = Array.isArray(R150_KEEP) && R150_KEEP.length===6 && R150_KEEP.every(t=>t.ic&&t.nm&&t.short)
+    && Array.isArray(R150_PET) && R150_PET.length===6 && R150_PET.every(t=>t.ic&&t.nm&&t.short)
+    && Array.isArray(R150_PHASES) && R150_PHASES.length===4 && R150_PHASES.every(p=>typeof p.off==='number')
+    && ['pamper','influencer','devoted','dogwalker','catstart','lonely'].every(k=>R150_END[k]&&R150_END[k].nm&&R150_END[k].path&&R150_END[k].note)
+    && R55_ERAS.every(er=>typeof R150_ERAPET[er.id]==='string')
+    && [r150BondOf(90),r150BondOf(50),r150BondOf(10)].every(c=>typeof c.off==='number'&&c.nm&&c.short);
+  // ② 財富 mny 確定性映射：高→溺愛爸媽(>=4)、中→中段(>=2)、低→無寵(0)；且單調驅動
+  const hi=r150PetOf(mk(95,50,40,'e00')), midd=r150PetOf(mk(50,50,40,'e00')), lo=r150PetOf(mk(5,50,40,'e00'));
+  out.mnyMap = !!hi&&!!midd&&!!lo && hi.keepTier>=4 && midd.keepTier>=2 && lo.keepTier===0
+    && hi.keepTier>midd.keepTier && midd.keepTier>lo.keepTier;
+  // ③ 陪伴需求 apr 影響魅力/陪伴（次級修正）：同口袋 55，超黏毛孩奴(apr90)底子 >= 佛系獨居派(apr10)，且 off 有別
+  const clingy=r150PetOf(mk(55,90,40,'e00')), aloof=r150PetOf(mk(55,10,40,'e00'));
+  out.bondDrive = !!clingy&&!!aloof && clingy.keepTier>=aloof.keepTier && clingy.bond.off>aloof.bond.off;
+  // ④ 卡片渲染：含養寵底子/養寵結局/陪伴需求
+  S=mk(50,50,40,'e00'); const card=r150PetReviewHTML();
+  out.cardRender = card.indexOf('養寵底子')>=0 && card.indexOf('養寵結局')>=0 && card.indexOf('陪伴需求')>=0 && (card.indexOf('毛孩')>=0||card.indexOf('養寵')>=0);
+  // ⑤ deterministic 純讀：同 S 兩次渲染逐字一致
+  S=mk(40,40,35,'e10'); const a1=r150PetReviewHTML(), a2=r150PetReviewHTML();
+  out.deterministic = a1===a2 && a1.length>0;
+  // ⑥ 純呈現零汙染：生成前後 S.attr/era/age/flags 不變、零 rng 消耗
+  S=mk(72,55,45,'e70'); const bA=JSON.stringify(S.attr), bE=S.era, bAge=S.age, bF=JSON.stringify(S.flags);
+  let used=0; const oldR=rng; rng=function(){ used++; return oldR(); };
+  r150PetReviewHTML(); r150PetOf(S); rng=oldR;
+  out.pure = JSON.stringify(S.attr)===bA && S.era===bE && S.age===bAge && JSON.stringify(S.flags)===bF && used===0;
+  // ⑦ S=null / 缺 attr / 缺 mny 降級：回 null、卡空字串、不炸
+  out.nullSafe = (()=>{ try{ S=null; return r150PetOf(null)===null && r150PetReviewHTML()===''; }catch(e){ return false; } })();
+  out.noAttr = (()=>{ try{ return r150PetOf({age:40,era:'e00'})===null && r150PetOf({attr:{int:50},age:40})===null; }catch(e){ return false; } })();
+  // ⑧ 缺 apr 降級：用中性 50、仍回物件不炸；髒 era → 養寵梗略過不炸
+  out.softDeg = (()=>{ try{ const m=r150PetOf({attr:{mny:55},age:40,era:'e00',flags:{}}); const d=r150PetOf(mk(55,50,40,'zzz999')); return !!m && m.keepTier===r150PetOf(mk(55,50,40,'e00')).keepTier && !!d && d.era===null; }catch(e){ return false; } })();
+  // ⑨ 舊存檔相容：ensureState 不為 R150 在 S/flags 補任何 r150 鍵
+  startGame(); const olds=S; ensureState(olds);
+  out.compatOld = !Object.keys(olds).some(k=>k.toLowerCase().indexOf('r150')===0)
+    && !Object.keys(olds.flags||{}).some(k=>k.toLowerCase().indexOf('r150')===0);
+  // ⑩ 養寵結局成就確定性點亮：溺愛/網紅/品種奴/遛狗/認養貓/無寵 各自可達且互斥
+  const PAM=mk(88,50,40,'e00'), INF=mk(50,70,30,'e00'), DEV=mk(55,60,50,'e00'), DOG=mk(55,40,40,'e00'), CAT=mk(38,40,40,'e00'), LON=mk(20,50,40,'e00');
+  out.achPam    = !!ACH_MAP.r150_pamper     && ACH_MAP.r150_pamper.check({S:PAM})===true     && ACH_MAP.r150_pamper.check({S:LON})===false;
+  out.achInf    = !!ACH_MAP.r150_influencer && ACH_MAP.r150_influencer.check({S:INF})===true && ACH_MAP.r150_influencer.check({S:LON})===false;
+  out.achDev    = !!ACH_MAP.r150_devoted    && ACH_MAP.r150_devoted.check({S:DEV})===true    && ACH_MAP.r150_devoted.check({S:PAM})===false;
+  out.achDog    = !!ACH_MAP.r150_dogwalker  && ACH_MAP.r150_dogwalker.check({S:DOG})===true   && ACH_MAP.r150_dogwalker.check({S:PAM})===false;
+  out.achCat    = !!ACH_MAP.r150_catstart   && ACH_MAP.r150_catstart.check({S:CAT})===true    && ACH_MAP.r150_catstart.check({S:PAM})===false;
+  out.achLon    = !!ACH_MAP.r150_lonely     && ACH_MAP.r150_lonely.check({S:LON})===true      && ACH_MAP.r150_lonely.check({S:PAM})===false;
+  // ⑪ 跨局集滿 r150_pet：六成就全亮→解鎖、缺一→不解
+  const allAch={r150_pamper:true,r150_influencer:true,r150_devoted:true,r150_dogwalker:true,r150_catstart:true,r150_lonely:true};
+  SAVE.ach=Object.assign({},allAch); out.achFull = !!ACH_MAP.r150_pet && ACH_MAP.r150_pet.check({S:{}})===true;
+  const partial=Object.assign({},allAch); delete partial.r150_pamper;
+  SAVE.ach=partial; out.achPartial = ACH_MAP.r150_pet.check({S:{}})===false;
+  SAVE.ach={}; S=null;
+  return JSON.stringify(out);
+})()`, sandbox));
+[
+  ['dataFull','① 資料齊備:6 養寵底子+6 養寵處境階層+4 人生階段+6 結局型別+六世代養寵梗+陪伴需求三檔'],
+  ['mnyMap','② 財富 mny 確定性映射:高→溺愛爸媽/中→中段/低→無寵且單調驅動'],
+  ['bondDrive','③ 陪伴需求影響魅力/陪伴:同口袋超黏毛孩奴>=佛系獨居派且 off 有別'],
+  ['cardRender','④ 卡片渲染:含養寵底子/養寵結局/陪伴需求/毛孩或養寵'],
+  ['deterministic','⑤ deterministic 純讀:同 S 兩次渲染逐字一致'],
+  ['pure','⑥ 純呈現零汙染:生成前後 S.attr/era/age/flags 不變且零 rng'],
+  ['nullSafe','⑦ 無局(S=null)降級:回 null、卡空字串不炸'],
+  ['noAttr','⑦ 缺 attr/mny 降級:回 null 不炸'],
+  ['softDeg','⑧ 缺 apr 中性化＋髒 era 養寵梗略過:仍回物件不炸且底子一致'],
+  ['compatOld','⑨ 舊存檔相容:ensureState 不為 R150 補任何 S/flags 鍵'],
+  ['achPam','⑩ r150_pamper:溺愛爸媽→解、無寵→不解'],
+  ['achInf','⑩ r150_influencer:網美寵物網紅→解、無寵→不解'],
+  ['achDev','⑩ r150_devoted:課金品種奴→解、溺愛→不解'],
+  ['achDog','⑩ r150_dogwalker:米克斯遛狗族→解、溺愛→不解'],
+  ['achCat','⑩ r150_catstart:浪浪認養貓奴→解、溺愛→不解'],
+  ['achLon','⑩ r150_lonely:無寵孤家寡人→解、溺愛→不解'],
+  ['achFull','⑪ 跨局集滿:六成就全亮→r150_pet 解鎖'],
+  ['achPartial','⑪ 跨局集滿:缺一→r150_pet 不解'],
+].forEach(([k,m])=>ok(r150[k], 'R150 '+m));
+
 console.log(fails ? `\n結果: ❌ ${fails} 項未通過` : '\n結果: ✅ 狀態機全數正確');
 process.exit(fails ? 1 : 0);

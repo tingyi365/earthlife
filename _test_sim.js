@@ -4498,6 +4498,54 @@ try {
   console.log('R149 旅遊足跡軌跡: ❌ ' + e.message);
 }
 
+/* ===== R150 寵物・毛孩軌跡（純衍生/結算覆蓋層：零 rng/零 pinned 序列擾動/deterministic/財富 mny 主驅動+魅力 apr 陪伴需求/降級） ===== */
+let r150OK = false;
+try {
+  const r150Raw = vm.runInContext(`(function(){
+    const out={};
+    /* ① 結構：6 養寵底子、6 養寵處境階層、4 人生階段、6 結局型別、六個養寵成就＋集滿成就齊備 */
+    out.struct = Array.isArray(R150_KEEP) && R150_KEEP.length===6 && Array.isArray(R150_PET) && R150_PET.length===6
+      && Array.isArray(R150_PHASES) && R150_PHASES.length===4
+      && ['pamper','influencer','devoted','dogwalker','catstart','lonely'].every(k=>R150_END[k])
+      && ['r150_pamper','r150_influencer','r150_devoted','r150_dogwalker','r150_catstart','r150_lonely','r150_pet'].every(id=>!!ACH_MAP[id]);
+    /* ② 純衍生覆蓋零 rng：startGame 後跑 r150PetOf/Review 不消耗任何種子序列（與 pinned 抽事件序列獨立） */
+    const oc=randomSeedCode; randomSeedCode=function(){return 'EEEEEE';};
+    startGame(); const r0=[]; for(let i=0;i<20;i++)r0.push(rng());
+    startGame(); r150PetOf(S); r150PetReviewHTML(); const r1=[]; for(let i=0;i<20;i++)r1.push(rng());
+    let rngEq=true; for(let i=0;i<20;i++){ if(r0[i]!==r1[i]) rngEq=false; }
+    out.rngZero = rngEq; randomSeedCode=oc;
+    /* ③ deterministic 純讀終局 S：同態同結果、零 mutation */
+    startGame(); S.attr={hp:60,int:50,apr:50,mny:50,hap:60}; S.age=45; S.flags={};
+    const snap=JSON.stringify(S.attr)+'|'+S.age;
+    const c1=r150PetReviewHTML(), c2=r150PetReviewHTML();
+    out.deterministic = c1===c2 && c1.indexOf('養寵底子')>=0 && c1.indexOf('養寵結局')>=0
+      && (JSON.stringify(S.attr)+'|'+S.age)===snap;
+    /* ④ 財富 mny 單調驅動養寵底子：高 mny→溺愛爸媽(>=4)、低 mny→無寵(0) */
+    const hi=r150PetOf({attr:{mny:95,apr:50},age:40,flags:{}}), lo=r150PetOf({attr:{mny:5,apr:50},age:40,flags:{}});
+    out.mnyDrive = !!hi && !!lo && hi.keepTier>=4 && lo.keepTier===0 && hi.keepTier>lo.keepTier;
+    /* ⑤ 六結局確定性分流互斥可達：溺愛/網紅/品種奴/遛狗/認養貓/無寵各命中對應 endType */
+    const E=(a)=>r150PetOf(a)&&r150PetOf(a).endType;
+    out.endsReach =
+         E({attr:{mny:88,apr:50},age:40})==='pamper'
+      && E({attr:{mny:50,apr:70},age:30})==='influencer'
+      && E({attr:{mny:55,apr:60},age:50})==='devoted'
+      && E({attr:{mny:55,apr:40},age:40})==='dogwalker'
+      && E({attr:{mny:38,apr:40},age:40})==='catstart'
+      && E({attr:{mny:20,apr:50},age:40})==='lonely';
+    /* ⑥ S=null/缺 attr/缺 mny 安全降級：回 null、卡空字串、不炸 */
+    const sv=S; S=null; let nullSafe=true;
+    try{ if(r150PetOf(null)!==null) nullSafe=false; if(r150PetReviewHTML()!=='') nullSafe=false;
+         if(r150PetOf({attr:{apr:50},age:40})!==null) nullSafe=false; }catch(e){ nullSafe=false; }
+    S=sv; out.nullSafe = nullSafe;
+    return JSON.stringify(out);
+  })()`, sandbox);
+  const r150 = JSON.parse(r150Raw);
+  r150OK = Object.values(r150).every(v => v === true);
+  console.log(`R150 寵物毛孩軌跡: ${r150OK ? '✅ 全數通過' : '❌ ' + JSON.stringify(r150)}`);
+} catch (e) {
+  console.log('R150 寵物毛孩軌跡: ❌ ' + e.message);
+}
+
 if (__errors.length) {
   console.log('\n--- 錯誤樣本(前5) ---');
   __errors.slice(0, 5).forEach(e => console.log('  ' + e));
@@ -4505,6 +4553,6 @@ if (__errors.length) {
 
 /* 退出碼 */
 const pass = __errors.length === 0 && chk.missingScenes.length === 0 && chk.eventVisible >= 126 && chk.eventTotal >= 126 && lsOK && achUnlocked > 0
-  && chk.deathbookMissing.length === 0 && chk.deathTotal >= 17 && deathsOK && rebirthOK && legacyOK && petOK && r13OK && r17OK && r20OK && r21OK && r22OK && r24OK && r25OK && r34OK && r38OK && r41OK && r42OK && r43OK && r44OK && r45OK && r46OK && r47OK && r48OK && r49OK && r51OK && r52OK && r53OK && r54OK && r55OK && r72OK && r76OK && r77OK && r79OK && r86OK && r87OK && r92OK && r93OK && r95OK && r96OK && r108OK && r110OK && r111OK && r112OK && r113OK && r115OK && r116OK && r117OK && r118OK && r119OK && r122OK && r126OK && r134OK && r136OK && r138OK && r139OK && r140OK && r141OK && r142OK && r143OK && r144OK && r145OK && r146OK && r147OK && r149OK;
+  && chk.deathbookMissing.length === 0 && chk.deathTotal >= 17 && deathsOK && rebirthOK && legacyOK && petOK && r13OK && r17OK && r20OK && r21OK && r22OK && r24OK && r25OK && r34OK && r38OK && r41OK && r42OK && r43OK && r44OK && r45OK && r46OK && r47OK && r48OK && r49OK && r51OK && r52OK && r53OK && r54OK && r55OK && r72OK && r76OK && r77OK && r79OK && r86OK && r87OK && r92OK && r93OK && r95OK && r96OK && r108OK && r110OK && r111OK && r112OK && r113OK && r115OK && r116OK && r117OK && r118OK && r119OK && r122OK && r126OK && r134OK && r136OK && r138OK && r139OK && r140OK && r141OK && r142OK && r143OK && r144OK && r145OK && r146OK && r147OK && r149OK && r150OK;
 console.log('\n結果: ' + (pass ? '✅ 全數通過' : '❌ 有項目未通過'));
 process.exit(pass ? 0 : 1);
