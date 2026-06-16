@@ -6127,5 +6127,79 @@ const r150 = JSON.parse(vm.runInContext(`(function(){
   ['achPartial','⑪ 跨局集滿:缺一→r150_pet 不解'],
 ].forEach(([k,m])=>ok(r150[k], 'R150 '+m));
 
+const r151 = JSON.parse(vm.runInContext(`(function(){
+  const out={};
+  function mk(mny,int,age,era){ return {attr:{hp:50,int:int,apr:50,mny:mny,hap:50}, age:age, era:era, flags:{}, alive:false}; }
+  // ① 資料齊備：6 信仰底子+6 信仰處境階層+4 人生階段+6 結局型別+六世代信仰梗+理性程度三檔
+  out.dataFull = Array.isArray(R151_KEEP) && R151_KEEP.length===6 && R151_KEEP.every(t=>t.ic&&t.nm&&t.short)
+    && Array.isArray(R151_FAITH) && R151_FAITH.length===6 && R151_FAITH.every(t=>t.ic&&t.nm&&t.short)
+    && Array.isArray(R151_PHASES) && R151_PHASES.length===4 && R151_PHASES.every(p=>typeof p.off==='number')
+    && ['patron','cultist','astro','mazu','lamp','atheist'].every(k=>R151_END[k]&&R151_END[k].nm&&R151_END[k].path&&R151_END[k].note)
+    && R55_ERAS.every(er=>typeof R151_ERAFAITH[er.id]==='string')
+    && [r151WitOf(90),r151WitOf(50),r151WitOf(10)].every(c=>typeof c.off==='number'&&c.nm&&c.short);
+  // ② 財富 mny 確定性映射：高→金主(>=4)、中→中段(>=2)、低→鐵齒(0)；且單調驅動
+  const hi=r151FaithOf(mk(95,50,40,'e00')), midd=r151FaithOf(mk(50,50,40,'e00')), lo=r151FaithOf(mk(5,50,40,'e00'));
+  out.mnyMap = !!hi&&!!midd&&!!lo && hi.keepTier>=4 && midd.keepTier>=2 && lo.keepTier===0
+    && hi.keepTier>midd.keepTier && midd.keepTier>lo.keepTier;
+  // ③ 智力 int 影響理性鐵齒/易信（次級修正）：同口袋 55，虔誠易信派(int10)底子 >= 理性鐵齒派(int90)，且 off 有別
+  const naive=r151FaithOf(mk(55,10,40,'e00')), skeptic=r151FaithOf(mk(55,90,40,'e00'));
+  out.witDrive = !!naive&&!!skeptic && naive.keepTier>=skeptic.keepTier && naive.wit.off>skeptic.wit.off;
+  // ④ 卡片渲染：含信仰底子/信仰結局/理性程度
+  S=mk(50,50,40,'e00'); const card=r151FaithReviewHTML();
+  out.cardRender = card.indexOf('信仰底子')>=0 && card.indexOf('信仰結局')>=0 && card.indexOf('理性程度')>=0 && (card.indexOf('香火')>=0||card.indexOf('信仰')>=0);
+  // ⑤ deterministic 純讀：同 S 兩次渲染逐字一致
+  S=mk(40,40,35,'e10'); const a1=r151FaithReviewHTML(), a2=r151FaithReviewHTML();
+  out.deterministic = a1===a2 && a1.length>0;
+  // ⑥ 純呈現零汙染：生成前後 S.attr/era/age/flags 不變、零 rng 消耗
+  S=mk(72,55,45,'e70'); const bA=JSON.stringify(S.attr), bE=S.era, bAge=S.age, bF=JSON.stringify(S.flags);
+  let used=0; const oldR=rng; rng=function(){ used++; return oldR(); };
+  r151FaithReviewHTML(); r151FaithOf(S); rng=oldR;
+  out.pure = JSON.stringify(S.attr)===bA && S.era===bE && S.age===bAge && JSON.stringify(S.flags)===bF && used===0;
+  // ⑦ S=null / 缺 attr / 缺 mny 降級：回 null、卡空字串、不炸
+  out.nullSafe = (()=>{ try{ S=null; return r151FaithOf(null)===null && r151FaithReviewHTML()===''; }catch(e){ return false; } })();
+  out.noAttr = (()=>{ try{ return r151FaithOf({age:40,era:'e00'})===null && r151FaithOf({attr:{apr:50},age:40})===null; }catch(e){ return false; } })();
+  // ⑧ 缺 int 降級：用中性 50、仍回物件不炸；髒 era → 信仰梗略過不炸
+  out.softDeg = (()=>{ try{ const m=r151FaithOf({attr:{mny:55},age:40,era:'e00',flags:{}}); const d=r151FaithOf(mk(55,50,40,'zzz999')); return !!m && m.keepTier===r151FaithOf(mk(55,50,40,'e00')).keepTier && !!d && d.era===null; }catch(e){ return false; } })();
+  // ⑨ 舊存檔相容：ensureState 不為 R151 在 S/flags 補任何 r151 鍵
+  startGame(); const olds=S; ensureState(olds);
+  out.compatOld = !Object.keys(olds).some(k=>k.toLowerCase().indexOf('r151')===0)
+    && !Object.keys(olds.flags||{}).some(k=>k.toLowerCase().indexOf('r151')===0);
+  // ⑩ 信仰結局成就確定性點亮：金主/詐財/算命/遶境/點燈/鐵齒 各自可達且互斥
+  const PAT=mk(88,50,40,'e00'), CUL=mk(50,25,40,'e00'), AST=mk(55,40,40,'e00'), MAZ=mk(55,60,40,'e00'), LAMP=mk(40,60,40,'e00'), ATH=mk(50,80,40,'e00');
+  out.achPat = !!ACH_MAP.r151_patron  && ACH_MAP.r151_patron.check({S:PAT})===true  && ACH_MAP.r151_patron.check({S:ATH})===false;
+  out.achCul = !!ACH_MAP.r151_cultist && ACH_MAP.r151_cultist.check({S:CUL})===true && ACH_MAP.r151_cultist.check({S:ATH})===false;
+  out.achAst = !!ACH_MAP.r151_astro   && ACH_MAP.r151_astro.check({S:AST})===true   && ACH_MAP.r151_astro.check({S:PAT})===false;
+  out.achMaz = !!ACH_MAP.r151_mazu    && ACH_MAP.r151_mazu.check({S:MAZ})===true    && ACH_MAP.r151_mazu.check({S:PAT})===false;
+  out.achLamp= !!ACH_MAP.r151_lamp    && ACH_MAP.r151_lamp.check({S:LAMP})===true   && ACH_MAP.r151_lamp.check({S:PAT})===false;
+  out.achAth = !!ACH_MAP.r151_atheist && ACH_MAP.r151_atheist.check({S:ATH})===true && ACH_MAP.r151_atheist.check({S:PAT})===false;
+  // ⑪ 跨局集滿 r151_faith：六成就全亮→解鎖、缺一→不解
+  const allAch={r151_patron:true,r151_cultist:true,r151_astro:true,r151_mazu:true,r151_lamp:true,r151_atheist:true};
+  SAVE.ach=Object.assign({},allAch); out.achFull = !!ACH_MAP.r151_faith && ACH_MAP.r151_faith.check({S:{}})===true;
+  const partial=Object.assign({},allAch); delete partial.r151_patron;
+  SAVE.ach=partial; out.achPartial = ACH_MAP.r151_faith.check({S:{}})===false;
+  SAVE.ach={}; S=null;
+  return JSON.stringify(out);
+})()`, sandbox));
+[
+  ['dataFull','① 資料齊備:6 信仰底子+6 信仰處境階層+4 人生階段+6 結局型別+六世代信仰梗+理性程度三檔'],
+  ['mnyMap','② 財富 mny 確定性映射:高→金主/中→中段/低→鐵齒且單調驅動'],
+  ['witDrive','③ 智力影響理性鐵齒/易信:同口袋虔誠易信派>=理性鐵齒派且 off 有別'],
+  ['cardRender','④ 卡片渲染:含信仰底子/信仰結局/理性程度/香火或信仰'],
+  ['deterministic','⑤ deterministic 純讀:同 S 兩次渲染逐字一致'],
+  ['pure','⑥ 純呈現零汙染:生成前後 S.attr/era/age/flags 不變且零 rng'],
+  ['nullSafe','⑦ 無局(S=null)降級:回 null、卡空字串不炸'],
+  ['noAttr','⑦ 缺 attr/mny 降級:回 null 不炸'],
+  ['softDeg','⑧ 缺 int 中性化＋髒 era 信仰梗略過:仍回物件不炸且底子一致'],
+  ['compatOld','⑨ 舊存檔相容:ensureState 不為 R151 補任何 S/flags 鍵'],
+  ['achPat','⑩ r151_patron:宮廟金主→解、鐵齒→不解'],
+  ['achCul','⑩ r151_cultist:走火入魔詐財→解、鐵齒→不解'],
+  ['achAst','⑩ r151_astro:紫微塔羅成癮→解、金主→不解'],
+  ['achMaz','⑩ r151_mazu:媽祖遶境信眾→解、金主→不解'],
+  ['achLamp','⑩ r151_lamp:點燈安太歲常客→解、金主→不解'],
+  ['achAth','⑩ r151_atheist:鐵齒無神論者→解、金主→不解'],
+  ['achFull','⑪ 跨局集滿:六成就全亮→r151_faith 解鎖'],
+  ['achPartial','⑪ 跨局集滿:缺一→r151_faith 不解'],
+].forEach(([k,m])=>ok(r151[k], 'R151 '+m));
+
 console.log(fails ? `\n結果: ❌ ${fails} 項未通過` : '\n結果: ✅ 狀態機全數正確');
 process.exit(fails ? 1 : 0);

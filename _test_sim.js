@@ -4546,6 +4546,54 @@ try {
   console.log('R150 寵物毛孩軌跡: ❌ ' + e.message);
 }
 
+/* ===== R151 信仰・宮廟香火軌跡（純衍生/結算覆蓋層：零 rng/零 pinned 序列擾動/deterministic/財富 mny 主驅動+智力 int 理性鐵齒/易信/降級） ===== */
+let r151OK = false;
+try {
+  const r151Raw = vm.runInContext(`(function(){
+    const out={};
+    /* ① 結構：6 信仰底子、6 信仰處境階層、4 人生階段、6 結局型別、六個信仰成就＋集滿成就齊備 */
+    out.struct = Array.isArray(R151_KEEP) && R151_KEEP.length===6 && Array.isArray(R151_FAITH) && R151_FAITH.length===6
+      && Array.isArray(R151_PHASES) && R151_PHASES.length===4
+      && ['patron','cultist','astro','mazu','lamp','atheist'].every(k=>R151_END[k])
+      && ['r151_patron','r151_cultist','r151_astro','r151_mazu','r151_lamp','r151_atheist','r151_faith'].every(id=>!!ACH_MAP[id]);
+    /* ② 純衍生覆蓋零 rng：startGame 後跑 r151FaithOf/Review 不消耗任何種子序列（與 pinned 抽事件序列獨立） */
+    const oc=randomSeedCode; randomSeedCode=function(){return 'EEEEEE';};
+    startGame(); const r0=[]; for(let i=0;i<20;i++)r0.push(rng());
+    startGame(); r151FaithOf(S); r151FaithReviewHTML(); const r1=[]; for(let i=0;i<20;i++)r1.push(rng());
+    let rngEq=true; for(let i=0;i<20;i++){ if(r0[i]!==r1[i]) rngEq=false; }
+    out.rngZero = rngEq; randomSeedCode=oc;
+    /* ③ deterministic 純讀終局 S：同態同結果、零 mutation */
+    startGame(); S.attr={hp:60,int:50,apr:50,mny:50,hap:60}; S.age=45; S.flags={};
+    const snap=JSON.stringify(S.attr)+'|'+S.age;
+    const c1=r151FaithReviewHTML(), c2=r151FaithReviewHTML();
+    out.deterministic = c1===c2 && c1.indexOf('信仰底子')>=0 && c1.indexOf('信仰結局')>=0
+      && (JSON.stringify(S.attr)+'|'+S.age)===snap;
+    /* ④ 財富 mny 單調驅動信仰底子：高 mny→金主(>=4)、低 mny→鐵齒(0) */
+    const hi=r151FaithOf({attr:{mny:95,int:50},age:40,flags:{}}), lo=r151FaithOf({attr:{mny:5,int:50},age:40,flags:{}});
+    out.mnyDrive = !!hi && !!lo && hi.keepTier>=4 && lo.keepTier===0 && hi.keepTier>lo.keepTier;
+    /* ⑤ 六結局確定性分流互斥可達：金主/詐財/算命/遶境/點燈/鐵齒各命中對應 endType */
+    const E=(a)=>r151FaithOf(a)&&r151FaithOf(a).endType;
+    out.endsReach =
+         E({attr:{mny:88,int:50},age:40})==='patron'
+      && E({attr:{mny:50,int:25},age:40})==='cultist'
+      && E({attr:{mny:55,int:40},age:40})==='astro'
+      && E({attr:{mny:55,int:60},age:40})==='mazu'
+      && E({attr:{mny:40,int:60},age:40})==='lamp'
+      && E({attr:{mny:50,int:80},age:40})==='atheist';
+    /* ⑥ S=null/缺 attr/缺 mny 安全降級：回 null、卡空字串、不炸 */
+    const sv=S; S=null; let nullSafe=true;
+    try{ if(r151FaithOf(null)!==null) nullSafe=false; if(r151FaithReviewHTML()!=='') nullSafe=false;
+         if(r151FaithOf({attr:{int:50},age:40})!==null) nullSafe=false; }catch(e){ nullSafe=false; }
+    S=sv; out.nullSafe = nullSafe;
+    return JSON.stringify(out);
+  })()`, sandbox);
+  const r151 = JSON.parse(r151Raw);
+  r151OK = Object.values(r151).every(v => v === true);
+  console.log(`R151 信仰宮廟香火軌跡: ${r151OK ? '✅ 全數通過' : '❌ ' + JSON.stringify(r151)}`);
+} catch (e) {
+  console.log('R151 信仰宮廟香火軌跡: ❌ ' + e.message);
+}
+
 if (__errors.length) {
   console.log('\n--- 錯誤樣本(前5) ---');
   __errors.slice(0, 5).forEach(e => console.log('  ' + e));
@@ -4553,6 +4601,6 @@ if (__errors.length) {
 
 /* 退出碼 */
 const pass = __errors.length === 0 && chk.missingScenes.length === 0 && chk.eventVisible >= 126 && chk.eventTotal >= 126 && lsOK && achUnlocked > 0
-  && chk.deathbookMissing.length === 0 && chk.deathTotal >= 17 && deathsOK && rebirthOK && legacyOK && petOK && r13OK && r17OK && r20OK && r21OK && r22OK && r24OK && r25OK && r34OK && r38OK && r41OK && r42OK && r43OK && r44OK && r45OK && r46OK && r47OK && r48OK && r49OK && r51OK && r52OK && r53OK && r54OK && r55OK && r72OK && r76OK && r77OK && r79OK && r86OK && r87OK && r92OK && r93OK && r95OK && r96OK && r108OK && r110OK && r111OK && r112OK && r113OK && r115OK && r116OK && r117OK && r118OK && r119OK && r122OK && r126OK && r134OK && r136OK && r138OK && r139OK && r140OK && r141OK && r142OK && r143OK && r144OK && r145OK && r146OK && r147OK && r149OK && r150OK;
+  && chk.deathbookMissing.length === 0 && chk.deathTotal >= 17 && deathsOK && rebirthOK && legacyOK && petOK && r13OK && r17OK && r20OK && r21OK && r22OK && r24OK && r25OK && r34OK && r38OK && r41OK && r42OK && r43OK && r44OK && r45OK && r46OK && r47OK && r48OK && r49OK && r51OK && r52OK && r53OK && r54OK && r55OK && r72OK && r76OK && r77OK && r79OK && r86OK && r87OK && r92OK && r93OK && r95OK && r96OK && r108OK && r110OK && r111OK && r112OK && r113OK && r115OK && r116OK && r117OK && r118OK && r119OK && r122OK && r126OK && r134OK && r136OK && r138OK && r139OK && r140OK && r141OK && r142OK && r143OK && r144OK && r145OK && r146OK && r147OK && r149OK && r150OK && r151OK;
 console.log('\n結果: ' + (pass ? '✅ 全數通過' : '❌ 有項目未通過'));
 process.exit(pass ? 0 : 1);
