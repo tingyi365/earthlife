@@ -5678,5 +5678,80 @@ const r144 = JSON.parse(vm.runInContext(`(function(){
   ['achPartial','⑪ 跨局集滿:缺一→r144_health 不解'],
 ].forEach(([k,m])=>ok(r144[k], 'R144 '+m));
 
+/* ===== R145 居住・房產資產軌跡（純衍生/結算覆蓋層；零 rng/零汙染/deterministic 推演/財富 mny 主驅動+智力購屋眼光/壞資料降級/房產成就） ===== */
+const r145 = JSON.parse(vm.runInContext(`(function(){
+  const out={};
+  function mk(mny,int,age,era){ return {attr:{hp:50,int:int,apr:50,mny:mny,hap:50}, age:age, era:era, flags:{}, alive:false}; }
+  // ① 資料齊備：6 房產資產底子+6 居住處境階層+4 人生階段+6 結局型別+六世代房市梗+購屋眼光三檔
+  out.dataFull = Array.isArray(R145_ASSET) && R145_ASSET.length===6 && R145_ASSET.every(t=>t.ic&&t.nm&&t.short)
+    && Array.isArray(R145_HOME) && R145_HOME.length===6 && R145_HOME.every(t=>t.ic&&t.nm&&t.short)
+    && Array.isArray(R145_PHASES) && R145_PHASES.length===4 && R145_PHASES.every(p=>typeof p.off==='number')
+    && ['mansion','landlord','heir','mortgage','parasite','renter'].every(k=>R145_END[k]&&R145_END[k].nm&&R145_END[k].path&&R145_END[k].note)
+    && R55_ERAS.every(er=>typeof R145_ERAHOME[er.id]==='string')
+    && [r145SavvyOf(90),r145SavvyOf(50),r145SavvyOf(10)].every(c=>typeof c.off==='number'&&c.nm&&c.short);
+  // ② 財富 mny 確定性映射：高→豪宅置產大戶(>=4)、中→中段(>=2)、低→零資產無殼(0)；且單調驅動
+  const hi=r145HousingOf(mk(95,50,40,'e00')), midd=r145HousingOf(mk(50,50,40,'e00')), lo=r145HousingOf(mk(5,50,40,'e00'));
+  out.mnyMap = !!hi&&!!midd&&!!lo && hi.assetTier>=4 && midd.assetTier>=2 && lo.assetTier===0
+    && hi.assetTier>midd.assetTier && midd.assetTier>lo.assetTier;
+  // ③ 智力影響購屋眼光（次級修正）：同本金 55，購屋眼光精準(int90)底子 >= 接刀俠(int10)，且 off 有別
+  const smart=r145HousingOf(mk(55,90,40,'e00')), dumb=r145HousingOf(mk(55,10,40,'e00'));
+  out.savvyDrive = !!smart&&!!dumb && smart.assetTier>=dumb.assetTier && smart.savvy.off>dumb.savvy.off;
+  // ④ 卡片渲染：含房產資產/房產結局/購屋眼光/居住或處境
+  S=mk(50,50,40,'e00'); const card=r145HousingReviewHTML();
+  out.cardRender = card.indexOf('房產資產')>=0 && card.indexOf('房產結局')>=0 && card.indexOf('購屋眼光')>=0 && (card.indexOf('居住')>=0||card.indexOf('房產')>=0);
+  // ⑤ deterministic 純讀：同 S 兩次渲染逐字一致
+  S=mk(40,40,35,'e10'); const a1=r145HousingReviewHTML(), a2=r145HousingReviewHTML();
+  out.deterministic = a1===a2 && a1.length>0;
+  // ⑥ 純呈現零汙染：生成前後 S.attr/era/age/flags 不變、零 rng 消耗
+  S=mk(72,55,45,'e70'); const bA=JSON.stringify(S.attr), bE=S.era, bAge=S.age, bF=JSON.stringify(S.flags);
+  let used=0; const oldR=rng; rng=function(){ used++; return oldR(); };
+  r145HousingReviewHTML(); r145HousingOf(S); rng=oldR;
+  out.pure = JSON.stringify(S.attr)===bA && S.era===bE && S.age===bAge && JSON.stringify(S.flags)===bF && used===0;
+  // ⑦ S=null / 缺 attr / 缺 mny 降級：回 null、卡空字串、不炸
+  out.nullSafe = (()=>{ try{ S=null; return r145HousingOf(null)===null && r145HousingReviewHTML()===''; }catch(e){ return false; } })();
+  out.noAttr = (()=>{ try{ return r145HousingOf({age:40,era:'e00'})===null && r145HousingOf({attr:{int:50},age:40})===null; }catch(e){ return false; } })();
+  // ⑧ 缺 int 降級：用中性 50、仍回物件不炸；髒 era → 房市梗略過不炸
+  out.softDeg = (()=>{ try{ const m=r145HousingOf({attr:{mny:55},age:40,era:'e00',flags:{}}); const d=r145HousingOf(mk(55,50,40,'zzz999')); return !!m && m.assetTier===r145HousingOf(mk(55,50,40,'e00')).assetTier && !!d && d.era===null; }catch(e){ return false; } })();
+  // ⑨ 舊存檔相容：ensureState 不為 R145 在 S/flags 補任何 r145 鍵
+  startGame(); const olds=S; ensureState(olds);
+  out.compatOld = !Object.keys(olds).some(k=>k.toLowerCase().indexOf('r145')===0)
+    && !Object.keys(olds.flags||{}).some(k=>k.toLowerCase().indexOf('r145')===0);
+  // ⑩ 房產結局成就確定性點亮：帝寶/包租公/祖產/房貸/啃老/租屋 各自可達且互斥
+  const MANS=mk(88,50,40,'e00'), LAND=mk(65,60,40,'e00'), HEIR=mk(65,50,25,'e00'), MORT=mk(50,50,40,'e00'), PARA=mk(20,50,28,'e00'), RENT=mk(20,50,66,'e00');
+  out.achMans    = !!ACH_MAP.r145_mansion   && ACH_MAP.r145_mansion.check({S:MANS})===true   && ACH_MAP.r145_mansion.check({S:PARA})===false;
+  out.achLand    = !!ACH_MAP.r145_landlord  && ACH_MAP.r145_landlord.check({S:LAND})===true  && ACH_MAP.r145_landlord.check({S:PARA})===false;
+  out.achHeir    = !!ACH_MAP.r145_heir      && ACH_MAP.r145_heir.check({S:HEIR})===true      && ACH_MAP.r145_heir.check({S:RENT})===false;
+  out.achMort    = !!ACH_MAP.r145_mortgage  && ACH_MAP.r145_mortgage.check({S:MORT})===true  && ACH_MAP.r145_mortgage.check({S:MANS})===false;
+  out.achPara    = !!ACH_MAP.r145_parasite  && ACH_MAP.r145_parasite.check({S:PARA})===true  && ACH_MAP.r145_parasite.check({S:MANS})===false;
+  out.achRent    = !!ACH_MAP.r145_renter    && ACH_MAP.r145_renter.check({S:RENT})===true    && ACH_MAP.r145_renter.check({S:MANS})===false;
+  // ⑪ 跨局集滿 r145_housing：六成就全亮→解鎖、缺一→不解
+  const allAch={r145_mansion:true,r145_landlord:true,r145_heir:true,r145_mortgage:true,r145_parasite:true,r145_renter:true};
+  SAVE.ach=Object.assign({},allAch); out.achFull = !!ACH_MAP.r145_housing && ACH_MAP.r145_housing.check({S:{}})===true;
+  const partial=Object.assign({},allAch); delete partial.r145_mansion;
+  SAVE.ach=partial; out.achPartial = ACH_MAP.r145_housing.check({S:{}})===false;
+  SAVE.ach={}; S=null;
+  return JSON.stringify(out);
+})()`, sandbox));
+[
+  ['dataFull','① 資料齊備:6 房產資產底子+6 居住處境階層+4 人生階段+6 結局型別+六世代房市梗+購屋眼光三檔'],
+  ['mnyMap','② 財富 mny 確定性映射:高→豪宅大戶/中→中段/低→零資產無殼且單調驅動'],
+  ['savvyDrive','③ 智力影響購屋眼光:同本金精準老手>=接刀俠且 off 有別'],
+  ['cardRender','④ 卡片渲染:含房產資產/房產結局/購屋眼光/居住或房產'],
+  ['deterministic','⑤ deterministic 純讀:同 S 兩次渲染逐字一致'],
+  ['pure','⑥ 純呈現零汙染:生成前後 S.attr/era/age/flags 不變且零 rng'],
+  ['nullSafe','⑦ 無局(S=null)降級:回 null、卡空字串不炸'],
+  ['noAttr','⑦ 缺 attr/mny 降級:回 null 不炸'],
+  ['softDeg','⑧ 缺 int 中性化＋髒 era 房市梗略過:仍回物件不炸且底子一致'],
+  ['compatOld','⑨ 舊存檔相容:ensureState 不為 R145 補任何 S/flags 鍵'],
+  ['achMans','⑩ r145_mansion:帝寶→解、啃老→不解'],
+  ['achLand','⑩ r145_landlord:包租公→解、啃老→不解'],
+  ['achHeir','⑩ r145_heir:祖產→解、租屋→不解'],
+  ['achMort','⑩ r145_mortgage:房貸一生→解、帝寶→不解'],
+  ['achPara','⑩ r145_parasite:啃老蝸居→解、帝寶→不解'],
+  ['achRent','⑩ r145_renter:租屋到老→解、帝寶→不解'],
+  ['achFull','⑪ 跨局集滿:六成就全亮→r145_housing 解鎖'],
+  ['achPartial','⑪ 跨局集滿:缺一→r145_housing 不解'],
+].forEach(([k,m])=>ok(r145[k], 'R145 '+m));
+
 console.log(fails ? `\n結果: ❌ ${fails} 項未通過` : '\n結果: ✅ 狀態機全數正確');
 process.exit(fails ? 1 : 0);
