@@ -5978,5 +5978,80 @@ const r148 = JSON.parse(vm.runInContext(`(function(){
   ['achPartial','⑪ 跨局集滿:缺一→r148_food 不解'],
 ].forEach(([k,m])=>ok(r148[k], 'R148 '+m));
 
+/* ===== R149 旅遊・足跡軌跡（純衍生/結算覆蓋層；零 rng/零汙染/deterministic 推演/財富 mny 主驅動+旅遊熱情 hp 愛玩興趣/壞資料降級/旅遊成就） ===== */
+const r149 = JSON.parse(vm.runInContext(`(function(){
+  const out={};
+  function mk(mny,hp,age,era){ return {attr:{hp:hp,int:50,apr:50,mny:mny,hap:50}, age:age, era:era, flags:{}, alive:false}; }
+  // ① 資料齊備：6 足跡資產底子+6 旅遊處境階層+4 人生階段+6 結局型別+六世代旅遊梗+旅遊熱情三檔
+  out.dataFull = Array.isArray(R149_FOOT) && R149_FOOT.length===6 && R149_FOOT.every(t=>t.ic&&t.nm&&t.short)
+    && Array.isArray(R149_TRIP) && R149_TRIP.length===6 && R149_TRIP.every(t=>t.ic&&t.nm&&t.short)
+    && Array.isArray(R149_PHASES) && R149_PHASES.length===4 && R149_PHASES.every(p=>typeof p.off==='number')
+    && ['nomad','workinghol','backpacker','freewalk','budget','homebound'].every(k=>R149_END[k]&&R149_END[k].nm&&R149_END[k].path&&R149_END[k].note)
+    && R55_ERAS.every(er=>typeof R149_ERATRAVEL[er.id]==='string')
+    && [r149PassionOf(90),r149PassionOf(50),r149PassionOf(10)].every(c=>typeof c.off==='number'&&c.nm&&c.short);
+  // ② 財富 mny 確定性映射：高→環球游牧(>=4)、中→中段(>=2)、低→出不起國(0)；且單調驅動
+  const hi=r149TravelOf(mk(95,50,40,'e00')), midd=r149TravelOf(mk(50,50,40,'e00')), lo=r149TravelOf(mk(5,50,40,'e00'));
+  out.mnyMap = !!hi&&!!midd&&!!lo && hi.footTier>=4 && midd.footTier>=2 && lo.footTier===0
+    && hi.footTier>midd.footTier && midd.footTier>lo.footTier;
+  // ③ 旅遊熱情影響愛玩興趣（次級修正）：同口袋 55，愛玩冒險咖(hp90)底子 >= 宅家省錢派(hp10)，且 off 有別
+  const wild=r149TravelOf(mk(55,90,40,'e00')), homey=r149TravelOf(mk(55,10,40,'e00'));
+  out.passionDrive = !!wild&&!!homey && wild.footTier>=homey.footTier && wild.passion.off>homey.passion.off;
+  // ④ 卡片渲染：含足跡資產/旅遊結局/旅遊熱情/足跡或旅遊
+  S=mk(50,50,40,'e00'); const card=r149TravelReviewHTML();
+  out.cardRender = card.indexOf('足跡資產')>=0 && card.indexOf('旅遊結局')>=0 && card.indexOf('旅遊熱情')>=0 && (card.indexOf('足跡')>=0||card.indexOf('旅遊')>=0);
+  // ⑤ deterministic 純讀：同 S 兩次渲染逐字一致
+  S=mk(40,40,35,'e10'); const a1=r149TravelReviewHTML(), a2=r149TravelReviewHTML();
+  out.deterministic = a1===a2 && a1.length>0;
+  // ⑥ 純呈現零汙染：生成前後 S.attr/era/age/flags 不變、零 rng 消耗
+  S=mk(72,55,45,'e70'); const bA=JSON.stringify(S.attr), bE=S.era, bAge=S.age, bF=JSON.stringify(S.flags);
+  let used=0; const oldR=rng; rng=function(){ used++; return oldR(); };
+  r149TravelReviewHTML(); r149TravelOf(S); rng=oldR;
+  out.pure = JSON.stringify(S.attr)===bA && S.era===bE && S.age===bAge && JSON.stringify(S.flags)===bF && used===0;
+  // ⑦ S=null / 缺 attr / 缺 mny 降級：回 null、卡空字串、不炸
+  out.nullSafe = (()=>{ try{ S=null; return r149TravelOf(null)===null && r149TravelReviewHTML()===''; }catch(e){ return false; } })();
+  out.noAttr = (()=>{ try{ return r149TravelOf({age:40,era:'e00'})===null && r149TravelOf({attr:{int:50},age:40})===null; }catch(e){ return false; } })();
+  // ⑧ 缺 hp 降級：用中性 50、仍回物件不炸；髒 era → 旅遊梗略過不炸
+  out.softDeg = (()=>{ try{ const m=r149TravelOf({attr:{mny:55},age:40,era:'e00',flags:{}}); const d=r149TravelOf(mk(55,50,40,'zzz999')); return !!m && m.footTier===r149TravelOf(mk(55,50,40,'e00')).footTier && !!d && d.era===null; }catch(e){ return false; } })();
+  // ⑨ 舊存檔相容：ensureState 不為 R149 在 S/flags 補任何 r149 鍵
+  startGame(); const olds=S; ensureState(olds);
+  out.compatOld = !Object.keys(olds).some(k=>k.toLowerCase().indexOf('r149')===0)
+    && !Object.keys(olds.flags||{}).some(k=>k.toLowerCase().indexOf('r149')===0);
+  // ⑩ 旅遊結局成就確定性點亮：環球/打工度假/背包客/自由行/窮遊/宅宅 各自可達且互斥
+  const NOM=mk(88,50,40,'e00'), WH=mk(50,70,30,'e00'), BP=mk(55,60,50,'e00'), FW=mk(55,40,40,'e00'), BG=mk(38,40,40,'e00'), HB=mk(20,50,40,'e00');
+  out.achNom    = !!ACH_MAP.r149_nomad      && ACH_MAP.r149_nomad.check({S:NOM})===true      && ACH_MAP.r149_nomad.check({S:HB})===false;
+  out.achWh     = !!ACH_MAP.r149_workinghol && ACH_MAP.r149_workinghol.check({S:WH})===true  && ACH_MAP.r149_workinghol.check({S:HB})===false;
+  out.achBp     = !!ACH_MAP.r149_backpacker && ACH_MAP.r149_backpacker.check({S:BP})===true  && ACH_MAP.r149_backpacker.check({S:NOM})===false;
+  out.achFw     = !!ACH_MAP.r149_freewalk   && ACH_MAP.r149_freewalk.check({S:FW})===true    && ACH_MAP.r149_freewalk.check({S:NOM})===false;
+  out.achBg     = !!ACH_MAP.r149_budget     && ACH_MAP.r149_budget.check({S:BG})===true      && ACH_MAP.r149_budget.check({S:NOM})===false;
+  out.achHb     = !!ACH_MAP.r149_homebound  && ACH_MAP.r149_homebound.check({S:HB})===true   && ACH_MAP.r149_homebound.check({S:NOM})===false;
+  // ⑪ 跨局集滿 r149_travel：六成就全亮→解鎖、缺一→不解
+  const allAch={r149_nomad:true,r149_workinghol:true,r149_backpacker:true,r149_freewalk:true,r149_budget:true,r149_homebound:true};
+  SAVE.ach=Object.assign({},allAch); out.achFull = !!ACH_MAP.r149_travel && ACH_MAP.r149_travel.check({S:{}})===true;
+  const partial=Object.assign({},allAch); delete partial.r149_nomad;
+  SAVE.ach=partial; out.achPartial = ACH_MAP.r149_travel.check({S:{}})===false;
+  SAVE.ach={}; S=null;
+  return JSON.stringify(out);
+})()`, sandbox));
+[
+  ['dataFull','① 資料齊備:6 足跡資產底子+6 旅遊處境階層+4 人生階段+6 結局型別+六世代旅遊梗+旅遊熱情三檔'],
+  ['mnyMap','② 財富 mny 確定性映射:高→環球游牧/中→中段/低→出不起國且單調驅動'],
+  ['passionDrive','③ 旅遊熱情影響愛玩興趣:同口袋愛玩冒險咖>=宅家省錢派且 off 有別'],
+  ['cardRender','④ 卡片渲染:含足跡資產/旅遊結局/旅遊熱情/足跡或旅遊'],
+  ['deterministic','⑤ deterministic 純讀:同 S 兩次渲染逐字一致'],
+  ['pure','⑥ 純呈現零汙染:生成前後 S.attr/era/age/flags 不變且零 rng'],
+  ['nullSafe','⑦ 無局(S=null)降級:回 null、卡空字串不炸'],
+  ['noAttr','⑦ 缺 attr/mny 降級:回 null 不炸'],
+  ['softDeg','⑧ 缺 hp 中性化＋髒 era 旅遊梗略過:仍回物件不炸且底子一致'],
+  ['compatOld','⑨ 舊存檔相容:ensureState 不為 R149 補任何 S/flags 鍵'],
+  ['achNom','⑩ r149_nomad:環球游牧→解、宅宅→不解'],
+  ['achWh','⑩ r149_workinghol:打工度假潤了→解、宅宅→不解'],
+  ['achBp','⑩ r149_backpacker:廉航背包客→解、環球→不解'],
+  ['achFw','⑩ r149_freewalk:日韓自由行常客→解、環球→不解'],
+  ['achBg','⑩ r149_budget:小資窮遊夜市控→解、環球→不解'],
+  ['achHb','⑩ r149_homebound:出不起國宅宅→解、環球→不解'],
+  ['achFull','⑪ 跨局集滿:六成就全亮→r149_travel 解鎖'],
+  ['achPartial','⑪ 跨局集滿:缺一→r149_travel 不解'],
+].forEach(([k,m])=>ok(r149[k], 'R149 '+m));
+
 console.log(fails ? `\n結果: ❌ ${fails} 項未通過` : '\n結果: ✅ 狀態機全數正確');
 process.exit(fails ? 1 : 0);

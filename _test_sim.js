@@ -4450,6 +4450,54 @@ try {
   console.log('R147 教育學歷軌跡: ❌ ' + e.message);
 }
 
+/* ===== R149 旅遊・足跡軌跡（純衍生/結算覆蓋層：零 rng/零 pinned 序列擾動/deterministic/財富 mny 主驅動+旅遊熱情 hp 愛玩興趣/降級） ===== */
+let r149OK = false;
+try {
+  const r149Raw = vm.runInContext(`(function(){
+    const out={};
+    /* ① 結構：6 足跡資產底子、6 旅遊處境階層、4 人生階段、6 結局型別、六個旅遊成就＋集滿成就齊備 */
+    out.struct = Array.isArray(R149_FOOT) && R149_FOOT.length===6 && Array.isArray(R149_TRIP) && R149_TRIP.length===6
+      && Array.isArray(R149_PHASES) && R149_PHASES.length===4
+      && ['nomad','workinghol','backpacker','freewalk','budget','homebound'].every(k=>R149_END[k])
+      && ['r149_nomad','r149_workinghol','r149_backpacker','r149_freewalk','r149_budget','r149_homebound','r149_travel'].every(id=>!!ACH_MAP[id]);
+    /* ② 純衍生覆蓋零 rng：startGame 後跑 r149TravelOf/Review 不消耗任何種子序列（與 pinned 抽事件序列獨立） */
+    const oc=randomSeedCode; randomSeedCode=function(){return 'EEEEEE';};
+    startGame(); const r0=[]; for(let i=0;i<20;i++)r0.push(rng());
+    startGame(); r149TravelOf(S); r149TravelReviewHTML(); const r1=[]; for(let i=0;i<20;i++)r1.push(rng());
+    let rngEq=true; for(let i=0;i<20;i++){ if(r0[i]!==r1[i]) rngEq=false; }
+    out.rngZero = rngEq; randomSeedCode=oc;
+    /* ③ deterministic 純讀終局 S：同態同結果、零 mutation */
+    startGame(); S.attr={hp:60,int:50,apr:50,mny:50,hap:60}; S.age=45; S.flags={};
+    const snap=JSON.stringify(S.attr)+'|'+S.age;
+    const c1=r149TravelReviewHTML(), c2=r149TravelReviewHTML();
+    out.deterministic = c1===c2 && c1.indexOf('足跡資產')>=0 && c1.indexOf('旅遊結局')>=0
+      && (JSON.stringify(S.attr)+'|'+S.age)===snap;
+    /* ④ 財富 mny 單調驅動足跡底子：高 mny→環球游牧(>=4)、低 mny→出不起國(0) */
+    const hi=r149TravelOf({attr:{mny:95,hp:50},age:40,flags:{}}), lo=r149TravelOf({attr:{mny:5,hp:50},age:40,flags:{}});
+    out.mnyDrive = !!hi && !!lo && hi.footTier>=4 && lo.footTier===0 && hi.footTier>lo.footTier;
+    /* ⑤ 六結局確定性分流互斥可達：環球/打工度假/背包客/自由行/窮遊/宅宅各命中對應 endType */
+    const E=(a)=>r149TravelOf(a)&&r149TravelOf(a).endType;
+    out.endsReach =
+         E({attr:{mny:88,hp:50},age:40})==='nomad'
+      && E({attr:{mny:50,hp:70},age:30})==='workinghol'
+      && E({attr:{mny:55,hp:60},age:50})==='backpacker'
+      && E({attr:{mny:55,hp:40},age:40})==='freewalk'
+      && E({attr:{mny:38,hp:40},age:40})==='budget'
+      && E({attr:{mny:20,hp:50},age:40})==='homebound';
+    /* ⑥ S=null/缺 attr/缺 mny 安全降級：回 null、卡空字串、不炸 */
+    const sv=S; S=null; let nullSafe=true;
+    try{ if(r149TravelOf(null)!==null) nullSafe=false; if(r149TravelReviewHTML()!=='') nullSafe=false;
+         if(r149TravelOf({attr:{hp:50},age:40})!==null) nullSafe=false; }catch(e){ nullSafe=false; }
+    S=sv; out.nullSafe = nullSafe;
+    return JSON.stringify(out);
+  })()`, sandbox);
+  const r149 = JSON.parse(r149Raw);
+  r149OK = Object.values(r149).every(v => v === true);
+  console.log(`R149 旅遊足跡軌跡: ${r149OK ? '✅ 全數通過' : '❌ ' + JSON.stringify(r149)}`);
+} catch (e) {
+  console.log('R149 旅遊足跡軌跡: ❌ ' + e.message);
+}
+
 if (__errors.length) {
   console.log('\n--- 錯誤樣本(前5) ---');
   __errors.slice(0, 5).forEach(e => console.log('  ' + e));
@@ -4457,6 +4505,6 @@ if (__errors.length) {
 
 /* 退出碼 */
 const pass = __errors.length === 0 && chk.missingScenes.length === 0 && chk.eventVisible >= 126 && chk.eventTotal >= 126 && lsOK && achUnlocked > 0
-  && chk.deathbookMissing.length === 0 && chk.deathTotal >= 17 && deathsOK && rebirthOK && legacyOK && petOK && r13OK && r17OK && r20OK && r21OK && r22OK && r24OK && r25OK && r34OK && r38OK && r41OK && r42OK && r43OK && r44OK && r45OK && r46OK && r47OK && r48OK && r49OK && r51OK && r52OK && r53OK && r54OK && r55OK && r72OK && r76OK && r77OK && r79OK && r86OK && r87OK && r92OK && r93OK && r95OK && r96OK && r108OK && r110OK && r111OK && r112OK && r113OK && r115OK && r116OK && r117OK && r118OK && r119OK && r122OK && r126OK && r134OK && r136OK && r138OK && r139OK && r140OK && r141OK && r142OK && r143OK && r144OK && r145OK && r146OK && r147OK;
+  && chk.deathbookMissing.length === 0 && chk.deathTotal >= 17 && deathsOK && rebirthOK && legacyOK && petOK && r13OK && r17OK && r20OK && r21OK && r22OK && r24OK && r25OK && r34OK && r38OK && r41OK && r42OK && r43OK && r44OK && r45OK && r46OK && r47OK && r48OK && r49OK && r51OK && r52OK && r53OK && r54OK && r55OK && r72OK && r76OK && r77OK && r79OK && r86OK && r87OK && r92OK && r93OK && r95OK && r96OK && r108OK && r110OK && r111OK && r112OK && r113OK && r115OK && r116OK && r117OK && r118OK && r119OK && r122OK && r126OK && r134OK && r136OK && r138OK && r139OK && r140OK && r141OK && r142OK && r143OK && r144OK && r145OK && r146OK && r147OK && r149OK;
 console.log('\n結果: ' + (pass ? '✅ 全數通過' : '❌ 有項目未通過'));
 process.exit(pass ? 0 : 1);

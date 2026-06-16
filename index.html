@@ -3057,6 +3057,14 @@ const ACHIEVEMENTS = [
   {id:"r148_street", ic:"🍢", nm:"夜市小吃控・手搖續命族", desc:"沒太多預算搞高級的，但這座島的銅板美食你最在行——夜市蚵仔煎、鹹酥雞、大腸包小腸，一天一杯波霸奶茶續命，手搖店比超商還熟。這是這座島最有人情味的一條飲食路：用最少的錢，吃出最多的庶民幸福，論 CP 值你才是真正的霸主。", check:c=>{const h=r148FoodOf(c.S); return !!h && h.ach.street;}, hint:"讓財富 mny 落在偏低段（31–45）、又沒低到吃土泡麵——把終局飲食軌跡卡在『夜市小吃控・手搖續命族』分流…"},
   {id:"r148_instant", ic:"🍜", nm:"22K 吃土泡麵・小資便當族", desc:"月底口袋見底，泡麵配白飯、自助餐只敢夾兩樣青菜——你把『吃飽就好』四個字活成了生存技能。這座島把美食捧得天花亂墜，可它沒算進的是月薪 22K 扣完房租水電後，一餐能花的就那幾十塊。泡麵你沒少吃，但這輩子被生活磨出來的那身省錢本事，撐過了一個又一個吃土的月底。", check:c=>{const h=r148FoodOf(c.S); return !!h && h.ach.instant;}, hint:"讓財富 mny 長期偏低（30 以下）——把終局飲食軌跡卡在『22K 吃土泡麵・小資便當族』分流…"},
   {id:"r148_food", ic:"🍱", nm:"鬼島美食圖鑑・飲食軌跡全集滿", desc:"米其林食神、養生有機咖、外送肥宅、排隊打卡客、夜市小吃控、22K吃土泡麵——這座島丟給你的六種飲食命運，你用一次次投胎全都親自吃過一遍。坐過無菜單、啃過有機沙拉、點過外送養出肥宅、排過網紅名店、嗑過夜市銅板、也吃土配過泡麵，吃這道最日常也最誠實的人生考題，你終於把它活成了一本美食圖鑑。", check:c=>{const need=["r148_michelin","r148_organic","r148_delivery","r148_foodie","r148_street","r148_instant"]; return !!(SAVE&&SAVE.ach) && need.every(id=>SAVE.ach[id]);}, hint:"跨局集滿六種飲食結局成就各至少一次（食神之胃／有機養生咖／外送肥宅／排隊打卡客／夜市小吃控／22K吃土泡麵）——把飲食的每一種命運都吃過一遍…"},
+  /* ---- R149 旅遊・足跡軌跡成就（純讀 r149TravelOf(S) deterministic 推演，零 rng；財富 mny 為主驅動＝出國旅遊能力與預算＋旅遊熱情 hp(愛玩興趣) 加成＋年齡，推演本局「鬼島旅遊足跡命運結局」，舊存檔/壞資料永不誤觸；聚焦足跡資產/旅遊熱情/旅遊結局，與 R148 飲食/R147 教育/R146 交通/R142 理財 各自獨立旗標）---- */
+  {id:"r149_nomad", ic:"🌍", nm:"環球旅行家・數位游牧世界後花園", desc:"口袋夠深、又把世界當後花園——你不是出國，是把生活搬到地球各個角落，數位游牧到處飛，護照章蓋滿好幾本。在這個連假只能塞國道、22K 連廉航紅眼班機都要分期的島上，能把『環遊世界』從退休夢活成日常，你站上了這座島旅遊食物鏈的最頂端，氣死一票宅在家滑限動看別人出國的同屆。", check:c=>{const h=r149TravelOf(c.S); return !!h && h.ach.nomad;}, hint:"把財富 mny 養到頂（82+，口袋深度是旅遊主驅動）讓足跡資產推到環球游牧——讓終局旅遊軌跡走到最高的『環球旅行家・數位游牧』分流…"},
+  {id:"r149_workinghol", ic:"🎒", nm:"打工度假潤了・澳洲農場日本派", desc:"錢不算多、心卻夠野——你年輕時一咬牙辦了打工度假簽證，澳洲農場採果、日本滑雪場打工，邊賺邊玩潤出去看世界。在這個低薪鬼島把年輕人逼到想潤的年代，能趁青春把『出走』活成一場壯遊，是有熱情又敢拚的人才走得出去的一條路，回來時你已經不是出發時那個你了。", check:c=>{const h=r149TravelOf(c.S); return !!h && h.ach.workinghol;}, hint:"財富 mny 中段（38–62）不算富、旅遊熱情 hp 夠高（60+，心夠野）、又正值青壯（20–45）——讓終局旅遊軌跡走到『打工度假潤了・澳洲農場日本派』分流…"},
+  {id:"r149_backpacker", ic:"✈️", nm:"廉航紅眼背包客・轉機22小時省到底", desc:"愛玩但預算有限，你練成了一身省錢出國的硬功夫——廉航紅眼班機、轉機 22 小時、青年旅館睡通鋪，能省則省把旅費壓到骨折也要飛。在這個出國一趟抵一個月薪水的島上，你用最少的錢換最多的足跡，論玩你比誰都拚，那本貼滿登機證的護照就是你的勳章。", check:c=>{const h=r149TravelOf(c.S); return !!h && h.ach.backpacker;}, hint:"財富 mny 中段（46+，飛得起但不闊綽）、旅遊熱情 hp 夠高（55+，愛玩拚命飛）、又沒走到打工度假青壯窗口——讓終局旅遊軌跡走到『廉航紅眼背包客・轉機22小時』分流…"},
+  {id:"r149_freewalk", ic:"🗺️", nm:"日韓自由行常客・年年出國放風", desc:"口袋過得去、放假就想飛——日韓自由行年年排、歐美深度遊偶爾衝，出國對你不是奢侈是固定行程。在這個多數人連假只能塞國道、一年難得出國一次的島上，能把『年年放風出國』活成日常的小確幸，你已經是這座島旅遊鏈裡過得相當滋潤的那一群，朋友揪出國第一個想到的就是你。", check:c=>{const h=r149TravelOf(c.S); return !!h && h.ach.freewalk;}, hint:"財富 mny 中段（46–81）、旅遊熱情 hp 沒高到背包客拚命飛、又沒走到打工度假／環球游牧——把終局旅遊軌跡卡在『日韓自由行常客・年年出國放風』分流…"},
+  {id:"r149_budget", ic:"🍢", nm:"小資窮遊夜市控・國旅補助衝一波", desc:"出國太奢侈，你把旅遊濃縮成國內小確幸——國旅補助一出就衝一波、夜市一日遊、墾丁花蓮自駕窮遊，能省則省玩得開心就好。這座島最庶民的一條旅遊路：飛不出去沒關係，這片土地的夜市、老街、海邊你走得最熟。論出國你比不上人家，論台灣哪裡好玩、哪攤最道地，你才是真行家。", check:c=>{const h=r149TravelOf(c.S); return !!h && h.ach.budget;}, hint:"讓財富 mny 落在偏低段（31–45）、又沒低到出不起國宅宅——把終局旅遊軌跡卡在『小資窮遊夜市控・國旅補助衝一波』分流…"},
+  {id:"r149_homebound", ic:"🏠", nm:"出不起國宅宅・滑手機看別人出國", desc:"月薪 22K 扣完房租水電，出國？那是別人限時動態裡的風景——你的連假行程是宅在家追劇、滑手機看別人打卡曬機票流口水。不是不想飛，是這座島把『出國放鬆』也標成了奢侈品。別人環遊世界的時候，你連國旅補助都要算半天，這條最克難的旅遊路，你走得最辛苦也最無奈。", check:c=>{const h=r149TravelOf(c.S); return !!h && h.ach.homebound;}, hint:"讓財富 mny 長期偏低（30 以下）——把終局旅遊軌跡卡在『出不起國宅宅・滑手機看別人出國』分流…"},
+  {id:"r149_travel", ic:"🧳", nm:"鬼島旅遊圖鑑・足跡軌跡全集滿", desc:"環球游牧、打工度假潤了、廉航紅眼背包客、日韓自由行常客、小資窮遊夜市控、出不起國宅宅——這座島丟給你的六種旅遊命運，你用一次次投胎全都親自走過飛過一遍。當過數位游牧、潤去打工度假、轉機22小時當背包客、年年放風自由行、衝過國旅補助、也宅在家看別人出國，旅遊這道最浪漫也最看口袋的人生考題，你終於把它活成了一本旅遊圖鑑。", check:c=>{const need=["r149_nomad","r149_workinghol","r149_backpacker","r149_freewalk","r149_budget","r149_homebound"]; return !!(SAVE&&SAVE.ach) && need.every(id=>SAVE.ach[id]);}, hint:"跨局集滿六種旅遊結局成就各至少一次（環球游牧／打工度假潤了／廉航背包客／日韓自由行常客／小資窮遊夜市控／出不起國宅宅）——把旅遊的每一種命運都走過飛過一遍…"},
   {id:"r70a_unicorn", ic:"🦄", nm:"創業上岸・無中生有", desc:"在頭家夢分歧鏈選自己創業，撐過跑三點半的歲月，最後成功上岸買房定居——你把『無中生有』四個字活成了真的。", check:c=>!!(c.S.flags&&c.S.flags.r70a_unicorn), hint:"分歧鏈裡選自己創業的人，中段擴張或被收購（或在三點半跳票邊緣硬撐活下來），末段才走得到買房上岸…"},
   {id:"r70a_freebird", ic:"🕊️", nm:"社畜跳船・自由業真男人", desc:"當年領死薪水的你中途跳船去接案，多年後接出口碑、開了自己的工作室——上班族眼裡那種『自由業』，自由是真的，業也真的有在接。", check:c=>!!(c.S.flags&&c.S.flags.r70a_freebird), hint:"分歧鏈選領死薪水當社畜的人，中段選擇安靜離職跳船接案，末段把工作室掛牌做起來…"},
   {id:"r70a_clear", ic:"🧭", nm:"頭家夢・全鏈結業", desc:"從老家那通電話一路走到人生期末考，把頭家夢（或死薪水）這條三段分歧鏈完整走完——接、創、領，無論哪條路你都活出了答案。", check:c=>!!(c.S.flags&&c.S.flags.r70a_done), hint:"老家的店要收那年做出選擇後，把中段、末段兩道抉擇都接著走完，整條頭家分歧鏈一站不漏…"},
@@ -5363,6 +5371,156 @@ function r148FoodReviewHTML(){
     <div style="display:flex;gap:6px;align-items:baseline;padding:6px 0 2px;font-size:13px">
       <span class="muted" style="min-width:60px">飲食結局</span><span>${end.ic} <b>${end.nm}</b></span></div>
     <div style="display:flex;gap:6px;align-items:baseline;font-size:12.5px"><span class="muted" style="min-width:60px">飲食習慣</span><span>${h.habit.nm}（${h.habit.short}）</span></div>
+    ${eraLine}
+    <div class="muted" style="font-size:12.5px;margin-top:8px;line-height:1.8">${fateLine}<br>${end.path}<br>${end.note}</div></div>`;
+}
+
+/* =========================================================================
+   R149 旅遊・足跡軌跡（純衍生／結算覆蓋層，零 rng、零事件序列擾動）
+   ── 呼應主題：讓「財富 mny」這屬性真正驅動本局的「鬼島旅遊足跡命運結局」（口袋深度＝
+      出國/旅遊能力與預算），輔以「旅遊熱情 hp（愛玩興趣）」做次級修正（心夠野到處飛 vs
+      宅家省機票錢）。建立在既有 S.attr.mny / S.attr.hp / S.age 之上，全程只「讀」終局
+      state，不新增任何 Math.random／rng() → 種子事件抽取序列逐位元不變；獨立旗標，與
+      R142 理財／R143 社交／R144 健康／R145 居住／R146 交通／R147 教育／R148 飲食 各自
+      獨立、互不干擾。
+   驅動鐵律：
+   ① 財富 mny 為主驅動（口袋深度決定飛得起哪層旅遊階梯）；旅遊熱情 hp 另做「愛玩興趣」
+      次級修正（愛玩冒險咖 vs 宅家省錢派）；年齡決定旅遊處境隨人生階段的爬升與終局走向；
+      出生世代 era 只做「旅遊梗」文案著色，不動數值。特例：「打工度假潤了」要求財富中段
+      不富＋熱情高＋青壯（敢趁年輕潤出去）；「廉航紅眼背包客」要求飛得起卻熱情高（省到底
+      也要飛）。
+   ② 純呈現：所有 R149 函式只回傳字串／純讀物件，不寫 S、不改數值平衡；S=null／無 attr／
+      缺 mny 鍵／髒資料一律安全降級回 null／空字串，絕不白屏或拋例外。
+   ③ 跨局收集：r149_travel ＝集滿六種旅遊結局成就（環球游牧／打工度假潤了／廉航背包客／
+      日韓自由行常客／小資窮遊夜市控／出不起國宅宅）。
+   ========================================================================= */
+// 足跡資產底子階層（財富口袋深度主導、旅遊熱情次要；純查表、零 rng；index 0..5 由低到高）
+const R149_FOOT = [
+  {ic:"🏠", nm:"出不起國宅在家", short:"沒錢沒閒、宅在家滑手機看別人出國照片"},
+  {ic:"🍢", nm:"小資窮遊夜市控", short:"國旅補助衝一波、夜市一日遊省著玩"},
+  {ic:"🎒", nm:"廉航背包客",     short:"紅眼班機轉機22小時、能省則省也要飛"},
+  {ic:"✈️", nm:"日韓自由行",     short:"攢錢年年飛日韓、小資出國放風常客"},
+  {ic:"🗺️", nm:"歐美深度遊",     short:"飛得遠待得久、歐美自由行玩到深處"},
+  {ic:"🌍", nm:"環球游牧",       short:"世界當後花園、數位游牧到處飛收集護照章"},
+];
+// 旅遊處境階層（足跡底子定起點、旅遊熱情微調、年齡階段爬升；純查表、零 rng；index 0..5 由低到高）
+const R149_TRIP = [
+  {ic:"🏠", nm:"連假宅在家",     short:"沒預算出門、滑別人出國限動流口水"},
+  {ic:"🍢", nm:"國旅補助一日遊", short:"夜市一日遊、墾丁花蓮自駕窮遊"},
+  {ic:"🎒", nm:"紅眼廉航背包",   short:"轉機22小時、青年旅館通鋪省到底"},
+  {ic:"✈️", nm:"日韓自由行",     short:"攢錢飛日韓、一年小出國放風一兩趟"},
+  {ic:"🗺️", nm:"歐美深度旅遊",   short:"飛得遠待得久、歐美深度自由行"},
+  {ic:"🌍", nm:"環球趴趴走",     short:"世界當後花園、數位游牧到處飛"},
+];
+// 人生階段（童年家族出遊→老年退休旅遊見真章；off 為旅遊處境相對足跡底子的年齡爬升修正；越年輕越還沒自己玩）
+const R149_PHASES = [
+  {key:"child", age:12, nm:"童年家庭遊", off:-2}, // 爸媽帶出去玩、自己還不能作主
+  {key:"teen",  age:18, nm:"青春壯遊期", off:-1}, // 畢業旅行環島、開始自己揪團出走
+  {key:"adult", age:30, nm:"旅遊定錨期", off:0},  // 旅遊階梯隨財富與熱情定型
+  {key:"senior",age:55, nm:"退休見真章", off:0},  // 退休有錢有閒環遊世界、或走不動只能宅
+];
+// 旅遊結局型別文案（純查表、零 rng）
+const R149_END = {
+  nomad:      {ic:"🌍", nm:"環球旅行家・數位游牧世界後花園", path:"🌍 把世界當後花園、數位游牧到處飛", note:"口袋夠深、又把世界當後花園——你不是出國，是把生活搬到地球各個角落，數位游牧到處飛，護照章蓋滿好幾本，朋友只能在你的限動裡環遊世界。在這個連假只能塞國道、22K 連廉航紅眼班機都要分期的島上，能把『環遊世界』從遙不可及的退休夢活成日常，你站上了這座島旅遊食物鏈的最頂端，氣死一票宅在家滑限動看別人出國的同屆。"},
+  workinghol: {ic:"🎒", nm:"打工度假潤了・澳洲農場日本派", path:"🎒 趁青春辦簽證潤出去、邊賺邊玩看世界", note:"錢不算多、心卻夠野——你年輕時一咬牙辦了打工度假簽證，澳洲農場採果、紐西蘭包裝廠、日本滑雪場打工，邊賺邊玩潤出去看世界。在這個低薪鬼島把年輕人逼到只想潤的年代，能趁青春把『出走』活成一場壯遊，是有熱情又敢拚的人才走得出去的一條路——回來時你已經不是出發時那個只敢窩在島上的你了。"},
+  backpacker: {ic:"✈️", nm:"廉航紅眼背包客・轉機22小時省到底", path:"✈️ 廉航紅眼轉機22小時、把旅費壓到骨折也要飛", note:"愛玩但預算有限，你練成了一身省錢出國的硬功夫——廉航紅眼班機、轉機 22 小時、青年旅館睡通鋪、超商麵包配自來水，能省則省把旅費壓到骨折也要飛出去。在這個出國一趟抵一個月薪水的島上，你用最少的錢換最多的足跡，論玩你比誰都拚，那本貼滿登機證存根的護照，就是你拿熱情換來的勳章。"},
+  freewalk:   {ic:"🗺️", nm:"日韓自由行常客・年年出國放風", path:"🗺️ 日韓自由行年年排、歐美深度偶爾衝", note:"口袋過得去、放假就想飛——日韓自由行年年排、歐美深度遊偶爾衝，出國對你不是奢侈而是固定行程，行李箱永遠處於半打包狀態。在這個多數人連假只能塞國道、一年難得出國一次的島上，能把『年年放風出國』活成日常的小確幸，你已經是這座島旅遊鏈裡過得相當滋潤的那一群，朋友揪出國第一個想到的就是你。"},
+  budget:     {ic:"🍢", nm:"小資窮遊夜市控・國旅補助衝一波", path:"🍢 國旅補助一出就衝、夜市一日遊窮遊台灣", note:"出國太奢侈，你把旅遊濃縮成國內小確幸——國旅補助一出就衝一波、夜市一日遊、墾丁花蓮自駕窮遊，能省則省玩得開心就好。這座島最庶民的一條旅遊路：飛不出去沒關係，這片土地的夜市、老街、海邊步道你走得最熟。論出國你比不上人家，可論台灣哪裡好玩、哪個攤子最道地，你才是真正的窮遊行家。"},
+  homebound:  {ic:"🏠", nm:"出不起國宅宅・滑手機看別人出國", path:"🏠 連假宅在家追劇、滑限動看別人曬機票", note:"月薪 22K 扣完房租水電，出國？那是別人限時動態裡的風景——你的連假行程是宅在家追劇、滑手機看別人打卡曬機票流口水。不是不想飛，是這座島把『出國放鬆』也標成了奢侈品。別人環遊世界的時候，你連國旅補助該搶哪家都要算半天，這條最克難的旅遊路，你走得最辛苦也最無奈，護照辦了卻沒蓋過幾個章。"},
+};
+// 出生世代旅遊梗（純文案著色，零數值影響）
+const R149_ERATRAVEL = {
+  e70:"你那年代出國是天大的事——要辦良民證、第一次坐飛機能講三年，能跟團去日本玩一趟，回來大阪電鍋扛好幾個分送親戚。",
+  e80:"你年輕時剛開放觀光、跟團遊覽車環島正盛，出國跟團買免稅菸酒，機場送機一整家子來，照片洗出來貼滿相簿。",
+  e90:"你出社會時廉航還沒起飛，出國多半跟團、自由行剛萌芽，背包客這詞開始流行，部落格遊記正夯。",
+  e00:"你這代背包客自由行興起、廉航陸續開航、打工度假潮正熱，攢錢飛日韓東南亞成了年輕人的成年禮。",
+  e10:"你成長在廉航紅眼班機白熱化、IG 打卡聖地遍地開花的年代，日本一年飛三趟像出門買菜，曬機票成了社群日常。",
+  e20:"你這代撞上疫情封關後的報復性出國、機票漲翻天、數位游牧興起，國旅補助衝一波與出國放風兩極拉鋸。",
+};
+// 旅遊熱情 hp →愛玩興趣修正（愛玩冒險咖 vs 宅家省錢派；財富仍為主驅動，旅遊熱情只做 ±10 次級修正）
+function r149PassionOf(hp){
+  return hp>=70 ? {off:10,  nm:"愛玩冒險咖",   short:"放假就想飛、收集護照章是一輩子的興趣"}
+       : hp<=30 ? {off:-10, nm:"宅家省錢派",   short:"懶得出門、放假宅家追劇省下機票錢"}
+       :          {off:0,   nm:"隨緣出遊",     short:"有揪就走、沒揪也不強求出門"};
+}
+// 財富 mny →足跡資產底子階層（純查表、單調驅動）
+function r149FootTierOf(effM){
+  return effM>=84?5 : effM>=66?4 : effM>=48?3 : effM>=30?2 : effM>=14?1 : 0;
+}
+// 旅遊處境（足跡底子定起點、旅遊熱情微調、階段 off 年齡爬升；純算、零 rng）
+function r149TripLevelAt(footTier, hp, off){
+  let base = footTier;
+  if(hp>=70) base+=1; else if(hp<=30) base-=1;   // 旅遊熱情微調（愛玩冒險咖 vs 宅家省錢派）
+  return Math.max(0, Math.min(5, base + off));
+}
+/* 從任一 state deterministic 推演旅遊・足跡軌跡（純讀、零 rng、零 mutation）；壞資料回 null */
+function r149TravelOf(st){
+  try{
+    if(!st || typeof st!=="object" || !st.attr || typeof st.attr.mny!=="number") return null;
+    const mny  = Math.max(0, Math.min(100, st.attr.mny));
+    const hp   = (typeof st.attr.hp==="number") ? Math.max(0, Math.min(100, st.attr.hp)) : 50; // 缺 hp → 中性
+    const age  = Math.max(0, Math.round(st.age||0));
+    const era  = (typeof st.era==="string" && R149_ERATRAVEL.hasOwnProperty(st.era)) ? st.era : null;
+    const passion = r149PassionOf(hp);                          // 旅遊熱情/愛玩興趣（次級）
+    const effM = Math.max(0, Math.min(100, mny + passion.off)); // 財富為主、旅遊熱情微調
+    const footTier = r149FootTierOf(effM);
+    // 各人生階段旅遊處境（年幼還沒自己玩、其餘隨年齡爬升到足跡對應階層）
+    const stages=[];
+    for(let i=0;i<R149_PHASES.length;i++){
+      const ph=R149_PHASES[i];
+      if(age < ph.age) break;                                  // 沒活到該階段就不列（早逝只走前段）
+      const lv=r149TripLevelAt(footTier, hp, ph.off);
+      const t=R149_TRIP[lv];
+      stages.push({key:ph.key, nm:ph.nm, lv, ic:t.ic, tnm:t.nm, short:t.short});
+    }
+    // 旅遊結局（互斥；財富為主、熱情＋年齡決定走向，打工度假吃中財+高熱情+青壯、背包客吃飛得起+高熱情）
+    let endType;
+    if(mny>=82) endType="nomad";                                               // 頂財→環球游牧
+    else if(mny>=38 && mny<=62 && hp>=60 && age>=20 && age<=45) endType="workinghol"; // 不富＋高熱情＋青壯→打工度假潤了
+    else if(mny>=46 && hp>=55) endType="backpacker";                          // 中財＋高熱情→廉航紅眼背包客
+    else if(mny<=30) endType="homebound";                                    // 低財→出不起國宅宅
+    else if(mny<=45) endType="budget";                                      // 偏低財→小資窮遊夜市控
+    else endType="freewalk";                                               // 其餘（中財）→日韓自由行常客
+    const ach = {
+      nomad:      endType==="nomad",
+      workinghol: endType==="workinghol",
+      backpacker: endType==="backpacker",
+      freewalk:   endType==="freewalk",
+      budget:     endType==="budget",
+      homebound:  endType==="homebound",
+    };
+    return { mny, hp, age, era, passion, effM, footTier, stages, endType, ach };
+  }catch(e){ return null; }
+}
+function r149Travel(){ return r149TravelOf(S); }
+/* 結算：旅遊・足跡回顧卡——財富定底子、底子+旅遊熱情+年齡推旅遊處境、終局回顧（純讀零 rng，可截圖分享，線C素材） */
+function r149TravelReviewHTML(){
+  const h=r149Travel();
+  if(!h) return "";
+  const end=R149_END[h.endType]||R149_END.freewalk;
+  const foot=R149_FOOT[h.footTier]||R149_FOOT[0];
+  const rows=h.stages.map(s=>`<div style="display:flex;gap:8px;align-items:baseline;padding:3px 0;font-size:13px;border-bottom:1px solid rgba(255,255,255,.05)">
+      <span class="muted" style="min-width:60px">${s.nm}</span>
+      <span style="white-space:nowrap">${s.ic} <b>${s.tnm}</b></span>
+      <span class="muted" style="font-size:11px">${s.short}</span></div>`).join("");
+  // 世代旅遊梗（缺則略）
+  let eraLine="";
+  const eh = h.era && R149_ERATRAVEL[h.era];
+  if(eh) eraLine=`<div class="muted" style="font-size:11.5px;margin-top:6px">🏷️ 你那年代的旅遊：${eh}</div>`;
+  const winner = (h.endType==="nomad"||h.endType==="freewalk");
+  const fateLine = winner
+    ? `🧳 <b style="color:#ffd96b">這場旅遊遊戲你贏了</b>——在這個連假只能塞國道、出國一趟抵一個月薪水的島上，能把口袋深度換成說飛就飛、把世界走成日常的旅遊人生，本身就是贏在財富與自由。`
+    : `🎒 <b style="color:#ffb3b3">這場旅遊遊戲走得各有風景</b>——打工度假、廉航背包、國旅窮遊、宅家滑限動，這座島把『出國放鬆』變成考驗口袋與熱情的關卡，你用一輩子親身走過飛過一遍。`;
+  return `<div class="panel" style="margin-top:12px;background:var(--panel2)">
+    <h2 class="sec">🧳 旅遊・足跡軌跡</h2>
+    <div class="muted" style="font-size:11.5px;margin:-4px 0 6px">依你這輩子的口袋深度、旅遊熱情與一路走過飛過的歲月，推演你的旅遊足跡命運軌跡——環球游牧還是出不起國宅宅、打工度假潤了還是廉航紅眼背包、日韓自由行還是國旅窮遊？</div>
+    <div style="display:flex;gap:6px;align-items:baseline;padding:4px 0 2px;font-size:13px">
+      <span class="muted" style="min-width:60px">足跡資產</span><span>${foot.ic} <b>${foot.nm}</b></span>
+      <span class="muted" style="font-size:11px">${foot.short}</span></div>
+    ${rows}
+    <div style="display:flex;gap:6px;align-items:baseline;padding:6px 0 2px;font-size:13px">
+      <span class="muted" style="min-width:60px">旅遊結局</span><span>${end.ic} <b>${end.nm}</b></span></div>
+    <div style="display:flex;gap:6px;align-items:baseline;font-size:12.5px"><span class="muted" style="min-width:60px">旅遊熱情</span><span>${h.passion.nm}（${h.passion.short}）</span></div>
     ${eraLine}
     <div class="muted" style="font-size:12.5px;margin-top:8px;line-height:1.8">${fateLine}<br>${end.path}<br>${end.note}</div></div>`;
 }
@@ -18768,6 +18926,7 @@ function screenSummary(cat){
       ${r146VehicleReviewHTML()}
       ${r147EducationReviewHTML()}
       ${r148FoodReviewHTML()}
+      ${r149TravelReviewHTML()}
       ${attrCurveHTML()}
       ${attrTrajectoryHTML()}
       ${r129TrajectoryHTML()}
