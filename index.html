@@ -3002,6 +3002,13 @@ const ACHIEVEMENTS = [
   {id:"r141_quitter", ic:"📦", nm:"半途而廢魯蛇・三分鐘熱度", desc:"吉他、烘焙、健身、攝影、寫小說——興趣換了一輪又一輪，每樣都只撐了三分鐘熱度。裝備堆滿牆角、課全沒上完，斜槓夢想最後斜成了一地半成品。不是沒夢想，是被現實磨到沒力氣堅持。", check:c=>{const h=r141HobbyOf(c.S); return !!h && h.ach.quitter;}, hint:"才藝天賦中等、又走到中年（35–57）——讓終局夢想軌跡走到『半途而廢魯蛇・三分鐘熱度』分流…"},
   {id:"r141_couch", ic:"🛋️", nm:"廢宅躺平族・夢想供在牆角", desc:"夢想？被工時跟疲憊榨乾後，下班只想癱在沙發滑手機、追劇打遊戲。不是不曾想過要做點什麼，是這座島的日子把人磨成了只想躺平的廢宅。耍廢也是一種選擇，午夜偶爾那點空虛，你也假裝沒看見。", check:c=>{const h=r141HobbyOf(c.S); return !!h && h.ach.couch;}, hint:"讓智力與魅力天賦長期偏低（廢宅躺平/三分鐘熱度）、又活過青春期——把終局夢想軌跡卡在『廢宅躺平族・夢想供在牆角』分流…"},
   {id:"r141_hobby", ic:"🎯", nm:"鬼島斜槓夢想圖鑑・夢想軌跡全集滿", desc:"斜槓達人、爆紅網紅、圓夢家、半途而廢、廢宅躺平——這座島丟給你的五種斜槓夢想命運，你用一次次投胎全都親自走過一遍。圓夢過、爆紅過、躺平過、半途而廢過，興趣與夢想這道最浪漫也最磨人的人生考題，你終於把它活成了一本圖鑑。", check:c=>{const need=["r141_slasher","r141_viral","r141_dreamer","r141_quitter","r141_couch"]; return !!(SAVE&&SAVE.ach) && need.every(id=>SAVE.ach[id]);}, hint:"跨局集滿五種斜槓夢想結局成就各至少一次（斜槓達人/爆紅網紅/圓夢家/半途而廢/廢宅躺平）——把興趣夢想的每一種命運都走過一遍…"},
+  /* ---- R142 理財投資・財富累積軌跡成就（純讀 r142InvestOf(S) deterministic 推演，零 rng；財富本金＋智力為主驅動、本金影響子彈厚度、年齡決定財富走多遠，舊存檔/壞資料永不誤觸；與 R122 台味股海事件支線[玩家選擇/SR 檢定]各自獨立旗標）---- */
+  {id:"r142_fire", ic:"🏝️", nm:"提早 FIRE・財富自由養老", desc:"靠本金、紀律跟複利把雪球滾到夠大，光是股息利息就夠過日子——提早退休、財富自由，別人還在通勤上班，你已經在海邊躺平。在這座死薪水追不上房價的島上，靠投資真正上岸的，是傳說裡才有的劇本，你活成了真的。", check:c=>{const h=r142InvestOf(c.S); return !!h && h.ach.fire;}, hint:"把財富與智力同時養到頂（有錢再加銀彈加成）讓投資智商推到價值投資老手以上，再把財富衝高、活到退休齡（45+）——讓終局財富軌跡走到『提早 FIRE・財富自由』…"},
+  {id:"r142_shipking", ic:"🚢", nm:"航運王・All in 翻身暴富", desc:"看準了一波大行情，融資 all in 梭哈下去——航運、AI 概念、虛擬幣，剛好賭對方向，本金翻了好幾倍，一夕從韭菜變人生勝利組。這座島每隔幾年就有一個翻身神話，這回主角是你。賺得快是真的，下一把還能不能贏是另一回事。", check:c=>{const h=r142InvestOf(c.S); return !!h && h.ach.shipking;}, hint:"智力 int 特別高（抓得到波段賭對方向）、本金中等（38–72）、又是壯年（28–59）——讓終局財富軌跡走到『航運王・All in 翻身暴富』分流…"},
+  {id:"r142_dividend", ic:"📊", nm:"存股達人・穩穩複利上岸", desc:"不賭、不當沖，就一張一張存高股息 ETF，股息再投入、抱緊處理擺著不動——沒有暴富神話，卻穩穩用時間跟複利把資產養大。這座島最樸實的理財智慧，你親身實踐了一遍：慢慢來，比較快。", check:c=>{const h=r142InvestOf(c.S); return !!h && h.ach.dividend;}, hint:"投資智商中高（存股族以上）、活到中年以後（45+）、又不踩 FIRE 與航運王門檻——讓終局財富軌跡停在『存股達人・穩穩複利上岸』分流…"},
+  {id:"r142_daytrader", ic:"💀", nm:"當沖畢業・融資斷頭背債", desc:"自以為看懂了盤、開了融資玩當沖，想一把翻身——結果鬼盤一根長黑直接斷頭，畢業典禮辦在最高點。本金歸零還倒欠券商，這座島最常見的當沖畢業故事，你親自上台領了畢業證書。賭性堅強是真的，背債也是真的。", check:c=>{const h=r142InvestOf(c.S); return !!h && h.ach.daytrader;}, hint:"投資智商半桶水（定期定額小白～存股族之間）、出社會後又沒走到存股/FIRE 路線——讓終局財富軌跡走到『當沖畢業・融資斷頭背債』分流…"},
+  {id:"r142_leek", ic:"🥬", nm:"韭菜本命・追高殺低被割", desc:"群組裡的明牌一報就追、看到長黑就嚇到殺出，買在最高點、賣在最低點——這座島韭菜的標準動作，你一個都沒少。本金被一刀一刀割，每次都想說『下次一定學乖』，下次又是同一套。不是市場太壞，是這條韭菜命太本命。", check:c=>{const h=r142InvestOf(c.S); return !!h && h.ach.leek;}, hint:"讓財富與智力長期偏低（月光族韭菜/追高殺低韭菜）、又活過出社會年齡（26+）——把終局財富軌跡卡在『韭菜本命・追高殺低被割』分流…"},
+  {id:"r142_invest", ic:"📈", nm:"鬼島理財投資圖鑑・財富軌跡全集滿", desc:"提早 FIRE、航運王翻身、存股達人、當沖畢業、韭菜本命——這座島丟給你的五種投資命運，你用一次次投胎全都親自走過一遍。財富自由過、暴富過、存股過、畢業過、被割過，理財與投資這道最現實也最瘋狂的人生考題，你終於把它活成了一本圖鑑。", check:c=>{const need=["r142_fire","r142_shipking","r142_dividend","r142_daytrader","r142_leek"]; return !!(SAVE&&SAVE.ach) && need.every(id=>SAVE.ach[id]);}, hint:"跨局集滿五種投資結局成就各至少一次（FIRE/航運王/存股達人/當沖畢業/韭菜本命）——把理財投資的每一種命運都走過一遍…"},
   {id:"r70a_unicorn", ic:"🦄", nm:"創業上岸・無中生有", desc:"在頭家夢分歧鏈選自己創業，撐過跑三點半的歲月，最後成功上岸買房定居——你把『無中生有』四個字活成了真的。", check:c=>!!(c.S.flags&&c.S.flags.r70a_unicorn), hint:"分歧鏈裡選自己創業的人，中段擴張或被收購（或在三點半跳票邊緣硬撐活下來），末段才走得到買房上岸…"},
   {id:"r70a_freebird", ic:"🕊️", nm:"社畜跳船・自由業真男人", desc:"當年領死薪水的你中途跳船去接案，多年後接出口碑、開了自己的工作室——上班族眼裡那種『自由業』，自由是真的，業也真的有在接。", check:c=>!!(c.S.flags&&c.S.flags.r70a_freebird), hint:"分歧鏈選領死薪水當社畜的人，中段選擇安靜離職跳船接案，末段把工作室掛牌做起來…"},
   {id:"r70a_clear", ic:"🧭", nm:"頭家夢・全鏈結業", desc:"從老家那通電話一路走到人生期末考，把頭家夢（或死薪水）這條三段分歧鏈完整走完——接、創、領，無論哪條路你都活出了答案。", check:c=>!!(c.S.flags&&c.S.flags.r70a_done), hint:"老家的店要收那年做出選擇後，把中段、末段兩道抉擇都接著走完，整條頭家分歧鏈一站不漏…"},
@@ -4254,6 +4261,154 @@ function r141HobbyReviewHTML(){
     <div style="display:flex;gap:6px;align-items:baseline;padding:6px 0 2px;font-size:13px">
       <span class="muted" style="min-width:60px">夢想結局</span><span>${end.ic} <b>${end.nm}</b></span></div>
     <div style="display:flex;gap:6px;align-items:baseline;font-size:12.5px"><span class="muted" style="min-width:60px">圓夢本錢</span><span>${h.fund.nm}（${h.fund.short}）</span></div>
+    ${eraLine}
+    <div class="muted" style="font-size:12.5px;margin-top:8px;line-height:1.8">${fateLine}<br>${end.path}<br>${end.note}</div></div>`;
+}
+
+/* =========================================================================
+   R142 理財投資・財富累積軌跡（純衍生／結算覆蓋層，零 rng、零事件序列擾動）
+   ── 呼應 directive#1：讓「財富 mny ＋ 智力 int」兩屬性同時實際驅動本局的投資
+      智商與財富累積軌跡（本金多寡 ＋ 投資知識，缺一不可）。建立在既有 S.attr.mny
+      / S.attr.int 之上，全程只「讀」終局 state，不新增任何 Math.random／rng()
+      → 種子事件抽取序列逐位元不變；與 R122 台味股海事件支線（玩家選擇/SR 檢定）
+      各自獨立旗標、互不汙染——R122 是事件分流，R142 是確定性結算覆蓋層。
+   驅動鐵律：
+   ① 財富 mny ＋ 智力 int 取平均為主驅動（單調決定投資智商階層，本金管子彈厚度／
+      智力管看不看得懂財報抓不抓得到波段，缺一不可）；本金 mny 另做「銀彈／攤平」
+      次級修正（有閒錢加碼複利滾更快 vs 零股韭菜本一根長黑就斷頭）；年齡決定財富
+      軌跡走多遠、走向哪個終局；出生世代 era 只做「理財觀梗」文案著色，不動數值。
+      特例：「航運王 All in 翻身」分流額外要求智力 int 夠高（抓得到波段、賭對方向）。
+   ② 純呈現：所有 R142 函式只回傳字串／純讀物件，不寫 S、不改數值平衡；S=null／
+      無 attr／缺 mny 或 int 鍵／髒資料一律安全降級回 null／空字串，絕不白屏或拋例外。
+   ③ 跨局收集：r142_invest ＝集滿五種投資結局成就（FIRE 財富自由／航運王／存股達人／
+      當沖畢業／韭菜本命）。
+   ========================================================================= */
+// 投資智商階層（財富本金＋投資智識主導、銀彈次要；純查表、零 rng；index 0..5 由低到高）
+const R142_IQ = [
+  {ic:"🫰", nm:"月光族韭菜",   short:"薪水月底見底、理財就是想辦法活到發薪日"},
+  {ic:"📉", nm:"追高殺低韭菜", short:"聽明牌追高、長黑殺低，被割得心服口服"},
+  {ic:"🐷", nm:"定期定額小白", short:"存錢筒升級 ETF 定期定額、剛踏進市場"},
+  {ic:"📊", nm:"存股族",       short:"0050／00878 抱緊處理、領股息加減貼補"},
+  {ic:"💹", nm:"價值投資老手", short:"看得懂財報、低買高賣有紀律有 SOP"},
+  {ic:"🦈", nm:"投資神之子",   short:"資產配置滾雪球、睡覺也在賺，錢替你打工"},
+];
+// 財富累積／理財地位階層（智商定起點、本金微調、年齡折舊升遷；純查表、零 rng；index 0..5 由低到高）
+const R142_PORT = [
+  {ic:"🫰", nm:"月光負資產",   short:"卡費循環利息滾、戶頭常態見底"},
+  {ic:"🥬", nm:"韭菜被割",     short:"追高殺低本金腰斬、套在最高點"},
+  {ic:"🐖", nm:"定期定額躺平", short:"ETF 佛系扣款、不看盤裝死最大"},
+  {ic:"📈", nm:"存股複利滾",   short:"股息再投入、雪球慢慢變大顆"},
+  {ic:"💰", nm:"資產翻倍",     short:"配置得宜、被動收入開始有感"},
+  {ic:"🏝️", nm:"財富自由",     short:"提早 FIRE、利息就夠生活，錢生錢養老"},
+];
+// 人生階段（青壯→退休；off 為財富階段相對投資智商起點的折舊/升遷）
+const R142_PHASES = [
+  {key:"youth", age:22, nm:"初入股海", off:-1}, // 本金薄、剛開戶
+  {key:"prime", age:32, nm:"資產衝刺", off:0},  // 本金累積衝刺期
+  {key:"mid",   age:45, nm:"中年理財", off:0},  // 複利成形或畢業
+  {key:"late",  age:60, nm:"退休理財", off:1},  // 財富自由或老本顧好
+];
+// 投資終局型別文案（純查表、零 rng）
+const R142_END = {
+  fire:      {ic:"🏝️", nm:"提早 FIRE・財富自由養老", path:"💰 資產配置滾雪球、被動收入養活下半輩子", note:"靠本金、紀律跟複利把雪球滾到夠大，光是股息利息就夠你過日子——提早退休、財富自由，別人還在通勤上班，你已經在海邊躺平。在這座死薪水追不上房價的島上，靠投資真正上岸的，是傳說裡才有的劇本，你活成了真的。"},
+  shipking:  {ic:"🚢", nm:"航運王・All in 翻身暴富", path:"🌊 賭對一波航運／AI／比特幣，融資 all in 直接翻身", note:"看準了一波大行情，融資 all in 梭哈下去——航運王、AI 概念、虛擬幣，剛好賭對方向，本金翻了好幾倍，一夕從韭菜變人生勝利組。這座島每隔幾年就有一個翻身神話，這回主角是你。賺得快是真的，下一把還能不能贏是另一回事。"},
+  dividend:  {ic:"📊", nm:"存股達人・穩穩複利上岸", path:"🧾 0050／00878 抱緊處理、股息再投入慢慢滾", note:"不賭、不當沖，就一張一張存高股息 ETF，股息再投入、抱緊處理擺著不動——沒有暴富神話，卻穩穩用時間跟複利把資產養大。這座島最樸實的理財智慧，你親身實踐了一遍：慢慢來，比較快。"},
+  daytrader: {ic:"💀", nm:"當沖畢業・融資斷頭背債", path:"📉 鬼盤當沖、融資 all in，畢業典禮住套房", note:"自以為看懂了盤、開了融資玩當沖，想一把翻身——結果鬼盤一根長黑直接斷頭，畢業典禮辦在最高點。本金歸零還倒欠券商，這座島最常見的當沖畢業故事，你親自上台領了畢業證書。賭性堅強是真的，背債也是真的。"},
+  leek:      {ic:"🥬", nm:"韭菜本命・追高殺低被割", path:"🔪 聽明牌追高、長黑殺低，買在最高點被套牢", note:"群組裡的明牌一報就追、看到長黑就嚇到殺出，買在最高點、賣在最低點——這座島韭菜的標準動作，你一個都沒少。本金被一刀一刀割，每次都想說『下次一定學乖』，下次又是同一套。不是市場太壞，是這條韭菜命太本命。"},
+};
+// 出生世代理財觀梗（純文案著色，零數值影響）
+const R142_ERAINVEST = {
+  e70:"你那年代定存利率動輒一成、大家樂簽到瘋——理財？把錢放郵局定存就是最大的投資，股票是有錢人在玩的。",
+  e80:"你年輕時台股一路狂飆破萬點、號子裡人擠人全民瘋股——『隨便買隨便賺』的瘋狂跟後來的崩盤，你都見證了。",
+  e90:"你出社會時網路下單興起、當沖開始流行——看盤從號子搬到電腦前，韭菜的鐮刀也跟著數位化了。",
+  e00:"你這代基金定期定額正紅、0050 ETF 問世——『定期定額存股』的觀念開始普及，買進台灣五十當傳家寶。",
+  e10:"你成長在航運股當沖鬼神、0056／00878 高股息存股風潮、虛擬幣一夜暴富的時代——人人都在喊財富自由，畢業的也不少。",
+  e20:"你這代零股盤中交易、AI 概念股、ETF 定期定額成顯學、虛擬幣畢業變日常——投資工具多到爆，韭菜被割的方式也與時俱進。",
+};
+// 財富→本金子彈修正（有閒錢加碼複利滾更快 vs 零股韭菜本一根長黑就斷頭；智商仍為主驅動，本金只做 ±8 次級修正）
+function r142AmmoOf(mny){
+  return mny>=70 ? {off:8,  nm:"銀彈充足",       short:"閒錢多本金厚、加碼攤平不手軟、複利滾更快"}
+       : mny<=25 ? {off:-8, nm:"零股韭菜本",     short:"本金薄零股慢慢買、一根長黑就嚇到斷頭"}
+       :           {off:0,  nm:"省吃儉用定期定額", short:"沒太多閒錢、靠每月扣款慢慢累積"};
+}
+// 財富＋智力 平均→投資智商階層（純查表、雙屬性單調驅動）
+function r142IqTierOf(effIQ){
+  return effIQ>=82?5 : effIQ>=66?4 : effIQ>=50?3 : effIQ>=34?2 : effIQ>=18?1 : 0;
+}
+// 財富累積／理財地位（智商定起點、本金微調、階段 off 折舊/升遷；純算、零 rng）
+function r142PortLevelAt(iqTier, mny, off){
+  let base = iqTier;
+  if(mny>=70) base+=1; else if(mny<=25) base-=1;   // 本金微調（銀彈充足 vs 零股韭菜本）
+  return Math.max(0, Math.min(5, base + off));
+}
+/* 從任一 state deterministic 推演理財投資・財富累積軌跡（純讀、零 rng、零 mutation）；壞資料回 null */
+function r142InvestOf(st){
+  try{
+    if(!st || typeof st!=="object" || !st.attr ||
+       typeof st.attr.mny!=="number" || typeof st.attr.int!=="number") return null;
+    const mny  = Math.max(0, Math.min(100, st.attr.mny));
+    const intl = Math.max(0, Math.min(100, st.attr.int));
+    const age  = Math.max(0, Math.round(st.age||0));
+    const era  = (typeof st.era==="string" && R142_ERAINVEST.hasOwnProperty(st.era)) ? st.era : null;
+    const ammo = r142AmmoOf(mny);                               // 本金影響子彈厚度（次級）
+    const iqRaw = (mny + intl) / 2;                             // 財富本金＋投資智識雙屬性主驅動（取平均）
+    const effIQ = Math.max(0, Math.min(100, iqRaw + ammo.off)); // 智商為主、子彈微調
+    const iqTier = r142IqTierOf(effIQ);
+    // 各人生階段財富累積／理財地位
+    const stages=[];
+    for(let i=0;i<R142_PHASES.length;i++){
+      const ph=R142_PHASES[i];
+      if(age < ph.age) break;                                  // 沒活到該階段就不列（早逝只走前段）
+      const lv=r142PortLevelAt(iqTier, mny, ph.off);
+      const p=R142_PORT[lv];
+      stages.push({key:ph.key, nm:ph.nm, lv, ic:p.ic, tnm:p.nm, short:p.short});
+    }
+    // 投資終局（互斥；財富＋智力為主、年齡決定走向，航運王分流另吃智力抓波段）
+    let endType;
+    if(iqTier>=4 && mny>=68 && age>=45) endType="fire";                              // 高智商＋巨富＋退休齡→提早 FIRE 財富自由
+    else if(intl>=68 && mny>=38 && mny<=72 && age>=28 && age<60) endType="shipking";  // 高智力抓波段＋中本金＋壯年→All in 航運王翻身
+    else if(iqTier>=3 && age>=45) endType="dividend";                                // 中高智商＋中年後→存股達人複利上岸
+    else if(iqTier<=1 && age>=26) endType="leek";                                    // 低智商＋出社會後→韭菜本命被割
+    else endType="daytrader";                                                        // 其餘（半桶水亂衝/賭當沖）→當沖畢業背債
+    const ach = {
+      fire:      endType==="fire",
+      shipking:  endType==="shipking",
+      dividend:  endType==="dividend",
+      daytrader: endType==="daytrader",
+      leek:      endType==="leek",
+    };
+    return { mny, intl, age, era, ammo, effIQ, iqTier, stages, endType, ach };
+  }catch(e){ return null; }
+}
+function r142Invest(){ return r142InvestOf(S); }
+/* 結算：理財投資・財富累積回顧卡——本金＋智力定投資智商、智商+本金+年齡推財富軌跡、終局回顧（純讀零 rng，可截圖分享，線C素材） */
+function r142InvestReviewHTML(){
+  const h=r142Invest();
+  if(!h) return "";
+  const end=R142_END[h.endType]||R142_END.leek;
+  const iq=R142_IQ[h.iqTier]||R142_IQ[0];
+  const rows=h.stages.map(s=>`<div style="display:flex;gap:8px;align-items:baseline;padding:3px 0;font-size:13px;border-bottom:1px solid rgba(255,255,255,.05)">
+      <span class="muted" style="min-width:60px">${s.nm}</span>
+      <span style="white-space:nowrap">${s.ic} <b>${s.tnm}</b></span>
+      <span class="muted" style="font-size:11px">${s.short}</span></div>`).join("");
+  // 世代理財觀梗（缺則略）
+  let eraLine="";
+  const inv = h.era && R142_ERAINVEST[h.era];
+  if(inv) eraLine=`<div class="muted" style="font-size:11.5px;margin-top:6px">📈 你那年代的理財觀：${inv}</div>`;
+  const rich = (h.endType==="fire"||h.endType==="shipking"||h.endType==="dividend");
+  const fateLine = rich
+    ? `🤑 <b style="color:#ffd96b">你的錢替你打了一輩子工</b>——在這座死薪水追不上房價、人人喊著被通膨割韭菜的島上，能靠投資真正累積出資產，已經是越來越稀有的本事。`
+    : `🔪 <b style="color:#9fd0ff">這條韭菜路很難翻身</b>——追高殺低、當沖畢業、買在最高點，這座島把「靠投資翻身」變成一場又一場的割韭菜大賽，你用一輩子的本金親身學了一遭。`;
+  return `<div class="panel" style="margin-top:12px;background:var(--panel2)">
+    <h2 class="sec">📈 理財投資・財富累積軌跡</h2>
+    <div class="muted" style="font-size:11.5px;margin:-4px 0 6px">依你這輩子的本金厚度與投資智識、進場的銀彈與走過的歲月，推演你的財富軌跡——月光族韭菜還是提早 FIRE、當沖畢業還是航運王翻身？</div>
+    <div style="display:flex;gap:6px;align-items:baseline;padding:4px 0 2px;font-size:13px">
+      <span class="muted" style="min-width:60px">投資智商</span><span>${iq.ic} <b>${iq.nm}</b></span>
+      <span class="muted" style="font-size:11px">${iq.short}</span></div>
+    ${rows}
+    <div style="display:flex;gap:6px;align-items:baseline;padding:6px 0 2px;font-size:13px">
+      <span class="muted" style="min-width:60px">投資結局</span><span>${end.ic} <b>${end.nm}</b></span></div>
+    <div style="display:flex;gap:6px;align-items:baseline;font-size:12.5px"><span class="muted" style="min-width:60px">本金子彈</span><span>${h.ammo.nm}（${h.ammo.short}）</span></div>
     ${eraLine}
     <div class="muted" style="font-size:12.5px;margin-top:8px;line-height:1.8">${fateLine}<br>${end.path}<br>${end.note}</div></div>`;
 }
@@ -17652,6 +17807,7 @@ function screenSummary(cat){
       ${r139CareerReviewHTML()}
       ${r140LoveReviewHTML()}
       ${r141HobbyReviewHTML()}
+      ${r142InvestReviewHTML()}
       ${attrCurveHTML()}
       ${attrTrajectoryHTML()}
       ${r129TrajectoryHTML()}

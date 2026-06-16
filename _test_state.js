@@ -5447,5 +5447,82 @@ const r141 = JSON.parse(vm.runInContext(`(function(){
   ['achPartial','⑪ 跨局集滿:缺一→r141_hobby 不解'],
 ].forEach(([k,m])=>ok(r141[k], 'R141 '+m));
 
+/* ===== R142 理財投資・財富累積軌跡（純衍生/結算覆蓋層；零 rng/零汙染/deterministic 推演/財富＋智力主驅動+本金子彈/壞資料降級/投資成就） ===== */
+const r142 = JSON.parse(vm.runInContext(`(function(){
+  const out={};
+  function mk(intl,mny,age,era){ return {attr:{hp:50,int:intl,apr:50,mny:mny,hap:50}, age:age, era:era, flags:{}, alive:false}; }
+  // ① 資料齊備：6 投資智商階層+6 財富累積階層+4 人生階段+5 結局型別+六世代理財梗+本金子彈三檔
+  out.dataFull = Array.isArray(R142_IQ) && R142_IQ.length===6 && R142_IQ.every(t=>t.ic&&t.nm&&t.short)
+    && Array.isArray(R142_PORT) && R142_PORT.length===6 && R142_PORT.every(t=>t.ic&&t.nm&&t.short)
+    && Array.isArray(R142_PHASES) && R142_PHASES.length===4 && R142_PHASES.every(p=>typeof p.off==='number')
+    && ['fire','shipking','dividend','daytrader','leek'].every(k=>R142_END[k]&&R142_END[k].nm&&R142_END[k].path&&R142_END[k].note)
+    && R55_ERAS.every(er=>typeof R142_ERAINVEST[er.id]==='string')
+    && [r142AmmoOf(90),r142AmmoOf(50),r142AmmoOf(10)].every(c=>typeof c.off==='number'&&c.nm&&c.short);
+  // ② 財富＋智力確定性映射：雙高→價值投資老手/神之子(>=4)、雙中→中段(>=2)、雙低→月光族韭菜(0)；且雙屬性單調驅動
+  const hi=r142InvestOf(mk(95,95,40,'e00')), midd=r142InvestOf(mk(50,50,40,'e00')), lo=r142InvestOf(mk(5,5,40,'e00'));
+  out.iqMap = !!hi&&!!midd&&!!lo && hi.iqTier>=4 && midd.iqTier>=2 && lo.iqTier===0
+    && hi.iqTier>midd.iqTier && midd.iqTier>lo.iqTier;
+  // ②b 財富與智力都實際參與：單高單低的智商應低於雙高（雙屬性缺一不可）
+  const onlyInt=r142InvestOf(mk(95,5,40,'e00')), onlyMny=r142InvestOf(mk(5,95,40,'e00'));
+  out.dualAttr = !!onlyInt&&!!onlyMny && onlyInt.iqTier<hi.iqTier && onlyMny.iqTier<hi.iqTier;
+  // ③ 本金影響子彈厚度（次級修正）：同智商基底，有銀彈(mny90)智商 >= 零股韭菜本(mny10)，且 off 有別
+  const rich=r142InvestOf(mk(55,90,40,'e00')), poor=r142InvestOf(mk(55,10,40,'e00'));
+  out.ammoDrive = !!rich&&!!poor && rich.iqTier>=poor.iqTier && rich.ammo.off>poor.ammo.off;
+  // ④ 卡片渲染：含投資智商/投資結局/本金子彈/財富或投資
+  S=mk(50,50,40,'e00'); const card=r142InvestReviewHTML();
+  out.cardRender = card.indexOf('投資智商')>=0 && card.indexOf('投資結局')>=0 && card.indexOf('本金子彈')>=0 && (card.indexOf('財富')>=0||card.indexOf('投資')>=0);
+  // ⑤ deterministic 純讀：同 S 兩次渲染逐字一致
+  S=mk(40,40,35,'e10'); const a1=r142InvestReviewHTML(), a2=r142InvestReviewHTML();
+  out.deterministic = a1===a2 && a1.length>0;
+  // ⑥ 純呈現零汙染：生成前後 S.attr/era/age/flags 不變、零 rng 消耗
+  S=mk(72,55,45,'e70'); const bA=JSON.stringify(S.attr), bE=S.era, bAge=S.age, bF=JSON.stringify(S.flags);
+  let used=0; const oldR=rng; rng=function(){ used++; return oldR(); };
+  r142InvestReviewHTML(); r142InvestOf(S); rng=oldR;
+  out.pure = JSON.stringify(S.attr)===bA && S.era===bE && S.age===bAge && JSON.stringify(S.flags)===bF && used===0;
+  // ⑦ S=null / 缺 attr / 缺 mny 或 int 降級：回 null、卡空字串、不炸
+  out.nullSafe = (()=>{ try{ S=null; return r142InvestOf(null)===null && r142InvestReviewHTML()===''; }catch(e){ return false; } })();
+  out.noAttr = (()=>{ try{ return r142InvestOf({age:40,era:'e00'})===null && r142InvestOf({attr:{mny:50},age:40})===null && r142InvestOf({attr:{int:50},age:40})===null; }catch(e){ return false; } })();
+  // ⑧ 髒 era → 理財梗略過不炸、仍回物件；同屬性不同 era 智商一致
+  out.softDeg = (()=>{ try{ const m=r142InvestOf(mk(55,55,40,'e00')); const d=r142InvestOf(mk(55,55,40,'zzz999')); return !!m && !!d && d.era===null && m.iqTier===d.iqTier; }catch(e){ return false; } })();
+  // ⑨ 舊存檔相容：ensureState 不為 R142 在 S/flags 補任何 r142 鍵
+  startGame(); const olds=S; ensureState(olds);
+  out.compatOld = !Object.keys(olds).some(k=>k.toLowerCase().indexOf('r142')===0)
+    && !Object.keys(olds.flags||{}).some(k=>k.toLowerCase().indexOf('r142')===0);
+  // ⑩ 投資成就確定性點亮：FIRE/航運王/存股達人/當沖畢業/韭菜本命 各自可達且互斥
+  const FIRE=mk(90,90,55,'e00'), SHIP=mk(85,55,35,'e00'), DIV=mk(55,60,50,'e00'), DAY=mk(45,45,40,'e00'), LEEK=mk(10,10,40,'e00');
+  out.achFire     = !!ACH_MAP.r142_fire      && ACH_MAP.r142_fire.check({S:FIRE})===true       && ACH_MAP.r142_fire.check({S:LEEK})===false;
+  out.achShip     = !!ACH_MAP.r142_shipking  && ACH_MAP.r142_shipking.check({S:SHIP})===true    && ACH_MAP.r142_shipking.check({S:FIRE})===false;
+  out.achDividend = !!ACH_MAP.r142_dividend  && ACH_MAP.r142_dividend.check({S:DIV})===true     && ACH_MAP.r142_dividend.check({S:DAY})===false;
+  out.achDay      = !!ACH_MAP.r142_daytrader && ACH_MAP.r142_daytrader.check({S:DAY})===true     && ACH_MAP.r142_daytrader.check({S:DIV})===false;
+  out.achLeek     = !!ACH_MAP.r142_leek      && ACH_MAP.r142_leek.check({S:LEEK})===true         && ACH_MAP.r142_leek.check({S:FIRE})===false;
+  // ⑪ 跨局集滿 r142_invest：五成就全亮→解鎖、缺一→不解
+  const allAch={r142_fire:true,r142_shipking:true,r142_dividend:true,r142_daytrader:true,r142_leek:true};
+  SAVE.ach=Object.assign({},allAch); out.achFull = !!ACH_MAP.r142_invest && ACH_MAP.r142_invest.check({S:{}})===true;
+  const partial=Object.assign({},allAch); delete partial.r142_fire;
+  SAVE.ach=partial; out.achPartial = ACH_MAP.r142_invest.check({S:{}})===false;
+  SAVE.ach={}; S=null;
+  return JSON.stringify(out);
+})()`, sandbox));
+[
+  ['dataFull','① 資料齊備:6 投資智商+6 財富累積階層+4 人生階段+5 結局型別+六世代理財梗+本金子彈三檔'],
+  ['iqMap','② 財富＋智力確定性映射:雙高→價值投資老手/雙中→中段/雙低→月光族韭菜且單調驅動'],
+  ['dualAttr','②b 財富與智力缺一不可:單高單低智商低於雙高'],
+  ['ammoDrive','③ 本金影響子彈厚度:同基底有銀彈>=零股韭菜本且 off 有別'],
+  ['cardRender','④ 卡片渲染:含投資智商/投資結局/本金子彈/財富或投資'],
+  ['deterministic','⑤ deterministic 純讀:同 S 兩次渲染逐字一致'],
+  ['pure','⑥ 純呈現零汙染:生成前後 S.attr/era/age/flags 不變且零 rng'],
+  ['nullSafe','⑦ 無局(S=null)降級:回 null、卡空字串不炸'],
+  ['noAttr','⑦ 缺 attr/mny/int 降級:回 null 不炸'],
+  ['softDeg','⑧ 髒 era 理財梗略過:仍回物件不炸且智商一致'],
+  ['compatOld','⑨ 舊存檔相容:ensureState 不為 R142 補任何 S/flags 鍵'],
+  ['achFire','⑩ r142_fire:FIRE 財富自由→解、韭菜本命→不解'],
+  ['achShip','⑩ r142_shipking:航運王→解、FIRE→不解'],
+  ['achDividend','⑩ r142_dividend:存股達人→解、當沖畢業→不解'],
+  ['achDay','⑩ r142_daytrader:當沖畢業→解、存股達人→不解'],
+  ['achLeek','⑩ r142_leek:韭菜本命→解、FIRE→不解'],
+  ['achFull','⑪ 跨局集滿:五成就全亮→r142_invest 解鎖'],
+  ['achPartial','⑪ 跨局集滿:缺一→r142_invest 不解'],
+].forEach(([k,m])=>ok(r142[k], 'R142 '+m));
+
 console.log(fails ? `\n結果: ❌ ${fails} 項未通過` : '\n結果: ✅ 狀態機全數正確');
 process.exit(fails ? 1 : 0);
