@@ -3009,6 +3009,14 @@ const ACHIEVEMENTS = [
   {id:"r142_daytrader", ic:"💀", nm:"當沖畢業・融資斷頭背債", desc:"自以為看懂了盤、開了融資玩當沖，想一把翻身——結果鬼盤一根長黑直接斷頭，畢業典禮辦在最高點。本金歸零還倒欠券商，這座島最常見的當沖畢業故事，你親自上台領了畢業證書。賭性堅強是真的，背債也是真的。", check:c=>{const h=r142InvestOf(c.S); return !!h && h.ach.daytrader;}, hint:"投資智商半桶水（定期定額小白～存股族之間）、出社會後又沒走到存股/FIRE 路線——讓終局財富軌跡走到『當沖畢業・融資斷頭背債』分流…"},
   {id:"r142_leek", ic:"🥬", nm:"韭菜本命・追高殺低被割", desc:"群組裡的明牌一報就追、看到長黑就嚇到殺出，買在最高點、賣在最低點——這座島韭菜的標準動作，你一個都沒少。本金被一刀一刀割，每次都想說『下次一定學乖』，下次又是同一套。不是市場太壞，是這條韭菜命太本命。", check:c=>{const h=r142InvestOf(c.S); return !!h && h.ach.leek;}, hint:"讓財富與智力長期偏低（月光族韭菜/追高殺低韭菜）、又活過出社會年齡（26+）——把終局財富軌跡卡在『韭菜本命・追高殺低被割』分流…"},
   {id:"r142_invest", ic:"📈", nm:"鬼島理財投資圖鑑・財富軌跡全集滿", desc:"提早 FIRE、航運王翻身、存股達人、當沖畢業、韭菜本命——這座島丟給你的五種投資命運，你用一次次投胎全都親自走過一遍。財富自由過、暴富過、存股過、畢業過、被割過，理財與投資這道最現實也最瘋狂的人生考題，你終於把它活成了一本圖鑑。", check:c=>{const need=["r142_fire","r142_shipking","r142_dividend","r142_daytrader","r142_leek"]; return !!(SAVE&&SAVE.ach) && need.every(id=>SAVE.ach[id]);}, hint:"跨局集滿五種投資結局成就各至少一次（FIRE/航運王/存股達人/當沖畢業/韭菜本命）——把理財投資的每一種命運都走過一遍…"},
+  /* ---- R143 社交人脈・朋友圈軌跡（純衍生結算覆蓋層；魅力＋智力主驅動＋財富排場＋年齡；零 rng、不擾序列；與 R140 婚戀／R141 興趣各自獨立旗標）---- */
+  {id:"r143_maven", ic:"🤝", nm:"人脈王・交際花八面玲瓏", desc:"飯局喬事、人脈變現，走到哪都有人罩——你天生圈得到人又黏得住人，從學生時代的人氣王混成喬事的交際花。在這座好友列表越來越長、能交心的卻越來越少的島上，能把人脈經營成真本事的，已經是越來越稀有的能耐，你活成了那種八面玲瓏左右逢源的人。", check:c=>{const h=r143SocialOf(c.S); return !!h && h.ach.maven;}, hint:"把魅力與智力同時養到頂（有錢再加請客排場加成）讓社交手腕推到社交達人以上，再把財富衝高、活到成年（28+）——讓終局社交軌跡走到『人脈王・交際花八面玲瓏』…"},
+  {id:"r143_soulmate", ic:"🍵", nm:"三五知己・細水長流到老", desc:"不求人多、就那幾個交心的，從年輕喝到老、有事互相罩，幾十年的交情擺著不散——你不靠廣度靠深度，把這座島最樸實的人際智慧親身實踐了一遍：好友在精不在多，深夜能接你電話的那幾個，才是這輩子真正的財富。", check:c=>{const h=r143SocialOf(c.S); return !!h && h.ach.soulmate;}, hint:"智力 int 夠高（懂得經營深交）、魅力中等（40–72，不靠廣度靠深度）、活到中年以後（30+）——讓終局社交軌跡走到『三五知己・細水長流』分流…"},
+  {id:"r143_boozer", ic:"🍻", nm:"八方酒肉朋友・呼朋引伴", desc:"吃飯喝酒唱歌哪攤都有你、稱兄道弟八方酒肉朋友滿天下——只是酒一散場一冷，能留下來陪你的沒幾個。這座島最常見的社交日常：朋友看似一大票，深夜想找個人講真心話，滑完整本通訊錄還是按不下去。", check:c=>{const h=r143SocialOf(c.S); return !!h && h.ach.boozer;}, hint:"社交手腕中高（八面玲瓏以上）、出社會後（26+），又不踩人脈王與三五知己門檻——讓終局社交軌跡走到『八方酒肉朋友・呼朋引伴』分流…"},
+  {id:"r143_fullstop", ic:"💬", nm:"句點王・塑膠泛泛之交", desc:"聊天總在第三句變句點、群組訊息永遠已讀不回——好友列表一長串，全是按讚之交的塑膠交情。不算邊緣，也談不上人緣，就卡在那種『認識很多人卻沒一個熟』的尷尬地帶，這座島最寫實的社交距離，你一格不差地活了出來。", check:c=>{const h=r143SocialOf(c.S); return !!h && h.ach.fullstop;}, hint:"社交手腕半桶水（塑膠泛泛之交～八面玲瓏之間）、又沒走到酒肉朋友／三五知己／邊緣人路線——讓終局社交軌跡停在『句點王・塑膠泛泛之交』分流…"},
+  {id:"r143_edge", ic:"🧍", nm:"邊緣魯蛇・人群中的隱形人", desc:"畢業紀念冊翻半天找不到、班級群組從不發言、聚會永遠縮在角落滑手機的隱形人——不是沒想過要融入，是每次開口都怕說錯、每次揪團都沒被想起。這座島最沉默的一群人，人群中的孤獨，你一個人安安靜靜地走完。", check:c=>{const h=r143SocialOf(c.S); return !!h && h.ach.edge;}, hint:"讓魅力與智力長期偏低（句點王／邊緣社恐）、又活過學生年齡（22+），且還沒到高齡孤獨終老——把終局社交軌跡卡在『邊緣魯蛇・人群中的隱形人』分流…"},
+  {id:"r143_lonely", ic:"🌫️", nm:"孤獨終老・晚景一人無聲", desc:"年輕時就交不太到朋友，老了更是一個一個凋零——晚年獨居，電話響起多半是詐騙跟推銷，過年過節也沒人按門鈴。這座島高齡社會最沉重的角落，孤獨死的新聞看多了，沒想過有天主角會是自己。一個人活到最後，最怕的不是病痛，是連說句話的人都沒有。", check:c=>{const h=r143SocialOf(c.S); return !!h && h.ach.lonely;}, hint:"讓魅力 apr 長期偏低（30 以下）、又活到高齡（60+）——把終局社交軌跡推到『孤獨終老・晚景一人無聲』分流…"},
+  {id:"r143_social", ic:"🫂", nm:"鬼島社交人脈圖鑑・朋友圈軌跡全集滿", desc:"人脈王、三五知己、酒肉朋友、句點王、邊緣人、孤獨終老——這座島丟給你的六種社交命運，你用一次次投胎全都親自走過一遍。被圍繞過、交心過、熱鬧過、句點過、邊緣過、孤單過，人際與情誼這道最溫暖也最寂寞的人生考題，你終於把它活成了一本圖鑑。", check:c=>{const need=["r143_maven","r143_soulmate","r143_boozer","r143_fullstop","r143_edge","r143_lonely"]; return !!(SAVE&&SAVE.ach) && need.every(id=>SAVE.ach[id]);}, hint:"跨局集滿六種社交結局成就各至少一次（人脈王／三五知己／酒肉之友／句點王／邊緣人／孤獨終老）——把社交人脈的每一種命運都走過一遍…"},
   {id:"r70a_unicorn", ic:"🦄", nm:"創業上岸・無中生有", desc:"在頭家夢分歧鏈選自己創業，撐過跑三點半的歲月，最後成功上岸買房定居——你把『無中生有』四個字活成了真的。", check:c=>!!(c.S.flags&&c.S.flags.r70a_unicorn), hint:"分歧鏈裡選自己創業的人，中段擴張或被收購（或在三點半跳票邊緣硬撐活下來），末段才走得到買房上岸…"},
   {id:"r70a_freebird", ic:"🕊️", nm:"社畜跳船・自由業真男人", desc:"當年領死薪水的你中途跳船去接案，多年後接出口碑、開了自己的工作室——上班族眼裡那種『自由業』，自由是真的，業也真的有在接。", check:c=>!!(c.S.flags&&c.S.flags.r70a_freebird), hint:"分歧鏈選領死薪水當社畜的人，中段選擇安靜離職跳船接案，末段把工作室掛牌做起來…"},
   {id:"r70a_clear", ic:"🧭", nm:"頭家夢・全鏈結業", desc:"從老家那通電話一路走到人生期末考，把頭家夢（或死薪水）這條三段分歧鏈完整走完——接、創、領，無論哪條路你都活出了答案。", check:c=>!!(c.S.flags&&c.S.flags.r70a_done), hint:"老家的店要收那年做出選擇後，把中段、末段兩道抉擇都接著走完，整條頭家分歧鏈一站不漏…"},
@@ -4409,6 +4417,159 @@ function r142InvestReviewHTML(){
     <div style="display:flex;gap:6px;align-items:baseline;padding:6px 0 2px;font-size:13px">
       <span class="muted" style="min-width:60px">投資結局</span><span>${end.ic} <b>${end.nm}</b></span></div>
     <div style="display:flex;gap:6px;align-items:baseline;font-size:12.5px"><span class="muted" style="min-width:60px">本金子彈</span><span>${h.ammo.nm}（${h.ammo.short}）</span></div>
+    ${eraLine}
+    <div class="muted" style="font-size:12.5px;margin-top:8px;line-height:1.8">${fateLine}<br>${end.path}<br>${end.note}</div></div>`;
+}
+
+/* =========================================================================
+   R143 社交人脈・朋友圈軌跡（純衍生／結算覆蓋層，零 rng、零事件序列擾動）
+   ── 呼應主題：讓「魅力 apr ＋ 智力 int」兩屬性同時實際驅動本局的社交手腕與
+      朋友圈軌跡（魅力管圈不圈得到人／黏不黏得住，智力管聊不聊得開／看不看得懂
+      人情世故，缺一不可）。建立在既有 S.attr.apr / S.attr.int 之上，全程只「讀」
+      終局 state，不新增任何 Math.random／rng() → 種子事件抽取序列逐位元不變；與
+      R140 婚戀(romance)、R141 興趣才藝 各自獨立旗標、互不汙染。
+   驅動鐵律：
+   ① 魅力 apr ＋ 智力 int 取平均為主驅動（單調決定社交手腕階層）；財富 mny 另做
+      「請客排場／人脈變現」次級修正（請得起客的飯局黏得住人 vs 連手搖都要算錢的
+      聚會約不動）；年齡決定朋友圈軌跡走多遠、走向哪個終局；出生世代 era 只做
+      「交友梗」文案著色，不動數值。
+      特例：「孤獨終老」分流要求魅力低且高齡（晚景朋友凋零）；「三五知己」分流要求
+      智力夠高（懂得經營深交）＋魅力中等（不靠廣度靠深度）。
+   ② 純呈現：所有 R143 函式只回傳字串／純讀物件，不寫 S、不改數值平衡；S=null／
+      無 attr／缺 apr 或 int 鍵／髒資料一律安全降級回 null／空字串，絕不白屏或拋例外。
+   ③ 跨局收集：r143_social ＝集滿六種社交結局成就（人脈王／邊緣人／句點王／酒肉之友／
+      孤獨終老／三五知己）。
+   ========================================================================= */
+// 社交手腕階層（魅力＋智力主導、排場次要；純查表、零 rng；index 0..5 由低到高）
+const R143_SOC = [
+  {ic:"📵", nm:"句點王句句句點", short:"聊天三句變句點、群組從不發言的空氣人"},
+  {ic:"🧍", nm:"邊緣社恐",       short:"怕生不敢開口、聚會永遠縮在角落滑手機"},
+  {ic:"🤐", nm:"塑膠泛泛之交",   short:"點頭之交一兩個、深交一個都湊不齊"},
+  {ic:"🍻", nm:"八面玲瓏",       short:"飯局喝酒揪得動人、廣度有但都很淺"},
+  {ic:"😎", nm:"社交達人",       short:"走到哪都聊得開、朋友一票場面罩得住"},
+  {ic:"🤝", nm:"交際花人脈王",   short:"喬事喬人脈變現、八面玲瓏左右逢源"},
+];
+// 朋友圈／人脈地位階層（手腕定起點、財富微調、年齡折舊升遷；純查表、零 rng；index 0..5 由低到高）
+const R143_CIRCLE = [
+  {ic:"🫥", nm:"邊緣魯蛇隱形人", short:"班上沒人記得、好友列表一片荒涼"},
+  {ic:"💬", nm:"塑膠泛泛之交",   short:"按讚之交一票、能交心的零個"},
+  {ic:"👋", nm:"點頭之交",       short:"認識的人不少、真要約得出來沒幾個"},
+  {ic:"🍢", nm:"酒肉朋友一票",   short:"飯局揪得到人、散場各自回家也沒人記得"},
+  {ic:"🍵", nm:"三五知己成群",   short:"交心好友幾個、有事互相罩細水長流"},
+  {ic:"🌐", nm:"人脈王交際花",   short:"走到哪都有人罩、人脈喬得動變得了現"},
+];
+// 人生階段（學生→晚年；off 為朋友圈階段相對社交手腕起點的折舊/升遷）
+const R143_PHASES = [
+  {key:"youth", age:18, nm:"學生交友", off:-1}, // 同學緣、社交本錢未站穩
+  {key:"prime", age:28, nm:"出社會人脈", off:0}, // 職場人脈衝刺期
+  {key:"mid",   age:45, nm:"中年社交", off:0},   // 知交沉澱或漸行漸遠
+  {key:"late",  age:60, nm:"晚年人際", off:1},   // 老友相伴或晚景孤單
+];
+// 社交終局型別文案（純查表、零 rng）
+const R143_END = {
+  maven:    {ic:"🤝", nm:"人脈王・交際花八面玲瓏", path:"🌐 飯局喬事人脈變現、走到哪都有人罩", note:"你天生圈得到人又黏得住人，從學生時代的人氣王一路混成喬事的交際花——飯局上下都認得你，人脈隨手就能變現。在這座越來越多人滑手機不講話、好友列表全是塑膠的島上，能把人脈經營成真本事的，已經是越來越稀有的能耐，你活成了那種走到哪都有人罩的人。"},
+  soulmate: {ic:"🍵", nm:"三五知己・細水長流到老", path:"☕ 不求人多、就那幾個交心的，幾十年不散", note:"你不靠廣度靠深度——朋友不必多，就那三五個交心的，從年輕喝到老、有事互相罩，幾十年的交情擺著不散。這座島最樸實的人際智慧，你親身實踐了一遍：好友在精不在多，深夜能接你電話的那幾個，才是這輩子真正的財富。"},
+  boozer:   {ic:"🍻", nm:"八方酒肉朋友・呼朋引伴", path:"🍢 飯局喝酒揪一票、散場各自回家", note:"你揪得動一票人，吃飯喝酒唱歌哪攤都有你——熱鬧的時候稱兄道弟、八方酒肉朋友滿天下。只是酒一散、場一冷，能留下來陪你的沒幾個。這座島最常見的社交日常：朋友看似一大票，深夜想找個人講真心話，滑完整本通訊錄還是按不下去。"},
+  fullstop: {ic:"💬", nm:"句點王・塑膠泛泛之交", path:"📵 聊天三句變句點、好友列表都是塑膠", note:"你不是討厭人，只是聊天總在第三句變句點、群組訊息永遠已讀不回——好友列表一長串，全是按讚之交的塑膠交情。不算邊緣，也談不上人緣，就卡在那種「認識很多人卻沒一個熟」的尷尬地帶。這座島最寫實的社交距離，你一格不差地活了出來。"},
+  edge:     {ic:"🧍", nm:"邊緣魯蛇・人群中的隱形人", path:"🫥 班上沒人記得、群組從不發言的邊緣人", note:"你是那種畢業紀念冊翻半天找不到、班級群組從不發言、聚會永遠縮在角落滑手機的隱形人。不是沒想過要融入，是每次開口都怕說錯、每次揪團都沒被想起。這座島最沉默的一群人，邊緣魯蛇的日常，你一個人安安靜靜地走完——人群中的孤獨，最是無聲。"},
+  lonely:   {ic:"🌫️", nm:"孤獨終老・晚景一人無聲", path:"🕯️ 朋友凋零、晚年獨居，電話響多是詐騙", note:"年輕時就交不太到朋友，老了更是一個一個凋零——晚年獨居，電話響起多半是詐騙跟推銷，過年過節也沒人按門鈴。這座島高齡社會最沉重的角落，孤獨死的新聞看多了，沒想過有天主角會是自己。一個人活到最後，最怕的不是病痛，是連說句話的人都沒有。"},
+};
+// 出生世代交友觀梗（純文案著色，零數值影響）
+const R143_ERASOCIAL = {
+  e70:"你那年代交朋友靠厝邊頭尾、廟口開講，一條街的人從小看你長大——人情味濃，誰家有事整個庄頭都來鬥腳手。",
+  e80:"你年輕時擴交全靠 BB call、卡拉OK 跟釣蝦場——兄弟一通電話就到，江湖義氣比什麼都重。",
+  e90:"你出社會時 BBS、即時通、無名小站正夯——網友見面還被長輩唸危險，線上交友的時代才剛剛萌芽。",
+  e00:"你這代 MSN 暱稱大戰、臉書動態洗版——朋友從見面變成按讚，塑膠交情也是這時開始長出來的。",
+  e10:"你成長在 IG 限動、LINE 群組已讀不回的年代——好友幾百個、真心能講的沒幾個，孤獨感跟追蹤數一起膨脹。",
+  e20:"你這代交友軟體、Threads 互粉、抖內小盒子——人脈變現成顯學，但螢幕背後誰是真朋友，越來越難說。",
+};
+// 財富→請客排場／人脈變現修正（請得起客飯局黏得住人 vs 連手搖都要算錢約不動；手腕仍為主驅動，財富只做 ±8 次級修正）
+function r143CrowdOf(mny){
+  return mny>=70 ? {off:8,  nm:"請得起客的排場",   short:"飯局買單揪團出國說走就走、人脈靠真心也靠錢黏得住"}
+       : mny<=25 ? {off:-8, nm:"連手搖都要算錢",   short:"飯局怕分攤、聚會能省則省，朋友漸漸約不動"}
+       :           {off:0,  nm:"省吃儉用搏感情",   short:"沒太多閒錢請客、靠真心慢慢交"};
+}
+// 魅力＋智力 平均→社交手腕階層（純查表、雙屬性單調驅動）
+function r143SocTierOf(effS){
+  return effS>=82?5 : effS>=66?4 : effS>=50?3 : effS>=34?2 : effS>=18?1 : 0;
+}
+// 朋友圈／人脈地位（手腕定起點、財富微調、階段 off 折舊/升遷；純算、零 rng）
+function r143CircleLevelAt(socTier, mny, off){
+  let base = socTier;
+  if(mny>=70) base+=1; else if(mny<=25) base-=1;   // 財富微調（請得起客 vs 連手搖都要算錢）
+  return Math.max(0, Math.min(5, base + off));
+}
+/* 從任一 state deterministic 推演社交人脈・朋友圈軌跡（純讀、零 rng、零 mutation）；壞資料回 null */
+function r143SocialOf(st){
+  try{
+    if(!st || typeof st!=="object" || !st.attr ||
+       typeof st.attr.apr!=="number" || typeof st.attr.int!=="number") return null;
+    const apr  = Math.max(0, Math.min(100, st.attr.apr));
+    const intl = Math.max(0, Math.min(100, st.attr.int));
+    const mny  = (typeof st.attr.mny==="number") ? Math.max(0, Math.min(100, st.attr.mny)) : 50; // 缺 mny → 中性
+    const age  = Math.max(0, Math.round(st.age||0));
+    const era  = (typeof st.era==="string" && R143_ERASOCIAL.hasOwnProperty(st.era)) ? st.era : null;
+    const crowd = r143CrowdOf(mny);                              // 財富影響請客排場（次級）
+    const socRaw = (apr + intl) / 2;                             // 魅力＋智力雙屬性主驅動（取平均）
+    const effS = Math.max(0, Math.min(100, socRaw + crowd.off)); // 手腕為主、排場微調
+    const socTier = r143SocTierOf(effS);
+    // 各人生階段朋友圈／人脈地位
+    const stages=[];
+    for(let i=0;i<R143_PHASES.length;i++){
+      const ph=R143_PHASES[i];
+      if(age < ph.age) break;                                   // 沒活到該階段就不列（早逝只走前段）
+      const lv=r143CircleLevelAt(socTier, mny, ph.off);
+      const c=R143_CIRCLE[lv];
+      stages.push({key:ph.key, nm:ph.nm, lv, ic:c.ic, tnm:c.nm, short:c.short});
+    }
+    // 社交終局（互斥；魅力＋智力為主、財富與年齡決定走向，孤獨終老吃低魅力高齡、三五知己吃高智力中魅力）
+    let endType;
+    if(apr<=30 && age>=60) endType="lonely";                                          // 低魅力＋高齡→孤獨終老晚景無人
+    else if(socTier>=4 && mny>=60 && apr>=66 && age>=28) endType="maven";              // 高手腕＋高財富＋高魅力＋成年→人脈王交際花
+    else if(intl>=64 && apr>=40 && apr<=72 && age>=30) endType="soulmate";             // 高智力＋中魅力＋中年後→三五知己細水長流
+    else if(socTier>=3 && age>=26) endType="boozer";                                  // 中高手腕＋出社會後→八方酒肉朋友
+    else if(socTier<=1 && age>=22) endType="edge";                                    // 低手腕＋過了學生→邊緣魯蛇隱形人
+    else endType="fullstop";                                                          // 其餘（半桶水塑膠交情）→句點王
+    const ach = {
+      maven:    endType==="maven",
+      soulmate: endType==="soulmate",
+      boozer:   endType==="boozer",
+      fullstop: endType==="fullstop",
+      edge:     endType==="edge",
+      lonely:   endType==="lonely",
+    };
+    return { apr, intl, mny, age, era, crowd, effS, socTier, stages, endType, ach };
+  }catch(e){ return null; }
+}
+function r143Social(){ return r143SocialOf(S); }
+/* 結算：社交人脈・朋友圈回顧卡——魅力＋智力定社交手腕、手腕+財富+年齡推朋友圈、終局回顧（純讀零 rng，可截圖分享，線C素材） */
+function r143SocialReviewHTML(){
+  const h=r143Social();
+  if(!h) return "";
+  const end=R143_END[h.endType]||R143_END.fullstop;
+  const soc=R143_SOC[h.socTier]||R143_SOC[0];
+  const rows=h.stages.map(s=>`<div style="display:flex;gap:8px;align-items:baseline;padding:3px 0;font-size:13px;border-bottom:1px solid rgba(255,255,255,.05)">
+      <span class="muted" style="min-width:60px">${s.nm}</span>
+      <span style="white-space:nowrap">${s.ic} <b>${s.tnm}</b></span>
+      <span class="muted" style="font-size:11px">${s.short}</span></div>`).join("");
+  // 世代交友觀梗（缺則略）
+  let eraLine="";
+  const soc2 = h.era && R143_ERASOCIAL[h.era];
+  if(soc2) eraLine=`<div class="muted" style="font-size:11.5px;margin-top:6px">🫂 你那年代的交友觀：${soc2}</div>`;
+  const warm = (h.endType==="maven"||h.endType==="soulmate");
+  const fateLine = warm
+    ? `🫂 <b style="color:#ffd96b">你這輩子不缺說話的人</b>——在這座好友列表越來越長、能交心的卻越來越少的島上，能把人際關係經營成真感情，已經是越來越稀有的本事。`
+    : `🥶 <b style="color:#9fd0ff">這條社交路走得有點孤單</b>——句點王、邊緣人、酒肉朋友散場、孤獨終老，這座島把「真朋友」變成一件越來越奢侈的事，你用一輩子親身體會了一遭。`;
+  return `<div class="panel" style="margin-top:12px;background:var(--panel2)">
+    <h2 class="sec">🫂 社交人脈・朋友圈軌跡</h2>
+    <div class="muted" style="font-size:11.5px;margin:-4px 0 6px">依你這輩子的魅力與智力、請客的排場與走過的歲月，推演你的朋友圈軌跡——邊緣句點王還是交際花人脈王、酒肉朋友散一地還是三五知己到白頭？</div>
+    <div style="display:flex;gap:6px;align-items:baseline;padding:4px 0 2px;font-size:13px">
+      <span class="muted" style="min-width:60px">社交手腕</span><span>${soc.ic} <b>${soc.nm}</b></span>
+      <span class="muted" style="font-size:11px">${soc.short}</span></div>
+    ${rows}
+    <div style="display:flex;gap:6px;align-items:baseline;padding:6px 0 2px;font-size:13px">
+      <span class="muted" style="min-width:60px">社交結局</span><span>${end.ic} <b>${end.nm}</b></span></div>
+    <div style="display:flex;gap:6px;align-items:baseline;font-size:12.5px"><span class="muted" style="min-width:60px">人脈排場</span><span>${h.crowd.nm}（${h.crowd.short}）</span></div>
     ${eraLine}
     <div class="muted" style="font-size:12.5px;margin-top:8px;line-height:1.8">${fateLine}<br>${end.path}<br>${end.note}</div></div>`;
 }
@@ -17808,6 +17969,7 @@ function screenSummary(cat){
       ${r140LoveReviewHTML()}
       ${r141HobbyReviewHTML()}
       ${r142InvestReviewHTML()}
+      ${r143SocialReviewHTML()}
       ${attrCurveHTML()}
       ${attrTrajectoryHTML()}
       ${r129TrajectoryHTML()}

@@ -5524,5 +5524,84 @@ const r142 = JSON.parse(vm.runInContext(`(function(){
   ['achPartial','⑪ 跨局集滿:缺一→r142_invest 不解'],
 ].forEach(([k,m])=>ok(r142[k], 'R142 '+m));
 
+/* ===== R143 社交人脈・朋友圈軌跡（純衍生/結算覆蓋層；零 rng/零汙染/deterministic 推演/魅力＋智力主驅動+財富排場/壞資料降級/社交成就） ===== */
+const r143 = JSON.parse(vm.runInContext(`(function(){
+  const out={};
+  function mk(intl,apr,mny,age,era){ return {attr:{hp:50,int:intl,apr:apr,mny:mny,hap:50}, age:age, era:era, flags:{}, alive:false}; }
+  // ① 資料齊備：6 社交手腕階層+6 朋友圈階層+4 人生階段+6 結局型別+六世代交友梗+人脈排場三檔
+  out.dataFull = Array.isArray(R143_SOC) && R143_SOC.length===6 && R143_SOC.every(t=>t.ic&&t.nm&&t.short)
+    && Array.isArray(R143_CIRCLE) && R143_CIRCLE.length===6 && R143_CIRCLE.every(t=>t.ic&&t.nm&&t.short)
+    && Array.isArray(R143_PHASES) && R143_PHASES.length===4 && R143_PHASES.every(p=>typeof p.off==='number')
+    && ['maven','soulmate','boozer','fullstop','edge','lonely'].every(k=>R143_END[k]&&R143_END[k].nm&&R143_END[k].path&&R143_END[k].note)
+    && R55_ERAS.every(er=>typeof R143_ERASOCIAL[er.id]==='string')
+    && [r143CrowdOf(90),r143CrowdOf(50),r143CrowdOf(10)].every(c=>typeof c.off==='number'&&c.nm&&c.short);
+  // ② 魅力＋智力確定性映射：雙高→社交達人/交際花(>=4)、雙中→中段(>=2)、雙低→句點王(0)；且雙屬性單調驅動
+  const hi=r143SocialOf(mk(95,95,50,40,'e00')), midd=r143SocialOf(mk(50,50,50,40,'e00')), lo=r143SocialOf(mk(5,5,50,40,'e00'));
+  out.socMap = !!hi&&!!midd&&!!lo && hi.socTier>=4 && midd.socTier>=2 && lo.socTier===0
+    && hi.socTier>midd.socTier && midd.socTier>lo.socTier;
+  // ②b 魅力與智力都實際參與：單高單低的手腕應低於雙高（雙屬性缺一不可）
+  const onlyInt=r143SocialOf(mk(95,5,50,40,'e00')), onlyApr=r143SocialOf(mk(5,95,50,40,'e00'));
+  out.dualAttr = !!onlyInt&&!!onlyApr && onlyInt.socTier<hi.socTier && onlyApr.socTier<hi.socTier;
+  // ③ 財富影響請客排場（次級修正）：同手腕 55，請得起客(mny90)手腕 >= 連手搖都要算錢(mny10)，且 off 有別
+  const rich=r143SocialOf(mk(55,55,90,40,'e00')), poor=r143SocialOf(mk(55,55,10,40,'e00'));
+  out.crowdDrive = !!rich&&!!poor && rich.socTier>=poor.socTier && rich.crowd.off>poor.crowd.off;
+  // ④ 卡片渲染：含社交手腕/社交結局/人脈排場/朋友或人脈
+  S=mk(50,50,50,40,'e00'); const card=r143SocialReviewHTML();
+  out.cardRender = card.indexOf('社交手腕')>=0 && card.indexOf('社交結局')>=0 && card.indexOf('人脈排場')>=0 && (card.indexOf('朋友')>=0||card.indexOf('人脈')>=0);
+  // ⑤ deterministic 純讀：同 S 兩次渲染逐字一致
+  S=mk(40,40,40,35,'e10'); const a1=r143SocialReviewHTML(), a2=r143SocialReviewHTML();
+  out.deterministic = a1===a2 && a1.length>0;
+  // ⑥ 純呈現零汙染：生成前後 S.attr/era/age/flags 不變、零 rng 消耗
+  S=mk(72,72,55,45,'e70'); const bA=JSON.stringify(S.attr), bE=S.era, bAge=S.age, bF=JSON.stringify(S.flags);
+  let used=0; const oldR=rng; rng=function(){ used++; return oldR(); };
+  r143SocialReviewHTML(); r143SocialOf(S); rng=oldR;
+  out.pure = JSON.stringify(S.attr)===bA && S.era===bE && S.age===bAge && JSON.stringify(S.flags)===bF && used===0;
+  // ⑦ S=null / 缺 attr / 缺 apr 或 int 降級：回 null、卡空字串、不炸
+  out.nullSafe = (()=>{ try{ S=null; return r143SocialOf(null)===null && r143SocialReviewHTML()===''; }catch(e){ return false; } })();
+  out.noAttr = (()=>{ try{ return r143SocialOf({age:40,era:'e00'})===null && r143SocialOf({attr:{apr:50},age:40})===null && r143SocialOf({attr:{int:50},age:40})===null; }catch(e){ return false; } })();
+  // ⑧ 缺 mny 降級：用中性 50、仍回物件不炸；髒 era → 交友梗略過不炸
+  out.softDeg = (()=>{ try{ const m=r143SocialOf({attr:{int:55,apr:55},age:40,era:'e00',flags:{}}); const d=r143SocialOf(mk(55,55,50,40,'zzz999')); return !!m && m.socTier===r143SocialOf(mk(55,55,50,40,'e00')).socTier && !!d && d.era===null; }catch(e){ return false; } })();
+  // ⑨ 舊存檔相容：ensureState 不為 R143 在 S/flags 補任何 r143 鍵
+  startGame(); const olds=S; ensureState(olds);
+  out.compatOld = !Object.keys(olds).some(k=>k.toLowerCase().indexOf('r143')===0)
+    && !Object.keys(olds.flags||{}).some(k=>k.toLowerCase().indexOf('r143')===0);
+  // ⑩ 社交成就確定性點亮：人脈王/三五知己/酒肉之友/句點王/邊緣人/孤獨終老 各自可達且互斥
+  const MAVEN=mk(70,90,80,45,'e00'), SOUL=mk(85,55,50,45,'e00'), BOOZE=mk(50,75,50,40,'e00'), FULL=mk(45,45,50,40,'e00'), EDGE=mk(20,25,40,30,'e00'), LONE=mk(20,20,30,70,'e00');
+  out.achMaven    = !!ACH_MAP.r143_maven    && ACH_MAP.r143_maven.check({S:MAVEN})===true     && ACH_MAP.r143_maven.check({S:EDGE})===false;
+  out.achSoulmate = !!ACH_MAP.r143_soulmate && ACH_MAP.r143_soulmate.check({S:SOUL})===true    && ACH_MAP.r143_soulmate.check({S:EDGE})===false;
+  out.achBoozer   = !!ACH_MAP.r143_boozer   && ACH_MAP.r143_boozer.check({S:BOOZE})===true     && ACH_MAP.r143_boozer.check({S:FULL})===false;
+  out.achFullstop = !!ACH_MAP.r143_fullstop && ACH_MAP.r143_fullstop.check({S:FULL})===true     && ACH_MAP.r143_fullstop.check({S:MAVEN})===false;
+  out.achEdge     = !!ACH_MAP.r143_edge     && ACH_MAP.r143_edge.check({S:EDGE})===true         && ACH_MAP.r143_edge.check({S:MAVEN})===false;
+  out.achLonely   = !!ACH_MAP.r143_lonely   && ACH_MAP.r143_lonely.check({S:LONE})===true       && ACH_MAP.r143_lonely.check({S:MAVEN})===false;
+  // ⑪ 跨局集滿 r143_social：六成就全亮→解鎖、缺一→不解
+  const allAch={r143_maven:true,r143_soulmate:true,r143_boozer:true,r143_fullstop:true,r143_edge:true,r143_lonely:true};
+  SAVE.ach=Object.assign({},allAch); out.achFull = !!ACH_MAP.r143_social && ACH_MAP.r143_social.check({S:{}})===true;
+  const partial=Object.assign({},allAch); delete partial.r143_maven;
+  SAVE.ach=partial; out.achPartial = ACH_MAP.r143_social.check({S:{}})===false;
+  SAVE.ach={}; S=null;
+  return JSON.stringify(out);
+})()`, sandbox));
+[
+  ['dataFull','① 資料齊備:6 社交手腕+6 朋友圈階層+4 人生階段+6 結局型別+六世代交友梗+人脈排場三檔'],
+  ['socMap','② 魅力＋智力確定性映射:雙高→社交達人/雙中→中段/雙低→句點王且單調驅動'],
+  ['dualAttr','②b 魅力與智力缺一不可:單高單低手腕低於雙高'],
+  ['crowdDrive','③ 財富影響請客排場:同基底請得起客>=連手搖都要算錢且 off 有別'],
+  ['cardRender','④ 卡片渲染:含社交手腕/社交結局/人脈排場/朋友或人脈'],
+  ['deterministic','⑤ deterministic 純讀:同 S 兩次渲染逐字一致'],
+  ['pure','⑥ 純呈現零汙染:生成前後 S.attr/era/age/flags 不變且零 rng'],
+  ['nullSafe','⑦ 無局(S=null)降級:回 null、卡空字串不炸'],
+  ['noAttr','⑦ 缺 attr/apr/int 降級:回 null 不炸'],
+  ['softDeg','⑧ 缺 mny 中性化＋髒 era 交友梗略過:仍回物件不炸且手腕一致'],
+  ['compatOld','⑨ 舊存檔相容:ensureState 不為 R143 補任何 S/flags 鍵'],
+  ['achMaven','⑩ r143_maven:人脈王→解、邊緣人→不解'],
+  ['achSoulmate','⑩ r143_soulmate:三五知己→解、邊緣人→不解'],
+  ['achBoozer','⑩ r143_boozer:酒肉之友→解、句點王→不解'],
+  ['achFullstop','⑩ r143_fullstop:句點王→解、人脈王→不解'],
+  ['achEdge','⑩ r143_edge:邊緣人→解、人脈王→不解'],
+  ['achLonely','⑩ r143_lonely:孤獨終老→解、人脈王→不解'],
+  ['achFull','⑪ 跨局集滿:六成就全亮→r143_social 解鎖'],
+  ['achPartial','⑪ 跨局集滿:缺一→r143_social 不解'],
+].forEach(([k,m])=>ok(r143[k], 'R143 '+m));
+
 console.log(fails ? `\n結果: ❌ ${fails} 項未通過` : '\n結果: ✅ 狀態機全數正確');
 process.exit(fails ? 1 : 0);
