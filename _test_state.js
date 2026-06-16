@@ -5297,5 +5297,78 @@ const r139 = JSON.parse(vm.runInContext(`(function(){
   ['achPartial','⑪ 跨局集滿:缺一→r139_career 不解'],
 ].forEach(([k,m])=>ok(r139[k], 'R139 '+m));
 
+/* ===== R140 婚戀家庭軌跡（純衍生/結算覆蓋層；零 rng/零汙染/deterministic 推演/魅力主驅動+財富桃花資源/壞資料降級/婚戀成就） ===== */
+const r140 = JSON.parse(vm.runInContext(`(function(){
+  const out={};
+  function mk(apr,mny,age,era){ return {attr:{hp:50,int:50,apr:apr,mny:mny,hap:50}, age:age, era:era, flags:{}, alive:false}; }
+  // ① 資料齊備：6 戀愛身價階層+6 婚戀關係階層+4 人生階段+6 結局型別+六世代婚戀梗+桃花資源三檔
+  out.dataFull = Array.isArray(R140_CHARM) && R140_CHARM.length===6 && R140_CHARM.every(t=>t.ic&&t.nm&&t.short)
+    && Array.isArray(R140_STATUS) && R140_STATUS.length===6 && R140_STATUS.every(t=>t.ic&&t.nm&&t.short)
+    && Array.isArray(R140_PHASES) && R140_PHASES.length===4 && R140_PHASES.every(p=>typeof p.off==='number')
+    && ['winner','couple','single','player','divorce','widow'].every(k=>R140_END[k]&&R140_END[k].nm&&R140_END[k].path&&R140_END[k].note)
+    && R55_ERAS.every(er=>typeof R140_ERALOVE[er.id]==='string')
+    && [r140CharmBoostOf(90),r140CharmBoostOf(50),r140CharmBoostOf(10)].every(c=>typeof c.off==='number'&&c.nm&&c.short);
+  // ② 魅力確定性映射：高魅力→萬人迷/海王(>=4)、中魅力→中段(>=2)、低魅力→戀愛絕緣體(0)；且魅力單調驅動
+  const hi=r140LoveOf(mk(95,50,40,'e00')), midd=r140LoveOf(mk(50,50,40,'e00')), lo=r140LoveOf(mk(5,50,40,'e00'));
+  out.charmMap = !!hi&&!!midd&&!!lo && hi.charmTier>=4 && midd.charmTier>=2 && lo.charmTier===0
+    && hi.charmTier>midd.charmTier && midd.charmTier>lo.charmTier;
+  // ③ 財富影響桃花資源（次級修正）：同魅力 55，有錢鈔能力(mny90)身價 >= 窮到沒行情(mny10)，且 off 有別
+  const rich=r140LoveOf(mk(55,90,40,'e00')), poor=r140LoveOf(mk(55,10,40,'e00'));
+  out.boostDrive = !!rich&&!!poor && rich.charmTier>=poor.charmTier && rich.boost.off>poor.boost.off;
+  // ④ 卡片渲染：含戀愛身價/婚戀結局/桃花資源/修成正果或緣分
+  S=mk(50,50,40,'e00'); const card=r140LoveReviewHTML();
+  out.cardRender = card.indexOf('戀愛身價')>=0 && card.indexOf('婚戀結局')>=0 && card.indexOf('桃花資源')>=0 && (card.indexOf('正果')>=0||card.indexOf('緣分')>=0);
+  // ⑤ deterministic 純讀：同 S 兩次渲染逐字一致
+  S=mk(40,40,35,'e10'); const a1=r140LoveReviewHTML(), a2=r140LoveReviewHTML();
+  out.deterministic = a1===a2 && a1.length>0;
+  // ⑥ 純呈現零汙染：生成前後 S.attr/era/age/flags 不變、零 rng 消耗
+  S=mk(72,55,45,'e70'); const bA=JSON.stringify(S.attr), bE=S.era, bAge=S.age, bF=JSON.stringify(S.flags);
+  let used=0; const oldR=rng; rng=function(){ used++; return oldR(); };
+  r140LoveReviewHTML(); r140LoveOf(S); rng=oldR;
+  out.pure = JSON.stringify(S.attr)===bA && S.era===bE && S.age===bAge && JSON.stringify(S.flags)===bF && used===0;
+  // ⑦ S=null / 缺 attr / 缺 apr 降級：回 null、卡空字串、不炸
+  out.nullSafe = (()=>{ try{ S=null; return r140LoveOf(null)===null && r140LoveReviewHTML()===''; }catch(e){ return false; } })();
+  out.noAttr = (()=>{ try{ return r140LoveOf({age:40,era:'e00'})===null && r140LoveOf({attr:{},age:40})===null; }catch(e){ return false; } })();
+  // ⑧ 缺 mny 降級：用中性 50、仍回物件不炸；髒 era → 婚戀梗略過不炸
+  out.softDeg = (()=>{ try{ const m=r140LoveOf({attr:{apr:55},age:40,era:'e00',flags:{}}); const d=r140LoveOf(mk(55,50,40,'zzz999')); return !!m && m.charmTier===r140LoveOf(mk(55,50,40,'e00')).charmTier && !!d && d.era===null; }catch(e){ return false; } })();
+  // ⑨ 舊存檔相容：ensureState 不為 R140 在 S/flags 補任何 r140 鍵
+  startGame(); const olds=S; ensureState(olds);
+  out.compatOld = !Object.keys(olds).some(k=>k.toLowerCase().indexOf('r140')===0)
+    && !Object.keys(olds.flags||{}).some(k=>k.toLowerCase().indexOf('r140')===0);
+  // ⑩ 婚戀成就確定性點亮：勝利組鴛鴦/母胎單身/海王玩咖/離婚達人/喪偶終老 各自可達且互斥
+  const WIN=mk(95,90,45,'e00'), SGL=mk(10,40,45,'e00'), PLY=mk(90,30,45,'e00'), DIV=mk(55,40,50,'e00'), WID=mk(55,55,65,'e00'), CPL=mk(55,50,35,'e00');
+  out.achWinner  = !!ACH_MAP.r140_winner  && ACH_MAP.r140_winner.check({S:WIN})===true  && ACH_MAP.r140_winner.check({S:SGL})===false;
+  out.achSingle  = !!ACH_MAP.r140_single  && ACH_MAP.r140_single.check({S:SGL})===true  && ACH_MAP.r140_single.check({S:WIN})===false;
+  out.achPlayer  = !!ACH_MAP.r140_player  && ACH_MAP.r140_player.check({S:PLY})===true  && ACH_MAP.r140_player.check({S:CPL})===false;
+  out.achDivorce = !!ACH_MAP.r140_divorce && ACH_MAP.r140_divorce.check({S:DIV})===true && ACH_MAP.r140_divorce.check({S:CPL})===false;
+  out.achWidow   = !!ACH_MAP.r140_widow   && ACH_MAP.r140_widow.check({S:WID})===true   && ACH_MAP.r140_widow.check({S:DIV})===false;
+  // ⑪ 跨局集滿 r140_love：五成就全亮→解鎖、缺一→不解
+  const allAch={r140_winner:true,r140_single:true,r140_player:true,r140_divorce:true,r140_widow:true};
+  SAVE.ach=Object.assign({},allAch); out.achFull = !!ACH_MAP.r140_love && ACH_MAP.r140_love.check({S:{}})===true;
+  const partial=Object.assign({},allAch); delete partial.r140_winner;
+  SAVE.ach=partial; out.achPartial = ACH_MAP.r140_love.check({S:{}})===false;
+  SAVE.ach={}; S=null;
+  return JSON.stringify(out);
+})()`, sandbox));
+[
+  ['dataFull','① 資料齊備:6 戀愛身價+6 婚戀關係階層+4 人生階段+6 結局型別+六世代婚戀梗+桃花資源三檔'],
+  ['charmMap','② 魅力確定性映射:高→萬人迷/中→中段/低→戀愛絕緣體且魅力單調驅動'],
+  ['boostDrive','③ 財富影響桃花資源:同魅力有錢身價>=窮到沒行情且 off 有別'],
+  ['cardRender','④ 卡片渲染:含戀愛身價/婚戀結局/桃花資源/正果或緣分'],
+  ['deterministic','⑤ deterministic 純讀:同 S 兩次渲染逐字一致'],
+  ['pure','⑥ 純呈現零汙染:生成前後 S.attr/era/age/flags 不變且零 rng'],
+  ['nullSafe','⑦ 無局(S=null)降級:回 null、卡空字串不炸'],
+  ['noAttr','⑦ 缺 attr/apr 降級:回 null 不炸'],
+  ['softDeg','⑧ 缺 mny 用中性50/髒 era 婚戀梗略過:仍回物件不炸'],
+  ['compatOld','⑨ 舊存檔相容:ensureState 不為 R140 補任何 S/flags 鍵'],
+  ['achWinner','⑩ r140_winner:勝利組鴛鴦→解、母胎單身→不解'],
+  ['achSingle','⑩ r140_single:母胎單身→解、勝利組→不解'],
+  ['achPlayer','⑩ r140_player:海王玩咖→解、平凡夫妻→不解'],
+  ['achDivorce','⑩ r140_divorce:離婚達人→解、平凡夫妻→不解'],
+  ['achWidow','⑩ r140_widow:喪偶終老→解、離婚達人→不解'],
+  ['achFull','⑪ 跨局集滿:五成就全亮→r140_love 解鎖'],
+  ['achPartial','⑪ 跨局集滿:缺一→r140_love 不解'],
+].forEach(([k,m])=>ok(r140[k], 'R140 '+m));
+
 console.log(fails ? `\n結果: ❌ ${fails} 項未通過` : '\n結果: ✅ 狀態機全數正確');
 process.exit(fails ? 1 : 0);
