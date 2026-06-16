@@ -5603,5 +5603,80 @@ const r143 = JSON.parse(vm.runInContext(`(function(){
   ['achPartial','⑪ 跨局集滿:缺一→r143_social 不解'],
 ].forEach(([k,m])=>ok(r143[k], 'R143 '+m));
 
+/* ===== R144 健康・身體狀態軌跡（純衍生/結算覆蓋層；零 rng/零汙染/deterministic 推演/體質 hp 主驅動+財富養生本錢/壞資料降級/身體狀態成就） ===== */
+const r144 = JSON.parse(vm.runInContext(`(function(){
+  const out={};
+  function mk(hp,mny,age,era){ return {attr:{hp:hp,int:50,apr:50,mny:mny,hap:50}, age:age, era:era, flags:{}, alive:false}; }
+  // ① 資料齊備：6 體質底子階層+6 體態階層+4 人生階段+6 結局型別+六世代養生梗+養生本錢三檔
+  out.dataFull = Array.isArray(R144_BODY) && R144_BODY.length===6 && R144_BODY.every(t=>t.ic&&t.nm&&t.short)
+    && Array.isArray(R144_FORM) && R144_FORM.length===6 && R144_FORM.every(t=>t.ic&&t.nm&&t.short)
+    && Array.isArray(R144_PHASES) && R144_PHASES.length===4 && R144_PHASES.every(p=>typeof p.off==='number')
+    && ['ironman','wellness','centenarian','pillbox','burnout','bedridden'].every(k=>R144_END[k]&&R144_END[k].nm&&R144_END[k].path&&R144_END[k].note)
+    && R55_ERAS.every(er=>typeof R144_ERAHEALTH[er.id]==='string')
+    && [r144BudgetOf(90),r144BudgetOf(50),r144BudgetOf(10)].every(c=>typeof c.off==='number'&&c.nm&&c.short);
+  // ② 體質 hp 確定性映射：高→鐵打金剛(>=4)、中→中段(>=2)、低→玻璃體質(0)；且單調驅動
+  const hi=r144HealthOf(mk(95,50,40,'e00')), midd=r144HealthOf(mk(50,50,40,'e00')), lo=r144HealthOf(mk(5,50,40,'e00'));
+  out.hpMap = !!hi&&!!midd&&!!lo && hi.bodyTier>=4 && midd.bodyTier>=2 && lo.bodyTier===0
+    && hi.bodyTier>midd.bodyTier && midd.bodyTier>lo.bodyTier;
+  // ③ 財富影響養生本錢（次級修正）：同底子 55，養生有本錢(mny90)底子 >= 買不起健康(mny10)，且 off 有別
+  const rich=r144HealthOf(mk(55,90,40,'e00')), poor=r144HealthOf(mk(55,10,40,'e00'));
+  out.budgetDrive = !!rich&&!!poor && rich.bodyTier>=poor.bodyTier && rich.budget.off>poor.budget.off;
+  // ④ 卡片渲染：含體質底子/身體結局/養生本錢/體態或身體
+  S=mk(50,50,40,'e00'); const card=r144HealthReviewHTML();
+  out.cardRender = card.indexOf('體質底子')>=0 && card.indexOf('身體結局')>=0 && card.indexOf('養生本錢')>=0 && (card.indexOf('體態')>=0||card.indexOf('身體')>=0);
+  // ⑤ deterministic 純讀：同 S 兩次渲染逐字一致
+  S=mk(40,40,35,'e10'); const a1=r144HealthReviewHTML(), a2=r144HealthReviewHTML();
+  out.deterministic = a1===a2 && a1.length>0;
+  // ⑥ 純呈現零汙染：生成前後 S.attr/era/age/flags 不變、零 rng 消耗
+  S=mk(72,55,45,'e70'); const bA=JSON.stringify(S.attr), bE=S.era, bAge=S.age, bF=JSON.stringify(S.flags);
+  let used=0; const oldR=rng; rng=function(){ used++; return oldR(); };
+  r144HealthReviewHTML(); r144HealthOf(S); rng=oldR;
+  out.pure = JSON.stringify(S.attr)===bA && S.era===bE && S.age===bAge && JSON.stringify(S.flags)===bF && used===0;
+  // ⑦ S=null / 缺 attr / 缺 hp 降級：回 null、卡空字串、不炸
+  out.nullSafe = (()=>{ try{ S=null; return r144HealthOf(null)===null && r144HealthReviewHTML()===''; }catch(e){ return false; } })();
+  out.noAttr = (()=>{ try{ return r144HealthOf({age:40,era:'e00'})===null && r144HealthOf({attr:{mny:50},age:40})===null; }catch(e){ return false; } })();
+  // ⑧ 缺 mny 降級：用中性 50、仍回物件不炸；髒 era → 養生梗略過不炸
+  out.softDeg = (()=>{ try{ const m=r144HealthOf({attr:{hp:55},age:40,era:'e00',flags:{}}); const d=r144HealthOf(mk(55,50,40,'zzz999')); return !!m && m.bodyTier===r144HealthOf(mk(55,50,40,'e00')).bodyTier && !!d && d.era===null; }catch(e){ return false; } })();
+  // ⑨ 舊存檔相容：ensureState 不為 R144 在 S/flags 補任何 r144 鍵
+  startGame(); const olds=S; ensureState(olds);
+  out.compatOld = !Object.keys(olds).some(k=>k.toLowerCase().indexOf('r144')===0)
+    && !Object.keys(olds.flags||{}).some(k=>k.toLowerCase().indexOf('r144')===0);
+  // ⑩ 身體狀態成就確定性點亮：鐵人/養生達人/長命百歲/藥罐子/爆肝/長照 各自可達且互斥
+  const IRON=mk(88,40,35,'e00'), WELL=mk(75,60,50,'e00'), CENT=mk(85,40,85,'e00'), PILL=mk(50,50,40,'e00'), BURN=mk(22,50,40,'e00'), BED=mk(18,50,72,'e00');
+  out.achIron    = !!ACH_MAP.r144_ironman     && ACH_MAP.r144_ironman.check({S:IRON})===true       && ACH_MAP.r144_ironman.check({S:BURN})===false;
+  out.achWell    = !!ACH_MAP.r144_wellness    && ACH_MAP.r144_wellness.check({S:WELL})===true       && ACH_MAP.r144_wellness.check({S:BURN})===false;
+  out.achCent    = !!ACH_MAP.r144_centenarian && ACH_MAP.r144_centenarian.check({S:CENT})===true    && ACH_MAP.r144_centenarian.check({S:BED})===false;
+  out.achPill    = !!ACH_MAP.r144_pillbox     && ACH_MAP.r144_pillbox.check({S:PILL})===true        && ACH_MAP.r144_pillbox.check({S:IRON})===false;
+  out.achBurn    = !!ACH_MAP.r144_burnout     && ACH_MAP.r144_burnout.check({S:BURN})===true        && ACH_MAP.r144_burnout.check({S:IRON})===false;
+  out.achBed     = !!ACH_MAP.r144_bedridden   && ACH_MAP.r144_bedridden.check({S:BED})===true       && ACH_MAP.r144_bedridden.check({S:IRON})===false;
+  // ⑪ 跨局集滿 r144_health：六成就全亮→解鎖、缺一→不解
+  const allAch={r144_ironman:true,r144_wellness:true,r144_centenarian:true,r144_pillbox:true,r144_burnout:true,r144_bedridden:true};
+  SAVE.ach=Object.assign({},allAch); out.achFull = !!ACH_MAP.r144_health && ACH_MAP.r144_health.check({S:{}})===true;
+  const partial=Object.assign({},allAch); delete partial.r144_ironman;
+  SAVE.ach=partial; out.achPartial = ACH_MAP.r144_health.check({S:{}})===false;
+  SAVE.ach={}; S=null;
+  return JSON.stringify(out);
+})()`, sandbox));
+[
+  ['dataFull','① 資料齊備:6 體質底子+6 體態階層+4 人生階段+6 結局型別+六世代養生梗+養生本錢三檔'],
+  ['hpMap','② 體質 hp 確定性映射:高→鐵打金剛/中→中段/低→玻璃體質且單調驅動'],
+  ['budgetDrive','③ 財富影響養生本錢:同基底養生有本錢>=買不起健康且 off 有別'],
+  ['cardRender','④ 卡片渲染:含體質底子/身體結局/養生本錢/體態或身體'],
+  ['deterministic','⑤ deterministic 純讀:同 S 兩次渲染逐字一致'],
+  ['pure','⑥ 純呈現零汙染:生成前後 S.attr/era/age/flags 不變且零 rng'],
+  ['nullSafe','⑦ 無局(S=null)降級:回 null、卡空字串不炸'],
+  ['noAttr','⑦ 缺 attr/hp 降級:回 null 不炸'],
+  ['softDeg','⑧ 缺 mny 中性化＋髒 era 養生梗略過:仍回物件不炸且底子一致'],
+  ['compatOld','⑨ 舊存檔相容:ensureState 不為 R144 補任何 S/flags 鍵'],
+  ['achIron','⑩ r144_ironman:鐵人→解、爆肝→不解'],
+  ['achWell','⑩ r144_wellness:養生達人→解、爆肝→不解'],
+  ['achCent','⑩ r144_centenarian:長命百歲→解、長照→不解'],
+  ['achPill','⑩ r144_pillbox:藥罐子→解、鐵人→不解'],
+  ['achBurn','⑩ r144_burnout:爆肝→解、鐵人→不解'],
+  ['achBed','⑩ r144_bedridden:長照臥床→解、鐵人→不解'],
+  ['achFull','⑪ 跨局集滿:六成就全亮→r144_health 解鎖'],
+  ['achPartial','⑪ 跨局集滿:缺一→r144_health 不解'],
+].forEach(([k,m])=>ok(r144[k], 'R144 '+m));
+
 console.log(fails ? `\n結果: ❌ ${fails} 項未通過` : '\n結果: ✅ 狀態機全數正確');
 process.exit(fails ? 1 : 0);

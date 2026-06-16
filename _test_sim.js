@@ -4258,6 +4258,54 @@ try {
   console.log('R143 社交人脈朋友圈軌跡: ❌ ' + e.message);
 }
 
+/* ===== R144 健康・身體狀態軌跡（純衍生/結算覆蓋層：零 rng/零 pinned 序列擾動/deterministic/體質 hp 主驅動/降級） ===== */
+let r144OK = false;
+try {
+  const r144Raw = vm.runInContext(`(function(){
+    const out={};
+    /* ① 結構：6 體質底子階層、6 體態階層、4 人生階段、6 結局型別、六個身體狀態成就＋集滿成就齊備 */
+    out.struct = Array.isArray(R144_BODY) && R144_BODY.length===6 && Array.isArray(R144_FORM) && R144_FORM.length===6
+      && Array.isArray(R144_PHASES) && R144_PHASES.length===4
+      && ['ironman','wellness','centenarian','pillbox','burnout','bedridden'].every(k=>R144_END[k])
+      && ['r144_ironman','r144_wellness','r144_centenarian','r144_pillbox','r144_burnout','r144_bedridden','r144_health'].every(id=>!!ACH_MAP[id]);
+    /* ② 純衍生覆蓋零 rng：startGame 後跑 r144HealthOf/Review 不消耗任何種子序列（與 pinned 抽事件序列獨立） */
+    const oc=randomSeedCode; randomSeedCode=function(){return 'EEEEEE';};
+    startGame(); const r0=[]; for(let i=0;i<20;i++)r0.push(rng());
+    startGame(); r144HealthOf(S); r144HealthReviewHTML(); const r1=[]; for(let i=0;i<20;i++)r1.push(rng());
+    let rngEq=true; for(let i=0;i<20;i++){ if(r0[i]!==r1[i]) rngEq=false; }
+    out.rngZero = rngEq; randomSeedCode=oc;
+    /* ③ deterministic 純讀終局 S：同態同結果、零 mutation */
+    startGame(); S.attr={hp:60,int:50,apr:50,mny:30,hap:60}; S.age=45; S.flags={};
+    const snap=JSON.stringify(S.attr)+'|'+S.age;
+    const c1=r144HealthReviewHTML(), c2=r144HealthReviewHTML();
+    out.deterministic = c1===c2 && c1.indexOf('體質底子')>=0 && c1.indexOf('身體結局')>=0
+      && (JSON.stringify(S.attr)+'|'+S.age)===snap;
+    /* ④ 體質 hp 單調驅動底子分檔：高 hp→鐵打金剛(>=4)、低 hp→玻璃體質(0) */
+    const hi=r144HealthOf({attr:{hp:95,mny:50},age:40,flags:{}}), lo=r144HealthOf({attr:{hp:5,mny:50},age:40,flags:{}});
+    out.hpDrive = !!hi && !!lo && hi.bodyTier>=4 && lo.bodyTier===0 && hi.bodyTier>lo.bodyTier;
+    /* ⑤ 六結局確定性分流互斥可達：鐵人/養生/長命百歲/藥罐子/爆肝/長照各命中對應 endType */
+    const E=(a)=>r144HealthOf(a)&&r144HealthOf(a).endType;
+    out.endsReach =
+         E({attr:{hp:88,mny:40},age:35})==='ironman'
+      && E({attr:{hp:75,mny:60},age:50})==='wellness'
+      && E({attr:{hp:85,mny:40},age:85})==='centenarian'
+      && E({attr:{hp:50,mny:50},age:40})==='pillbox'
+      && E({attr:{hp:22,mny:50},age:40})==='burnout'
+      && E({attr:{hp:18,mny:50},age:72})==='bedridden';
+    /* ⑥ S=null/缺 attr/缺 hp 安全降級：回 null、卡空字串、不炸 */
+    const sv=S; S=null; let nullSafe=true;
+    try{ if(r144HealthOf(null)!==null) nullSafe=false; if(r144HealthReviewHTML()!=='') nullSafe=false;
+         if(r144HealthOf({attr:{mny:50},age:40})!==null) nullSafe=false; }catch(e){ nullSafe=false; }
+    S=sv; out.nullSafe = nullSafe;
+    return JSON.stringify(out);
+  })()`, sandbox);
+  const r144 = JSON.parse(r144Raw);
+  r144OK = Object.values(r144).every(v => v === true);
+  console.log(`R144 健康身體狀態軌跡: ${r144OK ? '✅ 全數通過' : '❌ ' + JSON.stringify(r144)}`);
+} catch (e) {
+  console.log('R144 健康身體狀態軌跡: ❌ ' + e.message);
+}
+
 if (__errors.length) {
   console.log('\n--- 錯誤樣本(前5) ---');
   __errors.slice(0, 5).forEach(e => console.log('  ' + e));
@@ -4265,6 +4313,6 @@ if (__errors.length) {
 
 /* 退出碼 */
 const pass = __errors.length === 0 && chk.missingScenes.length === 0 && chk.eventVisible >= 126 && chk.eventTotal >= 126 && lsOK && achUnlocked > 0
-  && chk.deathbookMissing.length === 0 && chk.deathTotal >= 17 && deathsOK && rebirthOK && legacyOK && petOK && r13OK && r17OK && r20OK && r21OK && r22OK && r24OK && r25OK && r34OK && r38OK && r41OK && r42OK && r43OK && r44OK && r45OK && r46OK && r47OK && r48OK && r49OK && r51OK && r52OK && r53OK && r54OK && r55OK && r72OK && r76OK && r77OK && r79OK && r86OK && r87OK && r92OK && r93OK && r95OK && r96OK && r108OK && r110OK && r111OK && r112OK && r113OK && r115OK && r116OK && r117OK && r118OK && r119OK && r122OK && r126OK && r134OK && r136OK && r138OK && r139OK && r140OK && r141OK && r142OK && r143OK;
+  && chk.deathbookMissing.length === 0 && chk.deathTotal >= 17 && deathsOK && rebirthOK && legacyOK && petOK && r13OK && r17OK && r20OK && r21OK && r22OK && r24OK && r25OK && r34OK && r38OK && r41OK && r42OK && r43OK && r44OK && r45OK && r46OK && r47OK && r48OK && r49OK && r51OK && r52OK && r53OK && r54OK && r55OK && r72OK && r76OK && r77OK && r79OK && r86OK && r87OK && r92OK && r93OK && r95OK && r96OK && r108OK && r110OK && r111OK && r112OK && r113OK && r115OK && r116OK && r117OK && r118OK && r119OK && r122OK && r126OK && r134OK && r136OK && r138OK && r139OK && r140OK && r141OK && r142OK && r143OK && r144OK;
 console.log('\n結果: ' + (pass ? '✅ 全數通過' : '❌ 有項目未通過'));
 process.exit(pass ? 0 : 1);

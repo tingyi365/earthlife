@@ -3017,6 +3017,14 @@ const ACHIEVEMENTS = [
   {id:"r143_edge", ic:"🧍", nm:"邊緣魯蛇・人群中的隱形人", desc:"畢業紀念冊翻半天找不到、班級群組從不發言、聚會永遠縮在角落滑手機的隱形人——不是沒想過要融入，是每次開口都怕說錯、每次揪團都沒被想起。這座島最沉默的一群人，人群中的孤獨，你一個人安安靜靜地走完。", check:c=>{const h=r143SocialOf(c.S); return !!h && h.ach.edge;}, hint:"讓魅力與智力長期偏低（句點王／邊緣社恐）、又活過學生年齡（22+），且還沒到高齡孤獨終老——把終局社交軌跡卡在『邊緣魯蛇・人群中的隱形人』分流…"},
   {id:"r143_lonely", ic:"🌫️", nm:"孤獨終老・晚景一人無聲", desc:"年輕時就交不太到朋友，老了更是一個一個凋零——晚年獨居，電話響起多半是詐騙跟推銷，過年過節也沒人按門鈴。這座島高齡社會最沉重的角落，孤獨死的新聞看多了，沒想過有天主角會是自己。一個人活到最後，最怕的不是病痛，是連說句話的人都沒有。", check:c=>{const h=r143SocialOf(c.S); return !!h && h.ach.lonely;}, hint:"讓魅力 apr 長期偏低（30 以下）、又活到高齡（60+）——把終局社交軌跡推到『孤獨終老・晚景一人無聲』分流…"},
   {id:"r143_social", ic:"🫂", nm:"鬼島社交人脈圖鑑・朋友圈軌跡全集滿", desc:"人脈王、三五知己、酒肉朋友、句點王、邊緣人、孤獨終老——這座島丟給你的六種社交命運，你用一次次投胎全都親自走過一遍。被圍繞過、交心過、熱鬧過、句點過、邊緣過、孤單過，人際與情誼這道最溫暖也最寂寞的人生考題，你終於把它活成了一本圖鑑。", check:c=>{const need=["r143_maven","r143_soulmate","r143_boozer","r143_fullstop","r143_edge","r143_lonely"]; return !!(SAVE&&SAVE.ach) && need.every(id=>SAVE.ach[id]);}, hint:"跨局集滿六種社交結局成就各至少一次（人脈王／三五知己／酒肉之友／句點王／邊緣人／孤獨終老）——把社交人脈的每一種命運都走過一遍…"},
+  /* ---- R144 健康・身體狀態軌跡成就（純讀 r144HealthOf(S) deterministic 推演，零 rng；體質 hp 為主驅動＋年齡老化＋財富養生本錢，推演本局「養生作息與體態身體狀態」的過程軌跡，舊存檔/壞資料永不誤觸；專注作息/體態/養生「過程」，與 R138 病歷長照「結局命運」軸各自獨立旗標）---- */
+  {id:"r144_ironman", ic:"🦾", nm:"林北鐵打的・百毒不侵鐵人體質", desc:"三高？慢性病？那是別人的劇本。你這副身子像吃了無限續命的鈦合金，年年健檢全綠燈、感冒都懶得找上你——養生靠的是基因不是努力，這句話氣死一票天天吞藥配水的藥罐子。在這座爆肝過勞當日常的島上，能不靠養生就硬朗到老，本身就是贏在投胎。", check:c=>{const h=r144HealthOf(c.S); return !!h && h.ach.ironman;}, hint:"把體質 hp 養到頂（有錢再加養生本錢加成），讓終局身體狀態軌跡推到最高的『林北鐵打的・鐵人體質』分流…"},
+  {id:"r144_wellness", ic:"🧘", nm:"養生達人・規律作息凍齡有成", desc:"早睡早起、原型食物、規律運動、定期健檢——你把養生活成了一門功課，作息規律到讓爆肝同事羨慕嫉妒恨。底子未必天生鐵打，卻靠後天自律把身體顧得有聲有色，凍齡又精神。在這座外食重鹹、熬夜成性的島上，能管住嘴邁開腿的，已經是稀有物種。", check:c=>{const h=r144HealthOf(c.S); return !!h && h.ach.wellness;}, hint:"體質 hp 中上、財富夠請得起養生本錢（健身房／私廚／自費健檢）、又活到中年後（40+）——讓終局身體狀態軌跡走到『養生達人・規律作息』分流…"},
+  {id:"r144_centenarian", ic:"🧓", nm:"無病無痛長命百歲・活到登出都嫌硬", desc:"一輩子沒進過幾次醫院，老來還能爬山健走、牙口好胃口好——活到連登出畫面都嫌你太硬，人瑞紅榜上有名。在這座洗腎與長照壓垮無數家庭的島上，無病無痛活到超高齡，是修幾輩子才換得到的福報，你親身領了這張長壽彩券。", check:c=>{const h=r144HealthOf(c.S); return !!h && h.ach.centenarian;}, hint:"體質 hp 維持夠高、又活到超高壽（82+）——讓終局身體狀態軌跡走到『無病無痛長命百歲』分流…"},
+  {id:"r144_pillbox", ic:"💊", nm:"三高候選藥罐子・中廣發福慢性病", desc:"血壓、血糖、血脂——三高湊一桌，腰圍跟年齡一起往上爬，健檢報告紅字滿江紅。每天起床第一件事是吞一把慢性藥配水，藥袋多到能開店。年輕時欠的外食宵夜久坐債，中年連本帶利還，這座島最普遍的中年體態，你一格不差地養了出來。", check:c=>{const h=r144HealthOf(c.S); return !!h && h.ach.pillbox;}, hint:"體質 hp 中等偏普、又活到出社會以後、且沒走到爆肝／長照／養生路線——把終局身體狀態軌跡卡在『三高候選藥罐子・中廣發福』分流…"},
+  {id:"r144_burnout", ic:"🔥", nm:"爆肝代表・熬夜外食早衰過勞包", desc:"責任制爆肝、輪班顧機台、下班還在回 LINE，配上手搖珍奶當水、鹹酥雞當宵夜——年紀輕輕一身職業病，醫生說你的身體比實際年齡老了十歲。這座過勞之島把人當耗材燒，你把命押在 KPI 上，業績有沒有衝上去不知道，肝是真的先爆了。", check:c=>{const h=r144HealthOf(c.S); return !!h && h.ach.burnout;}, hint:"體質 hp 偏低、又是出社會後拚事業的年紀（28+）、還沒拖到高齡長照——讓終局身體狀態軌跡走到『爆肝代表・早衰過勞包』分流…"},
+  {id:"r144_bedridden", ic:"🛌", nm:"長照臥床・體態崩壞臥病晚景", desc:"體質本就單薄，年輕時又不顧，拖到晚年身體一垮再也站不起來——一床、一管、一個看護，日子用點滴跟翻身計算。長照悲歌不是新聞裡的別人，輪到自己時才懂：活得久，有時候是另一種考驗，考的是全家人的肩膀。這座高齡之島最沉重的角落，你親身躺了一遭。", check:c=>{const h=r144HealthOf(c.S); return !!h && h.ach.bedridden;}, hint:"體質 hp 低到見底、又拖著病體活到晚年（68+）——讓終局身體狀態軌跡走到『長照臥床・體態崩壞』分流…"},
+  {id:"r144_health", ic:"🩻", nm:"鬼島養生圖鑑・身體狀態軌跡全集滿", desc:"林北鐵打的、養生達人、長命百歲、三高藥罐、爆肝過勞、長照臥床——這座島丟給你的六種身體狀態命運，你用一次次投胎全都親自走過一遍。硬朗過、養生過、長壽過、發福過、爆肝過、臥床過，作息與體態這道沒人逃得掉的人生考題，你終於把它活成了一本養生圖鑑。", check:c=>{const need=["r144_ironman","r144_wellness","r144_centenarian","r144_pillbox","r144_burnout","r144_bedridden"]; return !!(SAVE&&SAVE.ach) && need.every(id=>SAVE.ach[id]);}, hint:"跨局集滿六種身體狀態結局成就各至少一次（鐵人體質／養生達人／長命百歲／藥罐子／爆肝代表／長照臥床）——把作息與體態的每一種命運都走過一遍…"},
   {id:"r70a_unicorn", ic:"🦄", nm:"創業上岸・無中生有", desc:"在頭家夢分歧鏈選自己創業，撐過跑三點半的歲月，最後成功上岸買房定居——你把『無中生有』四個字活成了真的。", check:c=>!!(c.S.flags&&c.S.flags.r70a_unicorn), hint:"分歧鏈裡選自己創業的人，中段擴張或被收購（或在三點半跳票邊緣硬撐活下來），末段才走得到買房上岸…"},
   {id:"r70a_freebird", ic:"🕊️", nm:"社畜跳船・自由業真男人", desc:"當年領死薪水的你中途跳船去接案，多年後接出口碑、開了自己的工作室——上班族眼裡那種『自由業』，自由是真的，業也真的有在接。", check:c=>!!(c.S.flags&&c.S.flags.r70a_freebird), hint:"分歧鏈選領死薪水當社畜的人，中段選擇安靜離職跳船接案，末段把工作室掛牌做起來…"},
   {id:"r70a_clear", ic:"🧭", nm:"頭家夢・全鏈結業", desc:"從老家那通電話一路走到人生期末考，把頭家夢（或死薪水）這條三段分歧鏈完整走完——接、創、領，無論哪條路你都活出了答案。", check:c=>!!(c.S.flags&&c.S.flags.r70a_done), hint:"老家的店要收那年做出選擇後，把中段、末段兩道抉擇都接著走完，整條頭家分歧鏈一站不漏…"},
@@ -4570,6 +4578,158 @@ function r143SocialReviewHTML(){
     <div style="display:flex;gap:6px;align-items:baseline;padding:6px 0 2px;font-size:13px">
       <span class="muted" style="min-width:60px">社交結局</span><span>${end.ic} <b>${end.nm}</b></span></div>
     <div style="display:flex;gap:6px;align-items:baseline;font-size:12.5px"><span class="muted" style="min-width:60px">人脈排場</span><span>${h.crowd.nm}（${h.crowd.short}）</span></div>
+    ${eraLine}
+    <div class="muted" style="font-size:12.5px;margin-top:8px;line-height:1.8">${fateLine}<br>${end.path}<br>${end.note}</div></div>`;
+}
+
+/* =========================================================================
+   R144 健康・身體狀態軌跡（純衍生／結算覆蓋層，零 rng、零事件序列擾動）
+   ── 呼應主題：讓「體質 hp」這屬性真正驅動本局的「養生作息與體態身體狀態」過程
+      軌跡（鐵打底子 vs 玻璃體質、養生自律 vs 爆肝走樣）。建立在既有 S.attr.hp 之上，
+      全程只「讀」終局 state，不新增任何 Math.random／rng() → 種子事件抽取序列逐位元
+      不變；獨立旗標，與 R138 病歷長照「結局命運」軸、R140 婚戀／R141 興趣／R142 理財
+      ／R143 社交 各自獨立、互不汙染。
+   與 R138 的分工：R138 主打「病歷與長照」＝健康的疾病/善終/猝死「結局命運」；
+      R144 主打「養生作息與體態」＝身體狀態隨年齡老化的「過程軌跡」（體態階層逐段
+      呈現＋養生本錢修正），主題與成就框架刻意錯開，不重複。
+   驅動鐵律：
+   ① 體質 hp 為主驅動（單調決定底子階層）；財富 mny 另做「養生本錢／醫療可近性」次級
+      修正（請得起健身房私廚自費健檢 vs 22K 買不起健康外食擺爛）；年齡決定體態老化
+      折舊與終局走向；出生世代 era 只做「養生／飲食梗」文案著色，不動數值。
+      特例：「長照臥床」要求體質低且高齡（拖到晚年身體垮）；「長命百歲」要求體質夠高
+      且超高齡；「養生達人」要求體質中上＋養生本錢夠＋中年後（後天自律有成）。
+   ② 純呈現：所有 R144 函式只回傳字串／純讀物件，不寫 S、不改數值平衡；S=null／無 attr／
+      缺 hp 鍵／髒資料一律安全降級回 null／空字串，絕不白屏或拋例外。
+   ③ 跨局收集：r144_health ＝集滿六種身體狀態結局成就（鐵人體質／養生達人／長命百歲／
+      藥罐子／爆肝代表／長照臥床）。
+   ========================================================================= */
+// 體質底子階層（hp 主導、養生本錢次要；純查表、零 rng；index 0..5 由低到高）
+const R144_BODY = [
+  {ic:"🩹", nm:"玻璃體質藥罐子", short:"一吹風就感冒、三天兩頭跑診所掛病號"},
+  {ic:"🤒", nm:"病秧子底",       short:"從小體弱、藥當補品吃、體力輸人一截"},
+  {ic:"😐", nm:"普通體質",       short:"沒大病也沒本錢、健康湊合著過"},
+  {ic:"🥗", nm:"養生有底子",     short:"作息有在顧、健檢大致過得了關"},
+  {ic:"🏋️", nm:"練家子鐵骨",     short:"有在練、體力比同齡好一大截"},
+  {ic:"🦾", nm:"鐵打金剛",       short:"百毒不侵、林北鐵打的、感冒都懶得找你"},
+];
+// 體態／身體狀態階層（底子定起點、養生本錢微調、年齡老化折舊；純查表、零 rng；index 0..5 由低到高）
+const R144_FORM = [
+  {ic:"🛌", nm:"臥床枯槁",       short:"插管臥床、靠人翻身、身體再站不起來"},
+  {ic:"💊", nm:"三高發福走樣",   short:"中廣身材、健檢滿江紅、慢性藥不離身"},
+  {ic:"🩼", nm:"小毛病不斷微胖", short:"腰痠背痛、微胖肚子、健檢紅字幾條"},
+  {ic:"🚶", nm:"還算硬朗體態普", short:"沒大病、身材普普、撐得住日常操勞"},
+  {ic:"🏃", nm:"精壯老當益壯",   short:"體態精實、爬山不喘、體力像年輕人"},
+  {ic:"✨", nm:"無病無痛體態巔峰", short:"童顏凍齡、牙口好胃口好、硬朗到嚇人"},
+];
+// 人生階段（學生→晚年；erode 為體態相對底子的年齡老化折舊；越老折舊越多）
+const R144_PHASES = [
+  {key:"youth", age:18, nm:"青年體態", off:1},  // 年輕本錢、代謝快怎麼吃都不胖
+  {key:"prime", age:35, nm:"壯年作息", off:0},  // 開始發福、爆肝過勞的關卡
+  {key:"mid",   age:50, nm:"中年體態", off:-1}, // 三高發福、中年走樣
+  {key:"late",  age:68, nm:"晚年身體", off:-2}, // 病痛纏身或老當益壯見真章
+];
+// 身體狀態終局型別文案（純查表、零 rng）
+const R144_END = {
+  ironman:     {ic:"🦾", nm:"林北鐵打的・百毒不侵鐵人體質", path:"🦾 不靠養生靠基因、年年健檢全綠燈", note:"你這副身子像吃了無限續命的鈦合金，年年健檢全綠燈、感冒都懶得找上你——養生靠的是基因不是努力。在這座爆肝過勞當日常的島上，能不靠養生就硬朗到老，本身就是贏在投胎，這話氣死一票天天吞藥配水的藥罐子。"},
+  wellness:    {ic:"🧘", nm:"養生達人・規律作息凍齡有成", path:"🥗 早睡早起原型食物、自律把身體顧得有聲有色", note:"早睡早起、原型食物、規律運動、定期健檢——你把養生活成一門功課，作息規律到讓爆肝同事羨慕嫉妒恨。底子未必天生鐵打，卻靠後天自律把身體顧得凍齡又精神。在這座外食重鹹、熬夜成性的島上，能管住嘴邁開腿的，已經是稀有物種。"},
+  centenarian: {ic:"🧓", nm:"無病無痛長命百歲・活到登出都嫌硬", path:"🧓 爬山健走牙口好、人瑞紅榜上有名", note:"一輩子沒進過幾次醫院，老來還能爬山健走、牙口好胃口好——活到連登出畫面都嫌你太硬。在這座洗腎與長照壓垮無數家庭的島上，無病無痛活到超高齡，是修幾輩子才換得到的福報，你親身領了這張長壽彩券。"},
+  pillbox:     {ic:"💊", nm:"三高候選藥罐子・中廣發福慢性病", path:"💊 健檢滿江紅、每天一把慢性藥配水", note:"血壓、血糖、血脂——三高湊一桌，腰圍跟年齡一起往上爬，健檢報告紅字滿江紅。每天起床第一件事是吞一把慢性藥配水，藥袋多到能開店。年輕時欠的外食宵夜久坐債，中年連本帶利還，這座島最普遍的中年體態，你一格不差地養了出來。"},
+  burnout:     {ic:"🔥", nm:"爆肝代表・熬夜外食早衰過勞包", path:"🔥 責任制爆肝、身體比實際年齡老十歲", note:"責任制爆肝、輪班顧機台、下班還在回 LINE，配上手搖珍奶當水、鹹酥雞當宵夜——年紀輕輕一身職業病，醫生說你的身體比實際年齡老了十歲。這座過勞之島把人當耗材燒，你把命押在 KPI 上，業績有沒有衝上去不知道，肝是真的先爆了。"},
+  bedridden:   {ic:"🛌", nm:"長照臥床・體態崩壞臥病晚景", path:"🛌 一床一管一看護、日子用翻身計算", note:"體質本就單薄，年輕時又不顧，拖到晚年身體一垮再也站不起來——一床、一管、一個看護，日子用點滴跟翻身計算。長照悲歌不是新聞裡的別人，輪到自己時才懂：活得久，有時候是另一種考驗，考的是全家人的肩膀。這座高齡之島最沉重的角落，你親身躺了一遭。"},
+};
+// 出生世代養生／飲食觀梗（純文案著色，零數值影響）
+const R144_ERAHEALTH = {
+  e70:"你那年代沒健保，看病靠隔壁王伯的草藥跟刮痧，鐵牛運功散配維士比就是行動保健室——身體是做工磨出來的，硬朗也是磨出來的。",
+  e80:"你年輕時保力達B當水喝、檳榔提神、夜市鹹酥雞當宵夜——拚經濟哪管什麼三高，爆肝叫做拚，胃痛忍一忍就過去了。",
+  e90:"你出社會剛好碰上全民健保，掛號一百塊看到飽——小毛病衝診所拿藥、大毛病排大醫院，但珍奶炸物也是這年代養成的口味。",
+  e00:"你這代手搖珍奶當水、外送炸物配宵夜、久坐打電腦腰痠背痛——文明病從年輕養起，健檢紅字一年比一年多。",
+  e10:"你成長在過勞之島，責任制爆肝、輪班顧機台、下班還要回 LINE——年輕就一身職業病，醫生說你的身體比實際年齡老十歲。",
+  e20:"你這代健身重訓、生酮斷食、保健食品吞整把——一邊熬夜追劇一邊養生，靠智慧手錶量心率假裝自己很健康。",
+};
+// 財富→養生本錢／醫療可近性修正（健身房私廚自費健檢 vs 22K 買不起健康；底子仍為主驅動，財富只做 ±8 次級修正）
+function r144BudgetOf(mny){
+  return mny>=70 ? {off:8,  nm:"養生有本錢",       short:"上得起健身房、吃得起原型食物、自費高階健檢"}
+       : mny<=25 ? {off:-8, nm:"22K 買不起健康",   short:"外食擺爛、生病拖著不看，健康是窮人最先放棄的奢侈品"}
+       :           {off:0,  nm:"健保堪用養生靠意志", short:"全民健保撐著、養生全靠自律，省不了多少"};
+}
+// 體質 hp →體質底子階層（純查表、單調驅動）
+function r144BodyTierOf(effH){
+  return effH>=82?5 : effH>=66?4 : effH>=50?3 : effH>=34?2 : effH>=18?1 : 0;
+}
+// 體態／身體狀態（底子定起點、養生本錢微調、階段 off 年齡老化折舊；純算、零 rng）
+function r144FormLevelAt(bodyTier, mny, off){
+  let base = bodyTier;
+  if(mny>=70) base+=1; else if(mny<=25) base-=1;   // 養生本錢微調（請得起養生 vs 買不起健康）
+  return Math.max(0, Math.min(5, base + off));
+}
+/* 從任一 state deterministic 推演健康・身體狀態軌跡（純讀、零 rng、零 mutation）；壞資料回 null */
+function r144HealthOf(st){
+  try{
+    if(!st || typeof st!=="object" || !st.attr || typeof st.attr.hp!=="number") return null;
+    const hp   = Math.max(0, Math.min(100, st.attr.hp));
+    const mny  = (typeof st.attr.mny==="number") ? Math.max(0, Math.min(100, st.attr.mny)) : 50; // 缺 mny → 中性
+    const age  = Math.max(0, Math.round(st.age||0));
+    const era  = (typeof st.era==="string" && R144_ERAHEALTH.hasOwnProperty(st.era)) ? st.era : null;
+    const budget = r144BudgetOf(mny);                            // 財富影響養生本錢／醫療可近性（次級）
+    const effH = Math.max(0, Math.min(100, hp + budget.off));    // 體質為主、養生本錢微調
+    const bodyTier = r144BodyTierOf(effH);
+    // 各人生階段體態／身體狀態（年輕本錢、其餘隨年齡老化折舊）
+    const stages=[];
+    for(let i=0;i<R144_PHASES.length;i++){
+      const ph=R144_PHASES[i];
+      if(age < ph.age) break;                                   // 沒活到該階段就不列（早逝只走前段）
+      const lv=r144FormLevelAt(bodyTier, mny, ph.off);
+      const f=R144_FORM[lv];
+      stages.push({key:ph.key, nm:ph.nm, lv, ic:f.ic, tnm:f.nm, short:f.short});
+    }
+    // 身體狀態終局（互斥；體質為主、年齡決定走向，長照吃低體質高齡、長命百歲吃高體質超高齡、養生達人吃中上體質+本錢+中年後）
+    let endType;
+    if(hp<=25 && age>=68) endType="bedridden";                                         // 低體質＋高齡→長照臥床
+    else if(hp>=78 && age>=82) endType="centenarian";                                  // 高體質＋超高齡→無病無痛長命百歲
+    else if(hp>=70 && mny>=55 && age>=40) endType="wellness";                          // 中上體質＋養生本錢＋中年後→養生達人
+    else if(hp>=80) endType="ironman";                                                 // 純高體質→林北鐵打的鐵人體質
+    else if(hp<=35 && age>=28) endType="burnout";                                      // 低體質＋出社會後→爆肝早衰過勞包
+    else endType="pillbox";                                                            // 其餘（中等體質）→三高候選藥罐子
+    const ach = {
+      ironman:     endType==="ironman",
+      wellness:    endType==="wellness",
+      centenarian: endType==="centenarian",
+      pillbox:     endType==="pillbox",
+      burnout:     endType==="burnout",
+      bedridden:   endType==="bedridden",
+    };
+    return { hp, mny, age, era, budget, effH, bodyTier, stages, endType, ach };
+  }catch(e){ return null; }
+}
+function r144Health(){ return r144HealthOf(S); }
+/* 結算：健康・身體狀態回顧卡——體質定底子、底子+養生本錢+年齡推體態、終局回顧（純讀零 rng，可截圖分享，線C素材） */
+function r144HealthReviewHTML(){
+  const h=r144Health();
+  if(!h) return "";
+  const end=R144_END[h.endType]||R144_END.pillbox;
+  const body=R144_BODY[h.bodyTier]||R144_BODY[0];
+  const rows=h.stages.map(s=>`<div style="display:flex;gap:8px;align-items:baseline;padding:3px 0;font-size:13px;border-bottom:1px solid rgba(255,255,255,.05)">
+      <span class="muted" style="min-width:60px">${s.nm}</span>
+      <span style="white-space:nowrap">${s.ic} <b>${s.tnm}</b></span>
+      <span class="muted" style="font-size:11px">${s.short}</span></div>`).join("");
+  // 世代養生／飲食觀梗（缺則略）
+  let eraLine="";
+  const eh = h.era && R144_ERAHEALTH[h.era];
+  if(eh) eraLine=`<div class="muted" style="font-size:11.5px;margin-top:6px">🍱 你那年代的養生觀：${eh}</div>`;
+  const robust = (h.endType==="ironman"||h.endType==="wellness"||h.endType==="centenarian");
+  const fateLine = robust
+    ? `🏃 <b style="color:#7ad0ff">這身體你顧住了</b>——在這座爆肝過勞當日常、洗腎洗到世界第一、長照壓垮無數家庭的島上，能把身體養得硬朗到老，本身就是一種贏。`
+    : `🥵 <b style="color:#ff9f9f">這條養生路走得有點狼狽</b>——三高藥罐、爆肝過勞、發福走樣、長照臥床，這座島把「健康」變成 22K 最先放棄的奢侈品，你用一輩子親身體會了一遭。`;
+  return `<div class="panel" style="margin-top:12px;background:var(--panel2)">
+    <h2 class="sec">🩻 健康・身體狀態軌跡</h2>
+    <div class="muted" style="font-size:11.5px;margin:-4px 0 6px">依你這輩子的體質底子、養得起的養生本錢與一路老去的歲月，推演你的身體狀態軌跡——林北鐵打的鐵人還是三高藥罐子、養生達人凍齡還是爆肝過勞包、長命百歲還是長照臥床？</div>
+    <div style="display:flex;gap:6px;align-items:baseline;padding:4px 0 2px;font-size:13px">
+      <span class="muted" style="min-width:60px">體質底子</span><span>${body.ic} <b>${body.nm}</b></span>
+      <span class="muted" style="font-size:11px">${body.short}</span></div>
+    ${rows}
+    <div style="display:flex;gap:6px;align-items:baseline;padding:6px 0 2px;font-size:13px">
+      <span class="muted" style="min-width:60px">身體結局</span><span>${end.ic} <b>${end.nm}</b></span></div>
+    <div style="display:flex;gap:6px;align-items:baseline;font-size:12.5px"><span class="muted" style="min-width:60px">養生本錢</span><span>${h.budget.nm}（${h.budget.short}）</span></div>
     ${eraLine}
     <div class="muted" style="font-size:12.5px;margin-top:8px;line-height:1.8">${fateLine}<br>${end.path}<br>${end.note}</div></div>`;
 }
@@ -17970,6 +18130,7 @@ function screenSummary(cat){
       ${r141HobbyReviewHTML()}
       ${r142InvestReviewHTML()}
       ${r143SocialReviewHTML()}
+      ${r144HealthReviewHTML()}
       ${attrCurveHTML()}
       ${attrTrajectoryHTML()}
       ${r129TrajectoryHTML()}
