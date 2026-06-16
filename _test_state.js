@@ -5903,5 +5903,80 @@ const r147 = JSON.parse(vm.runInContext(`(function(){
   ['achPartial','⑪ 跨局集滿:缺一→r147_education 不解'],
 ].forEach(([k,m])=>ok(r147[k], 'R147 '+m));
 
+/* ===== R148 飲食・美食軌跡（純衍生/結算覆蓋層；零 rng/零汙染/deterministic 推演/財富 mny 主驅動+體質 hp 飲食習慣/壞資料降級/飲食成就） ===== */
+const r148 = JSON.parse(vm.runInContext(`(function(){
+  const out={};
+  function mk(mny,hp,age,era){ return {attr:{hp:hp,int:50,apr:50,mny:mny,hap:50}, age:age, era:era, flags:{}, alive:false}; }
+  // ① 資料齊備：6 食力資產底子+6 餐桌處境階層+4 人生階段+6 結局型別+六世代飲食梗+飲食習慣三檔
+  out.dataFull = Array.isArray(R148_DIET) && R148_DIET.length===6 && R148_DIET.every(t=>t.ic&&t.nm&&t.short)
+    && Array.isArray(R148_TABLE) && R148_TABLE.length===6 && R148_TABLE.every(t=>t.ic&&t.nm&&t.short)
+    && Array.isArray(R148_PHASES) && R148_PHASES.length===4 && R148_PHASES.every(p=>typeof p.off==='number')
+    && ['michelin','organic','delivery','foodie','street','instant'].every(k=>R148_END[k]&&R148_END[k].nm&&R148_END[k].path&&R148_END[k].note)
+    && R55_ERAS.every(er=>typeof R148_ERAFOOD[er.id]==='string')
+    && [r148HabitOf(90),r148HabitOf(50),r148HabitOf(10)].every(c=>typeof c.off==='number'&&c.nm&&c.short);
+  // ② 財富 mny 確定性映射：高→米其林饕客(>=4)、中→中段(>=2)、低→泡麵度日(0)；且單調驅動
+  const hi=r148FoodOf(mk(95,50,40,'e00')), midd=r148FoodOf(mk(50,50,40,'e00')), lo=r148FoodOf(mk(5,50,40,'e00'));
+  out.mnyMap = !!hi&&!!midd&&!!lo && hi.dietTier>=4 && midd.dietTier>=2 && lo.dietTier===0
+    && hi.dietTier>midd.dietTier && midd.dietTier>lo.dietTier;
+  // ③ 體質影響飲食習慣（次級修正）：同口袋 55，養生鐵胃(hp90)底子 >= 外食爆肝(hp10)，且 off 有別
+  const healthy=r148FoodOf(mk(55,90,40,'e00')), sick=r148FoodOf(mk(55,10,40,'e00'));
+  out.habitDrive = !!healthy&&!!sick && healthy.dietTier>=sick.dietTier && healthy.habit.off>sick.habit.off;
+  // ④ 卡片渲染：含食力資產/飲食結局/飲食習慣/餐桌或飲食
+  S=mk(50,50,40,'e00'); const card=r148FoodReviewHTML();
+  out.cardRender = card.indexOf('食力資產')>=0 && card.indexOf('飲食結局')>=0 && card.indexOf('飲食習慣')>=0 && (card.indexOf('餐桌')>=0||card.indexOf('飲食')>=0);
+  // ⑤ deterministic 純讀：同 S 兩次渲染逐字一致
+  S=mk(40,40,35,'e10'); const a1=r148FoodReviewHTML(), a2=r148FoodReviewHTML();
+  out.deterministic = a1===a2 && a1.length>0;
+  // ⑥ 純呈現零汙染：生成前後 S.attr/era/age/flags 不變、零 rng 消耗
+  S=mk(72,55,45,'e70'); const bA=JSON.stringify(S.attr), bE=S.era, bAge=S.age, bF=JSON.stringify(S.flags);
+  let used=0; const oldR=rng; rng=function(){ used++; return oldR(); };
+  r148FoodReviewHTML(); r148FoodOf(S); rng=oldR;
+  out.pure = JSON.stringify(S.attr)===bA && S.era===bE && S.age===bAge && JSON.stringify(S.flags)===bF && used===0;
+  // ⑦ S=null / 缺 attr / 缺 mny 降級：回 null、卡空字串、不炸
+  out.nullSafe = (()=>{ try{ S=null; return r148FoodOf(null)===null && r148FoodReviewHTML()===''; }catch(e){ return false; } })();
+  out.noAttr = (()=>{ try{ return r148FoodOf({age:40,era:'e00'})===null && r148FoodOf({attr:{int:50},age:40})===null; }catch(e){ return false; } })();
+  // ⑧ 缺 hp 降級：用中性 50、仍回物件不炸；髒 era → 飲食梗略過不炸
+  out.softDeg = (()=>{ try{ const m=r148FoodOf({attr:{mny:55},age:40,era:'e00',flags:{}}); const d=r148FoodOf(mk(55,50,40,'zzz999')); return !!m && m.dietTier===r148FoodOf(mk(55,50,40,'e00')).dietTier && !!d && d.era===null; }catch(e){ return false; } })();
+  // ⑨ 舊存檔相容：ensureState 不為 R148 在 S/flags 補任何 r148 鍵
+  startGame(); const olds=S; ensureState(olds);
+  out.compatOld = !Object.keys(olds).some(k=>k.toLowerCase().indexOf('r148')===0)
+    && !Object.keys(olds.flags||{}).some(k=>k.toLowerCase().indexOf('r148')===0);
+  // ⑩ 飲食結局成就確定性點亮：米其林/養生/外送/打卡/夜市/泡麵 各自可達且互斥
+  const MICH=mk(88,50,40,'e00'), ORG=mk(65,65,40,'e00'), DEL=mk(55,30,40,'e00'), FOO=mk(50,50,40,'e00'), STR=mk(38,50,40,'e00'), INST=mk(20,50,40,'e00');
+  out.achMich    = !!ACH_MAP.r148_michelin && ACH_MAP.r148_michelin.check({S:MICH})===true && ACH_MAP.r148_michelin.check({S:INST})===false;
+  out.achOrg     = !!ACH_MAP.r148_organic  && ACH_MAP.r148_organic.check({S:ORG})===true   && ACH_MAP.r148_organic.check({S:INST})===false;
+  out.achDel     = !!ACH_MAP.r148_delivery && ACH_MAP.r148_delivery.check({S:DEL})===true  && ACH_MAP.r148_delivery.check({S:MICH})===false;
+  out.achFoo     = !!ACH_MAP.r148_foodie   && ACH_MAP.r148_foodie.check({S:FOO})===true     && ACH_MAP.r148_foodie.check({S:MICH})===false;
+  out.achStr     = !!ACH_MAP.r148_street   && ACH_MAP.r148_street.check({S:STR})===true     && ACH_MAP.r148_street.check({S:MICH})===false;
+  out.achInst    = !!ACH_MAP.r148_instant  && ACH_MAP.r148_instant.check({S:INST})===true   && ACH_MAP.r148_instant.check({S:MICH})===false;
+  // ⑪ 跨局集滿 r148_food：六成就全亮→解鎖、缺一→不解
+  const allAch={r148_michelin:true,r148_organic:true,r148_delivery:true,r148_foodie:true,r148_street:true,r148_instant:true};
+  SAVE.ach=Object.assign({},allAch); out.achFull = !!ACH_MAP.r148_food && ACH_MAP.r148_food.check({S:{}})===true;
+  const partial=Object.assign({},allAch); delete partial.r148_michelin;
+  SAVE.ach=partial; out.achPartial = ACH_MAP.r148_food.check({S:{}})===false;
+  SAVE.ach={}; S=null;
+  return JSON.stringify(out);
+})()`, sandbox));
+[
+  ['dataFull','① 資料齊備:6 食力資產底子+6 餐桌處境階層+4 人生階段+6 結局型別+六世代飲食梗+飲食習慣三檔'],
+  ['mnyMap','② 財富 mny 確定性映射:高→米其林饕客/中→中段/低→泡麵度日且單調驅動'],
+  ['habitDrive','③ 體質影響飲食習慣:同口袋養生鐵胃>=外食爆肝且 off 有別'],
+  ['cardRender','④ 卡片渲染:含食力資產/飲食結局/飲食習慣/餐桌或飲食'],
+  ['deterministic','⑤ deterministic 純讀:同 S 兩次渲染逐字一致'],
+  ['pure','⑥ 純呈現零汙染:生成前後 S.attr/era/age/flags 不變且零 rng'],
+  ['nullSafe','⑦ 無局(S=null)降級:回 null、卡空字串不炸'],
+  ['noAttr','⑦ 缺 attr/mny 降級:回 null 不炸'],
+  ['softDeg','⑧ 缺 hp 中性化＋髒 era 飲食梗略過:仍回物件不炸且底子一致'],
+  ['compatOld','⑨ 舊存檔相容:ensureState 不為 R148 補任何 S/flags 鍵'],
+  ['achMich','⑩ r148_michelin:米其林食神→解、泡麵→不解'],
+  ['achOrg','⑩ r148_organic:有機養生咖→解、泡麵→不解'],
+  ['achDel','⑩ r148_delivery:外送肥宅→解、米其林→不解'],
+  ['achFoo','⑩ r148_foodie:排隊打卡客→解、米其林→不解'],
+  ['achStr','⑩ r148_street:夜市小吃控→解、米其林→不解'],
+  ['achInst','⑩ r148_instant:22K吃土泡麵→解、米其林→不解'],
+  ['achFull','⑪ 跨局集滿:六成就全亮→r148_food 解鎖'],
+  ['achPartial','⑪ 跨局集滿:缺一→r148_food 不解'],
+].forEach(([k,m])=>ok(r148[k], 'R148 '+m));
+
 console.log(fails ? `\n結果: ❌ ${fails} 項未通過` : '\n結果: ✅ 狀態機全數正確');
 process.exit(fails ? 1 : 0);

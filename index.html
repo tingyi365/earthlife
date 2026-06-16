@@ -3049,6 +3049,14 @@ const ACHIEVEMENTS = [
   {id:"r147_voc", ic:"🔧", nm:"高職技職・一技在身黑手師傅", desc:"沒往升學窄門裡擠，你選了高職五專學一門手藝——黑手、技師、實作派，一技在身提早進社會。這座島最務實的一條路：不跟人比學歷高低，比的是手上那門吃穿不愁的真功夫。當別人還在繳學貸混文憑時，你早就靠技術自食其力，師傅這個稱呼，你扎扎實實地掙來了。", check:c=>{const h=r147EducationOf(c.S); return !!h && h.ach.voc;}, hint:"讓智力 int 落在偏低段（31–45）、又沒低到中輟——把終局學歷軌跡卡在『高職技職・一技在身黑手師傅』分流…"},
   {id:"r147_dropout", ic:"🐑", nm:"放牛班中輟・社會大學打滾", desc:"跟課本緣分淺，放牛班吊車尾、早早中輟出社會討生活——學歷這條路你走得最短，社會大學這所學校你卻念得最久。這座島把學歷捧得高高的，可它沒教的人情世故、街頭智慧、跌倒再爬起，你全靠自己一拳一腳打出來。文憑你沒有，但這輩子被生活磨出來的那身本事，未必輸給誰。", check:c=>{const h=r147EducationOf(c.S); return !!h && h.ach.dropout;}, hint:"讓智力 int 長期偏低（30 以下）——把終局學歷軌跡卡在『放牛班中輟・社會大學打滾』分流…"},
   {id:"r147_education", ic:"🎓", nm:"鬼島學歷圖鑑・學歷軌跡全集滿", desc:"頂大菁英、海歸學霸、流浪博士、學店畢業、技職黑手、中輟傳奇——這座島丟給你的六種學歷命運，你用一次次投胎全都親自念過走過一遍。當過名校學霸、出洋鍍金、流浪過學術煉獄、混過文憑、學過手藝、也中輟打滾過，學歷這道最被這座島看重也最磨人的人生考題，你終於把它活成了一本學歷圖鑑。", check:c=>{const need=["r147_elite","r147_overseas","r147_wanderer","r147_private","r147_voc","r147_dropout"]; return !!(SAVE&&SAVE.ach) && need.every(id=>SAVE.ach[id]);}, hint:"跨局集滿六種學歷結局成就各至少一次（頂大菁英／海歸學霸／流浪博士／學店畢業／技職黑手／中輟傳奇）——把學歷的每一種命運都念過走過一遍…"},
+  /* ---- R148 飲食・美食軌跡成就（純讀 r148FoodOf(S) deterministic 推演，零 rng；財富 mny 為主驅動＋體質/飲食習慣 hp 加成＋年齡，推演本局「鬼島飲食命運結局」，舊存檔/壞資料永不誤觸；聚焦食力資產/飲食習慣/飲食結局，與 R147 教育/R146 交通/R142 理財 各自獨立旗標）---- */
+  {id:"r148_michelin", ic:"🍽️", nm:"食神之胃・米其林無菜單常客", desc:"米其林星級、無菜單料理、私廚主廚桌——別人滑手機看美食外送，你直接訂位坐進去吃，一餐抵人家一個月便當錢眼都不眨。你站上了這座島飲食食物鏈的最頂端，把『吃』活成了一門品味，氣死一票 22K 配滷肉飯加顆滷蛋就要算半天的同屆。", check:c=>{const h=r148FoodOf(c.S); return !!h && h.ach.michelin;}, hint:"把財富 mny 養到頂（82+，口袋深度是飲食主驅動）讓食力資產推到米其林饕客——讓終局飲食軌跡走到最高的『食神之胃・米其林無菜單』分流…"},
+  {id:"r148_organic", ic:"🥗", nm:"有機養生咖・健康餐戰士", desc:"有錢、又顧身體——你一路把三餐吃成了有機沙拉、低GI健康餐、產地直送無毒蔬菜，健身房配著吃。在這個外食爆肝、黑心油食安連環爆的島上，能把財富花在吃得乾淨、把體質養成鐵胃，是少數口袋與身體雙開外掛的人才走得到的養生鏈。", check:c=>{const h=r148FoodOf(c.S); return !!h && h.ach.organic;}, hint:"財富 mny 夠（50+，撐得起健康餐）、體質 hp 也高（60+，養得起一身鐵胃）、又活到成年定錨齡（30+）、且不到米其林門檻——讓終局飲食軌跡走到『有機養生咖・健康餐戰士』分流…"},
+  {id:"r148_delivery", ic:"🛵", nm:"外送平台肥宅・UberEats 養成", desc:"錢還過得去，身體卻越吃越垮——你被 UberEats、foodpanda 養成了一隻不出門的外送肥宅，炸雞鹹酥雞手搖一鍵到府，運費比餐還貴也照點。在這個外送平台把人寵到懶得下樓的島上，你親身把『方便』吃成了三高、把沙發坐出了形狀，肥宅快樂餐的代價全寫在體檢報告上。", check:c=>{const h=r148FoodOf(c.S); return !!h && h.ach.delivery;}, hint:"財富 mny 中等（46+，點得起外送）卻體質 hp 偏低（38 以下，越吃越垮）——讓終局飲食軌跡走到『外送平台肥宅・UberEats 養成』分流…"},
+  {id:"r148_foodie", ic:"📸", nm:"排隊名店打卡客・網美餐桌", desc:"哪家爆紅就排哪家——你是那種願意排兩小時只為一塊舒芙蕾、上桌先拍九宮格再動筷的網美打卡客。這座島最潮的一條飲食路：吃的不只是味道，是那張限時動態。錢花得不算頂、嘴卻很挑，名店地圖比 Google Map 還熟，朋友揪吃飯都先問你。", check:c=>{const h=r148FoodOf(c.S); return !!h && h.ach.foodie;}, hint:"財富 mny 中段（46–54）、又沒走到養生／外送肥宅路線——把終局飲食軌跡卡在『排隊名店打卡客・網美餐桌』分流…"},
+  {id:"r148_street", ic:"🍢", nm:"夜市小吃控・手搖續命族", desc:"沒太多預算搞高級的，但這座島的銅板美食你最在行——夜市蚵仔煎、鹹酥雞、大腸包小腸，一天一杯波霸奶茶續命，手搖店比超商還熟。這是這座島最有人情味的一條飲食路：用最少的錢，吃出最多的庶民幸福，論 CP 值你才是真正的霸主。", check:c=>{const h=r148FoodOf(c.S); return !!h && h.ach.street;}, hint:"讓財富 mny 落在偏低段（31–45）、又沒低到吃土泡麵——把終局飲食軌跡卡在『夜市小吃控・手搖續命族』分流…"},
+  {id:"r148_instant", ic:"🍜", nm:"22K 吃土泡麵・小資便當族", desc:"月底口袋見底，泡麵配白飯、自助餐只敢夾兩樣青菜——你把『吃飽就好』四個字活成了生存技能。這座島把美食捧得天花亂墜，可它沒算進的是月薪 22K 扣完房租水電後，一餐能花的就那幾十塊。泡麵你沒少吃，但這輩子被生活磨出來的那身省錢本事，撐過了一個又一個吃土的月底。", check:c=>{const h=r148FoodOf(c.S); return !!h && h.ach.instant;}, hint:"讓財富 mny 長期偏低（30 以下）——把終局飲食軌跡卡在『22K 吃土泡麵・小資便當族』分流…"},
+  {id:"r148_food", ic:"🍱", nm:"鬼島美食圖鑑・飲食軌跡全集滿", desc:"米其林食神、養生有機咖、外送肥宅、排隊打卡客、夜市小吃控、22K吃土泡麵——這座島丟給你的六種飲食命運，你用一次次投胎全都親自吃過一遍。坐過無菜單、啃過有機沙拉、點過外送養出肥宅、排過網紅名店、嗑過夜市銅板、也吃土配過泡麵，吃這道最日常也最誠實的人生考題，你終於把它活成了一本美食圖鑑。", check:c=>{const need=["r148_michelin","r148_organic","r148_delivery","r148_foodie","r148_street","r148_instant"]; return !!(SAVE&&SAVE.ach) && need.every(id=>SAVE.ach[id]);}, hint:"跨局集滿六種飲食結局成就各至少一次（食神之胃／有機養生咖／外送肥宅／排隊打卡客／夜市小吃控／22K吃土泡麵）——把飲食的每一種命運都吃過一遍…"},
   {id:"r70a_unicorn", ic:"🦄", nm:"創業上岸・無中生有", desc:"在頭家夢分歧鏈選自己創業，撐過跑三點半的歲月，最後成功上岸買房定居——你把『無中生有』四個字活成了真的。", check:c=>!!(c.S.flags&&c.S.flags.r70a_unicorn), hint:"分歧鏈裡選自己創業的人，中段擴張或被收購（或在三點半跳票邊緣硬撐活下來），末段才走得到買房上岸…"},
   {id:"r70a_freebird", ic:"🕊️", nm:"社畜跳船・自由業真男人", desc:"當年領死薪水的你中途跳船去接案，多年後接出口碑、開了自己的工作室——上班族眼裡那種『自由業』，自由是真的，業也真的有在接。", check:c=>!!(c.S.flags&&c.S.flags.r70a_freebird), hint:"分歧鏈選領死薪水當社畜的人，中段選擇安靜離職跳船接案，末段把工作室掛牌做起來…"},
   {id:"r70a_clear", ic:"🧭", nm:"頭家夢・全鏈結業", desc:"從老家那通電話一路走到人生期末考，把頭家夢（或死薪水）這條三段分歧鏈完整走完——接、創、領，無論哪條路你都活出了答案。", check:c=>!!(c.S.flags&&c.S.flags.r70a_done), hint:"老家的店要收那年做出選擇後，把中段、末段兩道抉擇都接著走完，整條頭家分歧鏈一站不漏…"},
@@ -5206,6 +5214,155 @@ function r147EducationReviewHTML(){
     <div style="display:flex;gap:6px;align-items:baseline;padding:6px 0 2px;font-size:13px">
       <span class="muted" style="min-width:60px">學歷結局</span><span>${end.ic} <b>${end.nm}</b></span></div>
     <div style="display:flex;gap:6px;align-items:baseline;font-size:12.5px"><span class="muted" style="min-width:60px">教育資源</span><span>${h.resource.nm}（${h.resource.short}）</span></div>
+    ${eraLine}
+    <div class="muted" style="font-size:12.5px;margin-top:8px;line-height:1.8">${fateLine}<br>${end.path}<br>${end.note}</div></div>`;
+}
+
+/* =========================================================================
+   R148 飲食・美食軌跡（純衍生／結算覆蓋層，零 rng、零事件序列擾動）
+   ── 呼應主題：讓「財富 mny」這屬性真正驅動本局的「鬼島飲食命運結局」，輔以「體質
+      hp」做飲食習慣/鐵胃加成次級修正。建立在既有 S.attr.mny / S.attr.hp / S.age 之上，
+      全程只「讀」終局 state，不新增任何 Math.random／rng() → 種子事件抽取序列逐位元
+      不變；獨立旗標，與 R142 理財／R143 社交／R144 健康／R145 居住／R146 交通／
+      R147 教育 各自獨立、互不干擾。
+   驅動鐵律：
+   ① 財富 mny 為主驅動（口袋深度決定吃得起哪層美食階梯）；體質 hp 另做「飲食習慣/鐵胃」
+      次級修正（養生鐵胃 vs 外食爆肝腸胃差）；年齡決定飲食處境隨人生階段的爬升與終局
+      走向；出生世代 era 只做「飲食梗」文案著色，不動數值。特例：「有機養生咖」要求財富
+      夠＋體質高＋成年後（有錢又顧身體）；「外送平台肥宅」要求財富中等卻體質低（點得起
+      外送卻越吃越垮）。
+   ② 純呈現：所有 R148 函式只回傳字串／純讀物件，不寫 S、不改數值平衡；S=null／無 attr／
+      缺 mny 鍵／髒資料一律安全降級回 null／空字串，絕不白屏或拋例外。
+   ③ 跨局收集：r148_food ＝集滿六種飲食結局成就（食神之胃／有機養生咖／外送肥宅／
+      排隊打卡客／夜市小吃控／22K吃土泡麵）。
+   ========================================================================= */
+// 食力資產底子階層（財富口袋深度主導、飲食習慣次要；純查表、零 rng；index 0..5 由低到高）
+const R148_DIET = [
+  {ic:"🍜", nm:"泡麵度日",       short:"月底吃土、泡麵配白飯撐過下一次發薪"},
+  {ic:"🍱", nm:"小資便當族",     short:"自助餐夾兩樣、銅板便當解決一餐"},
+  {ic:"🍢", nm:"夜市小吃控",     short:"鹹酥雞蚵仔煎、銅板美食吃出庶民幸福"},
+  {ic:"🧋", nm:"手搖外送族",     short:"一天一杯波霸、外送鹹酥雞一鍵到府"},
+  {ic:"📸", nm:"排隊名店客",     short:"哪家爆紅排哪家、上桌先拍九宮格打卡"},
+  {ic:"🍽️", nm:"米其林饕客",     short:"無菜單私廚主廚桌、把吃活成一門品味"},
+];
+// 餐桌處境階層（食力底子定起點、飲食習慣微調、年齡階段爬升；純查表、零 rng；index 0..5 由低到高）
+const R148_TABLE = [
+  {ic:"🍜", nm:"泡麵配白飯",     short:"月底口袋見底、一包泡麵打發一餐"},
+  {ic:"🍱", nm:"自助餐夾兩樣",   short:"便當自助餐、青菜只敢夾兩樣省著吃"},
+  {ic:"🍢", nm:"夜市銅板美食",   short:"逛夜市嗑小吃、CP 值拉滿吃得開心"},
+  {ic:"🧋", nm:"手搖外送天天點", short:"一天一杯手搖、外送平台養成懶得下樓"},
+  {ic:"📸", nm:"網紅排隊名店",   short:"限定甜點排兩小時、IG 美照先吃"},
+  {ic:"🍽️", nm:"米其林無菜單",   short:"星級訂位主廚桌、一餐抵人家一個月便當"},
+];
+// 人生階段（童年營養午餐→老年養生見真章；off 為飲食處境相對食力底子的年齡爬升修正；越年輕越還沒定型）
+const R148_PHASES = [
+  {key:"child", age:12, nm:"童年食育期", off:-2}, // 還在吃營養午餐、飲食未定
+  {key:"teen",  age:18, nm:"青春自主期", off:-1}, // 開始有零用錢買手搖、嘴變刁
+  {key:"adult", age:30, nm:"飲食定錨期", off:0},  // 飲食階梯隨財富與習慣定型
+  {key:"senior",age:50, nm:"養生見真章", off:0},  // 出社會多年、外食爆肝或養生見真章
+];
+// 飲食結局型別文案（純查表、零 rng）
+const R148_END = {
+  michelin: {ic:"🍽️", nm:"食神之胃・米其林無菜單常客", path:"🍽️ 站上飲食食物鏈頂端、把吃活成一門品味", note:"米其林星級、無菜單料理、私廚主廚桌——別人滑手機看美食外送照片流口水，你直接訂位坐進去吃，一餐抵人家一個月便當錢眼都不眨。在這個 22K 配滷肉飯加顆滷蛋都要算半天的島上，能把『吃』從填飽肚子升級成品味與享受，你站上了這座島飲食食物鏈的最頂端，氣死一票月底吃土配泡麵的同屆。"},
+  organic:  {ic:"🥗", nm:"有機養生咖・健康餐戰士", path:"🥗 有錢又顧身體、三餐吃成有機健康餐", note:"口袋夠深、又懂得顧身體——你一路把三餐吃成了有機沙拉、低 GI 健康餐、產地直送無毒蔬菜，健身房配著吃、體質養成一身鐵胃。在這個外食爆肝、黑心油食安連環爆、便宜的東西最傷身的島上，能把財富花在吃得乾淨、把身體當本錢經營，是少數口袋與體質雙開外掛的人才走得到的養生鏈。"},
+  delivery: {ic:"🛵", nm:"外送平台肥宅・UberEats 養成", path:"🛵 點得起外送卻越吃越垮、肥宅快樂餐養出三高", note:"錢還過得去，身體卻越吃越垮——你被 UberEats、foodpanda 養成了一隻不出門的外送肥宅，炸雞鹹酥雞手搖一鍵到府，運費比餐還貴也照點不誤。在這個外送平台把人寵到懶得下樓的島上，你親身把『方便』吃成了三高、把沙發坐出了形狀，肥宅快樂餐吃得是真爽，代價全寫在那張紅字滿滿的體檢報告上。"},
+  foodie:   {ic:"📸", nm:"排隊名店打卡客・網美餐桌", path:"📸 哪家爆紅排哪家、吃的是那張限時動態", note:"哪家爆紅就排哪家——你是那種願意排兩小時只為一塊舒芙蕾、上桌先拍九宮格再動筷的網美打卡客。這座島最潮的一條飲食路：吃的不只是味道，是那張發得出去的限時動態。錢花得不算頂、嘴卻很挑，全城名店地圖比 Google Map 還熟，朋友揪吃飯都先問你哪家值得排，你儼然就是那本行走的美食指南。"},
+  street:   {ic:"🍢", nm:"夜市小吃控・手搖續命族", path:"🍢 銅板美食最在行、一杯波霸續命過一天", note:"沒太多預算搞高級的，但這座島的銅板美食你最在行——夜市蚵仔煎、鹹酥雞、大腸包小腸，一天一杯波霸奶茶續命，手搖店比超商還熟。這是這座島最有人情味的一條飲食路：用最少的錢，吃出最多的庶民幸福。論吃的高級你比不上人家，可論 CP 值、論哪個攤子最道地，你才是真正的夜市霸主。"},
+  instant:  {ic:"🍜", nm:"22K 吃土泡麵・小資便當族", path:"🍜 月底吃土泡麵配白飯、吃飽就好是生存技能", note:"月底口袋見底，泡麵配白飯、自助餐只敢夾兩樣青菜——你把『吃飽就好』四個字活成了生存技能。這座島把美食捧得天花亂墜，可它沒算進的是月薪 22K 扣完房租水電後，一餐能花的就那幾十塊。泡麵你沒少吃，那身被生活磨出來的省錢本事，撐過了一個又一個吃土的月底——這條最克難的飲食路，你走得最辛苦也最踏實。"},
+};
+// 出生世代飲食梗（純文案著色，零數值影響）
+const R148_ERAFOOD = {
+  e70:"你那年代物資還沒那麼豐裕、吃得飽就是福——辦桌流水席是大事，一隻雞要分好幾餐，零食是過年才有的奢侈。",
+  e80:"你年輕時夜市正旺、第一波速食店登台轟動，珍珠奶茶剛問世——外食開始普及，但媽媽的飯菜還是主旋律。",
+  e90:"你出社會剛好碰上連鎖飲料店遍地開花、便利商店御飯糰當道，手搖杯文化正式起飛，吃飯越來越方便。",
+  e00:"你這代滿街手搖店、鹹酥雞配珍奶成日常，部落客美食推薦正夯——外食成主流，黑心油食安問題也跟著浮上檯面。",
+  e10:"你成長在外送平台崛起、網美餐廳排隊打卡白熱化的年代，UberEats foodpanda 把人寵到懶得下樓，一餐運費比菜貴。",
+  e20:"你這代撞上食安連環爆、通膨萬物漲、一個便當破百是常態，省錢預製菜與養生健康餐兩極拉鋸——吃這件事越來越分眾。",
+};
+// 體質 hp →飲食習慣/鐵胃修正（養生鐵胃 vs 外食爆肝腸胃差；財富仍為主驅動，體質只做 ±10 次級修正）
+function r148HabitOf(hp){
+  return hp>=70 ? {off:10,  nm:"養生鐵胃",       short:"作息規律飲食均衡、養出一身鐵胃好消化"}
+       : hp<=30 ? {off:-10, nm:"外食爆肝腸胃差", short:"三餐外食重油重鹹、腸胃差爆肝吃壞身體"}
+       :          {off:0,   nm:"三餐隨便吃",     short:"沒特別養生也沒搞壞、有啥吃啥過日子"};
+}
+// 財富 mny →食力資產底子階層（純查表、單調驅動）
+function r148DietTierOf(effM){
+  return effM>=84?5 : effM>=66?4 : effM>=48?3 : effM>=30?2 : effM>=14?1 : 0;
+}
+// 餐桌處境（食力底子定起點、飲食習慣微調、階段 off 年齡爬升；純算、零 rng）
+function r148TableLevelAt(dietTier, hp, off){
+  let base = dietTier;
+  if(hp>=70) base+=1; else if(hp<=30) base-=1;   // 飲食習慣微調（養生鐵胃 vs 外食爆肝）
+  return Math.max(0, Math.min(5, base + off));
+}
+/* 從任一 state deterministic 推演飲食・美食軌跡（純讀、零 rng、零 mutation）；壞資料回 null */
+function r148FoodOf(st){
+  try{
+    if(!st || typeof st!=="object" || !st.attr || typeof st.attr.mny!=="number") return null;
+    const mny  = Math.max(0, Math.min(100, st.attr.mny));
+    const hp   = (typeof st.attr.hp==="number") ? Math.max(0, Math.min(100, st.attr.hp)) : 50; // 缺 hp → 中性
+    const age  = Math.max(0, Math.round(st.age||0));
+    const era  = (typeof st.era==="string" && R148_ERAFOOD.hasOwnProperty(st.era)) ? st.era : null;
+    const habit = r148HabitOf(hp);                            // 體質影響飲食習慣/鐵胃（次級）
+    const effM = Math.max(0, Math.min(100, mny + habit.off)); // 財富為主、飲食習慣微調
+    const dietTier = r148DietTierOf(effM);
+    // 各人生階段餐桌處境（年幼還沒定型、其餘隨年齡爬升到食力對應階層）
+    const stages=[];
+    for(let i=0;i<R148_PHASES.length;i++){
+      const ph=R148_PHASES[i];
+      if(age < ph.age) break;                                  // 沒活到該階段就不列（早逝只走前段）
+      const lv=r148TableLevelAt(dietTier, hp, ph.off);
+      const f=R148_TABLE[lv];
+      stages.push({key:ph.key, nm:ph.nm, lv, ic:f.ic, tnm:f.nm, short:f.short});
+    }
+    // 飲食結局（互斥；財富為主、體質＋年齡決定走向，養生吃高財+高體質+成年、外送肥宅吃中財+低體質、泡麵吃低財）
+    let endType;
+    if(mny>=82) endType="michelin";                                       // 超高財→米其林食神
+    else if(mny>=50 && hp>=60 && age>=30) endType="organic";             // 高財＋高體質＋成年→有機養生咖
+    else if(mny>=46 && hp<=38) endType="delivery";                      // 中財＋低體質→外送平台肥宅
+    else if(mny<=30) endType="instant";                                // 低財→22K 吃土泡麵
+    else if(mny<=45) endType="street";                                 // 偏低財→夜市小吃控
+    else endType="foodie";                                             // 其餘（中財）→排隊名店打卡客
+    const ach = {
+      michelin: endType==="michelin",
+      organic:  endType==="organic",
+      delivery: endType==="delivery",
+      foodie:   endType==="foodie",
+      street:   endType==="street",
+      instant:  endType==="instant",
+    };
+    return { mny, hp, age, era, habit, effM, dietTier, stages, endType, ach };
+  }catch(e){ return null; }
+}
+function r148Food(){ return r148FoodOf(S); }
+/* 結算：飲食・美食回顧卡——財富定底子、底子+飲食習慣+年齡推餐桌處境、終局回顧（純讀零 rng，可截圖分享，線C素材） */
+function r148FoodReviewHTML(){
+  const h=r148Food();
+  if(!h) return "";
+  const end=R148_END[h.endType]||R148_END.foodie;
+  const diet=R148_DIET[h.dietTier]||R148_DIET[0];
+  const rows=h.stages.map(s=>`<div style="display:flex;gap:8px;align-items:baseline;padding:3px 0;font-size:13px;border-bottom:1px solid rgba(255,255,255,.05)">
+      <span class="muted" style="min-width:60px">${s.nm}</span>
+      <span style="white-space:nowrap">${s.ic} <b>${s.tnm}</b></span>
+      <span class="muted" style="font-size:11px">${s.short}</span></div>`).join("");
+  // 世代飲食梗（缺則略）
+  let eraLine="";
+  const eh = h.era && R148_ERAFOOD[h.era];
+  if(eh) eraLine=`<div class="muted" style="font-size:11.5px;margin-top:6px">🏷️ 你那年代的吃：${eh}</div>`;
+  const winner = (h.endType==="michelin"||h.endType==="organic");
+  const fateLine = winner
+    ? `🍽️ <b style="color:#ffd96b">這場飲食遊戲你贏了</b>——在這個外食爆肝、22K 吃土配泡麵的島上，能把口袋深度與體質換成吃得起也吃得好的飲食人生，本身就是贏在財富與健康。`
+    : `🍱 <b style="color:#ffb3b3">這場飲食遊戲吃得各有滋味</b>——外送肥宅、排隊打卡、夜市銅板、22K 泡麵，這座島把『好好吃一餐』變成考驗口袋與身體的關卡，你用一輩子親身吃過一遍。`;
+  return `<div class="panel" style="margin-top:12px;background:var(--panel2)">
+    <h2 class="sec">🍱 飲食・美食軌跡</h2>
+    <div class="muted" style="font-size:11.5px;margin:-4px 0 6px">依你這輩子的口袋深度、飲食習慣與一路吃過的歲月，推演你的飲食命運軌跡——米其林食神還是 22K 吃土泡麵、有機養生咖還是外送肥宅、夜市銅板還是排隊名店？</div>
+    <div style="display:flex;gap:6px;align-items:baseline;padding:4px 0 2px;font-size:13px">
+      <span class="muted" style="min-width:60px">食力資產</span><span>${diet.ic} <b>${diet.nm}</b></span>
+      <span class="muted" style="font-size:11px">${diet.short}</span></div>
+    ${rows}
+    <div style="display:flex;gap:6px;align-items:baseline;padding:6px 0 2px;font-size:13px">
+      <span class="muted" style="min-width:60px">飲食結局</span><span>${end.ic} <b>${end.nm}</b></span></div>
+    <div style="display:flex;gap:6px;align-items:baseline;font-size:12.5px"><span class="muted" style="min-width:60px">飲食習慣</span><span>${h.habit.nm}（${h.habit.short}）</span></div>
     ${eraLine}
     <div class="muted" style="font-size:12.5px;margin-top:8px;line-height:1.8">${fateLine}<br>${end.path}<br>${end.note}</div></div>`;
 }
@@ -18610,6 +18767,7 @@ function screenSummary(cat){
       ${r145HousingReviewHTML()}
       ${r146VehicleReviewHTML()}
       ${r147EducationReviewHTML()}
+      ${r148FoodReviewHTML()}
       ${attrCurveHTML()}
       ${attrTrajectoryHTML()}
       ${r129TrajectoryHTML()}
