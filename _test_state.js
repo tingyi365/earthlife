@@ -5152,5 +5152,77 @@ const r137 = JSON.parse(vm.runInContext(`(function(){
   ['achPartial','⑪ 跨局集滿:缺一→r137_housing 不解'],
 ].forEach(([k,m])=>ok(r137[k], 'R137 '+m));
 
+/* ===== R138 健康人生軌跡・病歷與長照（純衍生/結算覆蓋層；零 rng/零汙染/deterministic 推演/健康主驅動+財富就醫品質/壞資料降級/健康成就） ===== */
+const r138 = JSON.parse(vm.runInContext(`(function(){
+  const out={};
+  function mk(hp,mny,age,era){ return {attr:{hp:hp,int:50,apr:50,mny:mny,hap:50}, age:age, era:era, flags:{}, alive:false}; }
+  // ① 資料齊備：6 健康階層欄位完整、4 人生階段、6 結局型別、六世代醫療梗、就醫品質三檔
+  out.dataFull = Array.isArray(R138_TIERS) && R138_TIERS.length===6 && R138_TIERS.every(t=>t.ic&&t.nm&&t.short)
+    && Array.isArray(R138_PHASES) && R138_PHASES.length===4 && R138_PHASES.every(p=>typeof p.erode==='number')
+    && ['ironman','peaceful','chronic','er','karoshi','longcare'].every(k=>R138_END[k]&&R138_END[k].nm&&R138_END[k].care&&R138_END[k].note)
+    && R55_ERAS.every(er=>typeof R138_ERAMED[er.id]==='string')
+    && [r138CareOf(90),r138CareOf(50),r138CareOf(10)].every(c=>typeof c.off==='number'&&c.nm&&c.short);
+  // ② 健康確定性映射：高健康→鐵人(5)、中健康→中段(>=3)、低健康→臥床(0)；且健康單調驅動
+  const hi=r138HealthOf(mk(90,50,50,'e00')), midd=r138HealthOf(mk(50,50,50,'e00')), lo=r138HealthOf(mk(5,50,50,'e00'));
+  out.tierMap = !!hi&&!!midd&&!!lo && hi.finalTier===5 && midd.finalTier>=3 && lo.finalTier===0
+    && hi.finalTier>midd.finalTier && midd.finalTier>lo.finalTier;
+  // ③ 財富影響就醫品質（次級修正）：同健康 55，有錢自費(mny90)階層 > 22K看不起病(mny10)
+  const rich=r138HealthOf(mk(55,90,50,'e00')), poor=r138HealthOf(mk(55,10,50,'e00'));
+  out.careDrive = !!rich&&!!poor && rich.finalTier>poor.finalTier && rich.care.off>poor.care.off;
+  // ④ 卡片渲染：含標題/健康結局/就醫品質/撐住或欠操
+  S=mk(50,50,50,'e00'); const card=r138HealthReviewHTML();
+  out.cardRender = card.indexOf('健康人生')>=0 && card.indexOf('健康結局')>=0 && card.indexOf('就醫品質')>=0 && (card.indexOf('撐住')>=0||card.indexOf('欠操')>=0);
+  // ⑤ deterministic 純讀：同 S 兩次渲染逐字一致
+  S=mk(40,50,50,'e10'); const a1=r138HealthReviewHTML(), a2=r138HealthReviewHTML();
+  out.deterministic = a1===a2 && a1.length>0;
+  // ⑥ 純呈現零汙染：生成前後 S.attr/era/age/flags 不變、零 rng 消耗
+  S=mk(72,55,55,'e70'); const bA=JSON.stringify(S.attr), bE=S.era, bAge=S.age, bF=JSON.stringify(S.flags);
+  let used=0; const oldR=rng; rng=function(){ used++; return oldR(); };
+  r138HealthReviewHTML(); r138HealthOf(S); rng=oldR;
+  out.pure = JSON.stringify(S.attr)===bA && S.era===bE && S.age===bAge && JSON.stringify(S.flags)===bF && used===0;
+  // ⑦ S=null / 缺 attr / 缺 hp 降級：回 null、卡空字串、不炸
+  out.nullSafe = (()=>{ try{ S=null; return r138HealthOf(null)===null && r138HealthReviewHTML()===''; }catch(e){ return false; } })();
+  out.noAttr = (()=>{ try{ return r138HealthOf({age:50,era:'e00'})===null && r138HealthOf({attr:{},age:50})===null; }catch(e){ return false; } })();
+  // ⑧ 缺 mny 降級：用中性 50、仍回物件不炸；髒 era → 醫療梗略過不炸
+  out.softDeg = (()=>{ try{ const m=r138HealthOf({attr:{hp:55},age:50,era:'e00',flags:{}}); const d=r138HealthOf(mk(55,50,50,'zzz999')); return !!m && m.finalTier===r138HealthOf(mk(55,50,50,'e00')).finalTier && !!d && d.era===null; }catch(e){ return false; } })();
+  // ⑨ 舊存檔相容：ensureState 不為 R138 在 S/flags 補任何 r138 鍵
+  startGame(); const olds=S; ensureState(olds);
+  out.compatOld = !Object.keys(olds).some(k=>k.toLowerCase().indexOf('r138')===0)
+    && !Object.keys(olds.flags||{}).some(k=>k.toLowerCase().indexOf('r138')===0);
+  // ⑩ 健康成就確定性點亮：鐵人/善終/藥罐子/過勞猝死/長照 各自可達且互斥
+  const IRON=mk(95,50,40,'e00'), PEACE=mk(70,50,75,'e00'), CHRON=mk(40,50,50,'e00'), KARO=mk(10,60,45,'e00'), LONG=mk(8,30,70,'e00');
+  out.achIronman  = !!ACH_MAP.r138_ironman  && ACH_MAP.r138_ironman.check({S:IRON})===true   && ACH_MAP.r138_ironman.check({S:PEACE})===false;
+  out.achPeaceful = !!ACH_MAP.r138_peaceful && ACH_MAP.r138_peaceful.check({S:PEACE})===true && ACH_MAP.r138_peaceful.check({S:IRON})===false;
+  out.achPillbox  = !!ACH_MAP.r138_pillbox  && ACH_MAP.r138_pillbox.check({S:CHRON})===true  && ACH_MAP.r138_pillbox.check({S:IRON})===false;
+  out.achKaroshi  = !!ACH_MAP.r138_karoshi  && ACH_MAP.r138_karoshi.check({S:KARO})===true   && ACH_MAP.r138_karoshi.check({S:LONG})===false;
+  out.achLongcare = !!ACH_MAP.r138_longcare && ACH_MAP.r138_longcare.check({S:LONG})===true  && ACH_MAP.r138_longcare.check({S:KARO})===false;
+  // ⑪ 跨局集滿 r138_health：五成就全亮→解鎖、缺一→不解
+  const allAch={r138_ironman:true,r138_peaceful:true,r138_pillbox:true,r138_karoshi:true,r138_longcare:true};
+  SAVE.ach=Object.assign({},allAch); out.achFull = !!ACH_MAP.r138_health && ACH_MAP.r138_health.check({S:{}})===true;
+  const partial=Object.assign({},allAch); delete partial.r138_ironman;
+  SAVE.ach=partial; out.achPartial = ACH_MAP.r138_health.check({S:{}})===false;
+  SAVE.ach={}; S=null;
+  return JSON.stringify(out);
+})()`, sandbox));
+[
+  ['dataFull','① 資料齊備:6 健康階層+4 人生階段+6 結局型別+六世代醫療梗+就醫品質三檔'],
+  ['tierMap','② 健康確定性映射:高→鐵人/中→中段/低→臥床且健康單調驅動'],
+  ['careDrive','③ 財富影響就醫品質:同健康有錢自費階層>22K看不起病'],
+  ['cardRender','④ 卡片渲染:含健康人生/健康結局/就醫品質/撐住或欠操'],
+  ['deterministic','⑤ deterministic 純讀:同 S 兩次渲染逐字一致'],
+  ['pure','⑥ 純呈現零汙染:生成前後 S.attr/era/age/flags 不變且零 rng'],
+  ['nullSafe','⑦ 無局(S=null)降級:回 null、卡空字串不炸'],
+  ['noAttr','⑦ 缺 attr/hp 降級:回 null 不炸'],
+  ['softDeg','⑧ 缺 mny 用中性50/髒 era 醫療梗略過:仍回物件不炸'],
+  ['compatOld','⑨ 舊存檔相容:ensureState 不為 R138 補任何 S/flags 鍵'],
+  ['achIronman','⑩ r138_ironman:鐵人→解、善終→不解'],
+  ['achPeaceful','⑩ r138_peaceful:無病善終→解、鐵人→不解'],
+  ['achPillbox','⑩ r138_pillbox:三高藥罐子→解、鐵人→不解'],
+  ['achKaroshi','⑩ r138_karoshi:過勞猝死→解、長照→不解'],
+  ['achLongcare','⑩ r138_longcare:中風長照→解、過勞猝死→不解'],
+  ['achFull','⑪ 跨局集滿:五成就全亮→r138_health 解鎖'],
+  ['achPartial','⑪ 跨局集滿:缺一→r138_health 不解'],
+].forEach(([k,m])=>ok(r138[k], 'R138 '+m));
+
 console.log(fails ? `\n結果: ❌ ${fails} 項未通過` : '\n結果: ✅ 狀態機全數正確');
 process.exit(fails ? 1 : 0);
