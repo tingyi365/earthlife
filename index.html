@@ -2981,6 +2981,13 @@ const ACHIEVEMENTS = [
   {id:"r138_karoshi", ic:"⚰️", nm:"過勞猝死・燃燒生命換業績", desc:"加班是日常、爆肝是基本、體檢紅字當沒看到——你把命押在 KPI 上，業績衝上去了，人卻在某個再普通不過的加班夜倒下，再也沒醒來。這座島最沉默的職災，你親身演了一遍。", check:c=>{const h=r138HealthOf(c.S); return !!h && h.ach.karoshi;}, hint:"健康屬性低到見底、卻還在拚事業的壯年（年齡未老、財富中上的爆肝路線）——讓終局健康軌跡走到『過勞猝死』分流…"},
   {id:"r138_longcare", ic:"🛏️", nm:"長照人生・中風臥床的漫漫長夜", desc:"一場中風把你放倒在床，從此一床、一管、一個看護，日子用點滴和翻身計算。長照悲歌不是新聞裡的別人，輪到自己時才懂——活得久，有時候是另一種考驗，考的是全家人。", check:c=>{const h=r138HealthOf(c.S); return !!h && h.ach.longcare;}, hint:"健康屬性低到見底、卻又拖著病體活到晚年（高齡）——讓終局健康軌跡走到『中風長照臥床』分流…"},
   {id:"r138_health", ic:"🩺", nm:"鬼島病歷圖鑑・健康軌跡全集滿", desc:"鐵人硬朗、無病善終、三高藥罐、過勞猝死、長照臥床——這座島丟給你的五種健康命運，你用一次次投胎全都親自走過一遍。健康過、爆肝過、臥床過、善終過，這道沒人逃得掉的人生考題，你終於把它活成了一本病歷圖鑑。", check:c=>{const need=["r138_ironman","r138_peaceful","r138_pillbox","r138_karoshi","r138_longcare"]; return !!(SAVE&&SAVE.ach) && need.every(id=>SAVE.ach[id]);}, hint:"跨局集滿五種健康結局成就各至少一次（鐵人/善終/藥罐子/過勞猝死/長照臥床）——把健康軌跡的每一種命運都走過一遍…"},
+  /* ---- R139 學歷・職涯軌跡成就（純讀 r139CareerOf(S) deterministic 推演，零 rng；智力為主驅動、財富影響升學資源、年齡決定職涯走多遠，舊存檔/壞資料永不誤觸；與 R131 事件型可選職涯路線各自獨立旗標）---- */
+  {id:"r139_freedom", ic:"👔", nm:"財富自由・人生勝利組", desc:"高學歷敲開窄門、再用錢滾錢，你成了同學會裡那個沒人敢約的勝利組——配股分紅、換別人幫你打工。在這座死薪水永遠追不上房價的島上，靠讀書與本事真正翻身的，是傳說裡才有的劇本，你活成了真的。", check:c=>{const h=r139CareerOf(c.S); return !!h && h.ach.freedom;}, hint:"把智力養到頂（有錢再加補習留學加成）讓學歷推到頂大以上，再把財富衝高——讓終局職涯軌跡走到『財富自由・人生勝利組』…"},
+  {id:"r139_manager", ic:"💼", nm:"小主管・中產上岸", desc:"沒大富大貴，但熬年資爬到組長、房貸車貸供得起、撐起一個家——這座島最體面的中產日常。夾心餅乾兩面受氣是真的，穩穩上了岸也是真的，你把一份死薪水熬成了安穩。", check:c=>{const h=r139CareerOf(c.S); return !!h && h.ach.manager;}, hint:"學歷中上（國立中段以上）、活到中年、財富小康——讓終局職涯軌跡停在『小主管・中產上岸』分流…"},
+  {id:"r139_lieflat", ic:"🛋️", nm:"過勞躺平・小確幸度日", desc:"卷不動內捲、追不上房價，看破慣老闆畫的大餅，乾脆躺平——降低慾望、佛系過活，省一杯手搖也是小確幸。這座島年輕人最誠實的反抗，你親身演了一遍：不是不努力，是努力的性價比太低。", check:c=>{const h=r139CareerOf(c.S); return !!h && h.ach.lieflat;}, hint:"學歷中低（學店私大以下）、財富長期偏低、又是青壯年（30–50）——讓終局職涯軌跡走到『過勞躺平・小確幸』分流…"},
+  {id:"r139_layoff", ic:"📉", nm:"中年失業・被資遣的夾縫人生", desc:"中年被一紙資遣令優化掉，履歷卡在年齡與薪資的夾縫，海投石沉大海——這座島最不敢生病、最怕失業的年紀，被你撞個正著。上有老下有小的中年，失業的恐懼不是新聞，是帳單。", check:c=>{const h=r139CareerOf(c.S); return !!h && h.ach.layoff;}, hint:"活到中年（48+）、財富始終沒起色——讓終局職涯軌跡走到『中年失業・被資遣』分流…"},
+  {id:"r139_lowwage", ic:"🪙", nm:"22K 魯蛇・低薪起跑線", desc:"低學歷卡死起跑線、起薪 22K 扣完勞健保剩一張小朋友——這座島把年輕人標價的方式，你親身領教了一遍。不是你不夠拚，是這條起跑線從一開始就被畫得太後面。", check:c=>{const h=r139CareerOf(c.S); return !!h && h.ach.lowwage;}, hint:"學歷偏低（高職以下）、剛出社會（30 歲前）、又財富吃緊——讓終局職涯軌跡停在『22K 魯蛇・低薪起跑』…"},
+  {id:"r139_career", ic:"🎓", nm:"鬼島學歷職涯圖鑑・全集滿", desc:"財富自由、小主管、躺平、中年失業、22K 魯蛇——這座島丟給你的五種職涯命運，你用一次次投胎全都親自走過一遍。贏過、穩過、躺過、被資遣過、領過 22K，學歷與職涯這道鬼島最現實的人生考題，你終於把它活成了一本圖鑑。", check:c=>{const need=["r139_freedom","r139_manager","r139_lieflat","r139_layoff","r139_lowwage"]; return !!(SAVE&&SAVE.ach) && need.every(id=>SAVE.ach[id]);}, hint:"跨局集滿五種職涯結局成就各至少一次（財富自由/小主管/躺平/中年失業/22K魯蛇）——把學歷職涯的每一種命運都走過一遍…"},
   {id:"r70a_unicorn", ic:"🦄", nm:"創業上岸・無中生有", desc:"在頭家夢分歧鏈選自己創業，撐過跑三點半的歲月，最後成功上岸買房定居——你把『無中生有』四個字活成了真的。", check:c=>!!(c.S.flags&&c.S.flags.r70a_unicorn), hint:"分歧鏈裡選自己創業的人，中段擴張或被收購（或在三點半跳票邊緣硬撐活下來），末段才走得到買房上岸…"},
   {id:"r70a_freebird", ic:"🕊️", nm:"社畜跳船・自由業真男人", desc:"當年領死薪水的你中途跳船去接案，多年後接出口碑、開了自己的工作室——上班族眼裡那種『自由業』，自由是真的，業也真的有在接。", check:c=>!!(c.S.flags&&c.S.flags.r70a_freebird), hint:"分歧鏈選領死薪水當社畜的人，中段選擇安靜離職跳船接案，末段把工作室掛牌做起來…"},
   {id:"r70a_clear", ic:"🧭", nm:"頭家夢・全鏈結業", desc:"從老家那通電話一路走到人生期末考，把頭家夢（或死薪水）這條三段分歧鏈完整走完——接、創、領，無論哪條路你都活出了答案。", check:c=>!!(c.S.flags&&c.S.flags.r70a_done), hint:"老家的店要收那年做出選擇後，把中段、末段兩道抉擇都接著走完，整條頭家分歧鏈一站不漏…"},
@@ -3791,6 +3798,155 @@ function r138HealthReviewHTML(){
     <div style="display:flex;gap:6px;align-items:baseline;font-size:12.5px"><span class="muted" style="min-width:60px">就醫品質</span><span>${end.care}（${h.care.nm}）</span></div>
     ${eraLine}
     <div class="muted" style="font-size:12.5px;margin-top:8px;line-height:1.8">${surviveLine}<br>${end.note}</div></div>`;
+}
+
+/* =========================================================================
+   R139 學歷・職涯軌跡（純衍生／結算覆蓋層，零 rng、零事件序列擾動）
+   ── 呼應 directive#1：讓「智力」屬性實際驅動本局的學歷分檔與職涯軌跡
+      （智力過去存在感偏低）。建立在既有 S.attr.int（智力，deterministic 走種子）
+      之上，全程只「讀」終局 state，不新增任何 Math.random／rng() → 種子事件抽取序列
+      逐位元不變；與 R131 事件型可選職涯路線各自獨立旗標、互不汙染。
+   驅動鐵律：
+   ① 智力 int 為主驅動（單調決定學歷階層）；財富 mny 影響「升學資源」做次級修正
+      （補習留學鈔能力 vs 繳不起補習費）；年齡決定職涯軌跡走多遠、走向哪個結局；
+      出生世代 era 只做「就業背景梗」文案著色，不動數值（確保智力才是主角）。
+   ② 純呈現：所有 R139 函式只回傳字串／純讀物件，不寫 S、不改數值平衡；S=null／無 attr／
+      缺 int 鍵／髒資料一律安全降級回 null／空字串，絕不白屏或拋例外。
+   ③ 跨局收集：r139_career ＝集滿五種職涯結局成就（勝利組／小主管／躺平／中年失業／22K魯蛇）。
+   ========================================================================= */
+// 學歷階層（智力主導、財富次要；純查表、零 rng；index 0..5 由低到高）
+const R139_EDU = [
+  {ic:"🐂", nm:"放牛班",   short:"國中放牛、課本拿來墊便當"},
+  {ic:"🔧", nm:"高職技職", short:"一技在身、黑手起家"},
+  {ic:"🏫", nm:"學店私大", short:"學貸百萬換一張紙、求職被已讀"},
+  {ic:"🎓", nm:"國立中段", short:"中字輩國立、不上不下的安全牌"},
+  {ic:"🏆", nm:"台清交成", short:"頂大窄門、履歷自帶光環"},
+  {ic:"🌐", nm:"海歸博士", short:"常春藤鍍金、博士帽加身"},
+];
+// 職涯地位階層（學歷定起點、財富微調、年齡折舊升遷；純查表、零 rng；index 0..5 由低到高）
+const R139_CAREER = [
+  {ic:"🛋️", nm:"啃老待業",   short:"履歷石沉大海、靠爸媽養"},
+  {ic:"🪙", nm:"22K 派遣",   short:"時薪算到分、責任制吃到飽"},
+  {ic:"🩸", nm:"血汗社畜",   short:"慣老闆畫餅、加班當吃補"},
+  {ic:"💼", nm:"一般上班族", short:"死薪水餓不死、發財沒指望"},
+  {ic:"📈", nm:"資深小主管", short:"爬到組長、夾心餅乾兩面受氣"},
+  {ic:"👔", nm:"高管財富自由", short:"配股分紅、終於換人幫你打工"},
+];
+// 人生階段（求學→職涯；off 為職涯階段相對學歷起點的折舊/升遷）
+const R139_PHASES = [
+  {key:"school", age:6,  nm:"求學階段", off:0},  // 顯示學歷階層
+  {key:"fresh",  age:22, nm:"初入職場", off:-1}, // 菜鳥起點低
+  {key:"mid",    age:38, nm:"職涯中段", off:0},  // 站穩
+  {key:"late",   age:52, nm:"職涯後期", off:1},  // 升遷或中年危機
+];
+// 職涯結局型別文案（純查表、零 rng）
+const R139_END = {
+  freedom: {ic:"👔", nm:"財富自由・人生勝利組", path:"📈 高學歷疊高財富、配股分紅換人幫你打工", note:"靠學歷敲門、靠錢滾錢，你成了同學會裡那個沒人敢約的勝利組——這座島少數真正翻身的劇本。"},
+  manager: {ic:"💼", nm:"小主管・中產上岸",     path:"📈 熬年資爬到組長、房貸車貸供得起",       note:"沒大富大貴，但熬成了夾心主管、撐起一個家——這座島最體面的中產日常，你穩穩上了岸。"},
+  drudge:  {ic:"🩸", nm:"慣老闆血汗社畜",       path:"🏢 責任制畫大餅、加班換不到加薪",         note:"領死薪水、被慣老闆當免洗耗材——這座島最普遍的社畜日常，你一天天熬了過來。"},
+  lieflat: {ic:"🛋️", nm:"過勞躺平・小確幸度日", path:"🍜 看破慣老闆把戲、降低慾望佛系過活",     note:"卷不動內捲、追不上房價，乾脆躺平——這座島年輕人最誠實的反抗，省一杯手搖也是小確幸。"},
+  layoff:  {ic:"📉", nm:"中年失業・被資遣",     path:"📦 一紙資遣令、轉職海投石沉大海",         note:"中年被優化掉，履歷卡在年齡跟薪資的夾縫——這座島最不敢生病、最怕失業的年紀，被你撞上了。"},
+  lowwage: {ic:"🪙", nm:"22K 魯蛇・低薪起跑",   path:"🪙 起薪 22K、扣完勞健保剩一張小朋友",   note:"低學歷卡死起跑線、22K 領到懷疑人生——這座島把年輕人標價的方式，你親身領教了一遍。"},
+};
+// 出生世代就業背景梗（純文案著色，零數值影響）
+const R139_ERAJOB = {
+  e70:"你那年代肯做就有工作，黑手學徒也能熬成黑手頭家——學歷不值錢、肯拚才值錢。",
+  e80:"你出社會時台灣錢淹腳目剛退潮，大學還是窄門——一紙文憑那時真能換一張入場券。",
+  e90:"你畢業撞上廣設大學、人人有書讀——文憑通膨啟動，學歷從入場券貶成了壁紙。",
+  e00:"你求職正逢 22K 方案問世，起薪被一刀砍到骨折——這代人的低薪起跑線，從此刻進歷史。",
+  e10:"你這代揹著學貸畢業、薪水追不上房價——靠北系列發到飽，躺平成了最誠實的反抗。",
+  e20:"你進職場配 AI 搶飯碗、斜槓接案當日常——鐵飯碗神話早碎，安穩成了奢侈品。",
+};
+// 財富→升學資源修正（補習留學鈔能力 vs 繳不起補習；智力仍為主驅動，財富只做 ±8 次級修正）
+function r139EduBoostOf(mny){
+  return mny>=70 ? {off:8,  nm:"補習留學鈔能力", short:"課後家教、留學鍍金，錢幫你買贏在起跑線"}
+       : mny<=25 ? {off:-8, nm:"繳不起補習費",   short:"課本買二手、打工排擠讀書時間"}
+       :           {off:0,  nm:"一般家庭",       short:"沒餘裕補習、靠自己拚升學"};
+}
+// 智力屬性→學歷階層（純查表、智力單調驅動）
+function r139EduTierOf(effE){
+  return effE>=82?5 : effE>=66?4 : effE>=50?3 : effE>=34?2 : effE>=18?1 : 0;
+}
+// 職涯地位（學歷定起點、財富微調、階段 off 折舊/升遷；純算、零 rng）
+function r139CareerLevelAt(eduTier, mny, off){
+  let base = eduTier;
+  if(mny>=70) base+=1; else if(mny<=25) base-=1;   // 財富微調起點（人脈/家底/不必打工）
+  return Math.max(0, Math.min(5, base + off));
+}
+/* 從任一 state deterministic 推演學歷・職涯軌跡（純讀、零 rng、零 mutation）；壞資料回 null */
+function r139CareerOf(st){
+  try{
+    if(!st || typeof st!=="object" || !st.attr || typeof st.attr.int!=="number") return null;
+    const intl = Math.max(0, Math.min(100, st.attr.int));
+    const mny  = (typeof st.attr.mny==="number") ? Math.max(0, Math.min(100, st.attr.mny)) : 50; // 缺 mny → 中性
+    const age  = Math.max(0, Math.round(st.age||0));
+    const era  = (typeof st.era==="string" && R139_ERAJOB.hasOwnProperty(st.era)) ? st.era : null;
+    const boost = r139EduBoostOf(mny);                  // 財富影響升學資源（次級）
+    const effE = Math.max(0, Math.min(100, intl + boost.off)); // 智力為主、升學資源微調
+    const eduTier = r139EduTierOf(effE);
+    // 各人生階段（school 顯示學歷、其餘顯示職涯地位）
+    const stages=[];
+    for(let i=0;i<R139_PHASES.length;i++){
+      const ph=R139_PHASES[i];
+      if(age < ph.age) break;                            // 沒活到該階段就不列（早逝只走前段）
+      if(ph.key==="school"){
+        const e=R139_EDU[eduTier];
+        stages.push({key:ph.key, nm:ph.nm, edu:true, ic:e.ic, tnm:e.nm, short:e.short});
+      }else{
+        const lv=r139CareerLevelAt(eduTier, mny, ph.off);
+        const c=R139_CAREER[lv];
+        stages.push({key:ph.key, nm:ph.nm, edu:false, lv, ic:c.ic, tnm:c.nm, short:c.short});
+      }
+    }
+    // 職涯結局（互斥；學歷為主、財富與年齡決定走向）
+    let endType;
+    if(eduTier>=4 && mny>=68) endType="freedom";                       // 高學歷＋高財富→財富自由勝利組
+    else if(eduTier>=3 && age>=42 && mny>=42) endType="manager";       // 中上學歷＋中年＋小康→小主管上岸
+    else if(eduTier<=1 && age<30 && mny<=35) endType="lowwage";        // 低學歷＋剛出社會＋低薪→22K魯蛇起跑
+    else if(eduTier<=2 && mny<=30 && age>=30 && age<50) endType="lieflat"; // 中低學歷＋低財富＋青壯→過勞躺平
+    else if(age>=48 && mny<=40) endType="layoff";                      // 中年＋財富沒起色→被資遣中年失業
+    else endType="drudge";                                             // 預設：慣老闆血汗社畜（最普遍）
+    const ach = {
+      freedom: endType==="freedom",
+      manager: endType==="manager",
+      lowwage: endType==="lowwage",
+      lieflat: endType==="lieflat",
+      layoff:  endType==="layoff",
+    };
+    return { intl, mny, age, era, boost, effE, eduTier, stages, endType, ach };
+  }catch(e){ return null; }
+}
+function r139Career(){ return r139CareerOf(S); }
+/* 結算：學歷・職涯回顧卡——智力定學歷、學歷+財富+年齡推職涯、結局回顧（純讀零 rng，可截圖分享，線C素材） */
+function r139CareerReviewHTML(){
+  const h=r139Career();
+  if(!h) return "";
+  const end=R139_END[h.endType]||R139_END.drudge;
+  const edu=R139_EDU[h.eduTier]||R139_EDU[0];
+  const rows=h.stages.map(s=>`<div style="display:flex;gap:8px;align-items:baseline;padding:3px 0;font-size:13px;border-bottom:1px solid rgba(255,255,255,.05)">
+      <span class="muted" style="min-width:60px">${s.nm}</span>
+      <span style="white-space:nowrap">${s.ic} <b>${s.tnm}</b></span>
+      <span class="muted" style="font-size:11px">${s.short}</span></div>`).join("");
+  // 世代就業背景梗（缺則略）
+  let eraLine="";
+  const job = h.era && R139_ERAJOB[h.era];
+  if(job) eraLine=`<div class="muted" style="font-size:11.5px;margin-top:6px">💼 你那年代的就業：${job}</div>`;
+  const winner = h.eduTier>=4 && (h.endType==="freedom"||h.endType==="manager");
+  const climbLine = winner
+    ? `🚀 <b style="color:#7ad0ff">你翻身了</b>——在這座學歷通膨、死薪水追不上房價的島上，能靠讀書與努力翻過階級的牆，已經是少數人才走得到的劇本。`
+    : `🪜 <b style="color:#ffb3b3">階級的牆很厚</b>——學貸、22K、慣老闆、躺平，這座島把年輕人的起跑線越畫越後，你用一輩子親身量了它有多陡。`;
+  return `<div class="panel" style="margin-top:12px;background:var(--panel2)">
+    <h2 class="sec">🎓 學歷・職涯軌跡</h2>
+    <div class="muted" style="font-size:11.5px;margin:-4px 0 6px">依你這輩子的智力、升學資源與打拚的歲月，推演你的學歷與職涯——放牛班還是台清交、22K魯蛇還是財富自由？</div>
+    <div style="display:flex;gap:6px;align-items:baseline;padding:4px 0 2px;font-size:13px">
+      <span class="muted" style="min-width:60px">最高學歷</span><span>${edu.ic} <b>${edu.nm}</b></span>
+      <span class="muted" style="font-size:11px">${edu.short}</span></div>
+    ${rows}
+    <div style="display:flex;gap:6px;align-items:baseline;padding:6px 0 2px;font-size:13px">
+      <span class="muted" style="min-width:60px">職涯結局</span><span>${end.ic} <b>${end.nm}</b></span></div>
+    <div style="display:flex;gap:6px;align-items:baseline;font-size:12.5px"><span class="muted" style="min-width:60px">升學資源</span><span>${h.boost.nm}（${h.boost.short}）</span></div>
+    ${eraLine}
+    <div class="muted" style="font-size:12.5px;margin-top:8px;line-height:1.8">${climbLine}<br>${end.path}<br>${end.note}</div></div>`;
 }
 
 /* =========================================================================
@@ -17184,6 +17340,7 @@ function screenSummary(cat){
       ${r136PeopleReviewHTML()}
       ${r137HousingReviewHTML()}
       ${r138HealthReviewHTML()}
+      ${r139CareerReviewHTML()}
       ${attrCurveHTML()}
       ${attrTrajectoryHTML()}
       ${r129TrajectoryHTML()}

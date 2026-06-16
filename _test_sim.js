@@ -4065,6 +4065,44 @@ try {
   console.log('R138 健康人生軌跡・病歷與長照: ❌ ' + e.message);
 }
 
+/* ===== R139 學歷・職涯軌跡（純衍生/結算覆蓋層：零 rng/零 pinned 序列擾動/deterministic/智力主驅動/降級） ===== */
+let r139OK = false;
+try {
+  const r139Raw = vm.runInContext(`(function(){
+    const out={};
+    /* ① 結構：6 學歷階層、6 職涯階層、6 結局型別、五個職涯成就＋集滿成就齊備 */
+    out.struct = Array.isArray(R139_EDU) && R139_EDU.length===6 && Array.isArray(R139_CAREER) && R139_CAREER.length===6
+      && Array.isArray(R139_PHASES) && R139_PHASES.length===4
+      && ['freedom','manager','drudge','lieflat','layoff','lowwage'].every(k=>R139_END[k])
+      && ['r139_freedom','r139_manager','r139_lieflat','r139_layoff','r139_lowwage','r139_career'].every(id=>!!ACH_MAP[id]);
+    /* ② 純衍生覆蓋零 rng：startGame 後跑 r139CareerOf/Review 不消耗任何種子序列（與 pinned 抽事件序列獨立） */
+    const oc=randomSeedCode; randomSeedCode=function(){return 'DDDDDD';};
+    startGame(); const r0=[]; for(let i=0;i<20;i++)r0.push(rng());
+    startGame(); r139CareerOf(S); r139CareerReviewHTML(); const r1=[]; for(let i=0;i<20;i++)r1.push(rng());
+    let rngEq=true; for(let i=0;i<20;i++){ if(r0[i]!==r1[i]) rngEq=false; }
+    out.rngZero = rngEq; randomSeedCode=oc;
+    /* ③ deterministic 純讀終局 S：同態同結果、零 mutation、智力確實驅動學歷分檔 */
+    startGame(); S.attr={hp:60,int:20,apr:55,mny:30,hap:60}; S.age=25; S.flags={};
+    const snap=JSON.stringify(S.attr)+'|'+S.age;
+    const c1=r139CareerReviewHTML(), c2=r139CareerReviewHTML();
+    out.deterministic = c1===c2 && c1.indexOf('學歷')>=0 && c1.indexOf('職涯結局')>=0
+      && (JSON.stringify(S.attr)+'|'+S.age)===snap;
+    /* ④ 智力驅動學歷分檔：高智力→台清交/海歸(>=4)、低智力→放牛班(0) */
+    const hi=r139CareerOf({attr:{int:95,mny:50},age:40,flags:{}}), lo=r139CareerOf({attr:{int:5,mny:50},age:40,flags:{}});
+    out.intDrive = !!hi && !!lo && hi.eduTier>=4 && lo.eduTier===0 && hi.eduTier>lo.eduTier;
+    /* ⑤ S=null/缺 attr/缺 int 安全降級：回 null、卡空字串、不炸 */
+    const sv=S; S=null; let nullSafe=true;
+    try{ if(r139CareerOf(null)!==null) nullSafe=false; if(r139CareerReviewHTML()!=='') nullSafe=false; if(r139CareerOf({attr:{},age:40})!==null) nullSafe=false; }catch(e){ nullSafe=false; }
+    S=sv; out.nullSafe = nullSafe;
+    return JSON.stringify(out);
+  })()`, sandbox);
+  const r139 = JSON.parse(r139Raw);
+  r139OK = Object.values(r139).every(v => v === true);
+  console.log(`R139 學歷・職涯軌跡: ${r139OK ? '✅ 全數通過' : '❌ ' + JSON.stringify(r139)}`);
+} catch (e) {
+  console.log('R139 學歷・職涯軌跡: ❌ ' + e.message);
+}
+
 if (__errors.length) {
   console.log('\n--- 錯誤樣本(前5) ---');
   __errors.slice(0, 5).forEach(e => console.log('  ' + e));
@@ -4072,6 +4110,6 @@ if (__errors.length) {
 
 /* 退出碼 */
 const pass = __errors.length === 0 && chk.missingScenes.length === 0 && chk.eventVisible >= 126 && chk.eventTotal >= 126 && lsOK && achUnlocked > 0
-  && chk.deathbookMissing.length === 0 && chk.deathTotal >= 17 && deathsOK && rebirthOK && legacyOK && petOK && r13OK && r17OK && r20OK && r21OK && r22OK && r24OK && r25OK && r34OK && r38OK && r41OK && r42OK && r43OK && r44OK && r45OK && r46OK && r47OK && r48OK && r49OK && r51OK && r52OK && r53OK && r54OK && r55OK && r72OK && r76OK && r77OK && r79OK && r86OK && r87OK && r92OK && r93OK && r95OK && r96OK && r108OK && r110OK && r111OK && r112OK && r113OK && r115OK && r116OK && r117OK && r118OK && r119OK && r122OK && r126OK && r134OK && r136OK && r138OK;
+  && chk.deathbookMissing.length === 0 && chk.deathTotal >= 17 && deathsOK && rebirthOK && legacyOK && petOK && r13OK && r17OK && r20OK && r21OK && r22OK && r24OK && r25OK && r34OK && r38OK && r41OK && r42OK && r43OK && r44OK && r45OK && r46OK && r47OK && r48OK && r49OK && r51OK && r52OK && r53OK && r54OK && r55OK && r72OK && r76OK && r77OK && r79OK && r86OK && r87OK && r92OK && r93OK && r95OK && r96OK && r108OK && r110OK && r111OK && r112OK && r113OK && r115OK && r116OK && r117OK && r118OK && r119OK && r122OK && r126OK && r134OK && r136OK && r138OK && r139OK;
 console.log('\n結果: ' + (pass ? '✅ 全數通過' : '❌ 有項目未通過'));
 process.exit(pass ? 0 : 1);
