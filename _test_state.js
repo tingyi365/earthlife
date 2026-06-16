@@ -5753,5 +5753,80 @@ const r145 = JSON.parse(vm.runInContext(`(function(){
   ['achPartial','⑪ 跨局集滿:缺一→r145_housing 不解'],
 ].forEach(([k,m])=>ok(r145[k], 'R145 '+m));
 
+/* ===== R146 交通・座駕軌跡（純衍生/結算覆蓋層；零 rng/零汙染/deterministic 推演/財富 mny 主驅動+智力購車眼光/壞資料降級/交通成就） ===== */
+const r146 = JSON.parse(vm.runInContext(`(function(){
+  const out={};
+  function mk(mny,int,age,era){ return {attr:{hp:50,int:int,apr:50,mny:mny,hap:50}, age:age, era:era, flags:{}, alive:false}; }
+  // ① 資料齊備：6 座駕資產底子+6 通勤處境階層+4 人生階段+6 結局型別+六世代交通梗+購車眼光三檔
+  out.dataFull = Array.isArray(R146_FLEET) && R146_FLEET.length===6 && R146_FLEET.every(t=>t.ic&&t.nm&&t.short)
+    && Array.isArray(R146_RIDE) && R146_RIDE.length===6 && R146_RIDE.every(t=>t.ic&&t.nm&&t.short)
+    && Array.isArray(R146_PHASES) && R146_PHASES.length===4 && R146_PHASES.every(p=>typeof p.off==='number')
+    && ['luxe','biker','gogoro','toyota','scooter','walker'].every(k=>R146_END[k]&&R146_END[k].nm&&R146_END[k].path&&R146_END[k].note)
+    && R55_ERAS.every(er=>typeof R146_ERARIDE[er.id]==='string')
+    && [r146SavvyOf(90),r146SavvyOf(50),r146SavvyOf(10)].every(c=>typeof c.off==='number'&&c.nm&&c.short);
+  // ② 財富 mny 確定性映射：高→雙B進口車庫(>=4)、中→中段(>=2)、低→無車雙腳(0)；且單調驅動
+  const hi=r146VehicleOf(mk(95,50,40,'e00')), midd=r146VehicleOf(mk(50,50,40,'e00')), lo=r146VehicleOf(mk(5,50,40,'e00'));
+  out.mnyMap = !!hi&&!!midd&&!!lo && hi.fleetTier>=4 && midd.fleetTier>=2 && lo.fleetTier===0
+    && hi.fleetTier>midd.fleetTier && midd.fleetTier>lo.fleetTier;
+  // ③ 智力影響購車眼光（次級修正）：同口袋 55，懂車老司機(int90)底子 >= 菜雞盤子(int10)，且 off 有別
+  const smart=r146VehicleOf(mk(55,90,40,'e00')), dumb=r146VehicleOf(mk(55,10,40,'e00'));
+  out.savvyDrive = !!smart&&!!dumb && smart.fleetTier>=dumb.fleetTier && smart.savvy.off>dumb.savvy.off;
+  // ④ 卡片渲染：含座駕資產/交通結局/購車眼光/通勤或座駕
+  S=mk(50,50,40,'e00'); const card=r146VehicleReviewHTML();
+  out.cardRender = card.indexOf('座駕資產')>=0 && card.indexOf('交通結局')>=0 && card.indexOf('購車眼光')>=0 && (card.indexOf('通勤')>=0||card.indexOf('座駕')>=0);
+  // ⑤ deterministic 純讀：同 S 兩次渲染逐字一致
+  S=mk(40,40,35,'e10'); const a1=r146VehicleReviewHTML(), a2=r146VehicleReviewHTML();
+  out.deterministic = a1===a2 && a1.length>0;
+  // ⑥ 純呈現零汙染：生成前後 S.attr/era/age/flags 不變、零 rng 消耗
+  S=mk(72,55,45,'e70'); const bA=JSON.stringify(S.attr), bE=S.era, bAge=S.age, bF=JSON.stringify(S.flags);
+  let used=0; const oldR=rng; rng=function(){ used++; return oldR(); };
+  r146VehicleReviewHTML(); r146VehicleOf(S); rng=oldR;
+  out.pure = JSON.stringify(S.attr)===bA && S.era===bE && S.age===bAge && JSON.stringify(S.flags)===bF && used===0;
+  // ⑦ S=null / 缺 attr / 缺 mny 降級：回 null、卡空字串、不炸
+  out.nullSafe = (()=>{ try{ S=null; return r146VehicleOf(null)===null && r146VehicleReviewHTML()===''; }catch(e){ return false; } })();
+  out.noAttr = (()=>{ try{ return r146VehicleOf({age:40,era:'e00'})===null && r146VehicleOf({attr:{int:50},age:40})===null; }catch(e){ return false; } })();
+  // ⑧ 缺 int 降級：用中性 50、仍回物件不炸；髒 era → 交通梗略過不炸
+  out.softDeg = (()=>{ try{ const m=r146VehicleOf({attr:{mny:55},age:40,era:'e00',flags:{}}); const d=r146VehicleOf(mk(55,50,40,'zzz999')); return !!m && m.fleetTier===r146VehicleOf(mk(55,50,40,'e00')).fleetTier && !!d && d.era===null; }catch(e){ return false; } })();
+  // ⑨ 舊存檔相容：ensureState 不為 R146 在 S/flags 補任何 r146 鍵
+  startGame(); const olds=S; ensureState(olds);
+  out.compatOld = !Object.keys(olds).some(k=>k.toLowerCase().indexOf('r146')===0)
+    && !Object.keys(olds.flags||{}).some(k=>k.toLowerCase().indexOf('r146')===0);
+  // ⑩ 交通結局成就確定性點亮：雙B/重機/Gogoro/Toyota/機車/無車 各自可達且互斥
+  const LUXE=mk(88,50,40,'e00'), GOGO=mk(65,60,40,'e00'), BIKE=mk(65,50,25,'e00'), TOYO=mk(50,50,40,'e00'), SCOO=mk(20,50,28,'e00'), WALK=mk(20,50,66,'e00');
+  out.achLuxe    = !!ACH_MAP.r146_luxe     && ACH_MAP.r146_luxe.check({S:LUXE})===true     && ACH_MAP.r146_luxe.check({S:SCOO})===false;
+  out.achGogo    = !!ACH_MAP.r146_gogoro   && ACH_MAP.r146_gogoro.check({S:GOGO})===true   && ACH_MAP.r146_gogoro.check({S:SCOO})===false;
+  out.achBike    = !!ACH_MAP.r146_biker    && ACH_MAP.r146_biker.check({S:BIKE})===true    && ACH_MAP.r146_biker.check({S:WALK})===false;
+  out.achToyo    = !!ACH_MAP.r146_toyota   && ACH_MAP.r146_toyota.check({S:TOYO})===true   && ACH_MAP.r146_toyota.check({S:LUXE})===false;
+  out.achScoo    = !!ACH_MAP.r146_scooter  && ACH_MAP.r146_scooter.check({S:SCOO})===true  && ACH_MAP.r146_scooter.check({S:LUXE})===false;
+  out.achWalk    = !!ACH_MAP.r146_walker   && ACH_MAP.r146_walker.check({S:WALK})===true   && ACH_MAP.r146_walker.check({S:LUXE})===false;
+  // ⑪ 跨局集滿 r146_vehicle：六成就全亮→解鎖、缺一→不解
+  const allAch={r146_luxe:true,r146_biker:true,r146_gogoro:true,r146_toyota:true,r146_scooter:true,r146_walker:true};
+  SAVE.ach=Object.assign({},allAch); out.achFull = !!ACH_MAP.r146_vehicle && ACH_MAP.r146_vehicle.check({S:{}})===true;
+  const partial=Object.assign({},allAch); delete partial.r146_luxe;
+  SAVE.ach=partial; out.achPartial = ACH_MAP.r146_vehicle.check({S:{}})===false;
+  SAVE.ach={}; S=null;
+  return JSON.stringify(out);
+})()`, sandbox));
+[
+  ['dataFull','① 資料齊備:6 座駕資產底子+6 通勤處境階層+4 人生階段+6 結局型別+六世代交通梗+購車眼光三檔'],
+  ['mnyMap','② 財富 mny 確定性映射:高→雙B進口/中→中段/低→無車雙腳且單調驅動'],
+  ['savvyDrive','③ 智力影響購車眼光:同口袋懂車老司機>=菜雞盤子且 off 有別'],
+  ['cardRender','④ 卡片渲染:含座駕資產/交通結局/購車眼光/通勤或座駕'],
+  ['deterministic','⑤ deterministic 純讀:同 S 兩次渲染逐字一致'],
+  ['pure','⑥ 純呈現零汙染:生成前後 S.attr/era/age/flags 不變且零 rng'],
+  ['nullSafe','⑦ 無局(S=null)降級:回 null、卡空字串不炸'],
+  ['noAttr','⑦ 缺 attr/mny 降級:回 null 不炸'],
+  ['softDeg','⑧ 缺 int 中性化＋髒 era 交通梗略過:仍回物件不炸且底子一致'],
+  ['compatOld','⑨ 舊存檔相容:ensureState 不為 R146 補任何 S/flags 鍵'],
+  ['achLuxe','⑩ r146_luxe:雙B大哥→解、機車→不解'],
+  ['achGogo','⑩ r146_gogoro:Gogoro科技族→解、機車→不解'],
+  ['achBike','⑩ r146_biker:重機騎士→解、無車→不解'],
+  ['achToyo','⑩ r146_toyota:Toyota神車→解、雙B→不解'],
+  ['achScoo','⑩ r146_scooter:機車國牌奴→解、雙B→不解'],
+  ['achWalk','⑩ r146_walker:無車一身輕→解、雙B→不解'],
+  ['achFull','⑪ 跨局集滿:六成就全亮→r146_vehicle 解鎖'],
+  ['achPartial','⑪ 跨局集滿:缺一→r146_vehicle 不解'],
+].forEach(([k,m])=>ok(r146[k], 'R146 '+m));
+
 console.log(fails ? `\n結果: ❌ ${fails} 項未通過` : '\n結果: ✅ 狀態機全數正確');
 process.exit(fails ? 1 : 0);

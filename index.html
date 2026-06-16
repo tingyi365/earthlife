@@ -3033,6 +3033,14 @@ const ACHIEVEMENTS = [
   {id:"r145_parasite", ic:"🛏️", nm:"啃老蝸居族・住家裡或蝸居套房", desc:"頭期款存不到、房貸扛不起，乾脆啃老住家裡，或租間 5 坪蝸居小套房度日——月薪 22K 光租金就噴掉一半，買房？這輩子想都不敢想。不是不努力，是這座島把房價標成了天文數字。啃老不是你的錯，是這場遊戲一開始就沒打算讓你上車。", check:c=>{const h=r145HousingOf(c.S); return !!h && h.ach.parasite;}, hint:"讓財富 mny 長期偏低（37 以下）、又還沒拖到高齡（60 以下）——把終局房產軌跡卡在『啃老蝸居族・蝸居套房』分流…"},
   {id:"r145_renter", ic:"🐌", nm:"無殼蝸牛・一生租屋到老", desc:"一輩子沒被房貸綁架，租了一間又一間，自由是真的——但租到晚年才發現，房東一聽你年紀大就不租，無殼蝸牛的終身會員資格自動續約到老。這座島最沉默的一群人，名下一坪都沒有，晚年連個能安穩住到最後的窩都得看人臉色。不是你不努力，是這座島賣太貴。", check:c=>{const h=r145HousingOf(c.S); return !!h && h.ach.renter;}, hint:"讓財富 mny 低到買不起（37 以下）、又拖著無殼活到高齡（60+）——讓終局房產軌跡走到『無殼蝸牛・一生租屋到老』分流…"},
   {id:"r145_housing", ic:"🏘️", nm:"鬼島居住圖鑑・房產軌跡全集滿", desc:"帝寶天龍人、包租公躺賺、祖產勝利組、房貸一生、啃老蝸居、租屋到老——這座島丟給你的六種房產命運，你用一次次投胎全都親自走過一遍。當過天龍人、收過租、繼承過、背過貸、啃過老、租到老，居住與不動產這道最現實也最沉重的人生考題，你終於把它活成了一本居住圖鑑。", check:c=>{const need=["r145_mansion","r145_landlord","r145_heir","r145_mortgage","r145_parasite","r145_renter"]; return !!(SAVE&&SAVE.ach) && need.every(id=>SAVE.ach[id]);}, hint:"跨局集滿六種房產結局成就各至少一次（帝寶天龍人／包租公／祖產勝利組／房貸一生／啃老蝸居族／租屋到老）——把居住與不動產的每一種命運都走過一遍…"},
+  /* ---- R146 交通・座駕軌跡成就（純讀 r146VehicleOf(S) deterministic 推演，零 rng；財富 mny 為主驅動＋智力 int 購車眼光/養車槓桿＋年齡，推演本局「代步工具與通勤命運結局」，舊存檔/壞資料永不誤觸；聚焦座駕資產/購車眼光/通勤結局，與 R137 居住/R145 房產/R142 理財 各自獨立旗標）---- */
+  {id:"r146_luxe", ic:"🏎️", nm:"雙B大哥・進口車庫鑰匙一串", desc:"賓士、BMW、保時捷停滿車庫，鑰匙一串看心情挑今天開哪台——你站上了這座島馬路食物鏈的最頂端。在這個牌照稅燃料稅雙稅夾擊、22K 連二手機車都養得喘的島上，能把進口雙B當買菜車開，這派頭氣死一票繳牌照稅繳到肉痛的機車國牌奴。", check:c=>{const h=r146VehicleOf(c.S); return !!h && h.ach.luxe;}, hint:"把財富 mny 養到頂（有錢再加購車眼光加成）讓座駕資產推到雙B進口車庫——讓終局交通軌跡走到最高的『雙B賓士大哥・進口車庫』分流…"},
+  {id:"r146_biker", ic:"🏍️", nm:"重機騎士・假日壓車風火輪", desc:"年紀輕、口袋有料，二話不說牽一台幾十萬的重機——假日呼朋引伴上山壓車、北宜過彎的風是你的命。在這個機車滿街跑、犁田新聞天天有的島上，能騎著大型重機假日壓彎而不是擠捷運通勤，是年輕有本錢的人才玩得起的浪漫，速度與自由你都嚐過了。", check:c=>{const h=r146VehicleOf(c.S); return !!h && h.ach.biker;}, hint:"財富 mny 夠高（58+）卻還很年輕（30 以下，年輕有本錢買大羊壓車）、且不到雙B門檻——讓終局交通軌跡走到『重機騎士・假日壓車』分流…"},
+  {id:"r146_gogoro", ic:"🛵", nm:"Gogoro科技族・換電吃到飽神車眼光", desc:"看得懂CP值、算得清養車成本——你不買盤子車也不繳冤枉錢，Gogoro 換電月租吃到飽、或一台神車保養省到位，把通勤這件事玩成了精算。在這個養車像養賠錢貨的島上，能用腦袋把代步成本壓到最低、騎著不排碳的電動車穿梭市區，是少數真正會精算的科技新貴。", check:c=>{const h=r146VehicleOf(c.S); return !!h && h.ach.gogoro;}, hint:"財富 mny 夠高（58+）、智力 int 也夠（55+，懂CP值精算養車）、又活到成年購車齡（35+）、且不到雙B門檻——讓終局交通軌跡走到『Gogoro科技族・換電吃到飽』分流…"},
+  {id:"r146_toyota", ic:"🚗", nm:"Toyota神車・省油國民車開到老", desc:"咬牙牽一台 Toyota——省油、耐操、妖魔化的國民神車，開十年不出大毛病，二手還保值。這座島最普遍的有車人生：不求拉風只求可靠，每月油錢、保養、雙稅精打細算地過。神車車主的滋味你嚐了個透——不是最炫的車，卻是最不會讓你後悔的選擇。", check:c=>{const h=r146VehicleOf(c.S); return !!h && h.ach.toyota;}, hint:"財富 mny 中等（38–81）、又沒走到重機／Gogoro／機車／無車路線——把終局交通軌跡卡在『Toyota神車・省油國民車』分流…"},
+  {id:"r146_scooter", ic:"🛵", nm:"機車國牌奴・二手小綿羊風吹日曬", desc:"買不起四個輪子，一台二手小綿羊騎到底——風吹日曬雨淋犁田樣樣來，牌照稅燃料稅雙稅繳到肉痛，超速照相罰單收到怕。這座島最龐大的一群人，機車國的標準配備：22K 養不起汽車，能有台機車代步上下班，已經是這場遊戲給你的標準答案。", check:c=>{const h=r146VehicleOf(c.S); return !!h && h.ach.scooter;}, hint:"讓財富 mny 長期偏低（37 以下）、又還沒拖到高齡（60 以下）——把終局交通軌跡卡在『機車國牌奴・二手小綿羊』分流…"},
+  {id:"r146_walker", ic:"🚶", nm:"無車一身輕・通勤捷運族走到老", desc:"一輩子沒被車貸、牌照稅、停車位綁架，悠遊卡一張嗶到底，通勤靠捷運公車雙腳——無車一身輕是真的，下雨天等公車淋成落湯雞也是真的。這座島最佛系的一群人，名下沒半個輪子，省下的養車錢是真金白銀，只是晚年腿腳不便時才發現，沒台車代步的日子也有它的難。", check:c=>{const h=r146VehicleOf(c.S); return !!h && h.ach.walker;}, hint:"讓財富 mny 低到買不起車（37 以下）、又無車拖著活到高齡（60+）——讓終局交通軌跡走到『無車一身輕・通勤捷運族走到老』分流…"},
+  {id:"r146_vehicle", ic:"🛣️", nm:"鬼島馬路圖鑑・座駕軌跡全集滿", desc:"雙B大哥、重機壓車、Gogoro科技族、Toyota神車、機車國牌奴、無車一身輕——這座島丟給你的六種交通命運，你用一次次投胎全都親自騎過開過走過一遍。當過進口車大哥、壓過彎、精算過養車、開過神車、犁過田、嗶過悠遊卡到老，代步與通勤這道最日常也最磨人的人生考題，你終於把它活成了一本馬路圖鑑。", check:c=>{const need=["r146_luxe","r146_biker","r146_gogoro","r146_toyota","r146_scooter","r146_walker"]; return !!(SAVE&&SAVE.ach) && need.every(id=>SAVE.ach[id]);}, hint:"跨局集滿六種交通結局成就各至少一次（雙B大哥／重機騎士／Gogoro科技族／Toyota神車／機車國牌奴／無車一身輕）——把代步與通勤的每一種命運都騎過開過走過一遍…"},
   {id:"r70a_unicorn", ic:"🦄", nm:"創業上岸・無中生有", desc:"在頭家夢分歧鏈選自己創業，撐過跑三點半的歲月，最後成功上岸買房定居——你把『無中生有』四個字活成了真的。", check:c=>!!(c.S.flags&&c.S.flags.r70a_unicorn), hint:"分歧鏈裡選自己創業的人，中段擴張或被收購（或在三點半跳票邊緣硬撐活下來），末段才走得到買房上岸…"},
   {id:"r70a_freebird", ic:"🕊️", nm:"社畜跳船・自由業真男人", desc:"當年領死薪水的你中途跳船去接案，多年後接出口碑、開了自己的工作室——上班族眼裡那種『自由業』，自由是真的，業也真的有在接。", check:c=>!!(c.S.flags&&c.S.flags.r70a_freebird), hint:"分歧鏈選領死薪水當社畜的人，中段選擇安靜離職跳船接案，末段把工作室掛牌做起來…"},
   {id:"r70a_clear", ic:"🧭", nm:"頭家夢・全鏈結業", desc:"從老家那通電話一路走到人生期末考，把頭家夢（或死薪水）這條三段分歧鏈完整走完——接、創、領，無論哪條路你都活出了答案。", check:c=>!!(c.S.flags&&c.S.flags.r70a_done), hint:"老家的店要收那年做出選擇後，把中段、末段兩道抉擇都接著走完，整條頭家分歧鏈一站不漏…"},
@@ -4891,6 +4899,156 @@ function r145HousingReviewHTML(){
     <div style="display:flex;gap:6px;align-items:baseline;padding:6px 0 2px;font-size:13px">
       <span class="muted" style="min-width:60px">房產結局</span><span>${end.ic} <b>${end.nm}</b></span></div>
     <div style="display:flex;gap:6px;align-items:baseline;font-size:12.5px"><span class="muted" style="min-width:60px">購屋眼光</span><span>${h.savvy.nm}（${h.savvy.short}）</span></div>
+    ${eraLine}
+    <div class="muted" style="font-size:12.5px;margin-top:8px;line-height:1.8">${fateLine}<br>${end.path}<br>${end.note}</div></div>`;
+}
+
+/* =========================================================================
+   R146 交通・座駕軌跡（純衍生／結算覆蓋層，零 rng、零事件序列擾動）
+   ── 呼應主題：讓「財富 mny」與「智力 int」這兩屬性真正驅動本局的「代步工具與
+      通勤命運結局」。建立在既有 S.attr.mny / S.attr.int / S.age 之上，全程只「讀」
+      終局 state，不新增任何 Math.random／rng() → 種子事件抽取序列逐位元不變；
+      獨立旗標，與 R140 婚戀／R141 興趣／R142 理財／R143 社交／R144 健康／R145 居住
+      各自獨立、互不干擾。
+   驅動鐵律：
+   ① 財富 mny 為主驅動（口袋深度決定買得起什麼車）；智力 int 另做「購車眼光／養車
+      槓桿」次級修正（看懂 CP 值買神車 vs 被當盤子買到泡水車／落入車貸地獄）；年齡
+      決定代步處境隨人生階段的爬升與終局走向；出生世代 era 只做「交通梗」文案著色，
+      不動數值。特例：「重機騎士」要求財富高且年輕（年輕有本錢買大羊壓車）；「Gogoro
+      科技族」要求財富高＋智力夠＋成年後（懂 CP 值精算養車）；「無車一身輕」要求財富低
+      且高齡（無車拖到晚年通勤到老）。
+   ② 純呈現：所有 R146 函式只回傳字串／純讀物件，不寫 S、不改數值平衡；S=null／無 attr／
+      缺 mny 鍵／髒資料一律安全降級回 null／空字串，絕不白屏或拋例外。
+   ③ 跨局收集：r146_vehicle ＝集滿六種交通結局成就（雙B大哥／重機騎士／Gogoro科技族／
+      Toyota神車／機車國牌奴／無車一身輕）。
+   ========================================================================= */
+// 座駕資產底子階層（財富口袋主導、購車眼光次要；純查表、零 rng；index 0..5 由低到高）
+const R146_FLEET = [
+  {ic:"🚶", nm:"無車雙腳族",     short:"名下沒半個輪子、走路加轉乘是日常"},
+  {ic:"🚌", nm:"大眾運輸卡",     short:"悠遊卡月票嗶到底、尖峰擠捷運沙丁魚"},
+  {ic:"🛵", nm:"中古小綿羊",     short:"二手機車一台、風吹日曬雨淋全都來"},
+  {ic:"🚙", nm:"二手國產代步",   short:"中古國產四輪、能遮風避雨就偷笑"},
+  {ic:"🚗", nm:"Toyota神車庫",   short:"省油耐操妖魔化神車、開十年不壞"},
+  {ic:"🏎️", nm:"雙B進口車庫",    short:"賓士BMW滿車庫、鑰匙一串選今天開哪台"},
+];
+// 通勤代步處境階層（座駕定起點、購車眼光微調、年齡階段爬升；純查表、零 rng；index 0..5 由低到高）
+const R146_RIDE = [
+  {ic:"🚶", nm:"11路公車雙腳",   short:"走到鐵腿、通勤單程兩小時"},
+  {ic:"🚇", nm:"捷運公車通勤族", short:"月票吃到飽、尖峰擠到變形"},
+  {ic:"🛵", nm:"二手機車犁田",   short:"小綿羊風吹日曬、雨天犁田濕半身"},
+  {ic:"🚙", nm:"國產老車省著開", short:"二手代步車、油錢保養精打細算"},
+  {ic:"🚗", nm:"Toyota神車代步", short:"省油可靠國民神車、開到天荒地老"},
+  {ic:"🏎️", nm:"雙B大哥壓馬路",  short:"進口雙B假日壓馬路、路上人人讓三分"},
+];
+// 人生階段（學生→晚年；off 為代步處境相對座駕底子的年齡爬升修正；越年輕越還沒升級座駕）
+const R146_PHASES = [
+  {key:"youth", age:18, nm:"學生通勤期", off:-2}, // 還在搭公車／騎二手機車通勤
+  {key:"prime", age:32, nm:"購車成家關", off:-1}, // 成家買不買車的十字路口
+  {key:"settle",age:48, nm:"座駕定錨期", off:0},  // 代步處境隨座駕資產定型
+  {key:"late",  age:66, nm:"晚年代步期", off:0},  // 進口車大哥或無車通勤到老見真章
+];
+// 交通結局型別文案（純查表、零 rng）
+const R146_END = {
+  luxe:    {ic:"🏎️", nm:"雙B賓士大哥・進口車庫鑰匙一串", path:"🏎️ 站上馬路食物鏈頂端、紅綠燈前人人讓三分", note:"賓士、BMW、保時捷停滿車庫，鑰匙一串看心情挑今天開哪台——你站上了這座島馬路食物鏈的最頂端。在這個牌照稅燃料稅雙稅夾擊、22K 連二手機車都養得喘的島上，能把進口雙B當買菜車開，這派頭氣死一票繳牌照稅繳到肉痛的機車國牌奴。"},
+  biker:   {ic:"🏍️", nm:"重機騎士・假日壓車風火輪", path:"🏍️ 年紀輕、口袋夠、一台大羊咻地壓彎而去", note:"年紀輕、口袋有料，二話不說牽一台幾十萬的重機——假日呼朋引伴上山壓車、北宜過彎的風是你的命。在這個機車滿街跑、犁田新聞天天有的島上，能騎著大型重機假日壓彎而不是擠捷運通勤，是年輕有本錢的人才玩得起的浪漫，速度與自由你都嚐過了。"},
+  gogoro:  {ic:"🛵", nm:"Gogoro科技族・換電吃到飽神車眼光", path:"🛵 看懂CP值、換電吃到飽、養車成本壓到最低", note:"看得懂CP值、算得清養車成本——你不買盤子車也不繳冤枉錢，Gogoro 換電月租吃到飽、或一台神車保養省到位，把通勤這件事玩成了精算。在這個養車像養賠錢貨的島上，能用腦袋把代步成本壓到最低、騎著不排碳的電動車穿梭市區，是少數真正會精算的科技新貴。"},
+  toyota:  {ic:"🚗", nm:"Toyota神車・省油國民車開到老", path:"🚗 一台神車開十年、省油耐操不出大毛病", note:"咬牙牽一台 Toyota——省油、耐操、妖魔化的國民神車，開十年不出大毛病，二手還保值。這座島最普遍的有車人生：不求拉風只求可靠，每月油錢、保養、雙稅精打細算地過。神車車主的滋味你嚐了個透——不是最炫的車，卻是最不會讓你後悔的選擇。"},
+  scooter: {ic:"🛵", nm:"機車國牌奴・二手小綿羊風吹日曬", path:"🛵 一台二手機車騎到底、牌照稅繳到肉痛", note:"買不起四個輪子，一台二手小綿羊騎到底——風吹日曬雨淋犁田樣樣來，牌照稅燃料稅雙稅繳到肉痛，超速照相罰單收到怕。這座島最龐大的一群人，機車國的標準配備：22K 養不起汽車，能有台機車代步上下班，已經是這場遊戲給你的標準答案。"},
+  walker:  {ic:"🚶", nm:"無車一身輕・通勤捷運族走到老", path:"🚶 名下沒半個輪子、悠遊卡嗶到老", note:"一輩子沒被車貸、牌照稅、停車位綁架，悠遊卡一張嗶到底，通勤靠捷運公車雙腳——無車一身輕是真的，下雨天等公車淋成落湯雞也是真的。這座島最佛系的一群人，名下沒半個輪子，省下的養車錢是真金白銀，只是晚年腿腳不便時才發現，沒台車代步的日子也有它的難。"},
+};
+// 出生世代交通梗（純文案著色，零數值影響）
+const R146_ERARIDE = {
+  e70:"你那年代有台機車就很拉風、一台偉士牌載全家——汽車是醫生律師才開得起的奢侈品。",
+  e80:"你年輕時剛好碰上機車普及、人手一台小綿羊，國產車開始進家庭——那是塞車還不嚴重的黃金年代。",
+  e90:"你出社會時油價飆漲、停車位喊到比房租貴，養車成了奢侈，捷運通勤變成顯學。",
+  e00:"你這代牌照稅燃料稅雙稅夾擊、超速照相罰單滿天飛，22K 養不起車只能騎二手機車犁田。",
+  e10:"你成長在 Gogoro 換電、Uber 共享的年代，買不買車都尷尬，月薪扣完租金哪還養得起四個輪子。",
+  e20:"你這代乾脆放棄買車改信『通勤自由』，悠遊卡嗶到底、外送到府——不是不想開雙B，是這座島把車位標上了天龍價。",
+};
+// 智力→購車眼光／養車槓桿修正（看懂 CP 值買神車 vs 被當盤子買到泡水車；財富仍為主驅動，智力只做 ±10 次級修正）
+function r146SavvyOf(int){
+  return int>=70 ? {off:10,  nm:"懂車老司機",       short:"看懂CP值買神車、二手車況挑得精、養車保養省到位"}
+       : int<=30 ? {off:-10, nm:"被當盤子的菜雞",   short:"買到泡水車事故車、被業務當盤子、落入車貸地獄"}
+       :           {off:0,   nm:"剛好代步的駕駛",   short:"沒買到神車也沒踩雷、有得開就行"};
+}
+// 財富 mny →座駕資產底子階層（純查表、單調驅動）
+function r146FleetTierOf(effW){
+  return effW>=84?5 : effW>=66?4 : effW>=48?3 : effW>=30?2 : effW>=14?1 : 0;
+}
+// 代步通勤處境（座駕定起點、購車眼光微調、階段 off 年齡爬升；純算、零 rng）
+function r146RideLevelAt(fleetTier, int, off){
+  let base = fleetTier;
+  if(int>=70) base+=1; else if(int<=30) base-=1;   // 購車眼光微調（懂車老司機 vs 菜雞盤子）
+  return Math.max(0, Math.min(5, base + off));
+}
+/* 從任一 state deterministic 推演交通・座駕軌跡（純讀、零 rng、零 mutation）；壞資料回 null */
+function r146VehicleOf(st){
+  try{
+    if(!st || typeof st!=="object" || !st.attr || typeof st.attr.mny!=="number") return null;
+    const mny  = Math.max(0, Math.min(100, st.attr.mny));
+    const int  = (typeof st.attr.int==="number") ? Math.max(0, Math.min(100, st.attr.int)) : 50; // 缺 int → 中性
+    const age  = Math.max(0, Math.round(st.age||0));
+    const era  = (typeof st.era==="string" && R146_ERARIDE.hasOwnProperty(st.era)) ? st.era : null;
+    const savvy = r146SavvyOf(int);                             // 智力影響購車眼光／養車槓桿（次級）
+    const effW = Math.max(0, Math.min(100, mny + savvy.off));   // 財富為主、購車眼光微調
+    const fleetTier = r146FleetTierOf(effW);
+    // 各人生階段代步處境（年輕還在搭公車／騎二手、其餘隨年齡爬升到座駕對應階層）
+    const stages=[];
+    for(let i=0;i<R146_PHASES.length;i++){
+      const ph=R146_PHASES[i];
+      if(age < ph.age) break;                                   // 沒活到該階段就不列（早逝只走前段）
+      const lv=r146RideLevelAt(fleetTier, int, ph.off);
+      const f=R146_RIDE[lv];
+      stages.push({key:ph.key, nm:ph.nm, lv, ic:f.ic, tnm:f.nm, short:f.short});
+    }
+    // 交通結局（互斥；財富為主、年齡決定走向，重機吃高財富+年輕、Gogoro吃高財富+智力+成年、無車一身輕吃低財富+高齡）
+    let endType;
+    if(mny>=82) endType="luxe";                                            // 超高財富→雙B大哥
+    else if(mny>=58 && age<=30) endType="biker";                          // 高財富＋年輕→重機騎士假日壓車
+    else if(mny>=58 && int>=55 && age>=35) endType="gogoro";             // 高財富＋懂CP值＋成年→Gogoro科技族
+    else if(mny<=37 && age>=60) endType="walker";                        // 低財富＋高齡→無車一身輕通勤到老
+    else if(mny<=37) endType="scooter";                                  // 低財富→機車國牌奴
+    else endType="toyota";                                               // 其餘（中等財富）→Toyota神車
+    const ach = {
+      luxe:    endType==="luxe",
+      biker:   endType==="biker",
+      gogoro:  endType==="gogoro",
+      toyota:  endType==="toyota",
+      scooter: endType==="scooter",
+      walker:  endType==="walker",
+    };
+    return { mny, int, age, era, savvy, effW, fleetTier, stages, endType, ach };
+  }catch(e){ return null; }
+}
+function r146Vehicle(){ return r146VehicleOf(S); }
+/* 結算：交通・座駕回顧卡——財富定底子、底子+購車眼光+年齡推通勤處境、終局回顧（純讀零 rng，可截圖分享，線C素材） */
+function r146VehicleReviewHTML(){
+  const h=r146Vehicle();
+  if(!h) return "";
+  const end=R146_END[h.endType]||R146_END.toyota;
+  const fleet=R146_FLEET[h.fleetTier]||R146_FLEET[0];
+  const rows=h.stages.map(s=>`<div style="display:flex;gap:8px;align-items:baseline;padding:3px 0;font-size:13px;border-bottom:1px solid rgba(255,255,255,.05)">
+      <span class="muted" style="min-width:60px">${s.nm}</span>
+      <span style="white-space:nowrap">${s.ic} <b>${s.tnm}</b></span>
+      <span class="muted" style="font-size:11px">${s.short}</span></div>`).join("");
+  // 世代交通梗（缺則略）
+  let eraLine="";
+  const eh = h.era && R146_ERARIDE[h.era];
+  if(eh) eraLine=`<div class="muted" style="font-size:11.5px;margin-top:6px">🏷️ 你那年代的馬路：${eh}</div>`;
+  const winner = (h.endType==="luxe"||h.endType==="biker"||h.endType==="gogoro");
+  const fateLine = winner
+    ? `🏎️ <b style="color:#ffd96b">這場馬路遊戲你贏了</b>——在這個牌照稅燃料稅雙稅夾擊、22K 養不起車的島上，能把座駕當資產與品味玩，本身就是贏在腦袋與本錢。`
+    : `🛵 <b style="color:#ffb3b3">這場馬路遊戲打得有點克難</b>——機車犁田、神車省著開、無車擠捷運，這座島把『一台養得起的車』變成 22K 們精打細算的考題，你用一輩子親身騎過走過一遍。`;
+  return `<div class="panel" style="margin-top:12px;background:var(--panel2)">
+    <h2 class="sec">🛣️ 交通・座駕軌跡</h2>
+    <div class="muted" style="font-size:11.5px;margin:-4px 0 6px">依你這輩子的財富口袋、購車眼光與一路走過的歲月，推演你的代步座駕軌跡——雙B大哥還是無車一身輕、重機壓車還是機車犁田、Gogoro科技族還是Toyota神車開到老？</div>
+    <div style="display:flex;gap:6px;align-items:baseline;padding:4px 0 2px;font-size:13px">
+      <span class="muted" style="min-width:60px">座駕資產</span><span>${fleet.ic} <b>${fleet.nm}</b></span>
+      <span class="muted" style="font-size:11px">${fleet.short}</span></div>
+    ${rows}
+    <div style="display:flex;gap:6px;align-items:baseline;padding:6px 0 2px;font-size:13px">
+      <span class="muted" style="min-width:60px">交通結局</span><span>${end.ic} <b>${end.nm}</b></span></div>
+    <div style="display:flex;gap:6px;align-items:baseline;font-size:12.5px"><span class="muted" style="min-width:60px">購車眼光</span><span>${h.savvy.nm}（${h.savvy.short}）</span></div>
     ${eraLine}
     <div class="muted" style="font-size:12.5px;margin-top:8px;line-height:1.8">${fateLine}<br>${end.path}<br>${end.note}</div></div>`;
 }
@@ -18293,6 +18451,7 @@ function screenSummary(cat){
       ${r143SocialReviewHTML()}
       ${r144HealthReviewHTML()}
       ${r145HousingReviewHTML()}
+      ${r146VehicleReviewHTML()}
       ${attrCurveHTML()}
       ${attrTrajectoryHTML()}
       ${r129TrajectoryHTML()}

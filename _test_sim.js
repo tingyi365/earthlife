@@ -4354,6 +4354,54 @@ try {
   console.log('R145 居住房產資產軌跡: ❌ ' + e.message);
 }
 
+/* ===== R146 交通・座駕軌跡（純衍生/結算覆蓋層：零 rng/零 pinned 序列擾動/deterministic/財富 mny 主驅動+智力購車眼光/降級） ===== */
+let r146OK = false;
+try {
+  const r146Raw = vm.runInContext(`(function(){
+    const out={};
+    /* ① 結構：6 座駕資產底子、6 通勤處境階層、4 人生階段、6 結局型別、六個交通成就＋集滿成就齊備 */
+    out.struct = Array.isArray(R146_FLEET) && R146_FLEET.length===6 && Array.isArray(R146_RIDE) && R146_RIDE.length===6
+      && Array.isArray(R146_PHASES) && R146_PHASES.length===4
+      && ['luxe','biker','gogoro','toyota','scooter','walker'].every(k=>R146_END[k])
+      && ['r146_luxe','r146_biker','r146_gogoro','r146_toyota','r146_scooter','r146_walker','r146_vehicle'].every(id=>!!ACH_MAP[id]);
+    /* ② 純衍生覆蓋零 rng：startGame 後跑 r146VehicleOf/Review 不消耗任何種子序列（與 pinned 抽事件序列獨立） */
+    const oc=randomSeedCode; randomSeedCode=function(){return 'EEEEEE';};
+    startGame(); const r0=[]; for(let i=0;i<20;i++)r0.push(rng());
+    startGame(); r146VehicleOf(S); r146VehicleReviewHTML(); const r1=[]; for(let i=0;i<20;i++)r1.push(rng());
+    let rngEq=true; for(let i=0;i<20;i++){ if(r0[i]!==r1[i]) rngEq=false; }
+    out.rngZero = rngEq; randomSeedCode=oc;
+    /* ③ deterministic 純讀終局 S：同態同結果、零 mutation */
+    startGame(); S.attr={hp:60,int:50,apr:50,mny:50,hap:60}; S.age=45; S.flags={};
+    const snap=JSON.stringify(S.attr)+'|'+S.age;
+    const c1=r146VehicleReviewHTML(), c2=r146VehicleReviewHTML();
+    out.deterministic = c1===c2 && c1.indexOf('座駕資產')>=0 && c1.indexOf('交通結局')>=0
+      && (JSON.stringify(S.attr)+'|'+S.age)===snap;
+    /* ④ 財富 mny 單調驅動座駕底子：高 mny→雙B進口車庫(>=4)、低 mny→無車雙腳族(0) */
+    const hi=r146VehicleOf({attr:{mny:95,int:50},age:40,flags:{}}), lo=r146VehicleOf({attr:{mny:5,int:50},age:40,flags:{}});
+    out.mnyDrive = !!hi && !!lo && hi.fleetTier>=4 && lo.fleetTier===0 && hi.fleetTier>lo.fleetTier;
+    /* ⑤ 六結局確定性分流互斥可達：雙B/重機/Gogoro/Toyota/機車/無車各命中對應 endType */
+    const E=(a)=>r146VehicleOf(a)&&r146VehicleOf(a).endType;
+    out.endsReach =
+         E({attr:{mny:88,int:50},age:40})==='luxe'
+      && E({attr:{mny:65,int:50},age:25})==='biker'
+      && E({attr:{mny:65,int:60},age:40})==='gogoro'
+      && E({attr:{mny:50,int:50},age:40})==='toyota'
+      && E({attr:{mny:20,int:50},age:28})==='scooter'
+      && E({attr:{mny:20,int:50},age:66})==='walker';
+    /* ⑥ S=null/缺 attr/缺 mny 安全降級：回 null、卡空字串、不炸 */
+    const sv=S; S=null; let nullSafe=true;
+    try{ if(r146VehicleOf(null)!==null) nullSafe=false; if(r146VehicleReviewHTML()!=='') nullSafe=false;
+         if(r146VehicleOf({attr:{int:50},age:40})!==null) nullSafe=false; }catch(e){ nullSafe=false; }
+    S=sv; out.nullSafe = nullSafe;
+    return JSON.stringify(out);
+  })()`, sandbox);
+  const r146 = JSON.parse(r146Raw);
+  r146OK = Object.values(r146).every(v => v === true);
+  console.log(`R146 交通座駕軌跡: ${r146OK ? '✅ 全數通過' : '❌ ' + JSON.stringify(r146)}`);
+} catch (e) {
+  console.log('R146 交通座駕軌跡: ❌ ' + e.message);
+}
+
 if (__errors.length) {
   console.log('\n--- 錯誤樣本(前5) ---');
   __errors.slice(0, 5).forEach(e => console.log('  ' + e));
@@ -4361,6 +4409,6 @@ if (__errors.length) {
 
 /* 退出碼 */
 const pass = __errors.length === 0 && chk.missingScenes.length === 0 && chk.eventVisible >= 126 && chk.eventTotal >= 126 && lsOK && achUnlocked > 0
-  && chk.deathbookMissing.length === 0 && chk.deathTotal >= 17 && deathsOK && rebirthOK && legacyOK && petOK && r13OK && r17OK && r20OK && r21OK && r22OK && r24OK && r25OK && r34OK && r38OK && r41OK && r42OK && r43OK && r44OK && r45OK && r46OK && r47OK && r48OK && r49OK && r51OK && r52OK && r53OK && r54OK && r55OK && r72OK && r76OK && r77OK && r79OK && r86OK && r87OK && r92OK && r93OK && r95OK && r96OK && r108OK && r110OK && r111OK && r112OK && r113OK && r115OK && r116OK && r117OK && r118OK && r119OK && r122OK && r126OK && r134OK && r136OK && r138OK && r139OK && r140OK && r141OK && r142OK && r143OK && r144OK && r145OK;
+  && chk.deathbookMissing.length === 0 && chk.deathTotal >= 17 && deathsOK && rebirthOK && legacyOK && petOK && r13OK && r17OK && r20OK && r21OK && r22OK && r24OK && r25OK && r34OK && r38OK && r41OK && r42OK && r43OK && r44OK && r45OK && r46OK && r47OK && r48OK && r49OK && r51OK && r52OK && r53OK && r54OK && r55OK && r72OK && r76OK && r77OK && r79OK && r86OK && r87OK && r92OK && r93OK && r95OK && r96OK && r108OK && r110OK && r111OK && r112OK && r113OK && r115OK && r116OK && r117OK && r118OK && r119OK && r122OK && r126OK && r134OK && r136OK && r138OK && r139OK && r140OK && r141OK && r142OK && r143OK && r144OK && r145OK && r146OK;
 console.log('\n結果: ' + (pass ? '✅ 全數通過' : '❌ 有項目未通過'));
 process.exit(pass ? 0 : 1);
