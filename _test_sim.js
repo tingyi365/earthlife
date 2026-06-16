@@ -4402,6 +4402,54 @@ try {
   console.log('R146 交通座駕軌跡: ❌ ' + e.message);
 }
 
+/* ===== R147 教育・學歷軌跡（純衍生/結算覆蓋層：零 rng/零 pinned 序列擾動/deterministic/智力 int 主驅動+財富教育資源/降級） ===== */
+let r147OK = false;
+try {
+  const r147Raw = vm.runInContext(`(function(){
+    const out={};
+    /* ① 結構：6 學歷資產底子、6 求學處境階層、4 人生階段、6 結局型別、六個學歷成就＋集滿成就齊備 */
+    out.struct = Array.isArray(R147_DEGREE) && R147_DEGREE.length===6 && Array.isArray(R147_STUDY) && R147_STUDY.length===6
+      && Array.isArray(R147_PHASES) && R147_PHASES.length===4
+      && ['elite','overseas','wanderer','private','voc','dropout'].every(k=>R147_END[k])
+      && ['r147_elite','r147_overseas','r147_wanderer','r147_private','r147_voc','r147_dropout','r147_education'].every(id=>!!ACH_MAP[id]);
+    /* ② 純衍生覆蓋零 rng：startGame 後跑 r147EducationOf/Review 不消耗任何種子序列（與 pinned 抽事件序列獨立） */
+    const oc=randomSeedCode; randomSeedCode=function(){return 'EEEEEE';};
+    startGame(); const r0=[]; for(let i=0;i<20;i++)r0.push(rng());
+    startGame(); r147EducationOf(S); r147EducationReviewHTML(); const r1=[]; for(let i=0;i<20;i++)r1.push(rng());
+    let rngEq=true; for(let i=0;i<20;i++){ if(r0[i]!==r1[i]) rngEq=false; }
+    out.rngZero = rngEq; randomSeedCode=oc;
+    /* ③ deterministic 純讀終局 S：同態同結果、零 mutation */
+    startGame(); S.attr={hp:60,int:50,apr:50,mny:50,hap:60}; S.age=45; S.flags={};
+    const snap=JSON.stringify(S.attr)+'|'+S.age;
+    const c1=r147EducationReviewHTML(), c2=r147EducationReviewHTML();
+    out.deterministic = c1===c2 && c1.indexOf('學歷資產')>=0 && c1.indexOf('學歷結局')>=0
+      && (JSON.stringify(S.attr)+'|'+S.age)===snap;
+    /* ④ 智力 int 單調驅動學歷底子：高 int→台清交成頂大(>=4)、低 int→放牛班中輟(0) */
+    const hi=r147EducationOf({attr:{int:95,mny:50},age:40,flags:{}}), lo=r147EducationOf({attr:{int:5,mny:50},age:40,flags:{}});
+    out.intDrive = !!hi && !!lo && hi.degreeTier>=4 && lo.degreeTier===0 && hi.degreeTier>lo.degreeTier;
+    /* ⑤ 六結局確定性分流互斥可達：頂大/海歸/流浪博士/學店/技職/中輟各命中對應 endType */
+    const E=(a)=>r147EducationOf(a)&&r147EducationOf(a).endType;
+    out.endsReach =
+         E({attr:{int:88,mny:50},age:40})==='elite'
+      && E({attr:{int:65,mny:65},age:40})==='overseas'
+      && E({attr:{int:65,mny:20},age:40})==='wanderer'
+      && E({attr:{int:50,mny:50},age:40})==='private'
+      && E({attr:{int:38,mny:50},age:40})==='voc'
+      && E({attr:{int:20,mny:50},age:40})==='dropout';
+    /* ⑥ S=null/缺 attr/缺 int 安全降級：回 null、卡空字串、不炸 */
+    const sv=S; S=null; let nullSafe=true;
+    try{ if(r147EducationOf(null)!==null) nullSafe=false; if(r147EducationReviewHTML()!=='') nullSafe=false;
+         if(r147EducationOf({attr:{mny:50},age:40})!==null) nullSafe=false; }catch(e){ nullSafe=false; }
+    S=sv; out.nullSafe = nullSafe;
+    return JSON.stringify(out);
+  })()`, sandbox);
+  const r147 = JSON.parse(r147Raw);
+  r147OK = Object.values(r147).every(v => v === true);
+  console.log(`R147 教育學歷軌跡: ${r147OK ? '✅ 全數通過' : '❌ ' + JSON.stringify(r147)}`);
+} catch (e) {
+  console.log('R147 教育學歷軌跡: ❌ ' + e.message);
+}
+
 if (__errors.length) {
   console.log('\n--- 錯誤樣本(前5) ---');
   __errors.slice(0, 5).forEach(e => console.log('  ' + e));
@@ -4409,6 +4457,6 @@ if (__errors.length) {
 
 /* 退出碼 */
 const pass = __errors.length === 0 && chk.missingScenes.length === 0 && chk.eventVisible >= 126 && chk.eventTotal >= 126 && lsOK && achUnlocked > 0
-  && chk.deathbookMissing.length === 0 && chk.deathTotal >= 17 && deathsOK && rebirthOK && legacyOK && petOK && r13OK && r17OK && r20OK && r21OK && r22OK && r24OK && r25OK && r34OK && r38OK && r41OK && r42OK && r43OK && r44OK && r45OK && r46OK && r47OK && r48OK && r49OK && r51OK && r52OK && r53OK && r54OK && r55OK && r72OK && r76OK && r77OK && r79OK && r86OK && r87OK && r92OK && r93OK && r95OK && r96OK && r108OK && r110OK && r111OK && r112OK && r113OK && r115OK && r116OK && r117OK && r118OK && r119OK && r122OK && r126OK && r134OK && r136OK && r138OK && r139OK && r140OK && r141OK && r142OK && r143OK && r144OK && r145OK && r146OK;
+  && chk.deathbookMissing.length === 0 && chk.deathTotal >= 17 && deathsOK && rebirthOK && legacyOK && petOK && r13OK && r17OK && r20OK && r21OK && r22OK && r24OK && r25OK && r34OK && r38OK && r41OK && r42OK && r43OK && r44OK && r45OK && r46OK && r47OK && r48OK && r49OK && r51OK && r52OK && r53OK && r54OK && r55OK && r72OK && r76OK && r77OK && r79OK && r86OK && r87OK && r92OK && r93OK && r95OK && r96OK && r108OK && r110OK && r111OK && r112OK && r113OK && r115OK && r116OK && r117OK && r118OK && r119OK && r122OK && r126OK && r134OK && r136OK && r138OK && r139OK && r140OK && r141OK && r142OK && r143OK && r144OK && r145OK && r146OK && r147OK;
 console.log('\n結果: ' + (pass ? '✅ 全數通過' : '❌ 有項目未通過'));
 process.exit(pass ? 0 : 1);

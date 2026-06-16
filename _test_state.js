@@ -5828,5 +5828,80 @@ const r146 = JSON.parse(vm.runInContext(`(function(){
   ['achPartial','⑪ 跨局集滿:缺一→r146_vehicle 不解'],
 ].forEach(([k,m])=>ok(r146[k], 'R146 '+m));
 
+/* ===== R147 教育・學歷軌跡（純衍生/結算覆蓋層；零 rng/零汙染/deterministic 推演/智力 int 主驅動+財富教育資源/壞資料降級/學歷成就） ===== */
+const r147 = JSON.parse(vm.runInContext(`(function(){
+  const out={};
+  function mk(int,mny,age,era){ return {attr:{hp:50,int:int,apr:50,mny:mny,hap:50}, age:age, era:era, flags:{}, alive:false}; }
+  // ① 資料齊備：6 學歷資產底子+6 求學處境階層+4 人生階段+6 結局型別+六世代學歷梗+教育資源三檔
+  out.dataFull = Array.isArray(R147_DEGREE) && R147_DEGREE.length===6 && R147_DEGREE.every(t=>t.ic&&t.nm&&t.short)
+    && Array.isArray(R147_STUDY) && R147_STUDY.length===6 && R147_STUDY.every(t=>t.ic&&t.nm&&t.short)
+    && Array.isArray(R147_PHASES) && R147_PHASES.length===4 && R147_PHASES.every(p=>typeof p.off==='number')
+    && ['elite','overseas','wanderer','private','voc','dropout'].every(k=>R147_END[k]&&R147_END[k].nm&&R147_END[k].path&&R147_END[k].note)
+    && R55_ERAS.every(er=>typeof R147_ERAEDU[er.id]==='string')
+    && [r147ResourceOf(90),r147ResourceOf(50),r147ResourceOf(10)].every(c=>typeof c.off==='number'&&c.nm&&c.short);
+  // ② 智力 int 確定性映射：高→台清交成頂大(>=4)、中→中段(>=2)、低→放牛班中輟(0)；且單調驅動
+  const hi=r147EducationOf(mk(95,50,40,'e00')), midd=r147EducationOf(mk(50,50,40,'e00')), lo=r147EducationOf(mk(5,50,40,'e00'));
+  out.intMap = !!hi&&!!midd&&!!lo && hi.degreeTier>=4 && midd.degreeTier>=2 && lo.degreeTier===0
+    && hi.degreeTier>midd.degreeTier && midd.degreeTier>lo.degreeTier;
+  // ③ 財富影響教育資源（次級修正）：同腦袋 55，資源勝利組(mny90)底子 >= 清寒苦讀(mny10)，且 off 有別
+  const rich=r147EducationOf(mk(55,90,40,'e00')), poor=r147EducationOf(mk(55,10,40,'e00'));
+  out.resourceDrive = !!rich&&!!poor && rich.degreeTier>=poor.degreeTier && rich.resource.off>poor.resource.off;
+  // ④ 卡片渲染：含學歷資產/學歷結局/教育資源/求學或學歷
+  S=mk(50,50,40,'e00'); const card=r147EducationReviewHTML();
+  out.cardRender = card.indexOf('學歷資產')>=0 && card.indexOf('學歷結局')>=0 && card.indexOf('教育資源')>=0 && (card.indexOf('求學')>=0||card.indexOf('學歷')>=0);
+  // ⑤ deterministic 純讀：同 S 兩次渲染逐字一致
+  S=mk(40,40,35,'e10'); const a1=r147EducationReviewHTML(), a2=r147EducationReviewHTML();
+  out.deterministic = a1===a2 && a1.length>0;
+  // ⑥ 純呈現零汙染：生成前後 S.attr/era/age/flags 不變、零 rng 消耗
+  S=mk(55,72,45,'e70'); const bA=JSON.stringify(S.attr), bE=S.era, bAge=S.age, bF=JSON.stringify(S.flags);
+  let used=0; const oldR=rng; rng=function(){ used++; return oldR(); };
+  r147EducationReviewHTML(); r147EducationOf(S); rng=oldR;
+  out.pure = JSON.stringify(S.attr)===bA && S.era===bE && S.age===bAge && JSON.stringify(S.flags)===bF && used===0;
+  // ⑦ S=null / 缺 attr / 缺 int 降級：回 null、卡空字串、不炸
+  out.nullSafe = (()=>{ try{ S=null; return r147EducationOf(null)===null && r147EducationReviewHTML()===''; }catch(e){ return false; } })();
+  out.noAttr = (()=>{ try{ return r147EducationOf({age:40,era:'e00'})===null && r147EducationOf({attr:{mny:50},age:40})===null; }catch(e){ return false; } })();
+  // ⑧ 缺 mny 降級：用中性 50、仍回物件不炸；髒 era → 學歷梗略過不炸
+  out.softDeg = (()=>{ try{ const m=r147EducationOf({attr:{int:55},age:40,era:'e00',flags:{}}); const d=r147EducationOf(mk(55,50,40,'zzz999')); return !!m && m.degreeTier===r147EducationOf(mk(55,50,40,'e00')).degreeTier && !!d && d.era===null; }catch(e){ return false; } })();
+  // ⑨ 舊存檔相容：ensureState 不為 R147 在 S/flags 補任何 r147 鍵
+  startGame(); const olds=S; ensureState(olds);
+  out.compatOld = !Object.keys(olds).some(k=>k.toLowerCase().indexOf('r147')===0)
+    && !Object.keys(olds.flags||{}).some(k=>k.toLowerCase().indexOf('r147')===0);
+  // ⑩ 學歷結局成就確定性點亮：頂大/海歸/流浪/學店/技職/中輟 各自可達且互斥
+  const ELITE=mk(88,50,40,'e00'), OVER=mk(65,65,40,'e00'), WAND=mk(65,20,40,'e00'), PRIV=mk(50,50,40,'e00'), VOC=mk(38,50,40,'e00'), DROP=mk(20,50,40,'e00');
+  out.achElite   = !!ACH_MAP.r147_elite    && ACH_MAP.r147_elite.check({S:ELITE})===true   && ACH_MAP.r147_elite.check({S:DROP})===false;
+  out.achOver    = !!ACH_MAP.r147_overseas && ACH_MAP.r147_overseas.check({S:OVER})===true && ACH_MAP.r147_overseas.check({S:DROP})===false;
+  out.achWand    = !!ACH_MAP.r147_wanderer && ACH_MAP.r147_wanderer.check({S:WAND})===true && ACH_MAP.r147_wanderer.check({S:ELITE})===false;
+  out.achPriv    = !!ACH_MAP.r147_private  && ACH_MAP.r147_private.check({S:PRIV})===true  && ACH_MAP.r147_private.check({S:ELITE})===false;
+  out.achVoc     = !!ACH_MAP.r147_voc      && ACH_MAP.r147_voc.check({S:VOC})===true       && ACH_MAP.r147_voc.check({S:ELITE})===false;
+  out.achDrop    = !!ACH_MAP.r147_dropout  && ACH_MAP.r147_dropout.check({S:DROP})===true   && ACH_MAP.r147_dropout.check({S:ELITE})===false;
+  // ⑪ 跨局集滿 r147_education：六成就全亮→解鎖、缺一→不解
+  const allAch={r147_elite:true,r147_overseas:true,r147_wanderer:true,r147_private:true,r147_voc:true,r147_dropout:true};
+  SAVE.ach=Object.assign({},allAch); out.achFull = !!ACH_MAP.r147_education && ACH_MAP.r147_education.check({S:{}})===true;
+  const partial=Object.assign({},allAch); delete partial.r147_elite;
+  SAVE.ach=partial; out.achPartial = ACH_MAP.r147_education.check({S:{}})===false;
+  SAVE.ach={}; S=null;
+  return JSON.stringify(out);
+})()`, sandbox));
+[
+  ['dataFull','① 資料齊備:6 學歷資產底子+6 求學處境階層+4 人生階段+6 結局型別+六世代學歷梗+教育資源三檔'],
+  ['intMap','② 智力 int 確定性映射:高→台清交成/中→中段/低→放牛班中輟且單調驅動'],
+  ['resourceDrive','③ 財富影響教育資源:同腦袋資源勝利組>=清寒苦讀且 off 有別'],
+  ['cardRender','④ 卡片渲染:含學歷資產/學歷結局/教育資源/求學或學歷'],
+  ['deterministic','⑤ deterministic 純讀:同 S 兩次渲染逐字一致'],
+  ['pure','⑥ 純呈現零汙染:生成前後 S.attr/era/age/flags 不變且零 rng'],
+  ['nullSafe','⑦ 無局(S=null)降級:回 null、卡空字串不炸'],
+  ['noAttr','⑦ 缺 attr/int 降級:回 null 不炸'],
+  ['softDeg','⑧ 缺 mny 中性化＋髒 era 學歷梗略過:仍回物件不炸且底子一致'],
+  ['compatOld','⑨ 舊存檔相容:ensureState 不為 R147 補任何 S/flags 鍵'],
+  ['achElite','⑩ r147_elite:頂大菁英→解、中輟→不解'],
+  ['achOver','⑩ r147_overseas:海歸學霸→解、中輟→不解'],
+  ['achWand','⑩ r147_wanderer:流浪博士→解、頂大→不解'],
+  ['achPriv','⑩ r147_private:學店畢業→解、頂大→不解'],
+  ['achVoc','⑩ r147_voc:技職黑手→解、頂大→不解'],
+  ['achDrop','⑩ r147_dropout:中輟傳奇→解、頂大→不解'],
+  ['achFull','⑪ 跨局集滿:六成就全亮→r147_education 解鎖'],
+  ['achPartial','⑪ 跨局集滿:缺一→r147_education 不解'],
+].forEach(([k,m])=>ok(r147[k], 'R147 '+m));
+
 console.log(fails ? `\n結果: ❌ ${fails} 項未通過` : '\n結果: ✅ 狀態機全數正確');
 process.exit(fails ? 1 : 0);
