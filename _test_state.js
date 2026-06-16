@@ -5370,5 +5370,82 @@ const r140 = JSON.parse(vm.runInContext(`(function(){
   ['achPartial','⑪ 跨局集滿:缺一→r140_love 不解'],
 ].forEach(([k,m])=>ok(r140[k], 'R140 '+m));
 
+/* ===== R141 興趣才藝・斜槓夢想軌跡（純衍生/結算覆蓋層；零 rng/零汙染/deterministic 推演/智力＋魅力主驅動+財富燒夢想本錢/壞資料降級/夢想成就） ===== */
+const r141 = JSON.parse(vm.runInContext(`(function(){
+  const out={};
+  function mk(intl,apr,mny,age,era){ return {attr:{hp:50,int:intl,apr:apr,mny:mny,hap:50}, age:age, era:era, flags:{}, alive:false}; }
+  // ① 資料齊備：6 才藝天賦階層+6 斜槓夢想階層+4 人生階段+5 結局型別+六世代圓夢梗+燒夢想本錢三檔
+  out.dataFull = Array.isArray(R141_TALENT) && R141_TALENT.length===6 && R141_TALENT.every(t=>t.ic&&t.nm&&t.short)
+    && Array.isArray(R141_DREAM) && R141_DREAM.length===6 && R141_DREAM.every(t=>t.ic&&t.nm&&t.short)
+    && Array.isArray(R141_PHASES) && R141_PHASES.length===4 && R141_PHASES.every(p=>typeof p.off==='number')
+    && ['slasher','viral','dreamer','quitter','couch'].every(k=>R141_END[k]&&R141_END[k].nm&&R141_END[k].path&&R141_END[k].note)
+    && R55_ERAS.every(er=>typeof R141_ERAHOBBY[er.id]==='string')
+    && [r141FundOf(90),r141FundOf(50),r141FundOf(10)].every(c=>typeof c.off==='number'&&c.nm&&c.short);
+  // ② 智力＋魅力確定性映射：雙高→才華洋溢/斜槓王(>=4)、雙中→中段(>=2)、雙低→廢宅躺平(0)；且雙屬性單調驅動
+  const hi=r141HobbyOf(mk(95,95,50,40,'e00')), midd=r141HobbyOf(mk(50,50,50,40,'e00')), lo=r141HobbyOf(mk(5,5,50,40,'e00'));
+  out.talentMap = !!hi&&!!midd&&!!lo && hi.talentTier>=4 && midd.talentTier>=2 && lo.talentTier===0
+    && hi.talentTier>midd.talentTier && midd.talentTier>lo.talentTier;
+  // ②b 智力與魅力都實際參與：單高單低的天賦應低於雙高（雙屬性缺一不可）
+  const onlyInt=r141HobbyOf(mk(95,5,50,40,'e00')), onlyApr=r141HobbyOf(mk(5,95,50,40,'e00'));
+  out.dualAttr = !!onlyInt&&!!onlyApr && onlyInt.talentTier<hi.talentTier && onlyApr.talentTier<hi.talentTier;
+  // ③ 財富影響燒夢想本錢（次級修正）：同天賦 55，有錢燒得起(mny90)天賦 >= 連裝備都買不起(mny10)，且 off 有別
+  const rich=r141HobbyOf(mk(55,55,90,40,'e00')), poor=r141HobbyOf(mk(55,55,10,40,'e00'));
+  out.fundDrive = !!rich&&!!poor && rich.talentTier>=poor.talentTier && rich.fund.off>poor.fund.off;
+  // ④ 卡片渲染：含才藝天賦/夢想結局/圓夢本錢/夢想或斜槓
+  S=mk(50,50,50,40,'e00'); const card=r141HobbyReviewHTML();
+  out.cardRender = card.indexOf('才藝天賦')>=0 && card.indexOf('夢想結局')>=0 && card.indexOf('圓夢本錢')>=0 && (card.indexOf('夢想')>=0||card.indexOf('斜槓')>=0);
+  // ⑤ deterministic 純讀：同 S 兩次渲染逐字一致
+  S=mk(40,40,40,35,'e10'); const a1=r141HobbyReviewHTML(), a2=r141HobbyReviewHTML();
+  out.deterministic = a1===a2 && a1.length>0;
+  // ⑥ 純呈現零汙染：生成前後 S.attr/era/age/flags 不變、零 rng 消耗
+  S=mk(72,72,55,45,'e70'); const bA=JSON.stringify(S.attr), bE=S.era, bAge=S.age, bF=JSON.stringify(S.flags);
+  let used=0; const oldR=rng; rng=function(){ used++; return oldR(); };
+  r141HobbyReviewHTML(); r141HobbyOf(S); rng=oldR;
+  out.pure = JSON.stringify(S.attr)===bA && S.era===bE && S.age===bAge && JSON.stringify(S.flags)===bF && used===0;
+  // ⑦ S=null / 缺 attr / 缺 int 或 apr 降級：回 null、卡空字串、不炸
+  out.nullSafe = (()=>{ try{ S=null; return r141HobbyOf(null)===null && r141HobbyReviewHTML()===''; }catch(e){ return false; } })();
+  out.noAttr = (()=>{ try{ return r141HobbyOf({age:40,era:'e00'})===null && r141HobbyOf({attr:{int:50},age:40})===null && r141HobbyOf({attr:{apr:50},age:40})===null; }catch(e){ return false; } })();
+  // ⑧ 缺 mny 降級：用中性 50、仍回物件不炸；髒 era → 圓夢梗略過不炸
+  out.softDeg = (()=>{ try{ const m=r141HobbyOf({attr:{int:55,apr:55},age:40,era:'e00',flags:{}}); const d=r141HobbyOf(mk(55,55,50,40,'zzz999')); return !!m && m.talentTier===r141HobbyOf(mk(55,55,50,40,'e00')).talentTier && !!d && d.era===null; }catch(e){ return false; } })();
+  // ⑨ 舊存檔相容：ensureState 不為 R141 在 S/flags 補任何 r141 鍵
+  startGame(); const olds=S; ensureState(olds);
+  out.compatOld = !Object.keys(olds).some(k=>k.toLowerCase().indexOf('r141')===0)
+    && !Object.keys(olds.flags||{}).some(k=>k.toLowerCase().indexOf('r141')===0);
+  // ⑩ 夢想成就確定性點亮：斜槓達人/爆紅網紅/圓夢家/半途而廢/廢宅躺平 各自可達且互斥
+  const SLA=mk(95,95,90,45,'e00'), VIR=mk(70,90,40,25,'e00'), COUCH=mk(10,10,40,45,'e00'), DREAM=mk(50,50,50,65,'e00'), QUIT=mk(50,50,50,45,'e00');
+  out.achSlasher = !!ACH_MAP.r141_slasher && ACH_MAP.r141_slasher.check({S:SLA})===true   && ACH_MAP.r141_slasher.check({S:COUCH})===false;
+  out.achViral   = !!ACH_MAP.r141_viral   && ACH_MAP.r141_viral.check({S:VIR})===true     && ACH_MAP.r141_viral.check({S:SLA})===false;
+  out.achDreamer = !!ACH_MAP.r141_dreamer && ACH_MAP.r141_dreamer.check({S:DREAM})===true  && ACH_MAP.r141_dreamer.check({S:COUCH})===false;
+  out.achQuitter = !!ACH_MAP.r141_quitter && ACH_MAP.r141_quitter.check({S:QUIT})===true   && ACH_MAP.r141_quitter.check({S:DREAM})===false;
+  out.achCouch   = !!ACH_MAP.r141_couch   && ACH_MAP.r141_couch.check({S:COUCH})===true    && ACH_MAP.r141_couch.check({S:SLA})===false;
+  // ⑪ 跨局集滿 r141_hobby：五成就全亮→解鎖、缺一→不解
+  const allAch={r141_slasher:true,r141_viral:true,r141_dreamer:true,r141_quitter:true,r141_couch:true};
+  SAVE.ach=Object.assign({},allAch); out.achFull = !!ACH_MAP.r141_hobby && ACH_MAP.r141_hobby.check({S:{}})===true;
+  const partial=Object.assign({},allAch); delete partial.r141_slasher;
+  SAVE.ach=partial; out.achPartial = ACH_MAP.r141_hobby.check({S:{}})===false;
+  SAVE.ach={}; S=null;
+  return JSON.stringify(out);
+})()`, sandbox));
+[
+  ['dataFull','① 資料齊備:6 才藝天賦+6 斜槓夢想階層+4 人生階段+5 結局型別+六世代圓夢梗+燒夢想本錢三檔'],
+  ['talentMap','② 智力＋魅力確定性映射:雙高→才華洋溢/雙中→中段/雙低→廢宅躺平且單調驅動'],
+  ['dualAttr','②b 智力與魅力缺一不可:單高單低天賦低於雙高'],
+  ['fundDrive','③ 財富影響燒夢想本錢:同天賦有錢>=連裝備買不起且 off 有別'],
+  ['cardRender','④ 卡片渲染:含才藝天賦/夢想結局/圓夢本錢/夢想或斜槓'],
+  ['deterministic','⑤ deterministic 純讀:同 S 兩次渲染逐字一致'],
+  ['pure','⑥ 純呈現零汙染:生成前後 S.attr/era/age/flags 不變且零 rng'],
+  ['nullSafe','⑦ 無局(S=null)降級:回 null、卡空字串不炸'],
+  ['noAttr','⑦ 缺 attr/int/apr 降級:回 null 不炸'],
+  ['softDeg','⑧ 缺 mny 用中性50/髒 era 圓夢梗略過:仍回物件不炸'],
+  ['compatOld','⑨ 舊存檔相容:ensureState 不為 R141 補任何 S/flags 鍵'],
+  ['achSlasher','⑩ r141_slasher:斜槓達人→解、廢宅躺平→不解'],
+  ['achViral','⑩ r141_viral:爆紅網紅→解、斜槓達人→不解'],
+  ['achDreamer','⑩ r141_dreamer:圓夢家→解、廢宅躺平→不解'],
+  ['achQuitter','⑩ r141_quitter:半途而廢→解、圓夢家→不解'],
+  ['achCouch','⑩ r141_couch:廢宅躺平→解、斜槓達人→不解'],
+  ['achFull','⑪ 跨局集滿:五成就全亮→r141_hobby 解鎖'],
+  ['achPartial','⑪ 跨局集滿:缺一→r141_hobby 不解'],
+].forEach(([k,m])=>ok(r141[k], 'R141 '+m));
+
 console.log(fails ? `\n結果: ❌ ${fails} 項未通過` : '\n結果: ✅ 狀態機全數正確');
 process.exit(fails ? 1 : 0);

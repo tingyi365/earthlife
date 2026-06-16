@@ -2995,6 +2995,13 @@ const ACHIEVEMENTS = [
   {id:"r140_divorce", ic:"💔", nm:"離婚達人・閃婚閃離", desc:"愛得快、散得也快，結婚證書換過不只一張——這座島的離婚率全球前段班，你親自貢獻了好幾個百分點。緣分這東西，你試了一次又一次，只是每次都差那麼一哩路。", check:c=>{const h=r140LoveOf(c.S); return !!h && h.ach.divorce;}, hint:"魅力中等（偶有曖昧/行情看漲）、又走到中年（45–60）——讓終局婚戀軌跡走到『離婚達人・閃婚閃離』分流…"},
   {id:"r140_widow", ic:"🕯️", nm:"喪偶終老・黃昏戀第二春", desc:"陪枕邊人走完最後一程，獨自過完晚年——或在公園土風舞裡又遇上一段黃昏戀。這座島的長壽是福也是孤獨，白髮人送白髮人的滋味，你嘗過了，也學會了再愛一次的勇氣。", check:c=>{const h=r140LoveOf(c.S); return !!h && h.ach.widow;}, hint:"活到高齡（60+）、財富小康——讓終局婚戀軌跡走到『喪偶終老・黃昏戀第二春』分流…"},
   {id:"r140_love", ic:"💞", nm:"鬼島婚戀圖鑑・婚戀軌跡全集滿", desc:"勝利組鴛鴦、母胎單身、海王玩咖、離婚達人、喪偶終老——這座島丟給你的五種婚戀命運，你用一次次投胎全都親自走過一遍。被愛過、孤單過、玩過、離過、送別過，愛情與家庭這道最甜也最痛的人生考題，你終於把它活成了一本圖鑑。", check:c=>{const need=["r140_winner","r140_single","r140_player","r140_divorce","r140_widow"]; return !!(SAVE&&SAVE.ach) && need.every(id=>SAVE.ach[id]);}, hint:"跨局集滿五種婚戀結局成就各至少一次（勝利組鴛鴦/母胎單身/海王玩咖/離婚達人/喪偶終老）——把婚戀家庭的每一種命運都走過一遍…"},
+  /* ---- R141 興趣才藝・斜槓夢想軌跡成就（純讀 r141HobbyOf(S) deterministic 推演，零 rng；智力＋魅力為主驅動、財富影響燒夢想本錢、年齡決定夢想走多遠，舊存檔/壞資料永不誤觸；與 R139 職涯[工作薪水]、R140 婚戀各自獨立旗標）---- */
+  {id:"r141_slasher", ic:"🚀", nm:"斜槓達人・副業變主業財富自由", desc:"白天正職只是過渡，真正養活你的是那一身斜槓本事——接案、創作、經營到副業滾成主業，興趣變成印鈔機。在這座死薪水追不上房價的島上，靠才藝跟熱情真正翻身的，是傳說裡才有的劇本，你活成了真的。", check:c=>{const h=r141HobbyOf(c.S); return !!h && h.ach.slasher;}, hint:"把智力與魅力同時養到頂（有錢再加燒夢想本錢加成）讓才藝天賦推到才華洋溢以上，再把財富衝高、活到成年——讓終局夢想軌跡走到『斜槓達人・副業變主業財富自由』…"},
+  {id:"r141_viral", ic:"📱", nm:"一夕爆紅網紅・直播抖內夢成真", desc:"才藝夠硬、鏡頭前又夠圈粉，某支影片莫名爆了，追蹤一夜衝破天際、抖內業配接不完——這座島最多人偷偷做的網紅夢，你真的圓了。流量是真的，能紅多久是另一回事，但至少你紅過。", check:c=>{const h=r141HobbyOf(c.S); return !!h && h.ach.viral;}, hint:"才藝天賦高、魅力 apr 特別突出（直播圈粉吃顏值台風）、財富卻不高、又是青壯年——讓終局夢想軌跡走到『一夕爆紅網紅・直播抖內』分流…"},
+  {id:"r141_dreamer", ic:"🧺", nm:"圓夢家・小確幸壯遊圓夢", desc:"沒有大紅大紫，但你把想做的事一件件做了——環島壯遊一次、手作市集擺過攤、文青咖啡廳的夢也圓過一角。這座島最樸實的快樂，不靠變現、不求爆紅，省一杯手搖換一份小確幸，平凡卻踏實地圓了夢。", check:c=>{const h=r141HobbyOf(c.S); return !!h && h.ach.dreamer;}, hint:"才藝天賦中等、走到晚年（或還在青壯築夢期）、不踩爆紅與斜槓自由門檻——讓終局夢想軌跡停在『圓夢家・小確幸壯遊圓夢』分流…"},
+  {id:"r141_quitter", ic:"📦", nm:"半途而廢魯蛇・三分鐘熱度", desc:"吉他、烘焙、健身、攝影、寫小說——興趣換了一輪又一輪，每樣都只撐了三分鐘熱度。裝備堆滿牆角、課全沒上完，斜槓夢想最後斜成了一地半成品。不是沒夢想，是被現實磨到沒力氣堅持。", check:c=>{const h=r141HobbyOf(c.S); return !!h && h.ach.quitter;}, hint:"才藝天賦中等、又走到中年（35–57）——讓終局夢想軌跡走到『半途而廢魯蛇・三分鐘熱度』分流…"},
+  {id:"r141_couch", ic:"🛋️", nm:"廢宅躺平族・夢想供在牆角", desc:"夢想？被工時跟疲憊榨乾後，下班只想癱在沙發滑手機、追劇打遊戲。不是不曾想過要做點什麼，是這座島的日子把人磨成了只想躺平的廢宅。耍廢也是一種選擇，午夜偶爾那點空虛，你也假裝沒看見。", check:c=>{const h=r141HobbyOf(c.S); return !!h && h.ach.couch;}, hint:"讓智力與魅力天賦長期偏低（廢宅躺平/三分鐘熱度）、又活過青春期——把終局夢想軌跡卡在『廢宅躺平族・夢想供在牆角』分流…"},
+  {id:"r141_hobby", ic:"🎯", nm:"鬼島斜槓夢想圖鑑・夢想軌跡全集滿", desc:"斜槓達人、爆紅網紅、圓夢家、半途而廢、廢宅躺平——這座島丟給你的五種斜槓夢想命運，你用一次次投胎全都親自走過一遍。圓夢過、爆紅過、躺平過、半途而廢過，興趣與夢想這道最浪漫也最磨人的人生考題，你終於把它活成了一本圖鑑。", check:c=>{const need=["r141_slasher","r141_viral","r141_dreamer","r141_quitter","r141_couch"]; return !!(SAVE&&SAVE.ach) && need.every(id=>SAVE.ach[id]);}, hint:"跨局集滿五種斜槓夢想結局成就各至少一次（斜槓達人/爆紅網紅/圓夢家/半途而廢/廢宅躺平）——把興趣夢想的每一種命運都走過一遍…"},
   {id:"r70a_unicorn", ic:"🦄", nm:"創業上岸・無中生有", desc:"在頭家夢分歧鏈選自己創業，撐過跑三點半的歲月，最後成功上岸買房定居——你把『無中生有』四個字活成了真的。", check:c=>!!(c.S.flags&&c.S.flags.r70a_unicorn), hint:"分歧鏈裡選自己創業的人，中段擴張或被收購（或在三點半跳票邊緣硬撐活下來），末段才走得到買房上岸…"},
   {id:"r70a_freebird", ic:"🕊️", nm:"社畜跳船・自由業真男人", desc:"當年領死薪水的你中途跳船去接案，多年後接出口碑、開了自己的工作室——上班族眼裡那種『自由業』，自由是真的，業也真的有在接。", check:c=>!!(c.S.flags&&c.S.flags.r70a_freebird), hint:"分歧鏈選領死薪水當社畜的人，中段選擇安靜離職跳船接案，末段把工作室掛牌做起來…"},
   {id:"r70a_clear", ic:"🧭", nm:"頭家夢・全鏈結業", desc:"從老家那通電話一路走到人生期末考，把頭家夢（或死薪水）這條三段分歧鏈完整走完——接、創、領，無論哪條路你都活出了答案。", check:c=>!!(c.S.flags&&c.S.flags.r70a_done), hint:"老家的店要收那年做出選擇後，把中段、末段兩道抉擇都接著走完，整條頭家分歧鏈一站不漏…"},
@@ -4097,6 +4104,156 @@ function r140LoveReviewHTML(){
     <div style="display:flex;gap:6px;align-items:baseline;padding:6px 0 2px;font-size:13px">
       <span class="muted" style="min-width:60px">婚戀結局</span><span>${end.ic} <b>${end.nm}</b></span></div>
     <div style="display:flex;gap:6px;align-items:baseline;font-size:12.5px"><span class="muted" style="min-width:60px">桃花資源</span><span>${h.boost.nm}（${h.boost.short}）</span></div>
+    ${eraLine}
+    <div class="muted" style="font-size:12.5px;margin-top:8px;line-height:1.8">${fateLine}<br>${end.path}<br>${end.note}</div></div>`;
+}
+
+/* =========================================================================
+   R141 興趣才藝・斜槓夢想軌跡（純衍生／結算覆蓋層，零 rng、零事件序列擾動）
+   ── 呼應 directive#1：讓「智力 int ＋ 魅力 apr」兩屬性同時實際驅動本局的才藝
+      天賦與斜槓夢想軌跡（前幾輪軸多由財富單獨驅動，此輪刻意把智力與魅力一起
+      補回主角位）。建立在既有 S.attr.int / S.attr.apr 之上，全程只「讀」終局
+      state，不新增任何 Math.random／rng() → 種子事件抽取序列逐位元不變；與 R139
+      職涯（工作薪水）、R140 婚戀各自獨立旗標、互不汙染。
+   驅動鐵律：
+   ① 智力 int ＋ 魅力 apr 取平均為主驅動（單調決定才藝天賦階層，智力管硬實力／
+      魅力管圈粉舞台魅力，缺一不可）；財富 mny 影響「燒夢想的本錢」做次級修正
+      （買得起單眼跑得起市集攤位 vs 連顏料都買不起）；年齡決定夢想軌跡走多遠、
+      走向哪個終局；出生世代 era 只做「圓夢觀梗」文案著色，不動數值。
+      特例：「一夕爆紅網紅」分流額外要求魅力 apr 夠高（直播圈粉吃顏值與台風）。
+   ② 純呈現：所有 R141 函式只回傳字串／純讀物件，不寫 S、不改數值平衡；S=null／
+      無 attr／缺 int 或 apr 鍵／髒資料一律安全降級回 null／空字串，絕不白屏或拋例外。
+   ③ 跨局收集：r141_hobby ＝集滿五種斜槓夢想結局成就（斜槓達人／一夕爆紅網紅／
+      廢宅躺平／圓夢家／半途而廢）。
+   ========================================================================= */
+// 才藝天賦階層（智力＋魅力主導、財富次要；純查表、零 rng；index 0..5 由低到高）
+const R141_TALENT = [
+  {ic:"🛋️", nm:"廢宅躺平",   short:"才藝點全洗在發呆、興趣是滑手機"},
+  {ic:"🔥", nm:"三分鐘熱度", short:"報名一堆課全棄坑、健身房月費當捐款"},
+  {ic:"🎨", nm:"假日才藝咖", short:"周末手作烘焙攝影、自娛自樂"},
+  {ic:"📸", nm:"斜槓青年",   short:"副業接案、IG 經營有起色"},
+  {ic:"✨", nm:"才華洋溢",   short:"才藝出眾、追蹤破萬有舞台"},
+  {ic:"🦄", nm:"全能斜槓王", short:"十項全能、走到哪紅到哪"},
+];
+// 斜槓夢想階層（天賦定起點、財富微調、年齡折舊升遷；純查表、零 rng；index 0..5 由低到高）
+const R141_DREAM = [
+  {ic:"🛋️", nm:"夢想躺平中",   short:"夢想？先躺著再說，棉被裡最安全"},
+  {ic:"📦", nm:"半途而廢俱樂部", short:"裝備買齊供在牆角、課報了沒上完"},
+  {ic:"🧺", nm:"假日斜槓青年",   short:"周末擺攤手作市集、賣小確幸"},
+  {ic:"💻", nm:"副業有成",       short:"接案副業變第二份收入、口碑做起來"},
+  {ic:"📱", nm:"網紅直播夢",     short:"抖內接不完、業配上門、有了流量"},
+  {ic:"🚀", nm:"斜槓財富自由",   short:"副業變主業、夢想成功變現"},
+];
+// 人生階段（青春→晚年；off 為夢想階段相對才藝天賦起點的折舊/升遷）
+const R141_PHASES = [
+  {key:"youth",  age:18, nm:"青春築夢", off:-1}, // 興趣萌芽、本錢未站穩
+  {key:"prime",  age:28, nm:"斜槓衝刺", off:0},  // 副業夢想衝刺期
+  {key:"mid",    age:42, nm:"副業成敗", off:0},  // 變現或半途而廢
+  {key:"late",   age:58, nm:"圓夢晚晴", off:1},  // 圓夢有成或夢想供著
+];
+// 夢想終局型別文案（純查表、零 rng）
+const R141_END = {
+  slasher: {ic:"🚀", nm:"斜槓達人・副業變主業財富自由", path:"💻 多重才藝疊厚本錢、副業滾成主業圓夢變現", note:"白天的正職只是過渡，真正養活你的是那一身斜槓本事——副業做到變主業、興趣變成印鈔機。在這座死薪水追不上房價的島上，靠才藝跟熱情真正翻身的，是傳說裡才有的劇本，你活成了真的。"},
+  viral:   {ic:"📱", nm:"一夕爆紅網紅・直播抖內夢成真", path:"🎬 才華撞上鏡頭魅力、一支影片一夜竄紅", note:"才藝夠硬、鏡頭前又夠圈粉，某支影片莫名爆了，追蹤一夜衝破天際、抖內業配接不完——這座島最多人偷偷做的網紅夢，你真的圓了。流量是真的，紅多久是另一回事，但至少你紅過。"},
+  dreamer: {ic:"🧺", nm:"圓夢家・小確幸壯遊圓夢", path:"🏝️ 環島壯遊／手作市集，把夢想活成小確幸", note:"沒有大紅大紫，但你把想做的事一件件做了——環島壯遊一次、手作市集擺過攤、文青咖啡廳的夢也圓過一角。這座島最樸實的快樂，不靠變現、不求爆紅，省一杯手搖換一份小確幸，平凡卻踏實地圓了夢。"},
+  quitter: {ic:"📦", nm:"半途而廢魯蛇・三分鐘熱度", path:"🗃️ 報名費繳了、裝備買齊、全卡在牆角生灰", note:"吉他、烘焙、健身、攝影、寫小說——興趣換了一輪又一輪，每樣都只撐了三分鐘熱度。裝備堆滿牆角、課全沒上完，斜槓夢想最後斜成了一地半成品。這座島最誠實的日常：不是沒夢想，是被現實磨到沒力氣堅持。"},
+  couch:   {ic:"🛋️", nm:"廢宅躺平族・夢想供在牆角", path:"📺 下班只想躺平耍廢、夢想欄永遠空白", note:"夢想？被工時跟疲憊榨乾後，下班只想癱在沙發滑手機、追劇打遊戲。不是不曾想過要做點什麼，是這座島的日子把人磨成了只想躺平的廢宅。耍廢也是一種選擇，午夜偶爾的那點空虛，你也假裝沒看見。"},
+};
+// 出生世代圓夢觀梗（純文案著色，零數值影響）
+const R141_ERAHOBBY = {
+  e70:"你那年代「興趣不能當飯吃」是鐵律，玩才藝被當不務正業——夢想兩個字太奢侈，先求溫飽再說。",
+  e80:"你年輕時開始有人玩樂團、搞創作，但「正職要穩定」還是長輩的標準答案——副業？那叫不安於室。",
+  e90:"你出社會時部落格無名小站正夯，素人爆紅的故事開始流傳——原來興趣也可能闖出一片天，這念頭悄悄發了芽。",
+  e00:"你這代滑著 YouTube 跟 IG 長大，人人都做過網紅夢、斜槓成了顯學——興趣變現不再是笑話，是這代人的集體想像。",
+  e10:"你成長在抖音直播抖內的時代，爆紅看似觸手可及——夢想的入場券人人有，能不能紅卻像買樂透，多數人陪跑。",
+  e20:"你這代 AI 一鍵生成內容、人人都能斜槓接案——圓夢工具多到爆，但流量紅海卷到出汁，堅持下去比想紅更難。",
+};
+// 財富→燒夢想本錢修正（買得起設備跑得起市集 vs 連顏料都買不起；天賦仍為主驅動，財富只做 ±8 次級修正）
+function r141FundOf(mny){
+  return mny>=70 ? {off:8,  nm:"燒得起的夢想", short:"單眼器材市集攤位說買就買、有本錢任性追夢"}
+       : mny<=25 ? {off:-8, nm:"連裝備都買不起", short:"顏料二手湊、課程等折扣，夢想被錢卡關"}
+       :           {off:0,  nm:"省吃儉用追夢",   short:"沒餘裕添裝備、靠熱情硬撐"};
+}
+// 智力＋魅力 平均→才藝天賦階層（純查表、雙屬性單調驅動）
+function r141TalentTierOf(effT){
+  return effT>=82?5 : effT>=66?4 : effT>=50?3 : effT>=34?2 : effT>=18?1 : 0;
+}
+// 斜槓夢想地位（天賦定起點、財富微調、階段 off 折舊/升遷；純算、零 rng）
+function r141DreamLevelAt(talentTier, mny, off){
+  let base = talentTier;
+  if(mny>=70) base+=1; else if(mny<=25) base-=1;   // 財富微調（燒得起夢想 vs 連裝備都買不起）
+  return Math.max(0, Math.min(5, base + off));
+}
+/* 從任一 state deterministic 推演興趣才藝・斜槓夢想軌跡（純讀、零 rng、零 mutation）；壞資料回 null */
+function r141HobbyOf(st){
+  try{
+    if(!st || typeof st!=="object" || !st.attr ||
+       typeof st.attr.int!=="number" || typeof st.attr.apr!=="number") return null;
+    const intl = Math.max(0, Math.min(100, st.attr.int));
+    const apr  = Math.max(0, Math.min(100, st.attr.apr));
+    const mny  = (typeof st.attr.mny==="number") ? Math.max(0, Math.min(100, st.attr.mny)) : 50; // 缺 mny → 中性
+    const age  = Math.max(0, Math.round(st.age||0));
+    const era  = (typeof st.era==="string" && R141_ERAHOBBY.hasOwnProperty(st.era)) ? st.era : null;
+    const fund = r141FundOf(mny);                                // 財富影響燒夢想本錢（次級）
+    const talentRaw = (intl + apr) / 2;                          // 智力＋魅力雙屬性主驅動（取平均）
+    const effT = Math.max(0, Math.min(100, talentRaw + fund.off)); // 天賦為主、本錢微調
+    const talentTier = r141TalentTierOf(effT);
+    // 各人生階段斜槓夢想地位
+    const stages=[];
+    for(let i=0;i<R141_PHASES.length;i++){
+      const ph=R141_PHASES[i];
+      if(age < ph.age) break;                                   // 沒活到該階段就不列（早逝只走前段）
+      const lv=r141DreamLevelAt(talentTier, mny, ph.off);
+      const d=R141_DREAM[lv];
+      stages.push({key:ph.key, nm:ph.nm, lv, ic:d.ic, tnm:d.nm, short:d.short});
+    }
+    // 夢想終局（互斥；智力＋魅力為主、財富與年齡決定走向，網紅分流另吃魅力）
+    let endType;
+    if(talentTier>=4 && mny>=66 && age>=30) endType="slasher";                       // 高天賦＋高財富＋成年→斜槓財富自由
+    else if(talentTier>=3 && apr>=64 && mny<=55 && age>=20) endType="viral";          // 高天賦＋高魅力＋不富＋青年→爆紅網紅
+    else if(talentTier<=1 && age>=28) endType="couch";                               // 低天賦＋過了青春→廢宅躺平
+    else if(talentTier>=2 && talentTier<=3 && age>=58) endType="dreamer";             // 中天賦＋晚年→圓夢家小確幸
+    else if(talentTier>=2 && talentTier<=3 && age>=35 && age<58) endType="quitter";   // 中天賦＋中年→半途而廢
+    else endType="dreamer";                                                          // 預設：圓夢家小確幸（青壯仍在築夢）
+    const ach = {
+      slasher: endType==="slasher",
+      viral:   endType==="viral",
+      couch:   endType==="couch",
+      dreamer: endType==="dreamer",
+      quitter: endType==="quitter",
+    };
+    return { intl, apr, mny, age, era, fund, effT, talentTier, stages, endType, ach };
+  }catch(e){ return null; }
+}
+function r141Hobby(){ return r141HobbyOf(S); }
+/* 結算：興趣夢想・人生軌跡回顧卡——智力＋魅力定天賦、天賦+財富+年齡推斜槓夢想、終局回顧（純讀零 rng，可截圖分享，線C素材） */
+function r141HobbyReviewHTML(){
+  const h=r141Hobby();
+  if(!h) return "";
+  const end=R141_END[h.endType]||R141_END.dreamer;
+  const talent=R141_TALENT[h.talentTier]||R141_TALENT[0];
+  const rows=h.stages.map(s=>`<div style="display:flex;gap:8px;align-items:baseline;padding:3px 0;font-size:13px;border-bottom:1px solid rgba(255,255,255,.05)">
+      <span class="muted" style="min-width:60px">${s.nm}</span>
+      <span style="white-space:nowrap">${s.ic} <b>${s.tnm}</b></span>
+      <span class="muted" style="font-size:11px">${s.short}</span></div>`).join("");
+  // 世代圓夢觀梗（缺則略）
+  let eraLine="";
+  const hob = h.era && R141_ERAHOBBY[h.era];
+  if(hob) eraLine=`<div class="muted" style="font-size:11.5px;margin-top:6px">🎯 你那年代的圓夢觀：${hob}</div>`;
+  const dreamy = (h.endType==="slasher"||h.endType==="viral"||h.endType==="dreamer");
+  const fateLine = dreamy
+    ? `🌈 <b style="color:#7fe7c4">你把夢想活成了真的</b>——在這座把人榨到只剩下班想躺平的島上，能堅持一份興趣、把它走出個名堂，已經是越來越稀有的浪漫。`
+    : `🛋️ <b style="color:#cdb3ff">夢想這條路很難堅持</b>——三分鐘熱度、半途而廢、下班只想躺平，這座島把「為熱愛的事拚一把」變得越來越奢侈，你用一輩子親身體會了一遭。`;
+  return `<div class="panel" style="margin-top:12px;background:var(--panel2)">
+    <h2 class="sec">🎯 興趣夢想・斜槓人生軌跡</h2>
+    <div class="muted" style="font-size:11.5px;margin:-4px 0 6px">依你這輩子的智力與魅力天賦、燒夢想的本錢與走過的歲月，推演你的斜槓夢想——廢宅躺平還是斜槓財富自由、半途而廢還是一夕爆紅？</div>
+    <div style="display:flex;gap:6px;align-items:baseline;padding:4px 0 2px;font-size:13px">
+      <span class="muted" style="min-width:60px">才藝天賦</span><span>${talent.ic} <b>${talent.nm}</b></span>
+      <span class="muted" style="font-size:11px">${talent.short}</span></div>
+    ${rows}
+    <div style="display:flex;gap:6px;align-items:baseline;padding:6px 0 2px;font-size:13px">
+      <span class="muted" style="min-width:60px">夢想結局</span><span>${end.ic} <b>${end.nm}</b></span></div>
+    <div style="display:flex;gap:6px;align-items:baseline;font-size:12.5px"><span class="muted" style="min-width:60px">圓夢本錢</span><span>${h.fund.nm}（${h.fund.short}）</span></div>
     ${eraLine}
     <div class="muted" style="font-size:12.5px;margin-top:8px;line-height:1.8">${fateLine}<br>${end.path}<br>${end.note}</div></div>`;
 }
@@ -17494,6 +17651,7 @@ function screenSummary(cat){
       ${r138HealthReviewHTML()}
       ${r139CareerReviewHTML()}
       ${r140LoveReviewHTML()}
+      ${r141HobbyReviewHTML()}
       ${attrCurveHTML()}
       ${attrTrajectoryHTML()}
       ${r129TrajectoryHTML()}
