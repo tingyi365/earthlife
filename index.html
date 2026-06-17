@@ -3091,6 +3091,16 @@ const ACHIEVEMENTS = [
   {id:"r152_fillerclass", ic:"📚", nm:"才藝班墊檔・陪公子讀書", desc:"小時候被塞了一堆才藝班、但沒一樣真正開花——鋼琴心算畫畫游泳跆拳道五合一大禮包你都上過，檢定考過幾級、獎狀也有幾張，但長大後一樣都不會、全還給老師了。在這個才藝班是升學軍備競賽、爸媽拚命幫小孩塞才藝填履歷的島上，你是那個『學了一堆才藝、卻沒一樣是真愛』的標準產物——才藝對你來說從不是熱情，是童年被排滿的行程表，長大後最大的才藝，是把那段被逼著學的日子笑著講出來。", check:c=>{const h=r152SkillOf(c.S); return !!h && h.ach.fillerclass;}, hint:"四屬性合成才藝分偏低段（14–25）——讓終局才藝軌跡走到『才藝班墊檔・陪公子讀書』分流…"},
   {id:"r152_tonedeaf", ic:"🙉", nm:"五音不全肢障・才藝絕緣體", desc:"學習力跟天分都不站你這邊、也沒資源熱情硬撐——你是那種唱歌走音、跳舞順拐、樂器學三個月還在找 Do 在哪的才藝絕緣體，公司尾牙抽到要表演能讓你緊張到請假。在這個逢年過節同學會總有人起鬨表演、不會才藝彷彿矮人一截的島上，你早就認清了『這輩子跟才藝無緣』這件事——但說真的，會不會才藝跟過得好不好半毛錢關係都沒有，你把省下來練才藝的時間拿去過自己的日子，照樣活得理直氣壯。", check:c=>{const h=r152SkillOf(c.S); return !!h && h.ach.tonedeaf;}, hint:"四屬性（智力學習力/魅力台風/財富補習/興趣熱情）合成才藝分長期墊底（14 以下）——把終局才藝軌跡卡在『五音不全肢障・才藝絕緣體』分流…"},
   {id:"r152_skill", ic:"🎨", nm:"鬼島才藝圖鑑・技能精通軌跡全集滿", desc:"大師級職人、才藝Youtuber、比賽得獎素人、補習班才藝老師、街頭藝人賣藝、社團熱音吉他手、才藝班墊檔、五音不全肢障——這座島丟給你的八種才藝命運，你用一次次投胎全都親自學過練過也放棄過一遍。當過開個展的國寶職人、拍片爆紅的才藝網紅、獎盃滿櫃的選秀常勝軍、帶學生的才藝班名師、河濱擺攤的街頭藝人、熱音社的吉他手、被塞滿才藝班的小孩、也當過上台就社死的音痴，才藝這道最看天分與苦練的人生考題，你終於把它活成了一本才藝圖鑑。", check:c=>{const need=["r152_master","r152_influencer","r152_winner","r152_teacher","r152_busker","r152_guitarist","r152_fillerclass","r152_tonedeaf"]; return !!(SAVE&&SAVE.ach) && need.every(id=>SAVE.ach[id]);}, hint:"跨局集滿八種才藝結局成就各至少一次（大師職人／才藝網紅／比賽得獎素人／補習班才藝老師／街頭藝人／熱音吉他手／才藝班墊檔／五音不全肢障）——把才藝的每一種命運都學過練過放棄過一遍…"},
+  /* ---- R153 數位・網路生活軌跡成就（純讀 r153NetOf(S) deterministic 推演，零 rng；智力 int(資訊判讀力) 為主驅動＋魅力 apr(網路人緣)＋財富 mny(課金裝備)＋世代 era(數位原生度) 加權合成網路分，疊年齡成熟上限推 8 級網路命運階梯，舊存檔/壞資料永不誤觸；聚焦網路底子/資訊判讀力/網路人緣/網路結局，與 R152 才藝/R151 信仰/R150 寵物 各自獨立旗標；走自嘲幽默不踩政治/仇恨/犯罪）---- */
+  {id:"r153_kol", ic:"👑", nm:"百萬訂閱KOL・網軍頭目", desc:"資訊判讀力夠頂、又是數位原生世代、燒得起器材團隊還自帶聲量——你把網路經營到了食物鏈最頂端，百萬訂閱、一句話帶得動風向，業配開價後面跟著一排零，連政論名嘴都要看你臉色。在這座人人都做過百萬 YouTuber 夢、卻多半淪為 22K 小編的島上，你是極少數真的把流量玩成印鈔機的人——紅得越高摔得越重，鍵盤底下的聲量是真的，鄉民翻臉出征也是真的。", check:c=>{const h=r153NetOf(c.S); return !!h && h.ach.kol;}, hint:"把智力 int(資訊判讀力) 養到頂、魅力 apr 網路人緣＋財富 mny 課金裝備＋投胎在數位原生世代(e10/e20)四項全拉滿（合成網路分 86+），又活到熟齡（30+ 才解鎖 KOL 上限）——讓終局網路軌跡走到最高的『百萬訂閱KOL・網軍頭目』分流…"},
+  {id:"r153_netred", ic:"🤳", nm:"網美網紅・斜槓接業配", desc:"判讀力中上、網路人緣又夠討喜——你修圖濾鏡經營出一套網美/網紅人設，追蹤破萬、限動有人捧場、業配邀約接得到，斜槓副業比正職還會賺。在這個人人想當網紅、IG 濾鏡比本人好看的島上，你是少數真的把自媒體玩出名堂的人，只是鏡頭關掉、濾鏡卸掉之後，那份『要一直紅、一直貼、一直被比較』的焦慮也是真的——流量是你的提款機，也是你的緊箍咒。", check:c=>{const h=r153NetOf(c.S); return !!h && h.ach.netred;}, hint:"四屬性合成網路分中高段（74–85，魅力 apr 網路人緣加分明顯）、又活過青壯（20+ 解鎖網紅上限）——讓終局網路軌跡走到『網美網紅・斜槓接業配』分流…"},
+  {id:"r153_tipper", ic:"💸", nm:"直播抖內小粉絲・打賞族", desc:"判讀力普普、但口袋還算掏得出、又把情感寄託全押在螢幕另一頭——你是直播間裡那個猛刷禮物、抖內衝榜的鐵粉，主播一句『感謝大哥』就讓你噴掉半個月薪水。在這個直播抖內養活一票網紅、寂寞用課金填的島上，你用真金白銀換了一份『被看見、被叫名字』的快樂——旁人笑你盤子，但那份歸屬感對你是真的，只是榜一大哥的位子，永遠有下一個人來搶。", check:c=>{const h=r153NetOf(c.S); return !!h && h.ach.tipper;}, hint:"四屬性合成網路分中段偏上（62–73，財富 mny 課金能力加分）、又活過青壯（20+）——讓終局網路軌跡走到『直播抖內小粉絲・打賞族』分流…"},
+  {id:"r153_dcard", ic:"🃏", nm:"Dcard匿名廢文王・抱怨討拍", desc:"判讀力一般、現實人緣也普通、就靠匿名版找存在感——你是 Dcard、靠北系列的常駐住戶，感情職場家庭大小事都 po 上去討拍，靠一篇篇廢文釣留言、討同溫層的安慰與正義。在這個匿名版承載了無數島民情緒垃圾的島上，你把網路當成了免費的樹洞兼出征基地——按讚數高的那刻彷彿全世界都站你這邊，下線回到現實，日子還是那個一地雞毛的日子。", check:c=>{const h=r153NetOf(c.S); return !!h && h.ach.dcard;}, hint:"四屬性合成網路分中段（50–61）——讓終局網路軌跡走到『Dcard匿名廢文王・抱怨討拍』分流…"},
+  {id:"r153_pttkbd", ic:"⌨️", nm:"PTT鄉民鍵盤俠・酸民出征", desc:"判讀力中下、嘴砲倒是練得飛快——你是 PTT 八卦版的資深鄉民，推噓嘴砲樣樣來，國家大事用鍵盤就能治、看誰不爽就揪團出征戰一波文。在這個鄉民文化又愛又恨、酸民與正義魔人只在一線之間的島上，你把網路當成了情緒的出口跟戰場——打字超勇、現實超慫，但下班還能上來嘴兩句，也算這座島最廉價的解壓方式。", check:c=>{const h=r153NetOf(c.S); return !!h && h.ach.pttkbd;}, hint:"四屬性合成網路分偏低中段（38–49）——讓終局網路軌跡走到『PTT鄉民鍵盤俠・酸民出征』分流…"},
+  {id:"r153_fbspam", ic:"📢", nm:"臉書動態狂貼魔人・洗版分享", desc:"判讀力普通、就是愛分享愛刷存在感——你是臉書/IG 上那個動態狂貼魔人，吃飯打卡、心情語錄、長文小作文一天好幾發，把生活每一格都搬上社群、按讚數一掉就焦慮。在這個人人活在社群、不發限動好像沒活過的島上，你把臉書當成了人生實況轉播台——你不是真的想紅，只是需要那一點點『有人在看我』的踏實。", check:c=>{const h=r153NetOf(c.S); return !!h && h.ach.fbspam;}, hint:"四屬性合成網路分偏低（26–37）——讓終局網路軌跡走到『臉書動態狂貼魔人・洗版分享』分流…"},
+  {id:"r153_boomer", ic:"🧓", nm:"長輩圖轉傳族・假訊息中繼", desc:"資訊判讀力不太站你這邊、數位世代差又卡著——你是家族群組裡那個長輩圖轉傳機，早安圖、佛經圖、養生偏方、聳動假訊息看到就轉，子女在後面默默闢謠也擋不住。在這個假訊息靠長輩群組病毒式擴散、闢謠永遠跑不贏謠言的島上，你不是壞心，只是真心覺得『轉給你是關心你』——那份笨拙的溫情是真的，只是下次轉之前，能不能先讓晚輩幫你查查是不是詐騙。", check:c=>{const h=r153NetOf(c.S); return !!h && h.ach.boomer;}, hint:"四屬性合成網路分偏低段（14–25，多為類比世代 e70/e80＋低判讀力）——讓終局網路軌跡走到『長輩圖轉傳族・假訊息中繼』分流…"},
+  {id:"r153_offline", ic:"📵", nm:"類比腦不沾網・化外之民", desc:"判讀力與數位世代都不沾邊、也沒興趣花錢追流量——你是這個時代少見的『不沾網』化外之民，智慧手機對你來說就是個會講電話的板子，社群、直播、網紅是什麼能吃嗎。在這個全民低頭、滑手機滑到頸椎變形的島上，你反而活成了難得的清醒——沒被演算法綁架、沒被假訊息帶風向、沒在比較焦慮裡浮沉，換來這座島最稀缺的東西：把眼睛還給現實生活的安靜。", check:c=>{const h=r153NetOf(c.S); return !!h && h.ach.offline;}, hint:"四屬性（智力判讀力/魅力人緣/財富課金/世代原生）合成網路分長期墊底（14 以下）——把終局網路軌跡卡在『類比腦不沾網・化外之民』分流…"},
+  {id:"r153_net", ic:"📡", nm:"鬼島網路圖鑑・數位生活軌跡全集滿", desc:"百萬訂閱 KOL、網美網紅、抖內小粉絲、Dcard 廢文王、PTT 鄉民、臉書狂貼魔人、長輩圖轉傳族、不沾網化外之民——這座島丟給你的八種網路命運，你用一次次投胎全都親自滑過、貼過、酸過也戒過一遍。當過帶風向的百萬 KOL、接業配的網美網紅、衝榜的抖內鐵粉、討拍的匿名廢文王、出征的鍵盤鄉民、洗版的動態魔人、轉長輩圖的長輩、也當過手機只拿來打電話的化外之民，網路這面照妖鏡，你終於把它照成了一本數位圖鑑。", check:c=>{const need=["r153_kol","r153_netred","r153_tipper","r153_dcard","r153_pttkbd","r153_fbspam","r153_boomer","r153_offline"]; return !!(SAVE&&SAVE.ach) && need.every(id=>SAVE.ach[id]);}, hint:"跨局集滿八種網路結局成就各至少一次（百萬KOL／網美網紅／抖內小粉絲／Dcard廢文王／PTT鄉民／臉書狂貼魔人／長輩圖轉傳族／不沾網化外之民）——把網路的每一種命運都滑過貼過酸過戒過一遍…"},
   {id:"r70a_unicorn", ic:"🦄", nm:"創業上岸・無中生有", desc:"在頭家夢分歧鏈選自己創業，撐過跑三點半的歲月，最後成功上岸買房定居——你把『無中生有』四個字活成了真的。", check:c=>!!(c.S.flags&&c.S.flags.r70a_unicorn), hint:"分歧鏈裡選自己創業的人，中段擴張或被收購（或在三點半跳票邊緣硬撐活下來），末段才走得到買房上岸…"},
   {id:"r70a_freebird", ic:"🕊️", nm:"社畜跳船・自由業真男人", desc:"當年領死薪水的你中途跳船去接案，多年後接出口碑、開了自己的工作室——上班族眼裡那種『自由業』，自由是真的，業也真的有在接。", check:c=>!!(c.S.flags&&c.S.flags.r70a_freebird), hint:"分歧鏈選領死薪水當社畜的人，中段選擇安靜離職跳船接案，末段把工作室掛牌做起來…"},
   {id:"r70a_clear", ic:"🧭", nm:"頭家夢・全鏈結業", desc:"從老家那通電話一路走到人生期末考，把頭家夢（或死薪水）這條三段分歧鏈完整走完——接、創、領，無論哪條路你都活出了答案。", check:c=>!!(c.S.flags&&c.S.flags.r70a_done), hint:"老家的店要收那年做出選擇後，把中段、末段兩道抉擇都接著走完，整條頭家分歧鏈一站不漏…"},
@@ -6010,6 +6020,169 @@ function r152SkillReviewHTML(){
       <span class="muted" style="min-width:60px">才藝結局</span><span>${end.ic} <b>${end.nm}</b></span></div>
     <div style="display:flex;gap:6px;align-items:baseline;font-size:12.5px"><span class="muted" style="min-width:60px">學習力</span><span>${h.learn.nm}（${h.learn.short}）</span></div>
     <div style="display:flex;gap:6px;align-items:baseline;font-size:12.5px"><span class="muted" style="min-width:60px">台風天分</span><span>${h.gift.nm}（${h.gift.short}）</span></div>
+    ${eraLine}
+    <div class="muted" style="font-size:12.5px;margin-top:8px;line-height:1.8">${fateLine}<br>${end.path}<br>${end.note}</div></div>`;
+}
+
+/* =========================================================================
+   R153 數位・網路生活軌跡（純衍生／結算覆蓋層，零 rng、零事件序列擾動）
+   ── 呼應主題：讓「智力 int（資訊判讀力）＋年齡世代 era（數位原生度）＋財富 mny
+      （課金/裝備）＋魅力 apr（網路人緣）」四屬性真正驅動本局的「鬼島數位網路命運結局」。
+      智力 int 為主驅動＝資訊判讀力（一眼看破假訊息詐騙 vs 長輩圖農場文照單全收），年齡世代
+      era＝數位原生度（類比腦長輩 vs 滑世代原住民），財富 mny＝課金/裝備（抖內打賞買器材 vs
+      連 22K 都要省），魅力 apr＝網路人緣（自帶聲量會圈粉 vs po 文已讀不回邊緣）。四屬性
+      加權合成網路分（int 0.40＋apr 0.26＋mny 0.18＋世代 gen 0.16，權重和=1.0，屬性越高
+      定級越高＝directive#1），疊年齡成熟度上限（百萬 KOL/網軍頭目需時間經營，童年封頂長輩圖
+      族、青壯才解鎖網紅、熟齡才見 KOL）推 8 級鐵島網路命運階梯。全程只「讀」終局 state，不
+      新增任何 Math.random／rng() → 種子事件抽取序列逐位元不變；獨立旗標，與 R141 興趣斜槓
+      ／…／R152 才藝 各自獨立、互不干擾。**走自嘲幽默，不踩政治／仇恨／犯罪紅線。**
+   驅動鐵律：
+   ① 四屬性加權合成網路分（智力資訊判讀力為主、魅力網路人緣＋財富課金裝備＋世代數位原生次之），
+      年齡決定網路經營的成熟上限（童年最多到長輩圖族、青春到Dcard廢文、成年才解鎖抖內/網紅/
+      KOL）；出生世代 era 同時是「數位原生度」數值驅動＋「鬼島網路梗」文案著色。屬性越高定級越高。
+   ② 純呈現：所有 R153 函式只回傳字串／純讀物件，不寫 S、不改數值平衡；S=null／無 attr／
+      缺 int 鍵／髒資料一律安全降級回 null／空字串，絕不白屏或拋例外。
+   ③ 跨局收集：r153_net ＝集滿八種網路結局成就（百萬KOL網軍頭目／網美網紅接業配／直播抖內小
+      粉絲／Dcard匿名廢文王／PTT鄉民鍵盤俠／臉書動態狂貼魔人／長輩圖轉傳族／類比腦不沾網）。
+      單局結算點亮 1～2 個（本局網路結局＋集滿）。
+   ========================================================================= */
+// 8 級鐵島網路命運階梯（智力資訊判讀力主導＋魅力網路人緣＋財富課金裝備＋世代數位原生合成；純查表、零 rng；index 0..7 由低到高）
+const R153_NET = [
+  {ic:"📵", nm:"類比腦不沾網",   short:"手機只拿來打電話、不上網不滑社群、活在類比時代的化外之民"},
+  {ic:"🧓", nm:"長輩圖轉傳族",   short:"早安圖佛經圖養生假訊息整天轉、家族群組長輩圖製造機"},
+  {ic:"📢", nm:"臉書動態狂貼魔人", short:"吃個飯打個卡都要發文、動態洗版分享魔人、按讚數就是生命"},
+  {ic:"⌨️", nm:"PTT鄉民鍵盤俠", short:"八卦版鄉民推噓嘴砲、鍵盤治國酸民出征、戰文打字不手軟"},
+  {ic:"🃏", nm:"Dcard匿名廢文王", short:"Dcard 匿名抱怨討拍、靠北廢文釣留言、躲匿名後面酸天酸地"},
+  {ic:"💸", nm:"直播抖內小粉絲", short:"追直播主課金抖內、為偶像打賞噴薪水、螢幕後的快樂農場主"},
+  {ic:"🤳", nm:"網美網紅接業配", short:"修圖濾鏡網美人設、斜槓經營自媒體接業配、追蹤破萬有流量"},
+  {ic:"👑", nm:"百萬訂閱KOL",   short:"百萬訂閱意見領袖兼網軍頭目、一句話帶風向、流量變現印鈔機"},
+];
+// 人生階段（童年數位啟蒙→流量見真章；off 為網路定級相對網路分的年齡成熟修正；越年輕封頂越低）
+const R153_PHASES = [
+  {key:"child",  age:10, nm:"數位啟蒙期", off:-3}, // 第一支手機/平板、還在類比邊緣
+  {key:"teen",   age:16, nm:"社群網路期", off:-1}, // IG/Dcard 沉迷、同溫層築巢
+  {key:"adult",  age:26, nm:"網路變現期", off:0},  // 能不能靠網路紅/變現定型
+  {key:"master", age:40, nm:"流量見真章", off:0},  // 成 KOL/網紅、或被演算法邊緣化
+];
+// 網路結局型別文案（純查表、零 rng；自嘲鬼島網路梗，不踩政治/仇恨/犯罪）
+const R153_END = {
+  kol:      {ic:"👑", nm:"百萬訂閱KOL・網軍頭目", path:"👑 百萬訂閱意見領袖兼網軍頭目、一句話帶風向、流量變現印鈔機", note:"資訊判讀力夠頂、又是吃這碗飯的數位原生世代、燒得起器材團隊還自帶聲量——你把網路經營到了食物鏈最頂端，百萬訂閱、一句話帶得動風向，業配開價後面跟著一排零，連政論名嘴都要看你臉色。在這座人人都做過百萬 YouTuber 夢、卻多半淪為 22K 小編的島上，你是極少數真的把流量玩成印鈔機的人——當然，紅得越高摔得越重，鍵盤底下的聲量是真的，鄉民翻臉出征也是真的，你站在浪頭上吹風，也得隨時準備被同一群人推下海。"},
+  netred:   {ic:"🤳", nm:"網美網紅・斜槓接業配", path:"🤳 修圖濾鏡網美人設、斜槓經營自媒體接業配、追蹤破萬有流量", note:"判讀力中上、網路人緣又夠討喜——你修圖濾鏡經營出一套網美/網紅人設，追蹤破萬、限動有人捧場、業配邀約接得到，斜槓副業比正職還會賺。在這個人人想當網紅、IG 濾鏡比本人好看的島上，你是少數真的把自媒體玩出名堂的人，只是鏡頭關掉、濾鏡卸掉之後，那份『要一直紅、一直貼、一直被比較』的焦慮也是真的——流量是你的提款機，也是你的緊箍咒。"},
+  tipper:   {ic:"💸", nm:"直播抖內小粉絲・打賞族", path:"💸 追直播主課金抖內、為偶像打賞噴薪水、螢幕後的快樂農場主", note:"判讀力普普、但口袋還算掏得出、又把情感寄託全押在螢幕另一頭——你是直播間裡那個猛刷禮物、抖內衝榜的鐵粉，主播一句『感謝大哥』就讓你噴掉半個月薪水。在這個直播抖內養活一票網紅、寂寞用課金填的島上，你用真金白銀換了一份『被看見、被叫名字』的快樂——旁人笑你盤子、笑你被收割，但那份在螢幕前的歸屬感對你是真的，只是錢包扁了、榜一大哥的位子，永遠有下一個人來搶。"},
+  dcard:    {ic:"🃏", nm:"Dcard匿名廢文王・抱怨討拍", path:"🃏 Dcard 匿名抱怨討拍、靠北廢文釣留言、躲匿名後面酸天酸地", note:"判讀力一般、現實人緣也普通、就靠匿名版找存在感——你是 Dcard、靠北系列的常駐住戶，感情職場家庭大小事都 po 上去討拍，靠一篇篇廢文釣留言、討同溫層的安慰與正義。在這個匿名版承載了無數島民情緒垃圾的島上，你把網路當成了免費的樹洞兼出征基地——躲在匿名後面誰都敢嗆，按讚數高的那刻彷彿全世界都站你這邊，下線回到現實，日子還是那個一地雞毛的日子。"},
+  pttkbd:   {ic:"⌨️", nm:"PTT鄉民鍵盤俠・酸民出征", path:"⌨️ 八卦版鄉民推噓嘴砲、鍵盤治國酸民出征、戰文打字不手軟", note:"判讀力中下、嘴砲倒是練得飛快——你是 PTT 八卦版的資深鄉民，推噓嘴砲樣樣來，國家大事用鍵盤就能治、看誰不爽就揪團出征戰一波文。在這個鄉民文化又愛又恨、酸民與正義魔人只在一線之間的島上，你把網路當成了情緒的出口跟戰場——打字超勇、現實超慫，鍵盤革命家當久了難免分不清推文裡的義憤跟生活裡的無力，但說真的，下班還能上來嘴兩句，也算這座島最廉價的解壓方式。"},
+  fbspam:   {ic:"📢", nm:"臉書動態狂貼魔人・洗版分享", path:"📢 吃個飯打個卡都要發文、動態洗版分享魔人、按讚數就是生命", note:"判讀力普通、就是愛分享愛刷存在感——你是臉書/IG 上那個動態狂貼魔人，吃飯打卡、心情語錄、長文小作文一天好幾發，把生活每一格都搬上社群、按讚數一掉就焦慮。在這個人人活在社群、不發限動好像沒活過的島上，你把臉書當成了人生實況轉播台——朋友默默把你設成『取消追蹤但不解除好友』，你也不是真的想紅，只是需要那一點點『有人在看我』的踏實，貼文底下的讚，是你跟世界保持連線的方式。"},
+  boomer:   {ic:"🧓", nm:"長輩圖轉傳族・假訊息中繼", path:"🧓 早安圖佛經圖養生假訊息整天轉、家族群組長輩圖製造機", note:"資訊判讀力不太站你這邊、數位世代差又卡著——你是家族群組裡那個長輩圖轉傳機，早安圖、佛經圖、養生偏方、聳動假訊息看到就轉，子女在後面默默闢謠也擋不住。在這個假訊息靠長輩群組病毒式擴散、闢謠永遠跑不贏謠言的島上，你不是壞心，只是真心覺得『轉給你是關心你』——你用早安圖維繫著對親友的牽掛，那份笨拙的溫情是真的，只是下次轉之前，能不能先讓晚輩幫你查查是不是詐騙。"},
+  offline:  {ic:"📵", nm:"類比腦不沾網・化外之民", path:"📵 手機只拿來打電話、不上網不滑社群、活在類比時代的化外之民", note:"判讀力與數位世代都不沾邊、也沒興趣花錢追流量——你是這個時代少見的『不沾網』化外之民，智慧手機對你來說就是個會講電話的板子，社群、直播、網紅是什麼能吃嗎，別人滑手機你看報紙翻書曬太陽。在這個全民低頭、滑手機滑到頸椎變形的島上，你反而活成了難得的清醒——沒被演算法綁架、沒被假訊息帶風向、沒在比較焦慮裡浮沉，少了那些線上的熱鬧，卻換來一份這座島最稀缺的東西：把眼睛還給現實生活的安靜。"},
+};
+// 出生世代網路梗＋數位原生度數值（gen：類比長輩→滑世代越年輕越高；既驅動網路分又做文案著色，自嘲不踩線）
+const R153_GEN = {e70:10, e80:25, e90:42, e00:60, e10:80, e20:92};
+const R153_ERANET = {
+  e70:"你那年代沒有網路、靠報紙電視收音機，後來智慧型手機普及才被子女拉進 LINE，長輩圖從此學會了轉。",
+  e80:"你年輕時撥接上網、無名小站奇摩即時通，BBS 與部落格是你的青春，後來一路被社群平台推著走。",
+  e90:"你出社會時臉書正夯、打卡分享按讚成為日常，PTT 鄉民文化與酸民出征也在你這代玩到極致。",
+  e00:"你這代 IG/YouTube/直播當道，網紅 KOL 是新世代的明星夢，人人手機不離手刷限動追直播。",
+  e10:"你是數位原生世代、出生就有觸控螢幕，Dcard 抖音短影音滑不停，網路就是你的第二個世界。",
+  e20:"你這代滑世代從小被演算法餵養、注意力被短影音切成碎片，但低薪當小編連業配夢都得排隊。",
+};
+// 智力 int →資訊判讀力檔（看破假訊息 vs 長輩圖照單全收；純查表、零 rng；卡片著色用）
+function r153LitOf(int){
+  return int>=70 ? {nm:"資訊判讀力滿格", short:"一眼看破假訊息詐騙釣魚、長輩圖農場文騙不了你"}
+       : int<=30 ? {nm:"長輩圖照單全收", short:"假訊息詐騙來者不拒、看到聳動標題先轉再說"}
+       :          {nm:"半信半疑網民",   short:"將信將疑、偶爾中標但還算有點底線"};
+}
+// 魅力 apr →網路人緣檔（自帶聲量 vs 發文沒人理；純查表、零 rng；卡片著色用）
+function r153FameOf(apr){
+  return apr>=70 ? {nm:"自帶聲量網紅臉", short:"發什麼都有人捧場、天生討喜會圈粉"}
+       : apr<=30 ? {nm:"發文沒人理邊緣", short:"po 文已讀不回、貼動態同溫層只剩自己"}
+       :          {nm:"普通鄉民人緣",   short:"不紅不黑、偶爾有人按讚留言"};
+}
+// 出生世代 era →數位原生度 gen（類比長輩低、滑世代高；缺/髒 era → 50 中性）
+function r153GenOf(era){
+  return (typeof era==="string" && R153_GEN.hasOwnProperty(era)) ? R153_GEN[era] : 50;
+}
+// 四屬性加權合成網路分（智力判讀力 0.40 為主＋魅力人緣 0.26＋財富課金 0.18＋世代原生 0.16；權重和=1.0）
+function r153NetScore(int, apr, mny, gen){
+  return Math.max(0, Math.min(100, Math.round(int*0.40 + apr*0.26 + mny*0.18 + gen*0.16)));
+}
+// 網路分 →8 級命運階梯定級（純查表、單調驅動；index 0..7 由低到高）
+function r153TierOf(T){
+  return T>=86?7 : T>=74?6 : T>=62?5 : T>=50?4 : T>=38?3 : T>=26?2 : T>=14?1 : 0;
+}
+// 年齡成熟上限（網路經營需時間累積：童年最多長輩圖族、青春最多Dcard廢文、青壯到網紅、熟齡才見KOL）
+function r153AgeCapOf(age){
+  return age<13?2 : age<20?4 : age<30?6 : 7;
+}
+/* 從任一 state deterministic 推演數位・網路生活軌跡（純讀、零 rng、零 mutation）；壞資料回 null */
+function r153NetOf(st){
+  try{
+    if(!st || typeof st!=="object" || !st.attr || typeof st.attr.int!=="number") return null;
+    const int  = Math.max(0, Math.min(100, st.attr.int));
+    const apr  = (typeof st.attr.apr==="number") ? Math.max(0, Math.min(100, st.attr.apr)) : 50; // 缺 apr → 中性
+    const mny  = (typeof st.attr.mny==="number") ? Math.max(0, Math.min(100, st.attr.mny)) : 50; // 缺 mny → 中性
+    const age  = Math.max(0, Math.round(st.age||0));
+    const era  = (typeof st.era==="string" && R153_ERANET.hasOwnProperty(st.era)) ? st.era : null;
+    const gen  = r153GenOf(st.era);                          // 數位原生度（世代差，缺則中性 50）
+    const lit  = r153LitOf(int);                             // 資訊判讀力（主）
+    const fame = r153FameOf(apr);                            // 網路人緣（次）
+    const T    = r153NetScore(int, apr, mny, gen);           // 四屬性加權合成網路分
+    const tier = r153TierOf(T);
+    const cap  = r153AgeCapOf(age);
+    // 各人生階段網路處境（童年數位啟蒙、其餘隨年齡成熟爬升到網路分對應階層）
+    const stages=[];
+    for(let i=0;i<R153_PHASES.length;i++){
+      const ph=R153_PHASES[i];
+      if(age < ph.age) break;                                // 沒活到該階段就不列（早逝只走前段）
+      const lv=Math.max(0, Math.min(7, tier + ph.off));
+      const t=R153_NET[lv];
+      stages.push({key:ph.key, nm:ph.nm, lv, ic:t.ic, tnm:t.nm, short:t.short});
+    }
+    // 網路結局（peak 定級疊年齡成熟上限；8 級 1:1 對映 8 種結局，確定性互斥可達）
+    const peakTier = Math.max(0, Math.min(cap, tier));
+    const endType = ["offline","boomer","fbspam","pttkbd","dcard","tipper","netred","kol"][peakTier];
+    const ach = {
+      kol:     endType==="kol",
+      netred:  endType==="netred",
+      tipper:  endType==="tipper",
+      dcard:   endType==="dcard",
+      pttkbd:  endType==="pttkbd",
+      fbspam:  endType==="fbspam",
+      boomer:  endType==="boomer",
+      offline: endType==="offline",
+    };
+    return { int, apr, mny, age, era, gen, lit, fame, T, tier, cap, peakTier, stages, endType, ach };
+  }catch(e){ return null; }
+}
+function r153Net(){ return r153NetOf(S); }
+/* 結算：數位・網路生活回顧卡——四屬性合成網路分定階梯、疊年齡成熟推網路結局、終局回顧（純讀零 rng，可截圖分享，線C素材） */
+function r153NetReviewHTML(){
+  const h=r153Net();
+  if(!h) return "";
+  const end=R153_END[h.endType]||R153_END.offline;
+  const base=R153_NET[h.peakTier]||R153_NET[0];
+  const rows=h.stages.map(s=>`<div style="display:flex;gap:8px;align-items:baseline;padding:3px 0;font-size:13px;border-bottom:1px solid rgba(255,255,255,.05)">
+      <span class="muted" style="min-width:60px">${s.nm}</span>
+      <span style="white-space:nowrap">${s.ic} <b>${s.tnm}</b></span>
+      <span class="muted" style="font-size:11px">${s.short}</span></div>`).join("");
+  // 世代網路梗（缺則略）
+  let eraLine="";
+  const eh = h.era && R153_ERANET[h.era];
+  if(eh) eraLine=`<div class="muted" style="font-size:11.5px;margin-top:6px">🏷️ 你那年代的網路：${eh}</div>`;
+  const winner = (h.endType==="kol"||h.endType==="netred");
+  const fateLine = winner
+    ? `📡 <b style="color:#ffd96b">這場網路遊戲你玩成流量贏家了</b>——在這個人人做過百萬 YouTuber 夢、多半淪為 22K 小編的島上，你靠資訊判讀力、網路人緣與一身經營本事，真的把流量玩成了印鈔機、站上了聲量的浪頭。`
+    : `📡 <b style="color:#ffb3b3">這場網路遊戲走得各有風景</b>——百萬 KOL、網美網紅、抖內小粉絲、Dcard 廢文王、PTT 鄉民、長輩圖族、不沾網化外之民，這座島把『你怎麼上網』變成了一面照妖鏡，你用一輩子親自滑過、貼過、酸過也戒過一遍。`;
+  return `<div class="panel" style="margin-top:12px;background:var(--panel2)">
+    <h2 class="sec">📡 數位・網路生活軌跡</h2>
+    <div class="muted" style="font-size:11.5px;margin:-4px 0 6px">依你這輩子的資訊判讀力（看破假訊息還是長輩圖照單全收）、網路人緣、課金裝備與數位世代差，推演你的數位網路命運軌跡——百萬訂閱 KOL 還是類比腦不沾網、網美網紅接業配還是長輩圖轉傳族、直播抖內小粉絲還是 PTT 鄉民鍵盤俠？</div>
+    <div style="display:flex;gap:6px;align-items:baseline;padding:4px 0 2px;font-size:13px">
+      <span class="muted" style="min-width:60px">網路底子</span><span>${base.ic} <b>${base.nm}</b></span>
+      <span class="muted" style="font-size:11px">${base.short}</span></div>
+    ${rows}
+    <div style="display:flex;gap:6px;align-items:baseline;padding:6px 0 2px;font-size:13px">
+      <span class="muted" style="min-width:60px">網路結局</span><span>${end.ic} <b>${end.nm}</b></span></div>
+    <div style="display:flex;gap:6px;align-items:baseline;font-size:12.5px"><span class="muted" style="min-width:60px">資訊判讀力</span><span>${h.lit.nm}（${h.lit.short}）</span></div>
+    <div style="display:flex;gap:6px;align-items:baseline;font-size:12.5px"><span class="muted" style="min-width:60px">網路人緣</span><span>${h.fame.nm}（${h.fame.short}）</span></div>
     ${eraLine}
     <div class="muted" style="font-size:12.5px;margin-top:8px;line-height:1.8">${fateLine}<br>${end.path}<br>${end.note}</div></div>`;
 }
@@ -19419,6 +19592,7 @@ function screenSummary(cat){
       ${r150PetReviewHTML()}
       ${r151FaithReviewHTML()}
       ${r152SkillReviewHTML()}
+      ${r153NetReviewHTML()}
       ${attrCurveHTML()}
       ${attrTrajectoryHTML()}
       ${r129TrajectoryHTML()}

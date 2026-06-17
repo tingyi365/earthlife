@@ -6289,5 +6289,92 @@ const r152 = JSON.parse(vm.runInContext(`(function(){
   ['achPartial','⑫ 跨局集滿:缺一→r152_skill 不解'],
 ].forEach(([k,m])=>ok(r152[k], 'R152 '+m));
 
+const r153 = JSON.parse(vm.runInContext(`(function(){
+  const out={};
+  function mk(int,apr,mny,age,era){ return {attr:{hp:50,int:int,apr:apr,mny:mny,hap:50}, age:age, era:era, flags:{}, alive:false}; }
+  // ① 資料齊備：8 級網路命運階梯+4 人生階段+8 結局型別+六世代網路梗+判讀力三檔+網路人緣三檔
+  out.dataFull = Array.isArray(R153_NET) && R153_NET.length===8 && R153_NET.every(t=>t.ic&&t.nm&&t.short)
+    && Array.isArray(R153_PHASES) && R153_PHASES.length===4 && R153_PHASES.every(p=>typeof p.off==='number')
+    && ['offline','boomer','fbspam','pttkbd','dcard','tipper','netred','kol'].every(k=>R153_END[k]&&R153_END[k].nm&&R153_END[k].path&&R153_END[k].note)
+    && R55_ERAS.every(er=>typeof R153_ERANET[er.id]==='string' && typeof R153_GEN[er.id]==='number')
+    && [r153LitOf(90),r153LitOf(50),r153LitOf(10)].every(c=>c.nm&&c.short)
+    && [r153FameOf(90),r153FameOf(50),r153FameOf(10)].every(c=>c.nm&&c.short);
+  // ② 四屬性合成網路分確定性映射：高→KOL 段(tier>=6)、中→中段(tier>=3)、低→墊底(tier===0)；且單調驅動
+  const hi=r153NetOf(mk(95,95,95,45,'e00')), midd=r153NetOf(mk(50,50,50,45,'e00')), lo=r153NetOf(mk(0,0,0,45,'e00'));
+  out.scoreMap = !!hi&&!!midd&&!!lo && hi.tier>=6 && midd.tier>=3 && lo.tier===0
+    && hi.tier>midd.tier && midd.tier>lo.tier;
+  // ③ directive#1 四屬性皆有存在感：固定其餘中性，各屬性高→網路分不低於低、且智力 int 影響最大；世代 era(年齡) 亦有存在感
+  const intHi=r153NetOf(mk(90,50,50,45,'e00')).T, intLo=r153NetOf(mk(10,50,50,45,'e00')).T;
+  const aprHi=r153NetOf(mk(50,90,50,45,'e00')).T, aprLo=r153NetOf(mk(50,10,50,45,'e00')).T;
+  const mnyHi=r153NetOf(mk(50,50,90,45,'e00')).T, mnyLo=r153NetOf(mk(50,50,10,45,'e00')).T;
+  const genHi=r153NetOf(mk(50,50,50,45,'e20')).T, genLo=r153NetOf(mk(50,50,50,45,'e70')).T;
+  out.fourAttr = intHi>intLo && aprHi>aprLo && mnyHi>mnyLo && genHi>genLo
+    && (intHi-intLo) > (aprHi-aprLo) && (intHi-intLo) > (mnyHi-mnyLo) && (intHi-intLo) > (genHi-genLo);
+  // ④ 年齡成熟上限：同四屬性滿值，童年封頂長輩圖族(<=2)、青壯到網紅(<=6)、熟齡才解鎖 KOL(7)
+  const kid=r153NetOf(mk(95,95,95,10,'e00')), young=r153NetOf(mk(95,95,95,25,'e00')), old=r153NetOf(mk(95,95,95,45,'e00'));
+  out.ageCap = !!kid&&!!young&&!!old && kid.peakTier<=2 && young.peakTier<=6 && old.peakTier===7 && old.peakTier>young.peakTier && young.peakTier>kid.peakTier;
+  // ⑤ 卡片渲染：含網路底子/網路結局/資訊判讀力/網路人緣
+  S=mk(55,55,55,45,'e00'); const card=r153NetReviewHTML();
+  out.cardRender = card.indexOf('網路底子')>=0 && card.indexOf('網路結局')>=0 && card.indexOf('資訊判讀力')>=0 && card.indexOf('網路人緣')>=0 && (card.indexOf('網路')>=0||card.indexOf('數位')>=0);
+  // ⑥ deterministic 純讀：同 S 兩次渲染逐字一致
+  S=mk(40,40,40,35,'e10'); const a1=r153NetReviewHTML(), a2=r153NetReviewHTML();
+  out.deterministic = a1===a2 && a1.length>0;
+  // ⑦ 純呈現零汙染：生成前後 S.attr/era/age/flags 不變、零 rng 消耗
+  S=mk(72,55,60,45,'e70'); const bA=JSON.stringify(S.attr), bE=S.era, bAge=S.age, bF=JSON.stringify(S.flags);
+  let used=0; const oldR=rng; rng=function(){ used++; return oldR(); };
+  r153NetReviewHTML(); r153NetOf(S); rng=oldR;
+  out.pure = JSON.stringify(S.attr)===bA && S.era===bE && S.age===bAge && JSON.stringify(S.flags)===bF && used===0;
+  // ⑧ S=null / 缺 attr / 缺 int 降級：回 null、卡空字串、不炸
+  out.nullSafe = (()=>{ try{ S=null; return r153NetOf(null)===null && r153NetReviewHTML()===''; }catch(e){ return false; } })();
+  out.noAttr = (()=>{ try{ return r153NetOf({age:40,era:'e00'})===null && r153NetOf({attr:{apr:50},age:40})===null; }catch(e){ return false; } })();
+  // ⑨ 缺 apr/mny 中性化＋髒/缺 era 數位原生度中性(50)＋網路梗略過：仍回物件不炸且分數一致
+  out.softDeg = (()=>{ try{ const m=r153NetOf({attr:{int:55},age:40,era:'e00',flags:{}}); const d=r153NetOf(mk(55,50,50,40,'zzz999')); return !!m && !!d && d.era===null && d.gen===50 && d.T===r153NetOf(mk(55,50,50,40,undefined)).T; }catch(e){ return false; } })();
+  // ⑩ 舊存檔相容：ensureState 不為 R153 在 S/flags 補任何 r153 鍵
+  startGame(); const olds=S; ensureState(olds);
+  out.compatOld = !Object.keys(olds).some(k=>k.toLowerCase().indexOf('r153')===0)
+    && !Object.keys(olds.flags||{}).some(k=>k.toLowerCase().indexOf('r153')===0);
+  // ⑪ 網路結局成就確定性點亮：KOL/網紅/抖內/廢文王/鄉民/狂貼/長輩圖/不沾網 各自可達且互斥（四屬性等值掃 0..7，age 45，era e00 gen 60）
+  const KOL=mk(92,92,92,45,'e00'), NRD=mk(78,78,78,45,'e00'), TIP=mk(65,65,65,45,'e00'), DCA=mk(52,52,52,45,'e00'),
+        PTT=mk(38,38,38,45,'e00'), FBS=mk(25,25,25,45,'e00'), BOO=mk(15,15,15,45,'e00'), OFF=mk(0,0,0,45,'e00');
+  out.achKol = !!ACH_MAP.r153_kol     && ACH_MAP.r153_kol.check({S:KOL})===true     && ACH_MAP.r153_kol.check({S:OFF})===false;
+  out.achNrd = !!ACH_MAP.r153_netred  && ACH_MAP.r153_netred.check({S:NRD})===true  && ACH_MAP.r153_netred.check({S:KOL})===false;
+  out.achTip = !!ACH_MAP.r153_tipper  && ACH_MAP.r153_tipper.check({S:TIP})===true  && ACH_MAP.r153_tipper.check({S:KOL})===false;
+  out.achDca = !!ACH_MAP.r153_dcard   && ACH_MAP.r153_dcard.check({S:DCA})===true   && ACH_MAP.r153_dcard.check({S:KOL})===false;
+  out.achPtt = !!ACH_MAP.r153_pttkbd  && ACH_MAP.r153_pttkbd.check({S:PTT})===true  && ACH_MAP.r153_pttkbd.check({S:KOL})===false;
+  out.achFbs = !!ACH_MAP.r153_fbspam  && ACH_MAP.r153_fbspam.check({S:FBS})===true  && ACH_MAP.r153_fbspam.check({S:KOL})===false;
+  out.achBoo = !!ACH_MAP.r153_boomer  && ACH_MAP.r153_boomer.check({S:BOO})===true  && ACH_MAP.r153_boomer.check({S:KOL})===false;
+  out.achOff = !!ACH_MAP.r153_offline && ACH_MAP.r153_offline.check({S:OFF})===true && ACH_MAP.r153_offline.check({S:KOL})===false;
+  // ⑫ 跨局集滿 r153_net：八成就全亮→解鎖、缺一→不解
+  const allAch={r153_kol:true,r153_netred:true,r153_tipper:true,r153_dcard:true,r153_pttkbd:true,r153_fbspam:true,r153_boomer:true,r153_offline:true};
+  SAVE.ach=Object.assign({},allAch); out.achFull = !!ACH_MAP.r153_net && ACH_MAP.r153_net.check({S:{}})===true;
+  const partial=Object.assign({},allAch); delete partial.r153_kol;
+  SAVE.ach=partial; out.achPartial = ACH_MAP.r153_net.check({S:{}})===false;
+  SAVE.ach={}; S=null;
+  return JSON.stringify(out);
+})()`, sandbox));
+[
+  ['dataFull','① 資料齊備:8 級網路階梯+4 人生階段+8 結局型別+六世代網路梗/原生度+判讀力/網路人緣三檔'],
+  ['scoreMap','② 四屬性合成網路分確定性映射:高→KOL 段/中→中段/低→墊底且單調驅動'],
+  ['fourAttr','③ directive#1 四屬性皆有存在感:int/apr/mny/世代era 各高>低且 int 影響最大'],
+  ['ageCap','④ 年齡成熟上限:童年封頂長輩圖族/青壯到網紅/熟齡才解鎖 KOL'],
+  ['cardRender','⑤ 卡片渲染:含網路底子/網路結局/資訊判讀力/網路人緣/網路或數位'],
+  ['deterministic','⑥ deterministic 純讀:同 S 兩次渲染逐字一致'],
+  ['pure','⑦ 純呈現零汙染:生成前後 S.attr/era/age/flags 不變且零 rng'],
+  ['nullSafe','⑧ 無局(S=null)降級:回 null、卡空字串不炸'],
+  ['noAttr','⑧ 缺 attr/int 降級:回 null 不炸'],
+  ['softDeg','⑨ 缺 apr/mny 中性化＋髒/缺 era 原生度中性(50)＋網路梗略過:仍回物件不炸且分數一致'],
+  ['compatOld','⑩ 舊存檔相容:ensureState 不為 R153 補任何 S/flags 鍵'],
+  ['achKol','⑪ r153_kol:百萬KOL→解、不沾網→不解'],
+  ['achNrd','⑪ r153_netred:網美網紅→解、KOL→不解'],
+  ['achTip','⑪ r153_tipper:抖內小粉絲→解、KOL→不解'],
+  ['achDca','⑪ r153_dcard:Dcard廢文王→解、KOL→不解'],
+  ['achPtt','⑪ r153_pttkbd:PTT鄉民鍵盤俠→解、KOL→不解'],
+  ['achFbs','⑪ r153_fbspam:臉書狂貼魔人→解、KOL→不解'],
+  ['achBoo','⑪ r153_boomer:長輩圖轉傳族→解、KOL→不解'],
+  ['achOff','⑪ r153_offline:類比腦不沾網→解、KOL→不解'],
+  ['achFull','⑫ 跨局集滿:八成就全亮→r153_net 解鎖'],
+  ['achPartial','⑫ 跨局集滿:缺一→r153_net 不解'],
+].forEach(([k,m])=>ok(r153[k], 'R153 '+m));
+
 console.log(fails ? `\n結果: ❌ ${fails} 項未通過` : '\n結果: ✅ 狀態機全數正確');
 process.exit(fails ? 1 : 0);
