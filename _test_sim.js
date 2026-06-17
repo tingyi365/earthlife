@@ -4594,6 +4594,50 @@ try {
   console.log('R151 信仰宮廟香火軌跡: ❌ ' + e.message);
 }
 
+/* ===== R152 才藝・技能精通軌跡（純衍生/結算覆蓋層：零 rng/零 pinned 序列擾動/deterministic/四屬性合成才藝分+智力主驅動/降級） ===== */
+let r152OK = false;
+try {
+  const r152Raw = vm.runInContext(`(function(){
+    const out={};
+    /* ① 結構：8 級才藝命運階梯、4 人生階段、8 結局型別、八個才藝成就＋集滿成就齊備 */
+    out.struct = Array.isArray(R152_SKILL) && R152_SKILL.length===8
+      && Array.isArray(R152_PHASES) && R152_PHASES.length===4
+      && ['tonedeaf','fillerclass','guitarist','busker','teacher','winner','influencer','master'].every(k=>R152_END[k])
+      && ['r152_master','r152_influencer','r152_winner','r152_teacher','r152_busker','r152_guitarist','r152_fillerclass','r152_tonedeaf','r152_skill'].every(id=>!!ACH_MAP[id]);
+    /* ② 純衍生覆蓋零 rng：startGame 後跑 r152SkillOf/Review 不消耗任何種子序列（與 pinned 抽事件序列獨立） */
+    const oc=randomSeedCode; randomSeedCode=function(){return 'EEEEEE';};
+    startGame(); const r0=[]; for(let i=0;i<20;i++)r0.push(rng());
+    startGame(); r152SkillOf(S); r152SkillReviewHTML(); const r1=[]; for(let i=0;i<20;i++)r1.push(rng());
+    let rngEq=true; for(let i=0;i<20;i++){ if(r0[i]!==r1[i]) rngEq=false; }
+    out.rngZero = rngEq; randomSeedCode=oc;
+    /* ③ deterministic 純讀終局 S：同態同結果、零 mutation */
+    startGame(); S.attr={hp:60,int:55,apr:55,mny:55,hap:60}; S.age=45; S.flags={};
+    const snap=JSON.stringify(S.attr)+'|'+S.age;
+    const c1=r152SkillReviewHTML(), c2=r152SkillReviewHTML();
+    out.deterministic = c1===c2 && c1.indexOf('才藝底子')>=0 && c1.indexOf('才藝結局')>=0
+      && (JSON.stringify(S.attr)+'|'+S.age)===snap;
+    /* ④ 智力 int 為主單調驅動才藝分/定級：高 int→大師段(tier>=6)、低 int→墊底(tier<=1) */
+    const hi=r152SkillOf({attr:{int:95,apr:95,mny:95,hp:95},age:45,flags:{}}), lo=r152SkillOf({attr:{int:5,apr:5,mny:5,hp:5},age:45,flags:{}});
+    out.intDrive = !!hi && !!lo && hi.tier>=6 && lo.tier<=1 && hi.tier>lo.tier;
+    /* ⑤ 八結局確定性分流互斥可達：四屬性等值掃 0..7 各命中對應 endType（age 45 解鎖全上限） */
+    const E=(v)=>{const r=r152SkillOf({attr:{int:v,apr:v,mny:v,hp:v},age:45}); return r&&r.endType;};
+    out.endsReach =
+         E(5)==='tonedeaf' && E(20)==='fillerclass' && E(30)==='guitarist' && E(44)==='busker'
+      && E(56)==='teacher' && E(68)==='winner' && E(80)==='influencer' && E(92)==='master';
+    /* ⑥ S=null/缺 attr/缺 int 安全降級：回 null、卡空字串、不炸 */
+    const sv=S; S=null; let nullSafe=true;
+    try{ if(r152SkillOf(null)!==null) nullSafe=false; if(r152SkillReviewHTML()!=='') nullSafe=false;
+         if(r152SkillOf({attr:{apr:50},age:40})!==null) nullSafe=false; }catch(e){ nullSafe=false; }
+    S=sv; out.nullSafe = nullSafe;
+    return JSON.stringify(out);
+  })()`, sandbox);
+  const r152 = JSON.parse(r152Raw);
+  r152OK = Object.values(r152).every(v => v === true);
+  console.log(`R152 才藝技能精通軌跡: ${r152OK ? '✅ 全數通過' : '❌ ' + JSON.stringify(r152)}`);
+} catch (e) {
+  console.log('R152 才藝技能精通軌跡: ❌ ' + e.message);
+}
+
 if (__errors.length) {
   console.log('\n--- 錯誤樣本(前5) ---');
   __errors.slice(0, 5).forEach(e => console.log('  ' + e));
@@ -4601,6 +4645,6 @@ if (__errors.length) {
 
 /* 退出碼 */
 const pass = __errors.length === 0 && chk.missingScenes.length === 0 && chk.eventVisible >= 126 && chk.eventTotal >= 126 && lsOK && achUnlocked > 0
-  && chk.deathbookMissing.length === 0 && chk.deathTotal >= 17 && deathsOK && rebirthOK && legacyOK && petOK && r13OK && r17OK && r20OK && r21OK && r22OK && r24OK && r25OK && r34OK && r38OK && r41OK && r42OK && r43OK && r44OK && r45OK && r46OK && r47OK && r48OK && r49OK && r51OK && r52OK && r53OK && r54OK && r55OK && r72OK && r76OK && r77OK && r79OK && r86OK && r87OK && r92OK && r93OK && r95OK && r96OK && r108OK && r110OK && r111OK && r112OK && r113OK && r115OK && r116OK && r117OK && r118OK && r119OK && r122OK && r126OK && r134OK && r136OK && r138OK && r139OK && r140OK && r141OK && r142OK && r143OK && r144OK && r145OK && r146OK && r147OK && r149OK && r150OK && r151OK;
+  && chk.deathbookMissing.length === 0 && chk.deathTotal >= 17 && deathsOK && rebirthOK && legacyOK && petOK && r13OK && r17OK && r20OK && r21OK && r22OK && r24OK && r25OK && r34OK && r38OK && r41OK && r42OK && r43OK && r44OK && r45OK && r46OK && r47OK && r48OK && r49OK && r51OK && r52OK && r53OK && r54OK && r55OK && r72OK && r76OK && r77OK && r79OK && r86OK && r87OK && r92OK && r93OK && r95OK && r96OK && r108OK && r110OK && r111OK && r112OK && r113OK && r115OK && r116OK && r117OK && r118OK && r119OK && r122OK && r126OK && r134OK && r136OK && r138OK && r139OK && r140OK && r141OK && r142OK && r143OK && r144OK && r145OK && r146OK && r147OK && r149OK && r150OK && r151OK && r152OK;
 console.log('\n結果: ' + (pass ? '✅ 全數通過' : '❌ 有項目未通過'));
 process.exit(pass ? 0 : 1);

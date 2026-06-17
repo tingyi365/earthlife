@@ -6201,5 +6201,93 @@ const r151 = JSON.parse(vm.runInContext(`(function(){
   ['achPartial','⑪ 跨局集滿:缺一→r151_faith 不解'],
 ].forEach(([k,m])=>ok(r151[k], 'R151 '+m));
 
+const r152 = JSON.parse(vm.runInContext(`(function(){
+  const out={};
+  function mk(int,apr,mny,hp,age,era){ return {attr:{hp:hp,int:int,apr:apr,mny:mny,hap:50}, age:age, era:era, flags:{}, alive:false}; }
+  // ① 資料齊備：8 級才藝命運階梯+4 人生階段+8 結局型別+六世代才藝梗+學習力三檔+台風天分三檔
+  out.dataFull = Array.isArray(R152_SKILL) && R152_SKILL.length===8 && R152_SKILL.every(t=>t.ic&&t.nm&&t.short)
+    && Array.isArray(R152_PHASES) && R152_PHASES.length===4 && R152_PHASES.every(p=>typeof p.off==='number')
+    && ['tonedeaf','fillerclass','guitarist','busker','teacher','winner','influencer','master'].every(k=>R152_END[k]&&R152_END[k].nm&&R152_END[k].path&&R152_END[k].note)
+    && R55_ERAS.every(er=>typeof R152_ERASKILL[er.id]==='string')
+    && [r152LearnOf(90),r152LearnOf(50),r152LearnOf(10)].every(c=>c.nm&&c.short)
+    && [r152GiftOf(90),r152GiftOf(50),r152GiftOf(10)].every(c=>c.nm&&c.short);
+  // ② 四屬性合成才藝分確定性映射：高→大師段(tier>=6)、中→中段(tier>=3)、低→墊底(tier===0)；且單調驅動
+  const hi=r152SkillOf(mk(95,95,95,95,45,'e00')), midd=r152SkillOf(mk(50,50,50,50,45,'e00')), lo=r152SkillOf(mk(5,5,5,5,45,'e00'));
+  out.scoreMap = !!hi&&!!midd&&!!lo && hi.tier>=6 && midd.tier>=3 && lo.tier===0
+    && hi.tier>midd.tier && midd.tier>lo.tier;
+  // ③ directive#1 四屬性皆有存在感：固定其餘中性 50，各屬性高→才藝分不低於低、且智力 int 影響最大
+  const baseT=r152SkillOf(mk(50,50,50,50,45,'e00')).T;
+  const intHi=r152SkillOf(mk(90,50,50,50,45,'e00')).T, intLo=r152SkillOf(mk(10,50,50,50,45,'e00')).T;
+  const aprHi=r152SkillOf(mk(50,90,50,50,45,'e00')).T, aprLo=r152SkillOf(mk(50,10,50,50,45,'e00')).T;
+  const mnyHi=r152SkillOf(mk(50,50,90,50,45,'e00')).T, mnyLo=r152SkillOf(mk(50,50,10,50,45,'e00')).T;
+  const hpHi =r152SkillOf(mk(50,50,50,90,45,'e00')).T, hpLo =r152SkillOf(mk(50,50,50,10,45,'e00')).T;
+  out.fourAttr = intHi>intLo && aprHi>aprLo && mnyHi>mnyLo && hpHi>hpLo
+    && (intHi-intLo) > (aprHi-aprLo) && (intHi-intLo) > (mnyHi-mnyLo) && (intHi-intLo) > (hpHi-hpLo);
+  // ④ 年齡成熟上限：同四屬性滿值，童年封頂才藝班(<=2)、青壯到網紅(<=6)、熟齡才解鎖大師(7)
+  const kid=r152SkillOf(mk(95,95,95,95,10,'e00')), young=r152SkillOf(mk(95,95,95,95,25,'e00')), old=r152SkillOf(mk(95,95,95,95,45,'e00'));
+  out.ageCap = !!kid&&!!young&&!!old && kid.peakTier<=2 && young.peakTier<=6 && old.peakTier===7 && old.peakTier>young.peakTier && young.peakTier>kid.peakTier;
+  // ⑤ 卡片渲染：含才藝底子/才藝結局/學習力/台風天分
+  S=mk(55,55,55,55,45,'e00'); const card=r152SkillReviewHTML();
+  out.cardRender = card.indexOf('才藝底子')>=0 && card.indexOf('才藝結局')>=0 && card.indexOf('學習力')>=0 && card.indexOf('台風天分')>=0 && (card.indexOf('才藝')>=0||card.indexOf('技能')>=0);
+  // ⑥ deterministic 純讀：同 S 兩次渲染逐字一致
+  S=mk(40,40,40,40,35,'e10'); const a1=r152SkillReviewHTML(), a2=r152SkillReviewHTML();
+  out.deterministic = a1===a2 && a1.length>0;
+  // ⑦ 純呈現零汙染：生成前後 S.attr/era/age/flags 不變、零 rng 消耗
+  S=mk(72,55,60,50,45,'e70'); const bA=JSON.stringify(S.attr), bE=S.era, bAge=S.age, bF=JSON.stringify(S.flags);
+  let used=0; const oldR=rng; rng=function(){ used++; return oldR(); };
+  r152SkillReviewHTML(); r152SkillOf(S); rng=oldR;
+  out.pure = JSON.stringify(S.attr)===bA && S.era===bE && S.age===bAge && JSON.stringify(S.flags)===bF && used===0;
+  // ⑧ S=null / 缺 attr / 缺 int 降級：回 null、卡空字串、不炸
+  out.nullSafe = (()=>{ try{ S=null; return r152SkillOf(null)===null && r152SkillReviewHTML()===''; }catch(e){ return false; } })();
+  out.noAttr = (()=>{ try{ return r152SkillOf({age:40,era:'e00'})===null && r152SkillOf({attr:{apr:50},age:40})===null; }catch(e){ return false; } })();
+  // ⑨ 缺 apr/mny/hp 中性化＋髒 era 才藝梗略過：仍回物件不炸且分數一致
+  out.softDeg = (()=>{ try{ const m=r152SkillOf({attr:{int:55},age:40,era:'e00',flags:{}}); const d=r152SkillOf(mk(55,50,50,50,40,'zzz999')); return !!m && m.T===r152SkillOf(mk(55,50,50,50,40,'e00')).T && !!d && d.era===null; }catch(e){ return false; } })();
+  // ⑩ 舊存檔相容：ensureState 不為 R152 在 S/flags 補任何 r152 鍵
+  startGame(); const olds=S; ensureState(olds);
+  out.compatOld = !Object.keys(olds).some(k=>k.toLowerCase().indexOf('r152')===0)
+    && !Object.keys(olds.flags||{}).some(k=>k.toLowerCase().indexOf('r152')===0);
+  // ⑪ 才藝結局成就確定性點亮：大師/網紅/得獎/老師/街頭/吉他手/才藝班/音痴 各自可達且互斥（四屬性等值掃 0..7，age 45）
+  const MAS=mk(92,92,92,92,45,'e00'), INF=mk(80,80,80,80,45,'e00'), WIN=mk(68,68,68,68,45,'e00'), TEA=mk(56,56,56,56,45,'e00'),
+        BUS=mk(44,44,44,44,45,'e00'), GUI=mk(30,30,30,30,45,'e00'), FIL=mk(20,20,20,20,45,'e00'), TON=mk(5,5,5,5,45,'e00');
+  out.achMas = !!ACH_MAP.r152_master      && ACH_MAP.r152_master.check({S:MAS})===true      && ACH_MAP.r152_master.check({S:TON})===false;
+  out.achInf = !!ACH_MAP.r152_influencer  && ACH_MAP.r152_influencer.check({S:INF})===true  && ACH_MAP.r152_influencer.check({S:MAS})===false;
+  out.achWin = !!ACH_MAP.r152_winner      && ACH_MAP.r152_winner.check({S:WIN})===true      && ACH_MAP.r152_winner.check({S:MAS})===false;
+  out.achTea = !!ACH_MAP.r152_teacher     && ACH_MAP.r152_teacher.check({S:TEA})===true     && ACH_MAP.r152_teacher.check({S:MAS})===false;
+  out.achBus = !!ACH_MAP.r152_busker      && ACH_MAP.r152_busker.check({S:BUS})===true      && ACH_MAP.r152_busker.check({S:MAS})===false;
+  out.achGui = !!ACH_MAP.r152_guitarist   && ACH_MAP.r152_guitarist.check({S:GUI})===true   && ACH_MAP.r152_guitarist.check({S:MAS})===false;
+  out.achFil = !!ACH_MAP.r152_fillerclass && ACH_MAP.r152_fillerclass.check({S:FIL})===true && ACH_MAP.r152_fillerclass.check({S:MAS})===false;
+  out.achTon = !!ACH_MAP.r152_tonedeaf    && ACH_MAP.r152_tonedeaf.check({S:TON})===true    && ACH_MAP.r152_tonedeaf.check({S:MAS})===false;
+  // ⑫ 跨局集滿 r152_skill：八成就全亮→解鎖、缺一→不解
+  const allAch={r152_master:true,r152_influencer:true,r152_winner:true,r152_teacher:true,r152_busker:true,r152_guitarist:true,r152_fillerclass:true,r152_tonedeaf:true};
+  SAVE.ach=Object.assign({},allAch); out.achFull = !!ACH_MAP.r152_skill && ACH_MAP.r152_skill.check({S:{}})===true;
+  const partial=Object.assign({},allAch); delete partial.r152_master;
+  SAVE.ach=partial; out.achPartial = ACH_MAP.r152_skill.check({S:{}})===false;
+  SAVE.ach={}; S=null;
+  return JSON.stringify(out);
+})()`, sandbox));
+[
+  ['dataFull','① 資料齊備:8 級才藝階梯+4 人生階段+8 結局型別+六世代才藝梗+學習力/台風天分三檔'],
+  ['scoreMap','② 四屬性合成才藝分確定性映射:高→大師段/中→中段/低→墊底且單調驅動'],
+  ['fourAttr','③ directive#1 四屬性皆有存在感:int/apr/mny/hp 各高>低且 int 影響最大'],
+  ['ageCap','④ 年齡成熟上限:童年封頂才藝班/青壯到網紅/熟齡才解鎖大師'],
+  ['cardRender','⑤ 卡片渲染:含才藝底子/才藝結局/學習力/台風天分/才藝或技能'],
+  ['deterministic','⑥ deterministic 純讀:同 S 兩次渲染逐字一致'],
+  ['pure','⑦ 純呈現零汙染:生成前後 S.attr/era/age/flags 不變且零 rng'],
+  ['nullSafe','⑧ 無局(S=null)降級:回 null、卡空字串不炸'],
+  ['noAttr','⑧ 缺 attr/int 降級:回 null 不炸'],
+  ['softDeg','⑨ 缺 apr/mny/hp 中性化＋髒 era 才藝梗略過:仍回物件不炸且分數一致'],
+  ['compatOld','⑩ 舊存檔相容:ensureState 不為 R152 補任何 S/flags 鍵'],
+  ['achMas','⑪ r152_master:大師職人→解、音痴→不解'],
+  ['achInf','⑪ r152_influencer:才藝網紅→解、大師→不解'],
+  ['achWin','⑪ r152_winner:比賽得獎素人→解、大師→不解'],
+  ['achTea','⑪ r152_teacher:補習班才藝老師→解、大師→不解'],
+  ['achBus','⑪ r152_busker:街頭藝人→解、大師→不解'],
+  ['achGui','⑪ r152_guitarist:熱音吉他手→解、大師→不解'],
+  ['achFil','⑪ r152_fillerclass:才藝班墊檔→解、大師→不解'],
+  ['achTon','⑪ r152_tonedeaf:五音不全肢障→解、大師→不解'],
+  ['achFull','⑫ 跨局集滿:八成就全亮→r152_skill 解鎖'],
+  ['achPartial','⑫ 跨局集滿:缺一→r152_skill 不解'],
+].forEach(([k,m])=>ok(r152[k], 'R152 '+m));
+
 console.log(fails ? `\n結果: ❌ ${fails} 項未通過` : '\n結果: ✅ 狀態機全數正確');
 process.exit(fails ? 1 : 0);

@@ -3081,6 +3081,16 @@ const ACHIEVEMENTS = [
   {id:"r151_lamp", ic:"🏮", nm:"點光明燈安太歲常客", desc:"沒太多閒錢搞大的，但這座島的庶民信仰你最在行——過年點盞光明燈、犯太歲就去安個太歲、考試前拜文昌、出遠門求個平安符，花小錢買心安。這是這座島最庶民的一條信仰路：給不起金主等級的香油錢，但給得起一份『有拜有保庇』的踏實。論排場你比不上人家，論那份不強求、求個平安順遂的小確幸，你才是真懂這座島香火日常的人。", check:c=>{const h=r151FaithOf(c.S); return !!h && h.ach.lamp;}, hint:"財富 mny 偏低中段（31–45）、智力 int 中段（沒高到鐵齒、也沒低到算命成癮）——把終局信仰軌跡卡在『點光明燈安太歲常客』分流…"},
   {id:"r151_atheist", ic:"🧠", nm:"鐵齒無神論者・凡事講科學", desc:"腦袋夠清楚、要嘛口袋也不闊——你是那種凡事講證據講科學的鐵齒派，神棍一開口你就聽出話術，改運水晶招財符在你眼裡就是智商稅，連過年拜拜都覺得是儀式不是迷信。在這個神棍斂財、靈修詐財新聞天天有的島上，你那份『鐵齒不信邪』反而成了最省錢的護身符——別人被詐財走火入魔的時候，你的錢還穩穩在戶頭裡。信不信神是一回事，但這份不被話術牽著走的清醒，是你用腦袋換來的福氣。", check:c=>{const h=r151FaithOf(c.S); return !!h && h.ach.atheist;}, hint:"把智力 int 養高（72+，理性鐵齒看破話術）讓終局信仰軌跡走到『鐵齒無神論者・凡事講科學』分流，或財富 mny 長期偏低（30 以下，沒錢添油香也鐵齒）…"},
   {id:"r151_faith", ic:"🛕", nm:"鬼島香火圖鑑・信仰軌跡全集滿", desc:"宮廟金主主委、走火入魔被神棍詐財、紫微塔羅成癮、媽祖遶境熱血信眾、點光明燈安太歲、鐵齒無神論者——這座島丟給你的六種信仰命運，你用一次次投胎全都親自拜過信過也算過一遍。當過添大錢的金主、被神棍詐到走火入魔、算命算到成癮、遶境九天八夜熱血跟、點燈安太歲求平安、也鐵齒到一毛香油錢都不出，信仰這道最看口袋與腦袋的人生考題，你終於把它活成了一本香火圖鑑。", check:c=>{const need=["r151_patron","r151_cultist","r151_astro","r151_mazu","r151_lamp","r151_atheist"]; return !!(SAVE&&SAVE.ach) && need.every(id=>SAVE.ach[id]);}, hint:"跨局集滿六種信仰結局成就各至少一次（宮廟金主主委／走火入魔詐財／紫微塔羅成癮／媽祖遶境信眾／點燈安太歲常客／鐵齒無神論者）——把信仰的每一種命運都拜過信過算過一遍…"},
+  /* ---- R152 才藝・技能精通軌跡成就（純讀 r152SkillOf(S) deterministic 推演，零 rng；智力 int(學習力) 為主驅動＋魅力 apr(台風天分)＋財富 mny(補習資源)＋興趣 hp(才藝熱情) 加權合成才藝分，疊年齡成熟上限推 8 級才藝命運階梯，舊存檔/壞資料永不誤觸；聚焦才藝底子/學習力/台風天分/才藝結局，與 R151 信仰/R150 寵物/R141 興趣斜槓 各自獨立旗標；走自嘲幽默不踩政治/仇恨）---- */
+  {id:"r152_master", ic:"👑", nm:"大師級藝術家・國寶級職人", desc:"學習力夠頂、台風天分夠強、又燒得起一輩子的苦練與資源——你把一門才藝練到登峰造極，成了開個展辦演奏會、上電視當評審的大師級人物，年輕一輩擠破頭拜師，作品標價後面跟著一排零。在這個『興趣不能當飯吃』被當鐵律、玩才藝被笑不務正業的島上，你硬是把一技之長練成了國寶級職人本事，站上了這座島才藝食物鏈的最頂端——這條路沒有捷徑，是你用幾萬個小時的孤獨苦練換來的真功夫。", check:c=>{const h=r152SkillOf(c.S); return !!h && h.ach.master;}, hint:"把智力 int(學習力) 養到頂、魅力 apr 台風天分＋財富 mny 補習資源＋興趣 hp 熱情四項全拉滿（合成才藝分 86+），又活到熟齡（30+ 才解鎖大師上限）——讓終局才藝軌跡走到最高的『大師級藝術家・國寶級職人』分流…"},
+  {id:"r152_influencer", ic:"📹", nm:"才藝Youtuber・一技之長變流量", desc:"才藝不算頂、但台風魅力夠吃鏡頭——你把一身才藝拍成了影片，翻唱、街舞、手作、特技隨便一支就破百萬點閱，業配接到手軟，才藝終於能當飯吃還吃得不錯。在這個人人做過網紅夢、素人靠才藝翻身的島上，你是少數真的把『興趣變現』玩通的人，只是鏡頭關掉後，那份才藝還是得天天練、流量還是得天天追，紅得了一時也得撐得住下一支。", check:c=>{const h=r152SkillOf(c.S); return !!h && h.ach.influencer;}, hint:"四屬性合成才藝分中高段（74–85，魅力 apr 台風天分加分明顯）、又活過青壯（20+ 解鎖網紅上限）——讓終局才藝軌跡走到『才藝Youtuber・一技之長變流量』分流…"},
+  {id:"r152_winner", ic:"🏆", nm:"比賽得獎素人・選秀常勝軍", desc:"學習力夠強、苦練也夠拚，就差一點運氣與包裝——你是各種才藝比賽、素人選秀的常勝軍，獎盃獎狀擺滿一整櫃，評審都記得你，但就是差臨門一腳沒能真正紅起來。在這個素人選秀捧紅一票明星、也埋沒更多實力派的島上，你是那種『實力被低估』的遺珠，論本事你不輸任何人，論時運與行銷，這座島從來只獎賞少數幸運兒，你的才藝配得上更大的舞台。", check:c=>{const h=r152SkillOf(c.S); return !!h && h.ach.winner;}, hint:"四屬性合成才藝分中段偏上（62–73）、又活過青壯（20+）——讓終局才藝軌跡走到『比賽得獎素人・選秀常勝軍』分流…"},
+  {id:"r152_teacher", ic:"🎓", nm:"補習班才藝老師・才藝班名師", desc:"才藝中上、又懂得把本事換成穩定收入——你成了才藝班補習班的老師，教鋼琴教畫畫教作文，學生一屆一屆帶、家長口碑一個拉一個，收入穩定談不上大富大貴但餓不著。在這個才藝班軍備競賽、家長拚命送小孩學才藝的島上，你站在了供給端吃這口飯——當年那個被逼著學才藝的小孩，長大成了逼別人家小孩學才藝的老師，這條路最踏實，是把一技之長活成了一份安穩的職業。", check:c=>{const h=r152SkillOf(c.S); return !!h && h.ach.teacher;}, hint:"四屬性合成才藝分中段（50–61）——讓終局才藝軌跡走到『補習班才藝老師・才藝班名師』分流…"},
+  {id:"r152_busker", ic:"🎭", nm:"街頭藝人賣藝・考證擺攤", desc:"才藝有兩三招、熱情也夠、但變不了大錢——你考了張街頭藝人證照，在西門町、河濱、捷運站口擺攤賣藝，唱歌雜耍人體雕像隨你來，賺的是路人隨手丟進琴盒的打賞。在這個街頭藝人要考證照、賣藝賺辛苦錢的島上，你把才藝活成了風吹日曬的自由業——論收入比不上人家坐辦公室，論那份『我靠才藝養活自己、不看老闆臉色』的瀟灑，你比誰都懂得才藝的快樂與心酸。", check:c=>{const h=r152SkillOf(c.S); return !!h && h.ach.busker;}, hint:"四屬性合成才藝分偏低中段（38–49）——讓終局才藝軌跡走到『街頭藝人賣藝・考證擺攤』分流…"},
+  {id:"r152_guitarist", ic:"🎸", nm:"社團熱音吉他手・三和弦青春", desc:"年輕時玩過團、會那麼兩三招、但沒撐成正職——你是高中熱音社、大學吉他社的那個吉他手，三和弦走天下、迎新晚會抱著吉他自彈自唱把妹炒氣氛，風光過一陣子。在這個玩團組樂團是青春浪漫、出社會就被現實收編的島上，你的才藝停在了學生時代的高光——那把吉他現在多半在牆角生灰，偶爾同學會拿出來刷兩下，全場跟著合唱，那是你才藝最閃亮也最回不去的青春註腳。", check:c=>{const h=r152SkillOf(c.S); return !!h && h.ach.guitarist;}, hint:"四屬性合成才藝分偏低（26–37）——讓終局才藝軌跡走到『社團熱音吉他手・三和弦青春』分流…"},
+  {id:"r152_fillerclass", ic:"📚", nm:"才藝班墊檔・陪公子讀書", desc:"小時候被塞了一堆才藝班、但沒一樣真正開花——鋼琴心算畫畫游泳跆拳道五合一大禮包你都上過，檢定考過幾級、獎狀也有幾張，但長大後一樣都不會、全還給老師了。在這個才藝班是升學軍備競賽、爸媽拚命幫小孩塞才藝填履歷的島上，你是那個『學了一堆才藝、卻沒一樣是真愛』的標準產物——才藝對你來說從不是熱情，是童年被排滿的行程表，長大後最大的才藝，是把那段被逼著學的日子笑著講出來。", check:c=>{const h=r152SkillOf(c.S); return !!h && h.ach.fillerclass;}, hint:"四屬性合成才藝分偏低段（14–25）——讓終局才藝軌跡走到『才藝班墊檔・陪公子讀書』分流…"},
+  {id:"r152_tonedeaf", ic:"🙉", nm:"五音不全肢障・才藝絕緣體", desc:"學習力跟天分都不站你這邊、也沒資源熱情硬撐——你是那種唱歌走音、跳舞順拐、樂器學三個月還在找 Do 在哪的才藝絕緣體，公司尾牙抽到要表演能讓你緊張到請假。在這個逢年過節同學會總有人起鬨表演、不會才藝彷彿矮人一截的島上，你早就認清了『這輩子跟才藝無緣』這件事——但說真的，會不會才藝跟過得好不好半毛錢關係都沒有，你把省下來練才藝的時間拿去過自己的日子，照樣活得理直氣壯。", check:c=>{const h=r152SkillOf(c.S); return !!h && h.ach.tonedeaf;}, hint:"四屬性（智力學習力/魅力台風/財富補習/興趣熱情）合成才藝分長期墊底（14 以下）——把終局才藝軌跡卡在『五音不全肢障・才藝絕緣體』分流…"},
+  {id:"r152_skill", ic:"🎨", nm:"鬼島才藝圖鑑・技能精通軌跡全集滿", desc:"大師級職人、才藝Youtuber、比賽得獎素人、補習班才藝老師、街頭藝人賣藝、社團熱音吉他手、才藝班墊檔、五音不全肢障——這座島丟給你的八種才藝命運，你用一次次投胎全都親自學過練過也放棄過一遍。當過開個展的國寶職人、拍片爆紅的才藝網紅、獎盃滿櫃的選秀常勝軍、帶學生的才藝班名師、河濱擺攤的街頭藝人、熱音社的吉他手、被塞滿才藝班的小孩、也當過上台就社死的音痴，才藝這道最看天分與苦練的人生考題，你終於把它活成了一本才藝圖鑑。", check:c=>{const need=["r152_master","r152_influencer","r152_winner","r152_teacher","r152_busker","r152_guitarist","r152_fillerclass","r152_tonedeaf"]; return !!(SAVE&&SAVE.ach) && need.every(id=>SAVE.ach[id]);}, hint:"跨局集滿八種才藝結局成就各至少一次（大師職人／才藝網紅／比賽得獎素人／補習班才藝老師／街頭藝人／熱音吉他手／才藝班墊檔／五音不全肢障）——把才藝的每一種命運都學過練過放棄過一遍…"},
   {id:"r70a_unicorn", ic:"🦄", nm:"創業上岸・無中生有", desc:"在頭家夢分歧鏈選自己創業，撐過跑三點半的歲月，最後成功上岸買房定居——你把『無中生有』四個字活成了真的。", check:c=>!!(c.S.flags&&c.S.flags.r70a_unicorn), hint:"分歧鏈裡選自己創業的人，中段擴張或被收購（或在三點半跳票邊緣硬撐活下來），末段才走得到買房上岸…"},
   {id:"r70a_freebird", ic:"🕊️", nm:"社畜跳船・自由業真男人", desc:"當年領死薪水的你中途跳船去接案，多年後接出口碑、開了自己的工作室——上班族眼裡那種『自由業』，自由是真的，業也真的有在接。", check:c=>!!(c.S.flags&&c.S.flags.r70a_freebird), hint:"分歧鏈選領死薪水當社畜的人，中段選擇安靜離職跳船接案，末段把工作室掛牌做起來…"},
   {id:"r70a_clear", ic:"🧭", nm:"頭家夢・全鏈結業", desc:"從老家那通電話一路走到人生期末考，把頭家夢（或死薪水）這條三段分歧鏈完整走完——接、創、領，無論哪條路你都活出了答案。", check:c=>!!(c.S.flags&&c.S.flags.r70a_done), hint:"老家的店要收那年做出選擇後，把中段、末段兩道抉擇都接著走完，整條頭家分歧鏈一站不漏…"},
@@ -5842,6 +5852,164 @@ function r151FaithReviewHTML(){
     <div style="display:flex;gap:6px;align-items:baseline;padding:6px 0 2px;font-size:13px">
       <span class="muted" style="min-width:60px">信仰結局</span><span>${end.ic} <b>${end.nm}</b></span></div>
     <div style="display:flex;gap:6px;align-items:baseline;font-size:12.5px"><span class="muted" style="min-width:60px">理性程度</span><span>${h.wit.nm}（${h.wit.short}）</span></div>
+    ${eraLine}
+    <div class="muted" style="font-size:12.5px;margin-top:8px;line-height:1.8">${fateLine}<br>${end.path}<br>${end.note}</div></div>`;
+}
+
+/* =========================================================================
+   R152 才藝・技能精通軌跡（純衍生／結算覆蓋層，零 rng、零事件序列擾動）
+   ── 呼應主題：讓「智力 int（學習力）＋魅力 apr（台風天分）＋財富 mny（補習資源）＋
+      興趣 hp（才藝熱情）」四屬性真正驅動本局的「鬼島才藝技能精通命運結局」。智力 int 為主
+      驅動＝學習力（一點就通 vs 學什麼都卡關），魅力 apr＝舞台台風天分（天生吃這行飯 vs 上
+      台社死），財富 mny＝補習資源（才藝班軍備競賽課好課滿 vs 沒錢學才藝自學），興趣 hp＝
+      才藝熱情（肯不肯練、撐不撐得下去）。四屬性加權合成才藝分（int 0.40＋apr 0.24＋
+      mny 0.22＋hp 0.14，權重和=1.0，屬性越高定級越高＝directive#1），疊年齡成熟度上限
+      （才藝精通需時間累積，童年神童封頂才藝班、成年才見大師職人）推 8 級鐵島才藝命運階梯。
+      全程只「讀」終局 state，不新增任何 Math.random／rng() → 種子事件抽取序列逐位元不變；
+      獨立旗標，與 R141 興趣斜槓／R142 理財／…／R151 信仰 各自獨立、互不干擾。**走自嘲幽默，
+      不踩政治／仇恨紅線。**
+   驅動鐵律：
+   ① 四屬性加權合成才藝分（智力學習力為主、魅力台風天分＋財富補習資源＋興趣熱情次之），
+      年齡決定才藝精通的成熟上限（童年最多到才藝班墊檔、青春到街頭賣藝、成年才解鎖比賽得獎
+      /網紅/大師）；出生世代 era 只做「鬼島才藝梗」文案著色，不動數值。屬性越高定級越高。
+   ② 純呈現：所有 R152 函式只回傳字串／純讀物件，不寫 S、不改數值平衡；S=null／無 attr／
+      缺 int 鍵／髒資料一律安全降級回 null／空字串，絕不白屏或拋例外。
+   ③ 跨局收集：r152_skill ＝集滿八種才藝結局成就（大師職人／才藝網紅／比賽得獎素人／補習班
+      才藝老師／街頭藝人／熱音吉他手／才藝班墊檔／五音不全肢障）。單局結算點亮 1～2 個（本局
+      才藝結局＋集滿）。
+   ========================================================================= */
+// 8 級鐵島才藝命運階梯（智力學習力主導＋魅力台風天分＋財富補習資源＋興趣熱情合成；純查表、零 rng；index 0..7 由低到高）
+const R152_SKILL = [
+  {ic:"🙉", nm:"五音不全肢障",   short:"音痴手殘肢體不協調、學什麼才藝都半途陣亡、上台=大型社死"},
+  {ic:"📚", nm:"才藝班墊檔",     short:"被爸媽塞鋼琴心算才藝班、純填履歷陪公子讀書、學完就還老師"},
+  {ic:"🎸", nm:"熱音社吉他手",   short:"高中熱音社抱吉他把妹、三和弦走天下、畢業就生鏽"},
+  {ic:"🎭", nm:"街頭藝人賣藝",   short:"考張街頭藝人證照、西門町河濱擺攤賣藝賺打賞、風吹日曬"},
+  {ic:"🎓", nm:"補習班才藝老師", short:"才藝班補習班授課、教鋼琴美術作文、穩定餬口但沒紅"},
+  {ic:"🏆", nm:"比賽得獎素人",   short:"各種比賽選秀晉級得獎、家裡擺滿獎盃、有實力沒名氣"},
+  {ic:"📹", nm:"才藝Youtuber",  short:"才藝拍片爆紅、業配接到手軟、把一技之長變成流量印鈔機"},
+  {ic:"👑", nm:"大師級職人",     short:"登峰造極成大師、國寶級職人開個展辦演奏會、桃李滿天下"},
+];
+// 人生階段（童年塞才藝班→職人見真章；off 為才藝定級相對才藝分的年齡成熟修正；越年輕封頂越低）
+const R152_PHASES = [
+  {key:"child",  age:8,  nm:"童年才藝啟蒙", off:-3}, // 被爸媽塞才藝班、還沒開竅
+  {key:"teen",   age:16, nm:"青春社團熱血", off:-1}, // 熱音熱舞社築夢、半生不熟
+  {key:"adult",  age:28, nm:"才藝變現期",   off:0},  // 能不能靠才藝吃飯定型
+  {key:"master", age:45, nm:"職人見真章",   off:0},  // 成大師/職人、或才藝塵封生灰
+];
+// 才藝結局型別文案（純查表、零 rng；自嘲鬼島才藝梗，不踩政治/仇恨）
+const R152_END = {
+  master:     {ic:"👑", nm:"大師級藝術家・國寶級職人", path:"👑 登峰造極成一代大師、國寶級職人開個展辦演奏會、桃李滿天下", note:"學習力夠頂、台風天分夠強、又燒得起一輩子的苦練與資源——你把一門才藝練到登峰造極，成了開個展辦演奏會、上電視當評審的大師級人物，年輕一輩擠破頭拜師，作品標價後面跟著一排零。在這個『興趣不能當飯吃』被當鐵律、玩才藝被笑不務正業的島上，你硬是把一技之長練成了國寶級的職人本事，站上了這座島才藝食物鏈的最頂端——這條路沒有捷徑，是你用幾萬個小時的孤獨苦練，換來的真功夫。"},
+  influencer: {ic:"📹", nm:"才藝Youtuber・一技之長變流量", path:"📹 才藝拍片爆紅、業配接到手軟、把一技之長變成流量印鈔機", note:"才藝不算頂、但台風魅力夠吃鏡頭——你把一身才藝拍成了影片，翻唱、街舞、手作、特技隨便一支就破百萬點閱，業配接到手軟，才藝終於能當飯吃還吃得不錯。在這個人人做過網紅夢、素人靠才藝翻身的島上，你是少數真的把『興趣變現』玩通的人，只是鏡頭關掉後，那份才藝還是得天天練、流量還是得天天追，紅得了一時也得撐得住下一支。"},
+  winner:     {ic:"🏆", nm:"比賽得獎素人・選秀常勝軍", path:"🏆 各種比賽選秀晉級得獎、家裡擺滿獎盃、有實力沒名氣", note:"學習力夠強、苦練也夠拚，就差一點運氣與包裝——你是各種才藝比賽、素人選秀的常勝軍，獎盃獎狀擺滿一整櫃，評審都記得你，但就是差臨門一腳沒能真正紅起來。在這個素人選秀捧紅一票明星、也埋沒更多實力派的島上，你是那種『實力被低估』的遺珠，論本事你不輸任何人，論時運與行銷，這座島從來只獎賞少數幸運兒，你的才藝配得上更大的舞台。"},
+  teacher:    {ic:"🎓", nm:"補習班才藝老師・才藝班名師", path:"🎓 才藝班補習班授課、教鋼琴美術作文、穩定餬口但沒大紅", note:"才藝中上、又懂得把本事換成穩定收入——你成了才藝班補習班的老師，教鋼琴教畫畫教作文，學生一屆一屆帶、家長口碑一個拉一個，收入穩定談不上大富大貴但餓不著。在這個才藝班軍備競賽、家長拚命送小孩學才藝的島上，你站在了供給端吃這口飯——當年那個被逼著學才藝的小孩，長大成了逼別人家小孩學才藝的老師，這條路最踏實，是把一技之長活成了一份安穩的職業。"},
+  busker:     {ic:"🎭", nm:"街頭藝人賣藝・考證擺攤", path:"🎭 考張街頭藝人證照、西門町河濱擺攤賣藝賺打賞、風吹日曬", note:"才藝有兩三招、熱情也夠、但變不了大錢——你考了張街頭藝人證照，在西門町、河濱、捷運站口擺攤賣藝，唱歌雜耍人體雕像隨你來，賺的是路人隨手丟進琴盒的打賞。在這個街頭藝人要考證照、賣藝賺辛苦錢的島上，你把才藝活成了風吹日曬的自由業——論收入比不上人家坐辦公室，論那份『我靠才藝養活自己、不看老闆臉色』的瀟灑，你比誰都懂得才藝的快樂與心酸。"},
+  guitarist:  {ic:"🎸", nm:"社團熱音吉他手・三和弦青春", path:"🎸 高中熱音社抱吉他把妹、會幾招炒熱氣氛、畢業就生鏽", note:"年輕時玩過團、會那麼兩三招、但沒撐成正職——你是高中熱音社、大學吉他社的那個吉他手，三和弦走天下、迎新晚會抱著吉他自彈自唱把妹炒氣氛，風光過一陣子。在這個玩團組樂團是青春浪漫、出社會就被現實收編的島上，你的才藝停在了學生時代的高光——那把吉他現在多半在牆角生灰，偶爾同學會拿出來刷兩下，全場跟著合唱，那是你才藝最閃亮也最回不去的青春註腳。"},
+  fillerclass:{ic:"📚", nm:"才藝班墊檔・陪公子讀書", path:"📚 被爸媽塞鋼琴心算才藝班、純填履歷、學完就還給老師", note:"小時候被塞了一堆才藝班、但沒一樣真正開花——鋼琴心算畫畫游泳跆拳道五合一大禮包你都上過，檢定考過幾級、獎狀也有幾張，但長大後一樣都不會、全還給老師了。在這個才藝班是升學軍備競賽、爸媽拚命幫小孩塞才藝填履歷的島上，你是那個『學了一堆才藝、卻沒一樣是真愛』的標準產物——才藝對你來說從不是熱情，是童年被排滿的行程表，長大後最大的才藝，是把那段被逼著學的日子笑著講出來。"},
+  tonedeaf:   {ic:"🙉", nm:"五音不全肢障・才藝絕緣體", path:"🙉 音痴手殘肢體不協調、學什麼都半途陣亡、上台=大型社死", note:"學習力跟天分都不站你這邊、也沒資源熱情硬撐——你是那種唱歌走音、跳舞順拐、樂器學三個月還在找 Do 在哪的才藝絕緣體，公司尾牙抽到要表演能讓你緊張到請假。在這個逢年過節同學會總有人起鬨表演、不會才藝彷彿矮人一截的島上，你早就認清了『這輩子跟才藝無緣』這件事——但說真的，會不會才藝跟過得好不好半毛錢關係都沒有，你把省下來練才藝的時間拿去過自己的日子，照樣活得理直氣壯。"},
+};
+// 出生世代才藝梗（純文案著色，零數值影響；自嘲不踩線）
+const R152_ERASKILL = {
+  e70:"你那年代才藝是奢侈品、會樂器的人少、學鋼琴是有錢人家的事，多數人忙著討生活沒空玩才藝。",
+  e80:"你年輕時鋼琴小提琴才藝班開始流行、家長拚命送小孩學才藝，五育並重變成升學軍備競賽。",
+  e90:"你出社會時街頭藝人證照制度上路、地下樂團熱音社風行，玩團組樂團成了那代青春的浪漫。",
+  e00:"你這代超級星光大道選秀爆紅、素人翻身當明星的夢點燃全島，人人都做過一夜成名的星夢。",
+  e10:"你成長在 YouTube 才藝網紅崛起的年代、會一技之長就能拍片接業配，才藝終於能當飯吃。",
+  e20:"你這代斜槓接案才藝變現當顯學、線上課程平台滿天飛，但低薪世代連學才藝的學費都要省半天。",
+};
+// 智力 int →學習力檔（學霸一點就通 vs 學渣手殘卡關；純查表、零 rng；卡片著色用）
+function r152LearnOf(int){
+  return int>=70 ? {nm:"學霸級學習力", short:"一點就通、新技能上手飛快、肌肉記憶開外掛"}
+       : int<=30 ? {nm:"學渣手殘型",   short:"學什麼都卡關、練到天荒地老還在原地踏步"}
+       :          {nm:"中等資質",     short:"肯練就有、天分普普全靠苦練硬磨"};
+}
+// 魅力 apr →台風天分檔（舞台魅力 vs 上台社死；純查表、零 rng；卡片著色用）
+function r152GiftOf(apr){
+  return apr>=70 ? {nm:"舞台型天分", short:"台風魅力滿點、天生就是吃這行飯的料"}
+       : apr<=30 ? {nm:"上台會社死", short:"肢體不協調又怕生、一上台就手腳打結"}
+       :          {nm:"素人資質",   short:"不出眾也不離譜、上得了台練得起來"};
+}
+// 四屬性加權合成才藝分（智力學習力 0.40 為主＋魅力台風 0.24＋財富補習 0.22＋興趣熱情 0.14；權重和=1.0）
+function r152TalentScore(int, apr, mny, hp){
+  return Math.max(0, Math.min(100, Math.round(int*0.40 + apr*0.24 + mny*0.22 + hp*0.14)));
+}
+// 才藝分 →8 級命運階梯定級（純查表、單調驅動；index 0..7 由低到高）
+function r152TierOf(T){
+  return T>=86?7 : T>=74?6 : T>=62?5 : T>=50?4 : T>=38?3 : T>=26?2 : T>=14?1 : 0;
+}
+// 年齡成熟上限（才藝精通需時間累積：童年最多才藝班墊檔、青春最多街頭賣藝、青壯到網紅、熟齡才見大師）
+function r152AgeCapOf(age){
+  return age<13?2 : age<20?4 : age<30?6 : 7;
+}
+/* 從任一 state deterministic 推演才藝・技能精通軌跡（純讀、零 rng、零 mutation）；壞資料回 null */
+function r152SkillOf(st){
+  try{
+    if(!st || typeof st!=="object" || !st.attr || typeof st.attr.int!=="number") return null;
+    const int  = Math.max(0, Math.min(100, st.attr.int));
+    const apr  = (typeof st.attr.apr==="number") ? Math.max(0, Math.min(100, st.attr.apr)) : 50; // 缺 apr → 中性
+    const mny  = (typeof st.attr.mny==="number") ? Math.max(0, Math.min(100, st.attr.mny)) : 50; // 缺 mny → 中性
+    const hp   = (typeof st.attr.hp ==="number") ? Math.max(0, Math.min(100, st.attr.hp )) : 50; // 缺 hp  → 中性
+    const age  = Math.max(0, Math.round(st.age||0));
+    const era  = (typeof st.era==="string" && R152_ERASKILL.hasOwnProperty(st.era)) ? st.era : null;
+    const learn = r152LearnOf(int);                          // 學習力（主）
+    const gift  = r152GiftOf(apr);                           // 台風天分（次）
+    const T     = r152TalentScore(int, apr, mny, hp);        // 四屬性加權合成才藝分
+    const tier  = r152TierOf(T);
+    const cap   = r152AgeCapOf(age);
+    // 各人生階段才藝處境（童年才藝班、其餘隨年齡成熟爬升到才藝分對應階層）
+    const stages=[];
+    for(let i=0;i<R152_PHASES.length;i++){
+      const ph=R152_PHASES[i];
+      if(age < ph.age) break;                                // 沒活到該階段就不列（早逝只走前段）
+      const lv=Math.max(0, Math.min(7, tier + ph.off));
+      const t=R152_SKILL[lv];
+      stages.push({key:ph.key, nm:ph.nm, lv, ic:t.ic, tnm:t.nm, short:t.short});
+    }
+    // 才藝結局（peak 定級疊年齡成熟上限；8 級 1:1 對映 8 種結局，確定性互斥可達）
+    const peakTier = Math.max(0, Math.min(cap, tier));
+    const endType = ["tonedeaf","fillerclass","guitarist","busker","teacher","winner","influencer","master"][peakTier];
+    const ach = {
+      master:      endType==="master",
+      influencer:  endType==="influencer",
+      winner:      endType==="winner",
+      teacher:     endType==="teacher",
+      busker:      endType==="busker",
+      guitarist:   endType==="guitarist",
+      fillerclass: endType==="fillerclass",
+      tonedeaf:    endType==="tonedeaf",
+    };
+    return { int, apr, mny, hp, age, era, learn, gift, T, tier, cap, peakTier, stages, endType, ach };
+  }catch(e){ return null; }
+}
+function r152Skill(){ return r152SkillOf(S); }
+/* 結算：才藝・技能精通回顧卡——四屬性合成才藝分定階梯、疊年齡成熟推才藝結局、終局回顧（純讀零 rng，可截圖分享，線C素材） */
+function r152SkillReviewHTML(){
+  const h=r152Skill();
+  if(!h) return "";
+  const end=R152_END[h.endType]||R152_END.tonedeaf;
+  const base=R152_SKILL[h.peakTier]||R152_SKILL[0];
+  const rows=h.stages.map(s=>`<div style="display:flex;gap:8px;align-items:baseline;padding:3px 0;font-size:13px;border-bottom:1px solid rgba(255,255,255,.05)">
+      <span class="muted" style="min-width:60px">${s.nm}</span>
+      <span style="white-space:nowrap">${s.ic} <b>${s.tnm}</b></span>
+      <span class="muted" style="font-size:11px">${s.short}</span></div>`).join("");
+  // 世代才藝梗（缺則略）
+  let eraLine="";
+  const eh = h.era && R152_ERASKILL[h.era];
+  if(eh) eraLine=`<div class="muted" style="font-size:11.5px;margin-top:6px">🏷️ 你那年代的才藝：${eh}</div>`;
+  const winner = (h.endType==="master"||h.endType==="influencer"||h.endType==="winner");
+  const fateLine = winner
+    ? `🎨 <b style="color:#ffd96b">這場才藝遊戲你練出真功夫了</b>——在這個「興趣不能當飯吃」被當鐵律、玩才藝被笑不務正業的島上，你硬是靠學習力、台風天分與幾萬小時的苦練，把一技之長練成了能登台、能變現、能服人的真本事。`
+    : `🎨 <b style="color:#ffb3b3">這場才藝遊戲走得各有風景</b>——大師職人、才藝網紅、街頭賣藝、補習班老師、才藝班墊檔、五音不全，這座島把『會不會才藝』變成了一場考驗學習力、天分與資源的關卡，你用一輩子親身學過練過也放棄過一遍。`;
+  return `<div class="panel" style="margin-top:12px;background:var(--panel2)">
+    <h2 class="sec">🎨 才藝・技能精通軌跡</h2>
+    <div class="muted" style="font-size:11.5px;margin:-4px 0 6px">依你這輩子的學習力（一點就通還是學什麼都卡關）、台風天分、補習資源與才藝熱情，推演你的才藝技能精通命運軌跡——大師級職人還是五音不全肢障、才藝Youtuber還是街頭藝人賣藝、比賽得獎素人還是才藝班墊檔陪公子讀書？</div>
+    <div style="display:flex;gap:6px;align-items:baseline;padding:4px 0 2px;font-size:13px">
+      <span class="muted" style="min-width:60px">才藝底子</span><span>${base.ic} <b>${base.nm}</b></span>
+      <span class="muted" style="font-size:11px">${base.short}</span></div>
+    ${rows}
+    <div style="display:flex;gap:6px;align-items:baseline;padding:6px 0 2px;font-size:13px">
+      <span class="muted" style="min-width:60px">才藝結局</span><span>${end.ic} <b>${end.nm}</b></span></div>
+    <div style="display:flex;gap:6px;align-items:baseline;font-size:12.5px"><span class="muted" style="min-width:60px">學習力</span><span>${h.learn.nm}（${h.learn.short}）</span></div>
+    <div style="display:flex;gap:6px;align-items:baseline;font-size:12.5px"><span class="muted" style="min-width:60px">台風天分</span><span>${h.gift.nm}（${h.gift.short}）</span></div>
     ${eraLine}
     <div class="muted" style="font-size:12.5px;margin-top:8px;line-height:1.8">${fateLine}<br>${end.path}<br>${end.note}</div></div>`;
 }
@@ -19250,6 +19418,7 @@ function screenSummary(cat){
       ${r149TravelReviewHTML()}
       ${r150PetReviewHTML()}
       ${r151FaithReviewHTML()}
+      ${r152SkillReviewHTML()}
       ${attrCurveHTML()}
       ${attrTrajectoryHTML()}
       ${r129TrajectoryHTML()}
