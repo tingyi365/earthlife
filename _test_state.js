@@ -6376,5 +6376,91 @@ const r153 = JSON.parse(vm.runInContext(`(function(){
   ['achPartial','⑫ 跨局集滿:缺一→r153_net 不解'],
 ].forEach(([k,m])=>ok(r153[k], 'R153 '+m));
 
+const r154 = JSON.parse(vm.runInContext(`(function(){
+  const out={};
+  function mk(hp,int,mny,age,era){ return {attr:{hp:hp,int:int,apr:50,mny:mny,hap:50}, age:age, era:era, flags:{}, alive:false}; }
+  // ① 資料齊備：8 級兵役命運階梯+4 人生階段+8 結局型別+六世代當兵梗+體位三檔+軍官資質三檔
+  out.dataFull = Array.isArray(R154_MIL) && R154_MIL.length===8 && R154_MIL.every(t=>t.ic&&t.nm&&t.short)
+    && Array.isArray(R154_PHASES) && R154_PHASES.length===4 && R154_PHASES.every(p=>typeof p.off==='number')
+    && ['exempt','alt','train','draftee','sergeant','career','academy','general'].every(k=>R154_END[k]&&R154_END[k].nm&&R154_END[k].path&&R154_END[k].note)
+    && R55_ERAS.every(er=>typeof R154_ERAMIL[er.id]==='string')
+    && [r154BodyOf(90),r154BodyOf(50),r154BodyOf(10)].every(c=>c.nm&&c.short)
+    && [r154BrainOf(90),r154BrainOf(50),r154BrainOf(10)].every(c=>c.nm&&c.short);
+  // ② 三屬性合成兵役分確定性映射：高→將官段(tier>=6)、中→中段(tier>=3)、低→墊底(tier===0)；且單調驅動
+  const hi=r154MilOf(mk(95,95,95,50,'e00')), midd=r154MilOf(mk(50,50,50,50,'e00')), lo=r154MilOf(mk(0,0,0,50,'e00'));
+  out.scoreMap = !!hi&&!!midd&&!!lo && hi.tier>=6 && midd.tier>=3 && lo.tier===0
+    && hi.tier>midd.tier && midd.tier>lo.tier;
+  // ③ directive#1 三屬性皆有存在感：固定其餘中性，各屬性高→兵役分不低於低、且體質 hp 影響最大
+  const hpHi=r154MilOf(mk(90,50,50,50,'e00')).T, hpLo=r154MilOf(mk(10,50,50,50,'e00')).T;
+  const intHi=r154MilOf(mk(50,90,50,50,'e00')).T, intLo=r154MilOf(mk(50,10,50,50,'e00')).T;
+  const mnyHi=r154MilOf(mk(50,50,90,50,'e00')).T, mnyLo=r154MilOf(mk(50,50,10,50,'e00')).T;
+  out.threeAttr = hpHi>hpLo && intHi>intLo && mnyHi>mnyLo
+    && (hpHi-hpLo) > (intHi-intLo) && (hpHi-hpLo) > (mnyHi-mnyLo);
+  // ④ 年齡成熟上限：同三屬性滿值，役男封頂義務役(<=3)、青壯到職業軍人(<=5)、中年到軍官(<=6)、熟齡才解鎖將官(7)
+  const kid=r154MilOf(mk(95,95,95,10,'e00')), young=r154MilOf(mk(95,95,95,25,'e00')), midA=r154MilOf(mk(95,95,95,35,'e00')), old=r154MilOf(mk(95,95,95,50,'e00'));
+  out.ageCap = !!kid&&!!young&&!!midA&&!!old && kid.peakTier<=3 && young.peakTier<=5 && midA.peakTier<=6 && old.peakTier===7 && old.peakTier>young.peakTier && young.peakTier>kid.peakTier;
+  // ⑤ 卡片渲染：含兵役底子/兵役結局/體位體能/軍官資質
+  S=mk(55,55,55,50,'e00'); const card=r154MilReviewHTML();
+  out.cardRender = card.indexOf('兵役底子')>=0 && card.indexOf('兵役結局')>=0 && card.indexOf('體位體能')>=0 && card.indexOf('軍官資質')>=0 && (card.indexOf('兵役')>=0||card.indexOf('軍旅')>=0);
+  // ⑥ deterministic 純讀：同 S 兩次渲染逐字一致
+  S=mk(40,40,40,35,'e10'); const a1=r154MilReviewHTML(), a2=r154MilReviewHTML();
+  out.deterministic = a1===a2 && a1.length>0;
+  // ⑦ 純呈現零汙染：生成前後 S.attr/era/age/flags 不變、零 rng 消耗
+  S=mk(72,55,60,50,'e70'); const bA=JSON.stringify(S.attr), bE=S.era, bAge=S.age, bF=JSON.stringify(S.flags);
+  let used=0; const oldR=rng; rng=function(){ used++; return oldR(); };
+  r154MilReviewHTML(); r154MilOf(S); rng=oldR;
+  out.pure = JSON.stringify(S.attr)===bA && S.era===bE && S.age===bAge && JSON.stringify(S.flags)===bF && used===0;
+  // ⑧ S=null / 缺 attr / 缺 hp 降級：回 null、卡空字串、不炸
+  out.nullSafe = (()=>{ try{ S=null; return r154MilOf(null)===null && r154MilReviewHTML()===''; }catch(e){ return false; } })();
+  out.noAttr = (()=>{ try{ return r154MilOf({age:40,era:'e00'})===null && r154MilOf({attr:{int:50},age:40})===null; }catch(e){ return false; } })();
+  // ⑨ 缺 int/mny 中性化＋髒/缺 era 純文案略過：仍回物件不炸且分數一致（era 不驅動兵役分）
+  out.softDeg = (()=>{ try{ const m=r154MilOf({attr:{hp:55},age:40,era:'e00',flags:{}}); const d=r154MilOf(mk(55,50,50,40,'zzz999')); return !!m && !!d && d.era===null && d.T===r154MilOf(mk(55,50,50,40,undefined)).T; }catch(e){ return false; } })();
+  // ⑩ 舊存檔相容：ensureState 不為 R154 在 S/flags 補任何 r154 鍵
+  startGame(); const olds=S; ensureState(olds);
+  out.compatOld = !Object.keys(olds).some(k=>k.toLowerCase().indexOf('r154')===0)
+    && !Object.keys(olds.flags||{}).some(k=>k.toLowerCase().indexOf('r154')===0);
+  // ⑪ 兵役結局成就確定性點亮：將官/軍官/職業軍人/志願役/草莓兵/軍訓役/替代役/免役 各自可達且互斥（三屬性等值掃 0..7，age 50）
+  const GEN=mk(92,92,92,50,'e00'), ACA=mk(78,78,78,50,'e00'), CAR=mk(65,65,65,50,'e00'), SGT=mk(52,52,52,50,'e00'),
+        DRA=mk(40,40,40,50,'e00'), TRN=mk(28,28,28,50,'e00'), ALT=mk(18,18,18,50,'e00'), EXM=mk(0,0,0,50,'e00');
+  out.achGen = !!ACH_MAP.r154_general  && ACH_MAP.r154_general.check({S:GEN})===true   && ACH_MAP.r154_general.check({S:EXM})===false;
+  out.achAca = !!ACH_MAP.r154_academy  && ACH_MAP.r154_academy.check({S:ACA})===true   && ACH_MAP.r154_academy.check({S:GEN})===false;
+  out.achCar = !!ACH_MAP.r154_career   && ACH_MAP.r154_career.check({S:CAR})===true    && ACH_MAP.r154_career.check({S:GEN})===false;
+  out.achSgt = !!ACH_MAP.r154_sergeant && ACH_MAP.r154_sergeant.check({S:SGT})===true  && ACH_MAP.r154_sergeant.check({S:GEN})===false;
+  out.achDra = !!ACH_MAP.r154_draftee  && ACH_MAP.r154_draftee.check({S:DRA})===true   && ACH_MAP.r154_draftee.check({S:GEN})===false;
+  out.achTrn = !!ACH_MAP.r154_train    && ACH_MAP.r154_train.check({S:TRN})===true     && ACH_MAP.r154_train.check({S:GEN})===false;
+  out.achAlt = !!ACH_MAP.r154_alt      && ACH_MAP.r154_alt.check({S:ALT})===true       && ACH_MAP.r154_alt.check({S:GEN})===false;
+  out.achExm = !!ACH_MAP.r154_exempt   && ACH_MAP.r154_exempt.check({S:EXM})===true    && ACH_MAP.r154_exempt.check({S:GEN})===false;
+  // ⑫ 跨局集滿 r154_mil：八成就全亮→解鎖、缺一→不解
+  const allAch={r154_general:true,r154_academy:true,r154_career:true,r154_sergeant:true,r154_draftee:true,r154_train:true,r154_alt:true,r154_exempt:true};
+  SAVE.ach=Object.assign({},allAch); out.achFull = !!ACH_MAP.r154_mil && ACH_MAP.r154_mil.check({S:{}})===true;
+  const partial=Object.assign({},allAch); delete partial.r154_general;
+  SAVE.ach=partial; out.achPartial = ACH_MAP.r154_mil.check({S:{}})===false;
+  SAVE.ach={}; S=null;
+  return JSON.stringify(out);
+})()`, sandbox));
+[
+  ['dataFull','① 資料齊備:8 級兵役階梯+4 人生階段+8 結局型別+六世代當兵梗+體位/軍官資質三檔'],
+  ['scoreMap','② 三屬性合成兵役分確定性映射:高→將官段/中→中段/低→墊底且單調驅動'],
+  ['threeAttr','③ directive#1 三屬性皆有存在感:hp/int/mny 各高>低且體質 hp 影響最大'],
+  ['ageCap','④ 年齡成熟上限:役男封頂義務役/青壯到職業軍人/中年到軍官/熟齡才解鎖將官'],
+  ['cardRender','⑤ 卡片渲染:含兵役底子/兵役結局/體位體能/軍官資質/兵役或軍旅'],
+  ['deterministic','⑥ deterministic 純讀:同 S 兩次渲染逐字一致'],
+  ['pure','⑦ 純呈現零汙染:生成前後 S.attr/era/age/flags 不變且零 rng'],
+  ['nullSafe','⑧ 無局(S=null)降級:回 null、卡空字串不炸'],
+  ['noAttr','⑧ 缺 attr/hp 降級:回 null 不炸'],
+  ['softDeg','⑨ 缺 int/mny 中性化＋髒/缺 era 純文案略過:仍回物件不炸且分數一致'],
+  ['compatOld','⑩ 舊存檔相容:ensureState 不為 R154 補任何 S/flags 鍵'],
+  ['achGen','⑪ r154_general:將官軍頭→解、免役→不解'],
+  ['achAca','⑪ r154_academy:軍校尉官→解、將官→不解'],
+  ['achCar','⑪ r154_career:職業軍人→解、將官→不解'],
+  ['achSgt','⑪ r154_sergeant:志願役下士→解、將官→不解'],
+  ['achDra','⑪ r154_draftee:義務役草莓兵→解、將官→不解'],
+  ['achTrn','⑪ r154_train:四個月軍訓役→解、將官→不解'],
+  ['achAlt','⑪ r154_alt:替代役爽缺→解、將官→不解'],
+  ['achExm','⑪ r154_exempt:免役免當兵→解、將官→不解'],
+  ['achFull','⑫ 跨局集滿:八成就全亮→r154_mil 解鎖'],
+  ['achPartial','⑫ 跨局集滿:缺一→r154_mil 不解'],
+].forEach(([k,m])=>ok(r154[k], 'R154 '+m));
+
 console.log(fails ? `\n結果: ❌ ${fails} 項未通過` : '\n結果: ✅ 狀態機全數正確');
 process.exit(fails ? 1 : 0);

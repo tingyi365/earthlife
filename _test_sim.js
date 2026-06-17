@@ -4682,6 +4682,50 @@ try {
   console.log('R153 數位網路生活軌跡: ❌ ' + e.message);
 }
 
+/* ===== R154 軍旅・兵役軌跡（純衍生/結算覆蓋層：零 rng/零 pinned 序列擾動/deterministic/三屬性合成兵役分+體質主驅動/降級） ===== */
+let r154OK = false;
+try {
+  const r154Raw = vm.runInContext(`(function(){
+    const out={};
+    /* ① 結構：8 級兵役命運階梯、4 人生階段、8 結局型別、八個兵役成就＋集滿成就齊備 */
+    out.struct = Array.isArray(R154_MIL) && R154_MIL.length===8
+      && Array.isArray(R154_PHASES) && R154_PHASES.length===4
+      && ['exempt','alt','train','draftee','sergeant','career','academy','general'].every(k=>R154_END[k])
+      && ['r154_general','r154_academy','r154_career','r154_sergeant','r154_draftee','r154_train','r154_alt','r154_exempt','r154_mil'].every(id=>!!ACH_MAP[id]);
+    /* ② 純衍生覆蓋零 rng：startGame 後跑 r154MilOf/Review 不消耗任何種子序列（與 pinned 抽事件序列獨立） */
+    const oc=randomSeedCode; randomSeedCode=function(){return 'EEEEEE';};
+    startGame(); const r0=[]; for(let i=0;i<20;i++)r0.push(rng());
+    startGame(); r154MilOf(S); r154MilReviewHTML(); const r1=[]; for(let i=0;i<20;i++)r1.push(rng());
+    let rngEq=true; for(let i=0;i<20;i++){ if(r0[i]!==r1[i]) rngEq=false; }
+    out.rngZero = rngEq; randomSeedCode=oc;
+    /* ③ deterministic 純讀終局 S：同態同結果、零 mutation */
+    startGame(); S.attr={hp:60,int:55,apr:55,mny:55,hap:60}; S.age=50; S.flags={};
+    const snap=JSON.stringify(S.attr)+'|'+S.age;
+    const c1=r154MilReviewHTML(), c2=r154MilReviewHTML();
+    out.deterministic = c1===c2 && c1.indexOf('兵役底子')>=0 && c1.indexOf('兵役結局')>=0
+      && (JSON.stringify(S.attr)+'|'+S.age)===snap;
+    /* ④ 體質 hp 為主單調驅動兵役分/定級：高 hp→將官段(tier>=6)、低 hp→墊底(tier<=1) */
+    const hi=r154MilOf({attr:{hp:95,int:95,mny:95},age:50,flags:{}}), lo=r154MilOf({attr:{hp:5,int:5,mny:5},age:50,flags:{}});
+    out.hpDrive = !!hi && !!lo && hi.tier>=6 && lo.tier<=1 && hi.tier>lo.tier;
+    /* ⑤ 八結局確定性分流互斥可達：三屬性等值掃 0..7 各命中對應 endType（age 50 解鎖全上限） */
+    const E=(v)=>{const r=r154MilOf({attr:{hp:v,int:v,mny:v},age:50}); return r&&r.endType;};
+    out.endsReach =
+         E(5)==='exempt' && E(16)==='alt' && E(26)==='train' && E(40)==='draftee'
+      && E(54)==='sergeant' && E(68)==='career' && E(80)==='academy' && E(95)==='general';
+    /* ⑥ S=null/缺 attr/缺 hp 安全降級：回 null、卡空字串、不炸 */
+    const sv=S; S=null; let nullSafe=true;
+    try{ if(r154MilOf(null)!==null) nullSafe=false; if(r154MilReviewHTML()!=='') nullSafe=false;
+         if(r154MilOf({attr:{int:50},age:40})!==null) nullSafe=false; }catch(e){ nullSafe=false; }
+    S=sv; out.nullSafe = nullSafe;
+    return JSON.stringify(out);
+  })()`, sandbox);
+  const r154 = JSON.parse(r154Raw);
+  r154OK = Object.values(r154).every(v => v === true);
+  console.log(`R154 軍旅兵役軌跡: ${r154OK ? '✅ 全數通過' : '❌ ' + JSON.stringify(r154)}`);
+} catch (e) {
+  console.log('R154 軍旅兵役軌跡: ❌ ' + e.message);
+}
+
 if (__errors.length) {
   console.log('\n--- 錯誤樣本(前5) ---');
   __errors.slice(0, 5).forEach(e => console.log('  ' + e));
@@ -4689,6 +4733,6 @@ if (__errors.length) {
 
 /* 退出碼 */
 const pass = __errors.length === 0 && chk.missingScenes.length === 0 && chk.eventVisible >= 126 && chk.eventTotal >= 126 && lsOK && achUnlocked > 0
-  && chk.deathbookMissing.length === 0 && chk.deathTotal >= 17 && deathsOK && rebirthOK && legacyOK && petOK && r13OK && r17OK && r20OK && r21OK && r22OK && r24OK && r25OK && r34OK && r38OK && r41OK && r42OK && r43OK && r44OK && r45OK && r46OK && r47OK && r48OK && r49OK && r51OK && r52OK && r53OK && r54OK && r55OK && r72OK && r76OK && r77OK && r79OK && r86OK && r87OK && r92OK && r93OK && r95OK && r96OK && r108OK && r110OK && r111OK && r112OK && r113OK && r115OK && r116OK && r117OK && r118OK && r119OK && r122OK && r126OK && r134OK && r136OK && r138OK && r139OK && r140OK && r141OK && r142OK && r143OK && r144OK && r145OK && r146OK && r147OK && r149OK && r150OK && r151OK && r152OK && r153OK;
+  && chk.deathbookMissing.length === 0 && chk.deathTotal >= 17 && deathsOK && rebirthOK && legacyOK && petOK && r13OK && r17OK && r20OK && r21OK && r22OK && r24OK && r25OK && r34OK && r38OK && r41OK && r42OK && r43OK && r44OK && r45OK && r46OK && r47OK && r48OK && r49OK && r51OK && r52OK && r53OK && r54OK && r55OK && r72OK && r76OK && r77OK && r79OK && r86OK && r87OK && r92OK && r93OK && r95OK && r96OK && r108OK && r110OK && r111OK && r112OK && r113OK && r115OK && r116OK && r117OK && r118OK && r119OK && r122OK && r126OK && r134OK && r136OK && r138OK && r139OK && r140OK && r141OK && r142OK && r143OK && r144OK && r145OK && r146OK && r147OK && r149OK && r150OK && r151OK && r152OK && r153OK && r154OK;
 console.log('\n結果: ' + (pass ? '✅ 全數通過' : '❌ 有項目未通過'));
 process.exit(pass ? 0 : 1);
