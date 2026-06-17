@@ -6462,5 +6462,179 @@ const r154 = JSON.parse(vm.runInContext(`(function(){
   ['achPartial','⑫ 跨局集滿:缺一→r154_mil 不解'],
 ].forEach(([k,m])=>ok(r154[k], 'R154 '+m));
 
+const r155 = JSON.parse(vm.runInContext(`(function(){
+  const out={};
+  function mk(mny,apr,hp,age,era){ return {attr:{hp:hp,int:50,apr:apr,mny:mny,hap:50}, age:age, era:era, flags:{}, alive:false}; }
+  // ① 資料齊備：8 級親情命運階梯+4 人生階段+8 結局型別+六世代家庭梗+家底三檔+家庭緣三檔+身體三檔
+  out.dataFull = Array.isArray(R155_FAM) && R155_FAM.length===8 && R155_FAM.every(t=>t.ic&&t.nm&&t.short)
+    && Array.isArray(R155_PHASES) && R155_PHASES.length===4 && R155_PHASES.every(p=>typeof p.off==='number')
+    && ['orphan','kin','ordinary','leech','filial','sandwich','feud','dynasty'].every(k=>R155_END[k]&&R155_END[k].nm&&R155_END[k].path&&R155_END[k].note)
+    && R55_ERAS.every(er=>typeof R155_ERAFAM[er.id]==='string')
+    && [r155WealthOf(90),r155WealthOf(50),r155WealthOf(10)].every(c=>c.nm&&c.short)
+    && [r155BondOf(90),r155BondOf(50),r155BondOf(10)].every(c=>c.nm&&c.short)
+    && [r155BodyOf(90),r155BodyOf(50),r155BodyOf(10)].every(c=>c.nm&&c.short);
+  // ② 三屬性合成親情分確定性映射：高→望族段(tier>=6)、中→中段(tier>=3)、低→墊底(tier===0)；且單調驅動
+  const hi=r155FamOf(mk(95,95,95,50,'e00')), midd=r155FamOf(mk(50,50,50,50,'e00')), lo=r155FamOf(mk(0,0,0,50,'e00'));
+  out.scoreMap = !!hi&&!!midd&&!!lo && hi.tier>=6 && midd.tier>=3 && lo.tier===0
+    && hi.tier>midd.tier && midd.tier>lo.tier;
+  // ③ directive#1 三屬性皆有存在感：固定其餘中性，各屬性高→親情分不低於低、且財富 mny 影響最大
+  const mnyHi=r155FamOf(mk(90,50,50,50,'e00')).T, mnyLo=r155FamOf(mk(10,50,50,50,'e00')).T;
+  const aprHi=r155FamOf(mk(50,90,50,50,'e00')).T, aprLo=r155FamOf(mk(50,10,50,50,'e00')).T;
+  const hpHi=r155FamOf(mk(50,50,90,50,'e00')).T, hpLo=r155FamOf(mk(50,50,10,50,'e00')).T;
+  out.threeAttr = mnyHi>mnyLo && aprHi>aprLo && hpHi>hpLo
+    && (mnyHi-mnyLo) > (aprHi-aprLo) && (mnyHi-mnyLo) > (hpHi-hpLo);
+  // ④ 年齡成熟上限：同三屬性滿值，少年封頂靠爸啃老(<=3)、青壯到孝親(<=5)、中年到夾心(<=6)、熟齡才解鎖望族(7)
+  const kid=r155FamOf(mk(95,95,95,10,'e00')), young=r155FamOf(mk(95,95,95,25,'e00')), midA=r155FamOf(mk(95,95,95,35,'e00')), old=r155FamOf(mk(95,95,95,50,'e00'));
+  out.ageCap = !!kid&&!!young&&!!midA&&!!old && kid.peakTier<=3 && young.peakTier<=5 && midA.peakTier<=6 && old.peakTier===7 && old.peakTier>young.peakTier && young.peakTier>kid.peakTier;
+  // ⑤ 卡片渲染：含家世底子/親情結局/家底扶養/家庭緣份
+  S=mk(55,55,55,50,'e00'); const card=r155FamReviewHTML();
+  out.cardRender = card.indexOf('家世底子')>=0 && card.indexOf('親情結局')>=0 && card.indexOf('家底扶養')>=0 && card.indexOf('家庭緣份')>=0 && (card.indexOf('親情')>=0||card.indexOf('家庭')>=0);
+  // ⑥ deterministic 純讀：同 S 兩次渲染逐字一致
+  S=mk(40,40,40,35,'e10'); const a1=r155FamReviewHTML(), a2=r155FamReviewHTML();
+  out.deterministic = a1===a2 && a1.length>0;
+  // ⑦ 純呈現零汙染：生成前後 S.attr/era/age/flags 不變、零 rng 消耗
+  S=mk(72,55,60,50,'e70'); const bA=JSON.stringify(S.attr), bE=S.era, bAge=S.age, bF=JSON.stringify(S.flags);
+  let used=0; const oldR=rng; rng=function(){ used++; return oldR(); };
+  r155FamReviewHTML(); r155FamOf(S); rng=oldR;
+  out.pure = JSON.stringify(S.attr)===bA && S.era===bE && S.age===bAge && JSON.stringify(S.flags)===bF && used===0;
+  // ⑧ S=null / 缺 attr / 缺 mny 降級：回 null、卡空字串、不炸
+  out.nullSafe = (()=>{ try{ S=null; return r155FamOf(null)===null && r155FamReviewHTML()===''; }catch(e){ return false; } })();
+  out.noAttr = (()=>{ try{ return r155FamOf({age:40,era:'e00'})===null && r155FamOf({attr:{apr:50},age:40})===null; }catch(e){ return false; } })();
+  // ⑨ 缺 apr/hp 中性化＋髒/缺 era 純文案略過：仍回物件不炸且分數一致（era 不驅動親情分）
+  out.softDeg = (()=>{ try{ const m=r155FamOf({attr:{mny:55},age:40,era:'e00',flags:{}}); const d=r155FamOf(mk(55,50,50,40,'zzz999')); return !!m && !!d && d.era===null && d.T===r155FamOf(mk(55,50,50,40,undefined)).T; }catch(e){ return false; } })();
+  // ⑩ 舊存檔相容：ensureState 不為 R155 在 S/flags 補任何 r155 鍵
+  startGame(); const olds=S; ensureState(olds);
+  out.compatOld = !Object.keys(olds).some(k=>k.toLowerCase().indexOf('r155')===0)
+    && !Object.keys(olds.flags||{}).some(k=>k.toLowerCase().indexOf('r155')===0);
+  // ⑪ 親情結局成就確定性點亮：望族/爭產/夾心/孝親/啃老/普通/寄人籬下/孤兒 各自可達且互斥（三屬性等值掃 0..7，age 50）
+  const DYN=mk(92,92,92,50,'e00'), FEU=mk(78,78,78,50,'e00'), SAN=mk(65,65,65,50,'e00'), FIL=mk(52,52,52,50,'e00'),
+        LEE=mk(40,40,40,50,'e00'), ORD=mk(28,28,28,50,'e00'), KIN=mk(18,18,18,50,'e00'), ORP=mk(0,0,0,50,'e00');
+  out.achDyn = !!ACH_MAP.r155_dynasty  && ACH_MAP.r155_dynasty.check({S:DYN})===true   && ACH_MAP.r155_dynasty.check({S:ORP})===false;
+  out.achFeu = !!ACH_MAP.r155_feud     && ACH_MAP.r155_feud.check({S:FEU})===true      && ACH_MAP.r155_feud.check({S:DYN})===false;
+  out.achSan = !!ACH_MAP.r155_sandwich && ACH_MAP.r155_sandwich.check({S:SAN})===true  && ACH_MAP.r155_sandwich.check({S:DYN})===false;
+  out.achFil = !!ACH_MAP.r155_filial   && ACH_MAP.r155_filial.check({S:FIL})===true    && ACH_MAP.r155_filial.check({S:DYN})===false;
+  out.achLee = !!ACH_MAP.r155_leech    && ACH_MAP.r155_leech.check({S:LEE})===true     && ACH_MAP.r155_leech.check({S:DYN})===false;
+  out.achOrd = !!ACH_MAP.r155_ordinary && ACH_MAP.r155_ordinary.check({S:ORD})===true  && ACH_MAP.r155_ordinary.check({S:DYN})===false;
+  out.achKin = !!ACH_MAP.r155_kin      && ACH_MAP.r155_kin.check({S:KIN})===true       && ACH_MAP.r155_kin.check({S:DYN})===false;
+  out.achOrp = !!ACH_MAP.r155_orphan   && ACH_MAP.r155_orphan.check({S:ORP})===true    && ACH_MAP.r155_orphan.check({S:DYN})===false;
+  // ⑫ 跨局集滿 r155_family：八成就全亮→解鎖、缺一→不解
+  const allAch={r155_dynasty:true,r155_feud:true,r155_sandwich:true,r155_filial:true,r155_leech:true,r155_ordinary:true,r155_kin:true,r155_orphan:true};
+  SAVE.ach=Object.assign({},allAch); out.achFull = !!ACH_MAP.r155_family && ACH_MAP.r155_family.check({S:{}})===true;
+  const partial=Object.assign({},allAch); delete partial.r155_dynasty;
+  SAVE.ach=partial; out.achPartial = ACH_MAP.r155_family.check({S:{}})===false;
+  SAVE.ach={}; S=null;
+  return JSON.stringify(out);
+})()`, sandbox));
+[
+  ['dataFull','① 資料齊備:8 級親情階梯+4 人生階段+8 結局型別+六世代家庭梗+家底/家庭緣/身體三檔'],
+  ['scoreMap','② 三屬性合成親情分確定性映射:高→望族段/中→中段/低→墊底且單調驅動'],
+  ['threeAttr','③ directive#1 三屬性皆有存在感:mny/apr/hp 各高>低且財富 mny 影響最大'],
+  ['ageCap','④ 年齡成熟上限:少年封頂靠爸啃老/青壯到孝親/中年到夾心/熟齡才解鎖望族'],
+  ['cardRender','⑤ 卡片渲染:含家世底子/親情結局/家底扶養/家庭緣份/親情或家庭'],
+  ['deterministic','⑥ deterministic 純讀:同 S 兩次渲染逐字一致'],
+  ['pure','⑦ 純呈現零汙染:生成前後 S.attr/era/age/flags 不變且零 rng'],
+  ['nullSafe','⑧ 無局(S=null)降級:回 null、卡空字串不炸'],
+  ['noAttr','⑧ 缺 attr/mny 降級:回 null 不炸'],
+  ['softDeg','⑨ 缺 apr/hp 中性化＋髒/缺 era 純文案略過:仍回物件不炸且分數一致'],
+  ['compatOld','⑩ 舊存檔相容:ensureState 不為 R155 補任何 S/flags 鍵'],
+  ['achDyn','⑪ r155_dynasty:世家望族→解、孤兒→不解'],
+  ['achFeu','⑪ r155_feud:手足爭產→解、望族→不解'],
+  ['achSan','⑪ r155_sandwich:長照夾心→解、望族→不解'],
+  ['achFil','⑪ r155_filial:孝親扛家→解、望族→不解'],
+  ['achLee','⑪ r155_leech:靠爸啃老→解、望族→不解'],
+  ['achOrd','⑪ r155_ordinary:普通家庭→解、望族→不解'],
+  ['achKin','⑪ r155_kin:寄人籬下→解、望族→不解'],
+  ['achOrp','⑪ r155_orphan:孤兒無依→解、望族→不解'],
+  ['achFull','⑫ 跨局集滿:八成就全亮→r155_family 解鎖'],
+  ['achPartial','⑫ 跨局集滿:缺一→r155_family 不解'],
+].forEach(([k,m])=>ok(r155[k], 'R155 '+m));
+
+const r156 = JSON.parse(vm.runInContext(`(function(){
+  const out={};
+  function mk(mny,int,apr,age,era){ return {attr:{hp:50,int:int,apr:apr,mny:mny,hap:50}, age:age, era:era, flags:{}, alive:false}; }
+  // ① 資料齊備：8 級法律命運階梯+4 人生階段+8 結局型別+六世代法律梗+請律師三檔+法律常識三檔+談判三檔
+  out.dataFull = Array.isArray(R156_LAW) && R156_LAW.length===8 && R156_LAW.every(t=>t.ic&&t.nm&&t.short)
+    && Array.isArray(R156_PHASES) && R156_PHASES.length===4 && R156_PHASES.every(p=>typeof p.off==='number')
+    && ['criminal','fraud','divorce','crash','labor','smallclaim','ticket','clean'].every(k=>R156_END[k]&&R156_END[k].nm&&R156_END[k].path&&R156_END[k].note)
+    && R55_ERAS.every(er=>typeof R156_ERALAW[er.id]==='string')
+    && [r156WealthOf(90),r156WealthOf(50),r156WealthOf(10)].every(c=>c.nm&&c.short)
+    && [r156SenseOf(90),r156SenseOf(50),r156SenseOf(10)].every(c=>c.nm&&c.short)
+    && [r156TalkOf(90),r156TalkOf(50),r156TalkOf(10)].every(c=>c.nm&&c.short);
+  // ② 三屬性合成守法分確定性映射：高→守法良民段(tier>=6)、中→中段(tier>=3)、低→墊底(tier===0)；且單調驅動
+  const hi=r156LawOf(mk(95,95,95,50,'e00')), midd=r156LawOf(mk(50,50,50,50,'e00')), lo=r156LawOf(mk(0,0,0,50,'e00'));
+  out.scoreMap = !!hi&&!!midd&&!!lo && hi.tier>=6 && midd.tier>=3 && lo.tier===0
+    && hi.tier>midd.tier && midd.tier>lo.tier;
+  // ③ directive#1 三屬性皆有存在感：固定其餘中性，各屬性高→守法分不低於低、且財富 mny 影響最大
+  const mnyHi=r156LawOf(mk(90,50,50,50,'e00')).T, mnyLo=r156LawOf(mk(10,50,50,50,'e00')).T;
+  const intHi=r156LawOf(mk(50,90,50,50,'e00')).T, intLo=r156LawOf(mk(50,10,50,50,'e00')).T;
+  const aprHi=r156LawOf(mk(50,50,90,50,'e00')).T, aprLo=r156LawOf(mk(50,50,10,50,'e00')).T;
+  out.threeAttr = mnyHi>mnyLo && intHi>intLo && aprHi>aprLo
+    && (mnyHi-mnyLo) > (intHi-intLo) && (mnyHi-mnyLo) > (aprHi-aprLo);
+  // ④ 年齡見真章地板：同三屬性墊底，年輕封住底層往乾淨端靠(peakTier 高)、熟齡才跌得到底(peakTier=0)
+  const kid=r156LawOf(mk(5,5,5,10,'e00')), young=r156LawOf(mk(5,5,5,25,'e00')), midA=r156LawOf(mk(5,5,5,35,'e00')), old=r156LawOf(mk(5,5,5,50,'e00'));
+  out.ageCap = !!kid&&!!young&&!!midA&&!!old && kid.peakTier>=5 && young.peakTier<=3 && midA.peakTier<=1 && old.peakTier===0 && kid.peakTier>young.peakTier && young.peakTier>old.peakTier;
+  // ⑤ 卡片渲染：含法律底子/法律結局/請律師力/法律常識
+  S=mk(55,55,55,50,'e00'); const card=r156LawReviewHTML();
+  out.cardRender = card.indexOf('法律底子')>=0 && card.indexOf('法律結局')>=0 && card.indexOf('請律師力')>=0 && card.indexOf('法律常識')>=0 && (card.indexOf('法律')>=0||card.indexOf('訴訟')>=0);
+  // ⑥ deterministic 純讀：同 S 兩次渲染逐字一致
+  S=mk(40,40,40,35,'e10'); const a1=r156LawReviewHTML(), a2=r156LawReviewHTML();
+  out.deterministic = a1===a2 && a1.length>0;
+  // ⑦ 純呈現零汙染：生成前後 S.attr/era/age/flags 不變、零 rng 消耗
+  S=mk(72,55,60,50,'e70'); const bA=JSON.stringify(S.attr), bE=S.era, bAge=S.age, bF=JSON.stringify(S.flags);
+  let used=0; const oldR=rng; rng=function(){ used++; return oldR(); };
+  r156LawReviewHTML(); r156LawOf(S); rng=oldR;
+  out.pure = JSON.stringify(S.attr)===bA && S.era===bE && S.age===bAge && JSON.stringify(S.flags)===bF && used===0;
+  // ⑧ S=null / 缺 attr / 缺 mny 降級：回 null、卡空字串、不炸
+  out.nullSafe = (()=>{ try{ S=null; return r156LawOf(null)===null && r156LawReviewHTML()===''; }catch(e){ return false; } })();
+  out.noAttr = (()=>{ try{ return r156LawOf({age:40,era:'e00'})===null && r156LawOf({attr:{int:50},age:40})===null; }catch(e){ return false; } })();
+  // ⑨ 缺 int/apr 中性化＋髒/缺 era 純文案略過：仍回物件不炸且分數一致（era 不驅動守法分）
+  out.softDeg = (()=>{ try{ const m=r156LawOf({attr:{mny:55},age:40,era:'e00',flags:{}}); const d=r156LawOf(mk(55,50,50,40,'zzz999')); return !!m && !!d && d.era===null && d.T===r156LawOf(mk(55,50,50,40,undefined)).T; }catch(e){ return false; } })();
+  // ⑩ 舊存檔相容：ensureState 不為 R156 在 S/flags 補任何 r156 鍵
+  startGame(); const olds=S; ensureState(olds);
+  out.compatOld = !Object.keys(olds).some(k=>k.toLowerCase().indexOf('r156')===0)
+    && !Object.keys(olds.flags||{}).some(k=>k.toLowerCase().indexOf('r156')===0);
+  // ⑪ 法律結局成就確定性點亮：守法/罰單/小額/勞資/車禍/離婚/詐騙/官司纏身 各自可達且互斥（三屬性等值掃 0..7，age 50 地板=0）
+  const CLN=mk(95,95,95,50,'e00'), TKT=mk(80,80,80,50,'e00'), SML=mk(68,68,68,50,'e00'), LAB=mk(54,54,54,50,'e00'),
+        CRA=mk(40,40,40,50,'e00'), DIV=mk(26,26,26,50,'e00'), FRA=mk(16,16,16,50,'e00'), CRI=mk(5,5,5,50,'e00');
+  out.achCln = !!ACH_MAP.r156_clean      && ACH_MAP.r156_clean.check({S:CLN})===true      && ACH_MAP.r156_clean.check({S:CRI})===false;
+  out.achTkt = !!ACH_MAP.r156_ticket     && ACH_MAP.r156_ticket.check({S:TKT})===true     && ACH_MAP.r156_ticket.check({S:CLN})===false;
+  out.achSml = !!ACH_MAP.r156_smallclaim && ACH_MAP.r156_smallclaim.check({S:SML})===true && ACH_MAP.r156_smallclaim.check({S:CLN})===false;
+  out.achLab = !!ACH_MAP.r156_labor      && ACH_MAP.r156_labor.check({S:LAB})===true      && ACH_MAP.r156_labor.check({S:CLN})===false;
+  out.achCra = !!ACH_MAP.r156_crash      && ACH_MAP.r156_crash.check({S:CRA})===true      && ACH_MAP.r156_crash.check({S:CLN})===false;
+  out.achDiv = !!ACH_MAP.r156_divorce    && ACH_MAP.r156_divorce.check({S:DIV})===true    && ACH_MAP.r156_divorce.check({S:CLN})===false;
+  out.achFra = !!ACH_MAP.r156_fraud      && ACH_MAP.r156_fraud.check({S:FRA})===true      && ACH_MAP.r156_fraud.check({S:CLN})===false;
+  out.achCri = !!ACH_MAP.r156_criminal   && ACH_MAP.r156_criminal.check({S:CRI})===true   && ACH_MAP.r156_criminal.check({S:CLN})===false;
+  // ⑫ 跨局集滿 r156_law：八成就全亮→解鎖、缺一→不解
+  const allAch={r156_clean:true,r156_ticket:true,r156_smallclaim:true,r156_labor:true,r156_crash:true,r156_divorce:true,r156_fraud:true,r156_criminal:true};
+  SAVE.ach=Object.assign({},allAch); out.achFull = !!ACH_MAP.r156_law && ACH_MAP.r156_law.check({S:{}})===true;
+  const partial=Object.assign({},allAch); delete partial.r156_clean;
+  SAVE.ach=partial; out.achPartial = ACH_MAP.r156_law.check({S:{}})===false;
+  SAVE.ach={}; S=null;
+  return JSON.stringify(out);
+})()`, sandbox));
+[
+  ['dataFull','① 資料齊備:8 級法律階梯+4 人生階段+8 結局型別+六世代法律梗+請律師/法律常識/談判三檔'],
+  ['scoreMap','② 三屬性合成守法分確定性映射:高→守法良民段/中→中段/低→墊底且單調驅動'],
+  ['threeAttr','③ directive#1 三屬性皆有存在感:mny/int/apr 各高>低且財富 mny 影響最大'],
+  ['ageCap','④ 年齡見真章地板:年輕封住底層往乾淨端靠/熟齡才跌得到官司纏身'],
+  ['cardRender','⑤ 卡片渲染:含法律底子/法律結局/請律師力/法律常識/法律或訴訟'],
+  ['deterministic','⑥ deterministic 純讀:同 S 兩次渲染逐字一致'],
+  ['pure','⑦ 純呈現零汙染:生成前後 S.attr/era/age/flags 不變且零 rng'],
+  ['nullSafe','⑧ 無局(S=null)降級:回 null、卡空字串不炸'],
+  ['noAttr','⑧ 缺 attr/mny 降級:回 null 不炸'],
+  ['softDeg','⑨ 缺 int/apr 中性化＋髒/缺 era 純文案略過:仍回物件不炸且分數一致'],
+  ['compatOld','⑩ 舊存檔相容:ensureState 不為 R156 補任何 S/flags 鍵'],
+  ['achCln','⑪ r156_clean:守法良民→解、官司纏身→不解'],
+  ['achTkt','⑪ r156_ticket:交通罰單→解、守法良民→不解'],
+  ['achSml','⑪ r156_smallclaim:小額卡債→解、守法良民→不解'],
+  ['achLab','⑪ r156_labor:勞資消費→解、守法良民→不解'],
+  ['achCra','⑪ r156_crash:車禍和解→解、守法良民→不解'],
+  ['achDiv','⑪ r156_divorce:離婚監護→解、守法良民→不解'],
+  ['achFra','⑪ r156_fraud:詐騙債務→解、守法良民→不解'],
+  ['achCri','⑪ r156_criminal:官司纏身→解、守法良民→不解'],
+  ['achFull','⑫ 跨局集滿:八成就全亮→r156_law 解鎖'],
+  ['achPartial','⑫ 跨局集滿:缺一→r156_law 不解'],
+].forEach(([k,m])=>ok(r156[k], 'R156 '+m));
+
 console.log(fails ? `\n結果: ❌ ${fails} 項未通過` : '\n結果: ✅ 狀態機全數正確');
 process.exit(fails ? 1 : 0);

@@ -4726,6 +4726,94 @@ try {
   console.log('R154 軍旅兵役軌跡: ❌ ' + e.message);
 }
 
+/* ===== R155 原生家庭・親情軌跡（純衍生/結算覆蓋層：零 rng/零 pinned 序列擾動/deterministic/三屬性合成親情分+財富主驅動/降級） ===== */
+let r155OK = false;
+try {
+  const r155Raw = vm.runInContext(`(function(){
+    const out={};
+    /* ① 結構：8 級親情命運階梯、4 人生階段、8 結局型別、八個親情成就＋集滿成就齊備 */
+    out.struct = Array.isArray(R155_FAM) && R155_FAM.length===8
+      && Array.isArray(R155_PHASES) && R155_PHASES.length===4
+      && ['orphan','kin','ordinary','leech','filial','sandwich','feud','dynasty'].every(k=>R155_END[k])
+      && ['r155_dynasty','r155_feud','r155_sandwich','r155_filial','r155_leech','r155_ordinary','r155_kin','r155_orphan','r155_family'].every(id=>!!ACH_MAP[id]);
+    /* ② 純衍生覆蓋零 rng：startGame 後跑 r155FamOf/Review 不消耗任何種子序列（與 pinned 抽事件序列獨立） */
+    const oc=randomSeedCode; randomSeedCode=function(){return 'EEEEEE';};
+    startGame(); const r0=[]; for(let i=0;i<20;i++)r0.push(rng());
+    startGame(); r155FamOf(S); r155FamReviewHTML(); const r1=[]; for(let i=0;i<20;i++)r1.push(rng());
+    let rngEq=true; for(let i=0;i<20;i++){ if(r0[i]!==r1[i]) rngEq=false; }
+    out.rngZero = rngEq; randomSeedCode=oc;
+    /* ③ deterministic 純讀終局 S：同態同結果、零 mutation */
+    startGame(); S.attr={hp:60,int:55,apr:55,mny:55,hap:60}; S.age=50; S.flags={};
+    const snap=JSON.stringify(S.attr)+'|'+S.age;
+    const c1=r155FamReviewHTML(), c2=r155FamReviewHTML();
+    out.deterministic = c1===c2 && c1.indexOf('家世底子')>=0 && c1.indexOf('親情結局')>=0
+      && (JSON.stringify(S.attr)+'|'+S.age)===snap;
+    /* ④ 財富 mny 為主單調驅動親情分/定級：高 mny→望族段(tier>=6)、低 mny→墊底(tier<=1) */
+    const hi=r155FamOf({attr:{mny:95,apr:95,hp:95},age:50,flags:{}}), lo=r155FamOf({attr:{mny:5,apr:5,hp:5},age:50,flags:{}});
+    out.mnyDrive = !!hi && !!lo && hi.tier>=6 && lo.tier<=1 && hi.tier>lo.tier;
+    /* ⑤ 八結局確定性分流互斥可達：三屬性等值掃 0..7 各命中對應 endType（age 50 解鎖全上限） */
+    const E=(v)=>{const r=r155FamOf({attr:{mny:v,apr:v,hp:v},age:50}); return r&&r.endType;};
+    out.endsReach =
+         E(5)==='orphan' && E(16)==='kin' && E(26)==='ordinary' && E(40)==='leech'
+      && E(54)==='filial' && E(68)==='sandwich' && E(80)==='feud' && E(95)==='dynasty';
+    /* ⑥ S=null/缺 attr/缺 mny 安全降級：回 null、卡空字串、不炸 */
+    const sv=S; S=null; let nullSafe=true;
+    try{ if(r155FamOf(null)!==null) nullSafe=false; if(r155FamReviewHTML()!=='') nullSafe=false;
+         if(r155FamOf({attr:{apr:50},age:40})!==null) nullSafe=false; }catch(e){ nullSafe=false; }
+    S=sv; out.nullSafe = nullSafe;
+    return JSON.stringify(out);
+  })()`, sandbox);
+  const r155 = JSON.parse(r155Raw);
+  r155OK = Object.values(r155).every(v => v === true);
+  console.log(`R155 原生家庭親情軌跡: ${r155OK ? '✅ 全數通過' : '❌ ' + JSON.stringify(r155)}`);
+} catch (e) {
+  console.log('R155 原生家庭親情軌跡: ❌ ' + e.message);
+}
+
+/* ===== R156 法律・訴訟糾紛軌跡（純衍生/結算覆蓋層：零 rng/零 pinned 序列擾動/deterministic/三屬性合成守法分+財富主驅動/降級） ===== */
+let r156OK = false;
+try {
+  const r156Raw = vm.runInContext(`(function(){
+    const out={};
+    /* ① 結構：8 級法律命運階梯、4 人生階段、8 結局型別、八個法律成就＋集滿成就齊備 */
+    out.struct = Array.isArray(R156_LAW) && R156_LAW.length===8
+      && Array.isArray(R156_PHASES) && R156_PHASES.length===4
+      && ['criminal','fraud','divorce','crash','labor','smallclaim','ticket','clean'].every(k=>R156_END[k])
+      && ['r156_clean','r156_ticket','r156_smallclaim','r156_labor','r156_crash','r156_divorce','r156_fraud','r156_criminal','r156_law'].every(id=>!!ACH_MAP[id]);
+    /* ② 純衍生覆蓋零 rng：startGame 後跑 r156LawOf/Review 不消耗任何種子序列（與 pinned 抽事件序列獨立） */
+    const oc=randomSeedCode; randomSeedCode=function(){return 'EEEEEE';};
+    startGame(); const r0=[]; for(let i=0;i<20;i++)r0.push(rng());
+    startGame(); r156LawOf(S); r156LawReviewHTML(); const r1=[]; for(let i=0;i<20;i++)r1.push(rng());
+    let rngEq=true; for(let i=0;i<20;i++){ if(r0[i]!==r1[i]) rngEq=false; }
+    out.rngZero = rngEq; randomSeedCode=oc;
+    /* ③ deterministic 純讀終局 S：同態同結果、零 mutation */
+    startGame(); S.attr={hp:60,int:55,apr:55,mny:55,hap:60}; S.age=50; S.flags={};
+    const snap=JSON.stringify(S.attr)+'|'+S.age;
+    const c1=r156LawReviewHTML(), c2=r156LawReviewHTML();
+    out.deterministic = c1===c2 && c1.indexOf('法律底子')>=0 && c1.indexOf('法律結局')>=0
+      && (JSON.stringify(S.attr)+'|'+S.age)===snap;
+    /* ④ 財富 mny 為主單調驅動守法分/定級：高屬性→守法良民段(tier>=6)、低屬性→墊底(tier<=1) */
+    const hi=r156LawOf({attr:{mny:95,int:95,apr:95},age:50,flags:{}}), lo=r156LawOf({attr:{mny:5,int:5,apr:5},age:50,flags:{}});
+    out.mnyDrive = !!hi && !!lo && hi.tier>=6 && lo.tier<=1 && hi.tier>lo.tier;
+    /* ⑤ 八結局確定性分流互斥可達：三屬性等值掃 0..7 各命中對應 endType（age 50 解鎖全底層地板=0） */
+    const E=(v)=>{const r=r156LawOf({attr:{mny:v,int:v,apr:v},age:50}); return r&&r.endType;};
+    out.endsReach =
+         E(5)==='criminal' && E(16)==='fraud' && E(26)==='divorce' && E(40)==='crash'
+      && E(54)==='labor' && E(68)==='smallclaim' && E(80)==='ticket' && E(95)==='clean';
+    /* ⑥ S=null/缺 attr/缺 mny 安全降級：回 null、卡空字串、不炸 */
+    const sv=S; S=null; let nullSafe=true;
+    try{ if(r156LawOf(null)!==null) nullSafe=false; if(r156LawReviewHTML()!=='') nullSafe=false;
+         if(r156LawOf({attr:{int:50},age:40})!==null) nullSafe=false; }catch(e){ nullSafe=false; }
+    S=sv; out.nullSafe = nullSafe;
+    return JSON.stringify(out);
+  })()`, sandbox);
+  const r156 = JSON.parse(r156Raw);
+  r156OK = Object.values(r156).every(v => v === true);
+  console.log(`R156 法律訴訟糾紛軌跡: ${r156OK ? '✅ 全數通過' : '❌ ' + JSON.stringify(r156)}`);
+} catch (e) {
+  console.log('R156 法律訴訟糾紛軌跡: ❌ ' + e.message);
+}
+
 if (__errors.length) {
   console.log('\n--- 錯誤樣本(前5) ---');
   __errors.slice(0, 5).forEach(e => console.log('  ' + e));
@@ -4733,6 +4821,6 @@ if (__errors.length) {
 
 /* 退出碼 */
 const pass = __errors.length === 0 && chk.missingScenes.length === 0 && chk.eventVisible >= 126 && chk.eventTotal >= 126 && lsOK && achUnlocked > 0
-  && chk.deathbookMissing.length === 0 && chk.deathTotal >= 17 && deathsOK && rebirthOK && legacyOK && petOK && r13OK && r17OK && r20OK && r21OK && r22OK && r24OK && r25OK && r34OK && r38OK && r41OK && r42OK && r43OK && r44OK && r45OK && r46OK && r47OK && r48OK && r49OK && r51OK && r52OK && r53OK && r54OK && r55OK && r72OK && r76OK && r77OK && r79OK && r86OK && r87OK && r92OK && r93OK && r95OK && r96OK && r108OK && r110OK && r111OK && r112OK && r113OK && r115OK && r116OK && r117OK && r118OK && r119OK && r122OK && r126OK && r134OK && r136OK && r138OK && r139OK && r140OK && r141OK && r142OK && r143OK && r144OK && r145OK && r146OK && r147OK && r149OK && r150OK && r151OK && r152OK && r153OK && r154OK;
+  && chk.deathbookMissing.length === 0 && chk.deathTotal >= 17 && deathsOK && rebirthOK && legacyOK && petOK && r13OK && r17OK && r20OK && r21OK && r22OK && r24OK && r25OK && r34OK && r38OK && r41OK && r42OK && r43OK && r44OK && r45OK && r46OK && r47OK && r48OK && r49OK && r51OK && r52OK && r53OK && r54OK && r55OK && r72OK && r76OK && r77OK && r79OK && r86OK && r87OK && r92OK && r93OK && r95OK && r96OK && r108OK && r110OK && r111OK && r112OK && r113OK && r115OK && r116OK && r117OK && r118OK && r119OK && r122OK && r126OK && r134OK && r136OK && r138OK && r139OK && r140OK && r141OK && r142OK && r143OK && r144OK && r145OK && r146OK && r147OK && r149OK && r150OK && r151OK && r152OK && r153OK && r154OK && r155OK && r156OK;
 console.log('\n結果: ' + (pass ? '✅ 全數通過' : '❌ 有項目未通過'));
 process.exit(pass ? 0 : 1);
